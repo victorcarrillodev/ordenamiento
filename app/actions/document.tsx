@@ -7,21 +7,37 @@ export interface DocumentProps {
   children?: RemixNode
   head?: RemixNode
   title?: string
+  description?: string
 }
 
-const DEFAULT_TITLE = readAppDisplayName('Ordenamiento')
+const DEFAULT_TITLE =
+  'Portal de Ordenamiento Territorial – San Pedro Tlaquepaque'
+const DEFAULT_DESCRIPTION =
+  'Bitácora Ambiental del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano del Municipio de San Pedro Tlaquepaque, Jalisco.'
 
 export function Document(handle: Handle<DocumentProps>) {
   return () => {
-    let { children, head, title = DEFAULT_TITLE } = handle.props
+    let {
+      children,
+      head,
+      title = DEFAULT_TITLE,
+      description = DEFAULT_DESCRIPTION,
+    } = handle.props
 
     return (
-      <html lang="en">
+      <html lang="es">
         <head>
           <meta charSet="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <meta name="color-scheme" content="light dark" />
+          <meta name="description" content={description} />
           <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+          {/* Montserrat – primary institutional typeface */}
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap"
+          />
           <title>{title}</title>
           {head}
           {entryPreloads.map((href) => (
@@ -29,12 +45,8 @@ export function Document(handle: Handle<DocumentProps>) {
           ))}
           <script type="module" src={entryHref}></script>
         </head>
-        <body mix={css({ margin: 0 })}>{children}</body>
+        <body mix={css({ margin: 0, padding: 0 })}>{children}</body>
       </html>
     )
   }
-}
-
-function readAppDisplayName(value: string): string {
-  return value.startsWith('%%') ? 'Remix App' : decodeURIComponent(value)
 }

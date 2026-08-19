@@ -1,535 +1,1159 @@
-// Delete this file and put your own home page in app/actions/controller.tsx
-import type { Handle, RemixNode } from 'remix/ui'
+/**
+ * Portal de Ordenamiento Territorial – Home Page
+ * Civic Horizon Design System
+ * San Pedro Tlaquepaque, Jalisco
+ */
+import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 
+import {
+  bodyLargeProps,
+  bodyProps,
+  btnGoldStyle,
+  btnSecondaryStyle,
+  cardProps,
+  colors,
+  eyebrowProps,
+  eyebrowStyle,
+  FONT_STACK,
+  headingLProps,
+  headingMProps,
+  headingXLProps,
+  sectionContainerProps,
+  sectionPaddingProps,
+} from '../ui/civic-horizon.ts'
 import { Document } from './document.tsx'
-import { PromptButton } from './public/prompt-button.tsx'
 
-const FONT_STACK =
-  "'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace"
+// ---------------------------------------------------------------------------
+// Page root
+// ---------------------------------------------------------------------------
 
 export function HomePage() {
   return () => (
-    <Document head={<HomeHead />}>
-      <main
+    <Document>
+      <div
         mix={css({
-          // Light-mode design tokens (default).
-          '--surface-0': '#dee2e6',
-          '--surface-3': '#f0f4f7',
-          '--surface-4': '#f7fbff',
-          '--text-primary': '#313539',
-          '--text-tertiary': '#94989c',
-          '--brand-blue': '#2dacf9',
-          // Dark-mode overrides.
-          '@media (prefers-color-scheme: dark)': {
-            '--surface-0': '#1e2226',
-            '--surface-3': '#313539',
-            '--surface-4': '#363a3e',
-            '--text-primary': '#dee2e6',
-            '--text-tertiary': '#94989c',
-          },
           '& *, & *::before, & *::after': { boxSizing: 'border-box' },
-          margin: 0,
-          padding: '48px 24px',
-          minHeight: '100vh',
-          background: 'var(--surface-0)',
-          color: 'var(--text-primary)',
           fontFamily: FONT_STACK,
-          fontSize: '14px',
-          lineHeight: 1.5,
-          WebkitFontSmoothing: 'antialiased',
-          MozOsxFontSmoothing: 'grayscale',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          margin: 0,
+          padding: 0,
         })}
       >
-        <div
-          mix={css({
-            width: '100%',
-            maxWidth: '820px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '72px',
-          })}
-        >
-          <Masthead />
-          <Columns />
-          <Footer />
-        </div>
-      </main>
+        <NavBar />
+        <main id="main-content">
+          <HeroSection />
+          <WhatIsThisSite />
+          <ActionCardsGrid />
+          <WhatIsTheProgram />
+          <ProcessTimeline />
+          <ParticipationCta />
+        </main>
+        <SiteFooter />
+      </div>
     </Document>
   )
 }
 
-function HomeHead() {
-  return () => (
-    <>
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap"
-      />
-    </>
-  )
-}
+// ---------------------------------------------------------------------------
+// NavBar
+// ---------------------------------------------------------------------------
 
-function Masthead() {
-  return () => (
-    <section
-      aria-label="Welcome"
-      mix={css({
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '36px',
-        width: '100%',
-      })}
-    >
-      <p
-        mix={css({
-          margin: 0,
-          fontWeight: 700,
-          fontSize: '14px',
-          lineHeight: 1.33,
-          textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-          color: 'var(--text-primary)',
-          textAlign: 'center',
-        })}
-      >
-        Welcome to
-      </p>
-      <RemixWordmarkHero />
-    </section>
-  )
-}
+const navbarStyle = css({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  zIndex: 100,
+  background: 'rgba(140,29,61,0.96)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
+  borderBottom: `1px solid rgba(255,255,255,0.1)`,
+})
 
-function Columns() {
-  return () => (
-    <section
-      aria-label="Getting started"
-      mix={css({
-        display: 'flex',
-        gap: '16px',
-        alignItems: 'stretch',
-        justifyContent: 'center',
-        width: 'auto',
-        '@media (max-width: 720px)': {
-          flexDirection: 'column',
-          width: '100%',
-        },
-      })}
-    >
-      <GetStartedCard />
-      <CodingWithAiCard />
-    </section>
-  )
-}
+const navInnerStyle = css({
+  maxWidth: '1200px',
+  margin: '0 auto',
+  padding: '0 24px',
+  height: '70px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '32px',
+})
 
-function GetStartedCard() {
-  return () => (
-    <div mix={[cardStyle, css({ flex: '0 0 auto' })]}>
-      <h2 mix={cardHeaderStyle}>Get started</h2>
-      <ul
-        mix={css({
-          listStyle: 'none',
-          margin: 0,
-          padding: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'stretch',
-          width: '100%',
-        })}
-      >
-        <li>
-          <CardLink href="https://api.remix.run" icon={<AtomIcon />} label="Remix API" />
-        </li>
-        <li>
-          <CardLink
-            href="https://discord.gg/xwx7mMzVkA"
-            icon={<DiscordFaceIcon />}
-            label="Join Discord"
-          />
-        </li>
-      </ul>
-    </div>
-  )
-}
+const navBrandStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '14px',
+  textDecoration: 'none',
+  flexShrink: 0,
+})
 
-function CodingWithAiCard() {
+const navLogoStyle = css({
+  width: '42px',
+  height: '42px',
+  borderRadius: '50%',
+  background: `linear-gradient(135deg, ${colors.gold400} 0%, ${colors.gold500} 100%)`,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: '14px',
+  fontWeight: 900,
+  color: colors.burgundy900,
+  flexShrink: 0,
+  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+})
+
+const navBrandTextStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  '@media (max-width: 600px)': { display: 'none' },
+})
+
+const navLinksStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '4px',
+  '@media (max-width: 768px)': { display: 'none' },
+})
+
+const navLinkStyle = css({
+  padding: '8px 16px',
+  borderRadius: '6px',
+  color: 'rgba(255,255,255,0.85)',
+  fontFamily: FONT_STACK,
+  fontSize: '13px',
+  fontWeight: 600,
+  letterSpacing: '0.04em',
+  textDecoration: 'none',
+  transition: 'background 180ms ease, color 180ms ease',
+  '&:hover': {
+    background: 'rgba(255,255,255,0.12)',
+    color: colors.white,
+  },
+})
+
+const navCtaStyle = css({
+  padding: '9px 20px',
+  borderRadius: '6px',
+  background: colors.gold400,
+  color: colors.gray950,
+  fontFamily: FONT_STACK,
+  fontSize: '13px',
+  fontWeight: 700,
+  letterSpacing: '0.05em',
+  textDecoration: 'none',
+  transition: 'background 180ms ease, transform 150ms ease',
+  flexShrink: 0,
+  '&:hover': {
+    background: colors.gold300,
+    transform: 'translateY(-1px)',
+  },
+})
+
+function NavBar() {
   return () => (
-    <div
-      mix={[
-        cardStyle,
-        css({
-          width: '540px',
-          justifyContent: 'center',
-          '@media (max-width: 720px)': { width: '100%' },
-        }),
-      ]}
-    >
-      <h2 mix={cardHeaderStyle}>Coding with AI?</h2>
-      <div
-        mix={css({
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'stretch',
-        })}
-      >
-        <p
-          mix={css({
-            margin: 0,
-            padding: '0 16px 16px',
-            fontSize: '14px',
-            lineHeight: 1.67,
-            color: 'var(--text-primary)',
-          })}
-        >
-          Navigate to this project folder using your preferred AI-powered tool, and try copying any
-          of these prompts into the agent chat:
-        </p>
-        <PromptButton text="I want to build a simple headless Shopify store, what does Remix have available to help scaffold this?" />
-        <PromptButton text="Add a sqlite database with a users table and scaffold a signup flow" />
-        <PromptButton text="Make a copy to clipboard component that confirms to the user it was copied then resets after a few seconds" />
-        <PromptButton text="Add a page with a remix/ui/select component and remix/ui/button variants" />
-        <PromptButton text="Add compression middleware" />
+    <nav role="navigation" aria-label="Navegación principal" mix={navbarStyle}>
+      <div mix={navInnerStyle}>
+        {/* Brand */}
+        <a href="/" aria-label="Inicio – Portal de Ordenamiento Territorial" mix={navBrandStyle}>
+          <div mix={navLogoStyle} aria-hidden="true">
+            SPT
+          </div>
+          <div mix={navBrandTextStyle}>
+            <span
+              mix={css({
+                fontFamily: FONT_STACK,
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.65)',
+                lineHeight: 1.2,
+              })}
+            >
+              Municipio de San Pedro Tlaquepaque
+            </span>
+            <span
+              mix={css({
+                fontFamily: FONT_STACK,
+                fontSize: '14px',
+                fontWeight: 700,
+                color: colors.white,
+                lineHeight: 1.3,
+              })}
+            >
+              Ordenamiento Territorial
+            </span>
+          </div>
+        </a>
+
+        {/* Nav links */}
+        <div mix={navLinksStyle}>
+          <a href="#inicio" mix={navLinkStyle}>Inicio</a>
+          <a href="#que-es" mix={navLinkStyle}>El Programa</a>
+          <a href="#proceso" mix={navLinkStyle}>Proceso</a>
+          <a href="#documentos" mix={navLinkStyle}>Documentos</a>
+        </div>
+
+        {/* CTA */}
+        <a href="/participation" id="nav-participar-btn" mix={navCtaStyle}>
+          Participa
+        </a>
       </div>
-    </div>
+    </nav>
   )
 }
 
-function CardLink(handle: Handle<{ href: string; icon: RemixNode; label: string }>) {
-  return () => {
-    let { href, icon, label } = handle.props
+// ---------------------------------------------------------------------------
+// Hero Section
+// ---------------------------------------------------------------------------
 
-    return (
-      <a
-        href={href}
-        mix={css({
-          display: 'flex',
-          gap: '16px',
-          alignItems: 'center',
-          padding: '16px',
-          borderRadius: '12px',
-          color: 'var(--text-primary)',
-          textDecoration: 'none',
-          background: 'transparent',
-          transition: 'background-color 150ms ease, color 150ms ease',
-          '&:hover, &:focus-visible': {
-            background: 'var(--surface-4)',
-            color: 'var(--brand-blue)',
-            outline: 'none',
-          },
-        })}
-      >
-        <IconSlot>{icon}</IconSlot>
-        <span mix={css({ fontSize: '14px', lineHeight: 1.5, whiteSpace: 'nowrap' })}>{label}</span>
-      </a>
-    )
-  }
-}
+const heroStyle = css({
+  position: 'relative',
+  minHeight: '100vh',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  overflow: 'hidden',
+  paddingTop: '70px',
+})
 
-function IconSlot(handle: Handle<{ children: RemixNode; rotated?: boolean }>) {
-  return () => {
-    let { children, rotated = false } = handle.props
+const heroImageStyle = css({
+  position: 'absolute',
+  inset: 0,
+  backgroundImage: 'url(/images/hero-landscape.jpg)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center 40%',
+  backgroundRepeat: 'no-repeat',
+})
 
-    return (
-      <span
-        aria-hidden="true"
-        mix={css({
-          flex: '0 0 24px',
-          width: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: rotated ? 'center' : 'flex-start',
-          '& svg': {
-            width: '20px',
-            height: '20px',
-            display: 'block',
-            ...(rotated ? { transform: 'rotate(180deg)' } : {}),
-          },
-        })}
-      >
-        {children}
-      </span>
-    )
-  }
-}
+const heroOverlayStyle = css({
+  position: 'absolute',
+  inset: 0,
+  background: `linear-gradient(
+    160deg,
+    rgba(15,17,23,0.82) 0%,
+    rgba(140,29,61,0.70) 50%,
+    rgba(15,17,23,0.75) 100%
+  )`,
+})
 
-function Footer() {
-  return () => (
-    <footer
-      mix={css({
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '10px',
-      })}
-    >
-      <div
-        mix={css({
-          display: 'flex',
-          gap: '24px',
-          alignItems: 'center',
-          justifyContent: 'center',
-        })}
-      >
-        <FooterWordmark />
-        <nav
-          aria-label="Remix social links"
-          mix={css({
-            display: 'flex',
-            gap: '16px',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            color: 'var(--text-tertiary)',
-            '& a': {
-              width: '20px',
-              height: '20px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'inherit',
-              transition: 'color 150ms ease',
-            },
-            '& a:hover, & a:focus-visible': {
-              color: 'var(--text-primary)',
-              outline: 'none',
-            },
-            '& svg': { width: '100%', height: '100%', display: 'block' },
-          })}
-        >
-          <a href="https://github.com/remix-run/remix" aria-label="GitHub">
-            <GitHubIcon />
-          </a>
-          <a href="https://x.com/remix_run" aria-label="X">
-            <XIcon />
-          </a>
-          <a href="https://www.youtube.com/@Remix-Run" aria-label="YouTube">
-            <YouTubeIcon />
-          </a>
-          <a href="https://discord.gg/xwx7mMzVkA" aria-label="Discord">
-            <DiscordIcon />
-          </a>
-        </nav>
-      </div>
-      <div
-        mix={css({
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '12px',
-          fontSize: '10px',
-          lineHeight: 1.6,
-          letterSpacing: '0.05em',
-          color: 'var(--text-tertiary)',
-          textAlign: 'center',
-          '& p': { margin: 0, whiteSpace: 'nowrap' },
-        })}
-      >
-        <p>DOCS AND EXAMPLES LICENSED UNDER MIT</p>
-        <p>&copy;2026 SHOPIFY, INC.</p>
-      </div>
-    </footer>
-  )
-}
-
-const cardStyle = css({
-  background: 'var(--surface-3)',
-  borderRadius: '20px',
-  padding: '32px 16px 16px',
+const heroContentStyle = css({
+  position: 'relative',
+  zIndex: 2,
+  maxWidth: '900px',
+  margin: '0 auto',
+  padding: '80px 24px',
+  textAlign: 'center',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   gap: '32px',
 })
 
-const cardHeaderStyle = css({
-  margin: 0,
-  width: '100%',
-  padding: '0 16px',
-  display: 'flex',
-  alignItems: 'flex-start',
-  fontSize: '14px',
-  fontWeight: 700,
-  lineHeight: 1.5,
-  textTransform: 'uppercase',
-  letterSpacing: '0.1em',
-  color: 'var(--text-primary)',
-})
-
-// ----- SVG icons -----
-// Inline so the page is fully self-contained with no external icon assets.
-
-function AtomIcon() {
+function HeroSection() {
   return () => (
-    <svg viewBox="0 0 17.5 17.5" fill="none">
-      <path
-        d="M8.75 8.825V8.75M16.219 16.219C14.639 17.798 10.014 15.735 5.89 11.61C1.765 7.485 -0.299 2.861 1.281 1.281C2.861 -0.299 7.485 1.765 11.61 5.89C15.735 10.014 17.798 14.639 16.219 16.219ZM1.281 16.219C-0.299 14.639 1.765 10.014 5.89 5.89C10.014 1.765 14.639 -0.299 16.219 1.281C17.799 2.861 15.735 7.485 11.61 11.61C7.486 15.735 2.861 17.798 1.281 16.219Z"
-        stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-      />
-    </svg>
+    <section id="inicio" aria-label="Bienvenida al portal" mix={heroStyle}>
+      <div mix={heroImageStyle} role="img" aria-label="Vista aérea de San Pedro Tlaquepaque" />
+      <div mix={heroOverlayStyle} aria-hidden="true" />
+
+      <div mix={heroContentStyle}>
+        {/* Eyebrow bar */}
+        <div mix={css({ display: 'flex', alignItems: 'center', gap: '12px' })}>
+          <div mix={css({ width: '32px', height: '2px', background: colors.gold400 })} aria-hidden="true" />
+          <span
+            mix={css({
+              fontFamily: FONT_STACK,
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: colors.gold400,
+            })}
+          >
+            Bitácora Ambiental · San Pedro Tlaquepaque
+          </span>
+          <div mix={css({ width: '32px', height: '2px', background: colors.gold400 })} aria-hidden="true" />
+        </div>
+
+        {/* Main heading */}
+        <h1
+          mix={css({
+            ...headingXLProps,
+            margin: 0,
+            textAlign: 'center',
+          })}
+        >
+          Programa de Ordenamiento{' '}
+          <span
+            mix={css({
+              color: colors.gold400,
+              display: 'block',
+              '@media (max-width: 600px)': { display: 'inline' },
+            })}
+          >
+            Ecológico Territorial
+          </span>{' '}
+          y de Desarrollo Urbano
+        </h1>
+
+        {/* Sub-heading */}
+        <p
+          mix={css({
+            fontFamily: FONT_STACK,
+            fontSize: 'clamp(16px, 2.5vw, 20px)',
+            lineHeight: 1.65,
+            color: 'rgba(255,255,255,0.82)',
+            maxWidth: '680px',
+            margin: 0,
+            textAlign: 'center',
+          })}
+        >
+          Un proceso participativo para planificar el territorio de forma sustentable,
+          preservando nuestro patrimonio natural y construyendo el municipio que merecemos.
+        </p>
+
+        {/* CTAs */}
+        <div mix={css({ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' })}>
+          <a href="#que-es" id="hero-conoce-btn" mix={btnGoldStyle}>
+            Conoce el programa
+          </a>
+          <a href="/participation" id="hero-participa-btn" mix={btnSecondaryStyle}>
+            Registra tu participación
+          </a>
+        </div>
+
+        {/* Scroll indicator */}
+        <div
+          aria-hidden="true"
+          mix={css({
+            position: 'absolute',
+            bottom: '32px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '8px',
+            opacity: 0.6,
+            animation: 'bounce 2s infinite',
+            '@keyframes bounce': {
+              '0%, 100%': { transform: 'translateX(-50%) translateY(0)' },
+              '50%': { transform: 'translateX(-50%) translateY(8px)' },
+            },
+          })}
+        >
+          <span
+            mix={css({
+              fontFamily: FONT_STACK,
+              fontSize: '10px',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.7)',
+            })}
+          >
+            Explorar
+          </span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M12 5v14M5 12l7 7 7-7"
+              stroke="rgba(255,255,255,0.7)"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+      </div>
+    </section>
   )
 }
 
-function DiscordFaceIcon() {
-  return () => (
-    <svg viewBox="0 0 25.5 19.4" fill="none">
-      <path
-        d="M15.068 0.911C16.442 1.137 17.766 1.53 19.04 2.061L19.583 2.297L19.776 2.384L19.894 2.559C22.358 6.185 23.587 10.304 23.152 15.044L23.122 15.375L22.855 15.575C21.187 16.827 19.305 17.756 17.311 18.368L16.805 18.524L16.489 18.099C16.029 17.479 15.626 16.834 15.282 16.146H15.281C13.127 16.699 10.864 16.698 8.711 16.141L8.709 16.146C8.365 16.834 7.962 17.479 7.502 18.099L7.188 18.52L6.685 18.37C4.68 17.775 2.818 16.823 1.139 15.578L0.869 15.378L0.838 15.044C0.463 10.957 1.238 6.816 4.074 2.582L4.19 2.409L4.378 2.32C5.807 1.645 7.336 1.169 8.903 0.911L9.414 0.827L9.674 1.276C9.804 1.501 9.927 1.734 10.043 1.972C11.339 1.817 12.645 1.817 13.941 1.972C14.054 1.735 14.175 1.496 14.291 1.287L14.548 0.825L15.068 0.911ZM8.494 9.064C7.954 9.064 7.364 9.601 7.364 10.44C7.364 11.269 7.946 11.796 8.494 11.796C9.055 11.796 9.625 11.275 9.641 10.432C9.637 9.588 9.06 9.064 8.494 9.064ZM15.478 9.064C14.938 9.064 14.35 9.601 14.35 10.44C14.35 11.269 14.93 11.796 15.478 11.796C16.021 11.796 16.593 11.292 16.607 10.427C16.621 9.59 16.047 9.064 15.478 9.064Z"
-        stroke="currentColor"
-        stroke-width="1.5"
-      />
-    </svg>
-  )
-}
+// ---------------------------------------------------------------------------
+// What Is This Site
+// ---------------------------------------------------------------------------
 
-function GitHubIcon() {
+function WhatIsThisSite() {
   return () => (
-    <svg viewBox="0 0 20 19.67" fill="none">
-      <path
-        fill-rule="evenodd"
-        clip-rule="evenodd"
-        d="M10.008 0C4.474 0 0 4.507 0 10.083C0 14.54 2.867 18.312 6.843 19.648C7.341 19.748 7.523 19.431 7.523 19.164C7.523 18.93 7.506 18.129 7.506 17.294C4.722 17.895 4.142 16.092 4.142 16.092C3.695 14.924 3.032 14.623 3.032 14.623C2.121 14.006 3.099 14.006 3.099 14.006C4.109 14.072 4.64 15.041 4.64 15.041C5.534 16.576 6.976 16.142 7.556 15.875C7.639 15.224 7.904 14.773 8.186 14.523C5.965 14.289 3.629 13.421 3.629 9.548C3.629 8.447 4.026 7.545 4.656 6.844C4.557 6.594 4.209 5.559 4.756 4.173C4.756 4.173 5.601 3.906 7.506 5.208C8.322 4.987 9.163 4.875 10.008 4.874C10.853 4.874 11.715 4.991 12.51 5.208C14.416 3.906 15.261 4.173 15.261 4.173C15.808 5.559 15.46 6.594 15.36 6.844C16.007 7.545 16.388 8.447 16.388 9.548C16.388 13.421 14.051 14.273 11.814 14.523C12.179 14.84 12.494 15.441 12.494 16.393C12.494 17.745 12.477 18.83 12.477 19.164C12.477 19.431 12.66 19.748 13.157 19.648C17.133 18.312 20 14.54 20 10.083C20.016 4.507 15.526 0 10.008 0Z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
-
-function XIcon() {
-  return () => (
-    <svg viewBox="0 0 18.33 16.57" fill="none">
-      <path
-        d="M14.439 0H17.25L11.108 7.02L18.333 16.572H12.676L8.245 10.778L3.175 16.572H0.362L6.931 9.063L0 0H5.801L9.806 5.295L14.439 0ZM13.452 14.889H15.01L4.955 1.594H3.283L13.452 14.889Z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
-
-function YouTubeIcon() {
-  return () => (
-    <svg viewBox="0 0 20 14.07" fill="none">
-      <path
-        d="M19.801 3.035C19.801 3.035 19.605 1.656 19.004 1.051C18.242 0.254 17.391 0.25 17 0.203C14.203 0 10.004 0 10.004 0H9.996C9.996 0 5.797 0 3 0.203C2.609 0.25 1.758 0.254 0.996 1.051C0.395 1.656 0.203 3.035 0.203 3.035C0.203 3.035 0 4.656 0 6.273V7.789C0 9.406 0.199 11.027 0.199 11.027C0.199 11.027 0.395 12.406 0.992 13.012C1.754 13.809 2.754 13.781 3.199 13.867C4.801 14.02 10 14.066 10 14.066C10 14.066 14.203 14.059 17 13.859C17.391 13.813 18.242 13.809 19.004 13.012C19.605 12.406 19.801 11.027 19.801 11.027C19.801 11.027 20 9.41 20 7.789V6.273C20 4.656 19.801 3.035 19.801 3.035ZM7.934 9.629V4.008L13.336 6.828L7.934 9.629Z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
-
-function DiscordIcon() {
-  return () => (
-    <svg viewBox="0 0 20 15.24" fill="none">
-      <path
-        d="M16.931 1.264C15.656 0.679 14.289 0.248 12.86 0.001C12.834 -0.004 12.808 0.008 12.795 0.032C12.619 0.345 12.424 0.753 12.288 1.073C10.75 0.843 9.221 0.843 7.715 1.073C7.579 0.745 7.377 0.345 7.2 0.032C7.187 0.009 7.161 -0.003 7.135 0.001C5.707 0.247 4.34 0.678 3.064 1.264C3.053 1.268 3.044 1.276 3.037 1.287C0.445 5.16 -0.266 8.939 0.083 12.67C0.084 12.689 0.094 12.706 0.109 12.717C1.819 13.973 3.476 14.736 5.103 15.242C5.129 15.25 5.156 15.24 5.173 15.219C5.558 14.693 5.901 14.139 6.195 13.557C6.212 13.523 6.195 13.482 6.16 13.469C5.616 13.262 5.098 13.011 4.6 12.725C4.56 12.702 4.557 12.646 4.593 12.619C4.698 12.54 4.803 12.458 4.903 12.376C4.921 12.361 4.947 12.358 4.968 12.367C8.241 13.862 11.785 13.862 15.019 12.367C15.04 12.357 15.066 12.36 15.085 12.375C15.185 12.458 15.29 12.54 15.395 12.619C15.431 12.646 15.429 12.702 15.39 12.725C14.891 13.016 14.374 13.262 13.829 13.468C13.793 13.481 13.778 13.523 13.795 13.557C14.095 14.139 14.438 14.692 14.816 15.218C14.831 15.24 14.86 15.25 14.886 15.242C16.52 14.736 18.177 13.973 19.888 12.717C19.903 12.706 19.912 12.689 19.914 12.671C20.331 8.357 19.215 4.61 16.957 1.287C16.951 1.276 16.942 1.268 16.931 1.264ZM6.683 10.398C5.698 10.398 4.886 9.493 4.886 8.382C4.886 7.271 5.682 6.367 6.683 6.367C7.692 6.367 8.497 7.279 8.481 8.382C8.481 9.493 7.685 10.398 6.683 10.398ZM13.329 10.398C12.343 10.398 11.532 9.493 11.532 8.382C11.532 7.271 12.328 6.367 13.329 6.367C14.338 6.367 15.142 7.279 15.126 8.382C15.126 9.493 14.338 10.398 13.329 10.398Z"
-        stroke="currentColor"
-        stroke-width="1.5"
-      />
-    </svg>
-  )
-}
-
-function FooterWordmark() {
-  // Same wordmark used for both light and dark mode; the text paths use
-  // currentColor so they inherit `--text-primary` from <body>.
-  return () => (
-    <span
-      role="img"
-      aria-label="Remix"
+    <section
+      id="que-es"
+      aria-labelledby="que-es-heading"
       mix={css({
-        display: 'block',
-        height: '8px',
-        width: 'calc(8px * 163 / 16)',
-        color: 'var(--text-primary)',
-        opacity: 0.55,
-        '& svg': { display: 'block', width: '100%', height: '100%' },
+        ...sectionPaddingProps,
+        background: colors.gray50,
       })}
     >
-      <svg viewBox="0 0 163 16" fill="currentColor" aria-hidden="true">
-        <path d="M11.5566 11.5024C11.9535 11.5025 12.2424 11.8811 12.1396 12.2661L11.1846 15.8481H0.0673828L1.22656 11.5024H11.5566ZM30.1533 0.0180664V0.019043C34.3663 0.0191833 37.2765 1.9102 36.6543 4.24268L36.2324 5.82178C35.6099 8.15428 31.6907 10.0454 27.4775 10.0454H27.0469L35.8965 15.8481H21.6875L14.5332 10.3257C14.247 10.1423 13.9147 10.0454 13.5752 10.0454H1.61523L2.74219 5.8208H23.6904C24.4776 5.82071 25.2104 5.4677 25.3271 5.03174C25.4436 4.59555 24.8992 4.2417 24.1113 4.2417H3.16406L4.29102 0.0180664H30.1533Z" />
-        <path d="M113.897 15.9271L118.132 0.124207H129.313L125.052 15.9271H113.897Z" />
-        <path d="M71.7284 0.124207H107.931C112.785 0.124207 116.142 2.29324 115.419 4.9787L112.475 15.9271H101.32L102.844 10.2722L103.722 7.04445L104.057 5.805C104.264 5.00452 103.257 4.33316 101.785 4.33316H98.6089C98.5831 4.53973 98.5831 4.74631 98.5056 4.9787L95.5877 15.9271H84.4069L85.9304 10.2722L86.8083 7.04445L87.144 5.805C87.3506 5.00452 86.3436 4.33316 84.8717 4.33316H81.7731L78.6487 15.9271H67.4937L71.7284 0.124207Z" />
-        <path d="M145.926 2.73926L149.765 0.219727H162.734L150.971 7.93848L158.611 15.8135H145.642L143.047 13.1387L138.971 15.8135H126.002L138.002 7.93848L130.513 0.219727H143.482L145.926 2.73926Z" />
-        <path d="M70.4294 0.124146L69.319 4.33313H48.6296L48.2175 5.9054H48.2233L48.2224 5.90833H68.8796L67.7692 10.1427H47.0856L47.0603 10.2726C46.8284 11.0727 47.8351 11.7177 49.3063 11.7179H67.3308L66.194 15.9269H43.1608C38.3069 15.9267 34.95 13.7581 35.6726 11.0988L37.2995 4.97864C37.3359 4.84353 37.384 4.71053 37.4392 4.57825L37.4372 4.57922L38.6042 0.124146H70.4294Z" />
-      </svg>
-    </span>
+      <div
+        mix={css({
+          ...sectionContainerProps,
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '80px',
+          alignItems: 'center',
+          '@media (max-width: 900px)': { gridTemplateColumns: '1fr', gap: '48px' },
+        })}
+      >
+        {/* Text column */}
+        <div mix={css({ display: 'flex', flexDirection: 'column', gap: '24px' })}>
+          <span mix={css({ ...eyebrowProps, color: colors.burgundy900 })}>
+            ¿Qué es este sitio?
+          </span>
+          <h2
+            id="que-es-heading"
+            mix={css({ ...headingLProps, margin: 0 })}
+          >
+            Tu ventana al ordenamiento territorial del municipio
+          </h2>
+          <p mix={css({ ...bodyLargeProps, margin: 0 })}>
+            Este portal es la <strong>Bitácora Ambiental</strong> del Municipio de San Pedro
+            Tlaquepaque — un espacio oficial y transparente donde los ciudadanos, investigadores
+            y funcionarios pueden dar seguimiento al avance del Programa de Ordenamiento
+            Ecológico Territorial y de Desarrollo Urbano.
+          </p>
+          <p mix={css({ ...bodyProps, margin: 0 })}>
+            Aquí encontrarás documentos técnicos, calendarios de actividades, las fases del
+            proceso y un mecanismo directo para registrar tus observaciones y participar en la
+            toma de decisiones sobre el territorio que habitamos.
+          </p>
+
+          {/* Feature bullets */}
+          <div mix={css({ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' })}>
+            {[
+              'Acceso a documentos técnicos oficiales',
+              'Seguimiento de fases y avances del programa',
+              'Participación ciudadana directa y simplificada',
+              'Consulta del calendario de actividades',
+            ].map((feature) => (
+              <div key={feature} mix={css({ display: 'flex', alignItems: 'flex-start', gap: '12px' })}>
+                <div
+                  mix={css({
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    background: colors.burgundy900,
+                    flexShrink: 0,
+                    marginTop: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  })}
+                  aria-hidden="true"
+                >
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 4l3 3 5-6" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+                <span mix={css({ fontFamily: FONT_STACK, fontSize: '15px', lineHeight: 1.5, color: colors.gray700 })}>
+                  {feature}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Image column */}
+        <div
+          mix={css({
+            position: 'relative',
+            borderRadius: '16px',
+            overflow: 'hidden',
+            aspectRatio: '4/3',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
+          })}
+        >
+          <img
+            src="/images/ecology-split.jpg"
+            alt="División entre ecosistema verde y zona árida de Jalisco, representando el equilibrio ecológico"
+            mix={css({ width: '100%', height: '100%', objectFit: 'cover', display: 'block' })}
+          />
+          <div
+            mix={css({
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)',
+              padding: '32px 24px 20px',
+            })}
+          >
+            <p mix={css({ fontFamily: FONT_STACK, fontSize: '12px', color: 'rgba(255,255,255,0.8)', margin: 0, letterSpacing: '0.05em' })}>
+              Equilibrio ecológico • Jalisco, México
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
-function RemixWordmarkHero() {
-  // Single SVG used for both themes: bracket characters keep their decorative
-  // colors; the "REMIX" letterforms use currentColor so they inherit
-  // `--text-primary` from <body> (light or dark).
+// ---------------------------------------------------------------------------
+// Action Cards Grid
+// ---------------------------------------------------------------------------
+
+interface ActionCard {
+  id: string
+  icon: string
+  eyebrow: string
+  title: string
+  description: string
+  href: string
+  cta: string
+  accent: string
+}
+
+const ACTION_CARDS: ActionCard[] = [
+  {
+    id: 'card-programa',
+    icon: '🏛️',
+    eyebrow: 'Marco normativo',
+    title: 'Conoce el Programa',
+    description: 'Explora los fundamentos legales, objetivos y alcances del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
+    href: '#que-es-el-programa',
+    cta: 'Ver programa',
+    accent: colors.burgundy900,
+  },
+  {
+    id: 'card-proceso',
+    icon: '⚙️',
+    eyebrow: 'Metodología',
+    title: 'Conoce el Proceso',
+    description: 'Entiende las cinco fases del proceso: desde la formulación hasta la evaluación continua del ordenamiento territorial.',
+    href: '#proceso',
+    cta: 'Ver fases',
+    accent: colors.green700,
+  },
+  {
+    id: 'card-calendario',
+    icon: '📅',
+    eyebrow: 'Agenda de participación',
+    title: 'Calendario de Actividades',
+    description: 'Consulta las fechas de talleres, mesas de trabajo, consultas públicas y sesiones técnicas del programa.',
+    href: '#calendario',
+    cta: 'Ver calendario',
+    accent: colors.gold500,
+  },
+  {
+    id: 'card-documentos',
+    icon: '📄',
+    eyebrow: 'Repositorio técnico',
+    title: 'Consulta Documentos',
+    description: 'Accede a la memoria técnica, estudios de diagnóstico, cartografía y acuerdos oficiales del proceso de ordenamiento.',
+    href: '#documentos',
+    cta: 'Ver documentos',
+    accent: colors.gray700,
+  },
+]
+
+function ActionCardsGrid() {
   return () => (
-    <svg
-      role="img"
-      aria-label="Remix"
-      viewBox="0 0 820 73"
+    <section
+      aria-labelledby="acciones-heading"
+      mix={css({ ...sectionPaddingProps, background: colors.white })}
+    >
+      <div mix={css(sectionContainerProps)}>
+        <div
+          mix={css({
+            textAlign: 'center',
+            marginBottom: '64px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px',
+          })}
+        >
+          <span mix={css({ ...eyebrowProps, color: colors.burgundy900 })}>
+            Explora lo que puedes hacer aquí
+          </span>
+          <h2
+            id="acciones-heading"
+            mix={css({ ...headingLProps, margin: 0, maxWidth: '600px' })}
+          >
+            Todo lo que necesitas para estar informado y participar
+          </h2>
+        </div>
+
+        <div
+          mix={css({
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '24px',
+            '@media (max-width: 1024px)': { gridTemplateColumns: 'repeat(2, 1fr)' },
+            '@media (max-width: 600px)': { gridTemplateColumns: '1fr' },
+          })}
+        >
+          {ACTION_CARDS.map((card) => (
+            <a
+              key={card.id}
+              id={card.id}
+              href={card.href}
+              mix={css({ ...cardProps, textDecoration: 'none', color: 'inherit', cursor: 'pointer' })}
+            >
+              <div
+                mix={css({
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '14px',
+                  background: `${card.accent}18`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '26px',
+                  flexShrink: 0,
+                  border: `1px solid ${card.accent}28`,
+                })}
+                aria-hidden="true"
+              >
+                {card.icon}
+              </div>
+
+              <div mix={css({ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 })}>
+                <span
+                  mix={css({
+                    fontFamily: FONT_STACK,
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: card.accent,
+                  })}
+                >
+                  {card.eyebrow}
+                </span>
+                <h3 mix={css({ fontFamily: FONT_STACK, fontSize: '17px', fontWeight: 700, lineHeight: 1.3, color: colors.gray900, margin: 0 })}>
+                  {card.title}
+                </h3>
+                <p mix={css({ fontFamily: FONT_STACK, fontSize: '14px', lineHeight: 1.6, color: colors.gray500, margin: 0 })}>
+                  {card.description}
+                </p>
+              </div>
+
+              <div
+                mix={css({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontFamily: FONT_STACK,
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  color: card.accent,
+                  letterSpacing: '0.04em',
+                  marginTop: 'auto',
+                })}
+              >
+                {card.cta}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// What Is The Program
+// ---------------------------------------------------------------------------
+
+function WhatIsTheProgram() {
+  return () => (
+    <section
+      id="que-es-el-programa"
+      aria-labelledby="programa-heading"
       mix={css({
-        width: '100%',
-        height: 'auto',
-        display: 'block',
-        color: 'var(--text-primary)',
+        ...sectionPaddingProps,
+        background: `linear-gradient(135deg, ${colors.gray900} 0%, ${colors.burgundy900} 100%)`,
+        position: 'relative',
+        overflow: 'hidden',
       })}
     >
-      <path d="M53.1347 52.3526H37.3303L32.0532 72.1341H47.8519L53.1347 52.3526Z" fill="#FFDF5F" />
-      <path d="M44.2314 26.4861L39.1011 45.7148H54.9079L60.0431 26.4861H44.2314Z" fill="#FFDF5F" />
-      <path
-        d="M61.9637 19.2947L67.0981 0.0684052H51.2799L46.1504 19.2947H61.9637Z"
-        fill="#FFDF5F"
+      {/* Decorative circles */}
+      <div
+        aria-hidden="true"
+        mix={css({
+          position: 'absolute', top: '-120px', right: '-120px',
+          width: '400px', height: '400px', borderRadius: '50%',
+          background: `radial-gradient(circle, rgba(201,162,39,0.15) 0%, transparent 70%)`,
+          pointerEvents: 'none',
+        })}
       />
-      <path d="M37.3365 52.3526H21.5321L16.2559 72.1341H32.0537L37.3365 52.3526Z" fill="#80E464" />
-      <path d="M46.1656 19.2947L51.3 0.0684052H35.4818L30.3523 19.2947H46.1656Z" fill="#80E464" />
-      <path d="M28.4333 26.4861L23.303 45.7148H39.1098L44.245 26.4861H28.4333Z" fill="#80E464" />
-      <path d="M21.54 52.3526H5.73559L0.458496 72.1341H16.2572L21.54 52.3526Z" fill="#20AAFF" />
-      <path d="M12.6359 26.4861L7.50635 45.7148H23.3124L28.4476 26.4861H12.6359Z" fill="#20AAFF" />
-      <path
-        d="M30.3683 19.2947L35.5035 0.0684052H19.6844L14.5549 19.2947H30.3683Z"
-        fill="#20AAFF"
+      <div
+        aria-hidden="true"
+        mix={css({
+          position: 'absolute', bottom: '-80px', left: '-80px',
+          width: '300px', height: '300px', borderRadius: '50%',
+          background: `radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)`,
+          pointerEvents: 'none',
+        })}
       />
-      <path d="M68.7538 52.3526H52.9495L47.6724 72.1341H63.471L68.7538 52.3526Z" fill="#FF65DB" />
-      <path d="M59.8513 26.4861L54.7209 45.7148H70.527L75.6622 26.4861H59.8513Z" fill="#FF65DB" />
-      <path d="M77.583 19.2947L82.7174 0.0684052H66.8991L61.7688 19.2947H77.583Z" fill="#FF65DB" />
-      <path d="M84.5487 52.3526H68.7443L63.468 72.1341H79.2659L84.5487 52.3526Z" fill="#FF5148" />
-      <path d="M75.6455 26.4861L70.5151 45.7148H86.322L91.4572 26.4861H75.6455Z" fill="#FF5148" />
-      <path d="M93.3778 19.2947L98.5122 0.0684052H82.694L77.5645 19.2947H93.3778Z" fill="#FF5148" />
-      <path
-        fill-rule="evenodd"
-        clip-rule="evenodd"
-        d="M216.245 0.0681458L216.243 0.0700989V0.072052C235.424 0.072052 248.674 8.67951 245.842 19.2986L243.923 26.489C241.089 37.1082 223.245 45.7166 204.064 45.7166H202.103L242.393 72.1355H177.706L145.137 46.9959C143.833 46.1598 142.319 45.7156 140.772 45.7156H86.3262L91.4561 26.4871H186.821C190.406 26.4871 193.744 24.877 194.274 22.8914H194.276C194.806 20.9057 192.328 19.2958 188.741 19.2957H93.375L98.5039 0.0681458H216.245ZM131.582 52.3523C133.389 52.3523 134.705 54.0738 134.237 55.8269L129.888 72.1336H79.2783L84.5557 52.3523H131.582Z"
-        fill="currentColor"
+
+      <div mix={css({ ...sectionContainerProps, position: 'relative', zIndex: 1 })}>
+        <div
+          mix={css({
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '80px',
+            alignItems: 'start',
+            '@media (max-width: 900px)': { gridTemplateColumns: '1fr', gap: '48px' },
+          })}
+        >
+          {/* Left: headline + stats */}
+          <div mix={css({ display: 'flex', flexDirection: 'column', gap: '24px' })}>
+            <span mix={css({ ...eyebrowProps, color: colors.gold400 })}>¿Qué es el Programa?</span>
+            <h2
+              id="programa-heading"
+              mix={css({ ...headingLProps, color: colors.white, margin: 0 })}
+            >
+              Un instrumento de planeación para el territorio y el ambiente
+            </h2>
+            <p mix={css({ fontFamily: FONT_STACK, fontSize: '18px', lineHeight: 1.7, color: 'rgba(255,255,255,0.75)', margin: 0 })}>
+              El Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano es el
+              principal instrumento de política ambiental y urbana del Municipio de San Pedro
+              Tlaquepaque.
+            </p>
+
+            <div mix={css({ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '8px' })}>
+              {[
+                { value: '5', label: 'Fases del proceso' },
+                { value: '2026', label: 'Año de inicio' },
+                { value: '600k+', label: 'Habitantes beneficiados' },
+                { value: '100%', label: 'Participación abierta' },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  mix={css({
+                    background: 'rgba(255,255,255,0.07)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  })}
+                >
+                  <span mix={css({ fontFamily: FONT_STACK, fontSize: '28px', fontWeight: 800, color: colors.gold400, lineHeight: 1 })}>
+                    {stat.value}
+                  </span>
+                  <span mix={css({ fontFamily: FONT_STACK, fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 })}>
+                    {stat.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: body text + legal basis */}
+          <div mix={css({ display: 'flex', flexDirection: 'column', gap: '24px' })}>
+            <p mix={css({ fontFamily: FONT_STACK, fontSize: '16px', lineHeight: 1.8, color: 'rgba(255,255,255,0.72)', margin: 0 })}>
+              Establece los lineamientos para el uso del suelo, la protección de áreas naturales,
+              la distribución de actividades humanas y la gestión sustentable de los recursos
+              naturales en el territorio municipal.
+            </p>
+            <p mix={css({ fontFamily: FONT_STACK, fontSize: '16px', lineHeight: 1.8, color: 'rgba(255,255,255,0.72)', margin: 0 })}>
+              Su elaboración es participativa: integra las voces de ciudadanos, organizaciones
+              civiles, academia y sector productivo, garantizando que el resultado refleje las
+              necesidades y aspiraciones colectivas del municipio.
+            </p>
+
+            <div
+              mix={css({
+                background: 'rgba(201,162,39,0.12)',
+                border: `1px solid rgba(201,162,39,0.3)`,
+                borderRadius: '12px',
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              })}
+            >
+              <span mix={css({ fontFamily: FONT_STACK, fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: colors.gold400 })}>
+                Fundamento legal
+              </span>
+              <p mix={css({ fontFamily: FONT_STACK, fontSize: '14px', lineHeight: 1.65, color: 'rgba(255,255,255,0.65)', margin: 0 })}>
+                Ley General del Equilibrio Ecológico y la Protección al Ambiente · Ley de
+                Ordenamiento Territorial y Desarrollo Urbano del Estado de Jalisco · Código
+                Urbano para el Estado de Jalisco
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Process Timeline
+// ---------------------------------------------------------------------------
+
+interface TimelineStep {
+  number: string
+  title: string
+  description: string
+  color: string
+}
+
+const TIMELINE_STEPS: TimelineStep[] = [
+  { number: '01', title: 'Formulación',  description: 'Diagnóstico territorial, caracterización del área y elaboración de la propuesta inicial del programa con participación ciudadana.',                    color: colors.burgundy900 },
+  { number: '02', title: 'Expedición',   description: 'Consulta pública, revisión técnica, aprobación por el Ayuntamiento y publicación oficial del programa en el Periódico Oficial.',                  color: colors.gold500 },
+  { number: '03', title: 'Ejecución',    description: 'Implementación de acciones, programas e instrumentos para materializar los lineamientos del ordenamiento territorial.',                            color: colors.green700 },
+  { number: '04', title: 'Evaluación',   description: 'Monitoreo de indicadores, revisión periódica de avances y verificación del cumplimiento de metas establecidas.',                                  color: colors.gray700 },
+  { number: '05', title: 'Modificación', description: 'Actualización del programa con base en nuevas condiciones territoriales, ambientales o socioeconómicas del municipio.',                           color: colors.burgundy800 },
+]
+
+function ProcessTimeline() {
+  return () => (
+    <section
+      id="proceso"
+      aria-labelledby="proceso-heading"
+      mix={css({ ...sectionPaddingProps, background: colors.gray50 })}
+    >
+      <div mix={css(sectionContainerProps)}>
+        <div
+          mix={css({
+            textAlign: 'center',
+            marginBottom: '72px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px',
+          })}
+        >
+          <span mix={css({ ...eyebrowProps, color: colors.burgundy900 })}>Fases del proceso</span>
+          <h2 id="proceso-heading" mix={css({ ...headingLProps, margin: 0, maxWidth: '560px' })}>
+            Cinco etapas hacia un territorio ordenado y sustentable
+          </h2>
+        </div>
+
+        <div
+          mix={css({
+            position: 'relative',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            '@media (max-width: 900px)': { gridTemplateColumns: '1fr' },
+          })}
+        >
+          {/* Connector line (desktop only) */}
+          <div
+            aria-hidden="true"
+            mix={css({
+              position: 'absolute',
+              top: '28px',
+              left: 'calc(10% + 28px)',
+              right: 'calc(10% + 28px)',
+              height: '2px',
+              background: `linear-gradient(to right, ${colors.burgundy900}, ${colors.gold500}, ${colors.green700}, ${colors.gray300}, ${colors.burgundy900})`,
+              zIndex: 0,
+              '@media (max-width: 900px)': { display: 'none' },
+            })}
+          />
+
+          {TIMELINE_STEPS.map((step, i) => (
+            <TimelineStepCard key={step.number} step={step} isLast={i === TIMELINE_STEPS.length - 1} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function TimelineStepCard(handle: Handle<{ step: TimelineStep; isLast: boolean }>) {
+  return () => {
+    let { step, isLast } = handle.props
+    return (
+      <div
+        mix={css({
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '20px',
+          padding: '0 12px',
+          position: 'relative',
+          zIndex: 1,
+          '@media (max-width: 900px)': {
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            padding: '0 0 40px 0',
+            gap: '24px',
+          },
+        })}
+      >
+        <div
+          mix={css({
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            background: step.color,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            boxShadow: `0 4px 16px ${step.color}55`,
+            border: '3px solid white',
+          })}
+          aria-hidden="true"
+        >
+          <span mix={css({ fontFamily: FONT_STACK, fontSize: '14px', fontWeight: 800, color: colors.white })}>
+            {step.number}
+          </span>
+        </div>
+
+        <div
+          mix={css({
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            textAlign: 'center',
+            '@media (max-width: 900px)': { textAlign: 'left' },
+          })}
+        >
+          <h3 mix={css({ fontFamily: FONT_STACK, fontSize: '15px', fontWeight: 700, color: step.color, margin: 0 })}>
+            {step.title}
+          </h3>
+          <p mix={css({ fontFamily: FONT_STACK, fontSize: '13px', lineHeight: 1.65, color: colors.gray500, margin: 0 })}>
+            {step.description}
+          </p>
+        </div>
+
+        {/* Mobile vertical connector */}
+        {!isLast && (
+          <div
+            aria-hidden="true"
+            mix={css({
+              display: 'none',
+              '@media (max-width: 900px)': {
+                display: 'block',
+                position: 'absolute',
+                top: '56px',
+                left: '27px',
+                width: '2px',
+                bottom: 0,
+                background: `linear-gradient(to bottom, ${step.color}, transparent)`,
+              },
+            })}
+          />
+        )}
+      </div>
+    )
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Participation CTA Banner
+// ---------------------------------------------------------------------------
+
+function ParticipationCta() {
+  return () => (
+    <section
+      aria-labelledby="participa-heading"
+      mix={css({
+        background: `linear-gradient(135deg, ${colors.burgundy900} 0%, ${colors.gray900} 100%)`,
+        padding: '96px 24px',
+        position: 'relative',
+        overflow: 'hidden',
+      })}
+    >
+      <div
+        aria-hidden="true"
+        mix={css({
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: `radial-gradient(circle at 20% 50%, rgba(201,162,39,0.12) 0%, transparent 50%),
+                            radial-gradient(circle at 80% 50%, rgba(255,255,255,0.05) 0%, transparent 40%)`,
+          pointerEvents: 'none',
+        })}
       />
-      <path
-        d="M597.362 72.4945L616.641 0.550888H667.543L648.146 72.4945H597.362Z"
-        fill="currentColor"
-      />
-      <path
-        d="M405.385 0.550934H570.197C592.298 0.550934 607.58 10.4256 604.288 22.6513L590.887 72.4946H540.103L547.039 46.75L551.036 32.0557L552.564 26.413C553.504 22.7688 548.92 19.7124 542.219 19.7124H527.76C527.642 20.6528 527.642 21.5933 527.29 22.6513L514.006 72.4946H463.105L470.04 46.75L474.037 32.0557L475.566 26.413C476.506 22.7688 471.921 19.7124 465.221 19.7124H451.114L436.89 72.4946H386.106L405.385 0.550934Z"
-        fill="currentColor"
-      />
-      <path
-        fill-rule="evenodd"
-        clip-rule="evenodd"
-        d="M743.176 12.4551L760.652 0.986328H819.692L766.143 36.1279L800.923 71.9785H741.884L730.069 59.8008L711.513 71.9785H652.474L707.104 36.1279L673.009 0.986328H732.049L743.176 12.4551Z"
-        fill="currentColor"
-      />
-      <path
-        fill-rule="evenodd"
-        clip-rule="evenodd"
-        d="M399.467 0.551117L394.413 19.7122H312.242C312.196 19.7122 312.151 19.7139 312.105 19.7142H300.223L298.349 26.8685H298.375L298.371 26.8831H392.415L387.36 46.1624H293.198L293.081 46.7503C292.023 50.3944 296.607 53.3332 303.307 53.3333H385.361L380.189 72.4945H275.33C253.23 72.4945 237.948 62.6201 241.239 50.5121L248.644 22.6517C248.809 22.0384 249.02 21.4319 249.27 20.8314L254.585 0.551117H399.467Z"
-        fill="currentColor"
-      />
-    </svg>
+
+      <div
+        mix={css({
+          ...sectionContainerProps,
+          position: 'relative',
+          zIndex: 1,
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '32px',
+        })}
+      >
+        <div
+          aria-hidden="true"
+          mix={css({
+            width: '72px',
+            height: '72px',
+            borderRadius: '20px',
+            background: `rgba(201,162,39,0.15)`,
+            border: `1px solid rgba(201,162,39,0.3)`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '32px',
+          })}
+        >
+          ✍️
+        </div>
+
+        <span mix={css({ ...eyebrowProps, color: colors.gold400 })}>Participación ciudadana</span>
+
+        <h2
+          id="participa-heading"
+          mix={css({ ...headingLProps, color: colors.white, margin: 0, maxWidth: '640px' })}
+        >
+          Tu voz transforma el territorio de Tlaquepaque
+        </h2>
+
+        <p mix={css({ fontFamily: FONT_STACK, fontSize: '18px', lineHeight: 1.7, color: 'rgba(255,255,255,0.75)', maxWidth: '560px', margin: 0 })}>
+          Registra tus observaciones, propuestas y documentos técnicos. Tu participación es
+          fundamental para construir el Programa de Ordenamiento que refleje las necesidades
+          reales del municipio.
+        </p>
+
+        <div mix={css({ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' })}>
+          {['.PDF', '.SHP', '.JPG', '.DWG'].map((fmt) => (
+            <span
+              key={fmt}
+              mix={css({
+                padding: '4px 12px',
+                borderRadius: '4px',
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                fontFamily: FONT_STACK,
+                fontSize: '12px',
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                color: 'rgba(255,255,255,0.7)',
+              })}
+            >
+              {fmt}
+            </span>
+          ))}
+          <span
+            mix={css({
+              padding: '4px 12px',
+              borderRadius: '4px',
+              background: 'rgba(201,162,39,0.15)',
+              border: `1px solid rgba(201,162,39,0.3)`,
+              fontFamily: FONT_STACK,
+              fontSize: '12px',
+              fontWeight: 700,
+              letterSpacing: '0.1em',
+              color: colors.gold300,
+            })}
+          >
+            Hasta 850 MB
+          </span>
+        </div>
+
+        <a href="/participation" id="participa-cta-btn" mix={btnGoldStyle}>
+          Registra tu participación
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>
+      </div>
+    </section>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Footer
+// ---------------------------------------------------------------------------
+
+function SiteFooter() {
+  return () => (
+    <footer mix={css({ background: colors.gray950, padding: '64px 24px 32px' })}>
+      <div mix={css({ ...sectionContainerProps, display: 'flex', flexDirection: 'column', gap: '48px' })}>
+        {/* Top row */}
+        <div
+          mix={css({
+            display: 'grid',
+            gridTemplateColumns: '2fr 1fr 1fr',
+            gap: '48px',
+            '@media (max-width: 768px)': { gridTemplateColumns: '1fr', gap: '40px' },
+          })}
+        >
+          {/* Brand column */}
+          <div mix={css({ display: 'flex', flexDirection: 'column', gap: '16px' })}>
+            <div mix={css({ display: 'flex', alignItems: 'center', gap: '12px' })}>
+              <div
+                mix={css({
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: `linear-gradient(135deg, ${colors.gold400} 0%, ${colors.gold500} 100%)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 900,
+                  color: colors.burgundy900,
+                  flexShrink: 0,
+                })}
+                aria-hidden="true"
+              >
+                SPT
+              </div>
+              <span mix={css({ fontFamily: FONT_STACK, fontSize: '14px', fontWeight: 700, color: colors.white })}>
+                Municipio de San Pedro Tlaquepaque
+              </span>
+            </div>
+            <p mix={css({ fontFamily: FONT_STACK, fontSize: '14px', lineHeight: 1.7, color: colors.gray400, margin: 0, maxWidth: '360px' })}>
+              Portal oficial de la Bitácora Ambiental del Programa de Ordenamiento Ecológico
+              Territorial y de Desarrollo Urbano.
+            </p>
+          </div>
+
+          {/* Navigation */}
+          <div mix={css({ display: 'flex', flexDirection: 'column', gap: '12px' })}>
+            <span mix={css({ fontFamily: FONT_STACK, fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: colors.gray500 })}>
+              Navegación
+            </span>
+            {['Inicio', 'El Programa', 'El Proceso', 'Documentos', 'Calendario'].map((link) => (
+              <a
+                key={link}
+                href="#"
+                mix={css({ fontFamily: FONT_STACK, fontSize: '14px', color: colors.gray400, textDecoration: 'none', transition: 'color 150ms ease', '&:hover': { color: colors.white } })}
+              >
+                {link}
+              </a>
+            ))}
+          </div>
+
+          {/* Contact */}
+          <div mix={css({ display: 'flex', flexDirection: 'column', gap: '12px' })}>
+            <span mix={css({ fontFamily: FONT_STACK, fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: colors.gray500 })}>
+              Contacto
+            </span>
+            <p mix={css({ fontFamily: FONT_STACK, fontSize: '14px', lineHeight: 1.7, color: colors.gray400, margin: 0 })}>
+              Dirección de Medio Ambiente y Ecología<br />
+              H. Ayuntamiento de San Pedro Tlaquepaque<br />
+              Jalisco, México
+            </p>
+            <a
+              href="mailto:ordenamiento@tlaquepaque.gob.mx"
+              mix={css({ fontFamily: FONT_STACK, fontSize: '14px', color: colors.gold400, textDecoration: 'none', '&:hover': { color: colors.gold300 } })}
+            >
+              ordenamiento@tlaquepaque.gob.mx
+            </a>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div mix={css({ height: '1px', background: colors.gray800 })} aria-hidden="true" />
+
+        {/* Bottom bar */}
+        <div mix={css({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' })}>
+          <p mix={css({ fontFamily: FONT_STACK, fontSize: '13px', color: colors.gray500, margin: 0 })}>
+            © 2026 H. Ayuntamiento de San Pedro Tlaquepaque. Todos los derechos reservados.
+          </p>
+          <p mix={css({ fontFamily: FONT_STACK, fontSize: '13px', color: colors.gray500, margin: 0 })}>
+            Portal de Ordenamiento Territorial · Bitácora Ambiental
+          </p>
+        </div>
+      </div>
+    </footer>
   )
 }
