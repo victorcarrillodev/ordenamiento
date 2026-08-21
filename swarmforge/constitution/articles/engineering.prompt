@@ -1,0 +1,41 @@
+# Engineering Rules
+
+## Language Defaults
+- Project language is TypeScript on Remix 3. Import only from `remix/<subpath>`,
+  never from a top-level `remix` import.
+- Use Vitest for unit tests and Node's built-in assertion model where the
+  project already uses it. Prefer Vitest as the primary unit test runner.
+- Use ESLint for static analysis and Prettier for formatting. Do not hand-edit
+  generated formatting.
+
+## Design And Testability
+- Work in small, reviewable increments.
+- Prefer the simplest design that supports the current behavior and leaves clear
+  options for the next step.
+- Keep tests close to the behavior being changed.
+- Separate testable modules from environmentally unsuitable modules that open
+  GUIs, depend on external devices, throw environment errors, emit system
+  errors, or hang under automated tests. Maximize testable code and minimize the
+  unsuitable boundary.
+- Keep high-level policy independent of IO, UI, framework, filesystem, database,
+  network, and device details. Make low-level adapters depend inward on stable
+  high-level concepts.
+- Split modules that mix unrelated responsibilities or leak implementation
+  details across boundaries. Prefer narrow interfaces and private
+  representation.
+
+## Verification
+- Before handoff, run the relevant local verification command. In order:
+  `npm test`, `npm run typecheck`, `npm run lint`, and `npm run format:check`.
+- Keep cache and configuration paths project-local inside the assigned worktree
+  where possible. Avoid default cache locations that write outside the project.
+- Run the whole relevant suite sequentially; do not run whole-suite test
+  commands concurrently with other verification steps.
+
+## Guardrails
+- Do not commit unrelated local changes or generated artifacts unless required
+  for the task.
+- Before relying on an unfamiliar command, inspect local help or project
+  documentation.
+- Do not disable lint, typecheck, or format rules with broad suppressions unless
+  the role owns that decision and documents why.

@@ -16,14 +16,14 @@ export const PromptButton = clientEntry(
     let state: CopyState = 'idle'
 
     return () => {
-      let promptLabel = `\u201C${handle.props.text}\u201D`
-      let label =
+      const promptLabel = `\u201C${handle.props.text}\u201D`
+      const label =
         state === 'copied' || state === 'resetting'
           ? 'Copied to clipboard'
           : state === 'failed'
             ? 'Copy failed'
             : promptLabel
-      let active = state === 'copied' || state === 'failed' || state === 'resetting'
+      const active = state === 'copied' || state === 'failed' || state === 'resetting'
 
       return (
         <button

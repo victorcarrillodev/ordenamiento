@@ -1,6 +1,7 @@
+.agents/
 node_modules/
-db/*.sqlite
-tmp/
-.DS_Store
+dist/
 .swarmforge/
 .worktrees/
+tmp/
+package-lock.json

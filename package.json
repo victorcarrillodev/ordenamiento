@@ -6,8 +6,11 @@
     "dev": "NODE_ENV=development node --watch --import remix/node-tsx server.ts",
     "hmr": "NODE_ENV=development node hmr.ts",
     "start": "NODE_ENV=production node --import remix/node-tsx server.ts",
-    "test": "NODE_ENV=test node --import remix/node-tsx --test",
-    "typecheck": "tsc --noEmit"
+    "test": "NODE_ENV=test vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "format": "prettier --write ."
   },
   "engines": {
     "node": ">=24.3.0"
@@ -16,7 +19,13 @@
     "remix": "^3.0.0-beta.10"
   },
   "devDependencies": {
+    "@eslint/js": "latest",
     "@types/node": "latest",
-    "typescript": "latest"
+    "eslint": "latest",
+    "eslint-config-prettier": "latest",
+    "prettier": "latest",
+    "typescript": "latest",
+    "typescript-eslint": "latest",
+    "vitest": "latest"
   }
 }
