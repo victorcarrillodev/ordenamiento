@@ -1,0 +1,20 @@
+FROM oven/bun:1.3-base AS base
+WORKDIR /app
+
+# Copiar manifiesto de dependencias
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
+
+# Copiar código
+COPY schema.sql ./
+COPY src ./src
+
+# Usuario no-root
+USER bun
+
+ENV NODE_ENV=production
+ENV PORT=5920
+
+EXPOSE 5920
+
+CMD ["bun", "src/server.ts"]
