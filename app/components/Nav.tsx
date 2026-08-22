@@ -119,16 +119,16 @@ export function NavBar() {
 
         {/* Nav links */}
         <div mix={navLinksStyle}>
-          <a href="#inicio" mix={navLinkStyle}>
+          <a href="/" mix={navLinkStyle}>
             Inicio
           </a>
-          <a href="#que-es" mix={navLinkStyle}>
+          <a href="/#que-es" mix={navLinkStyle}>
             El Programa
           </a>
-          <a href="#proceso" mix={navLinkStyle}>
+          <a href="/#proceso" mix={navLinkStyle}>
             Proceso
           </a>
-          <a href="#documentos" mix={navLinkStyle}>
+          <a href="/#documentos" mix={navLinkStyle}>
             Documentos
           </a>
           <a href="/poetdum" mix={navLinkStyle}>
