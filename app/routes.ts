@@ -4,4 +4,9 @@ export const routes = route({
   assets: get('/assets/*path'),
   home: '/',
   participation: form('participation'),
+
+  poetdum:{
+    show:get("/poetdum")
+  }
+
 })
