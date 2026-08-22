@@ -23,7 +23,7 @@ import {
   sectionPaddingProps,
 } from "../ui/civic-horizon.ts";
 import { Document } from "./document.tsx";
-import { NavBar } from "../components/Nav.tsx";
+import { NavBar } from "../components/NavBar.tsx";
 
 // ---------------------------------------------------------------------------
 // Page root
