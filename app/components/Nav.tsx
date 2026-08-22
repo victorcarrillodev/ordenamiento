@@ -1,6 +1,5 @@
 import { css } from "remix/ui";
 import { colors, FONT_STACK } from "../ui/civic-horizon.ts";
-
 const navbarStyle = css({
   position: "fixed",
   top: 0,
@@ -32,19 +31,21 @@ const navBrandStyle = css({
   flexShrink: 0,
 });
 
-const navLogoStyle = css({
-  width: "42px",
-  height: "42px",
-  borderRadius: "50%",
-  background: `linear-gradient(135deg, ${colors.gold400} 0%, ${colors.gold500} 100%)`,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: "14px",
-  fontWeight: 900,
-  color: colors.burgundy900,
-  flexShrink: 0,
-  boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+const containerLogo=css({ 
+})
+
+
+const ImgLogo = css({
+  backgroundImage: `url(https://ordenamiento.tlaquepaque.gob.mx/img/image5.png)`,
+  backgroundSize: "contain",
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "center",
+  backgroundColor: "rgba(253 251 251 / 0.95)",
+  borderRadius: "8px",
+  padding: "6px 10px",
+  width: "170px",
+  height: "60px",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.25)",
 });
 
 const navBrandTextStyle = css({
@@ -98,6 +99,7 @@ const navCtaStyle = css({
 export function NavBar() {
   return () => (
     <nav role="navigation" aria-label="Navegación principal" mix={navbarStyle}>
+     
       <div mix={navInnerStyle}>
         {/* Brand */}
         <a
@@ -105,34 +107,13 @@ export function NavBar() {
           aria-label="Inicio – Portal de Ordenamiento Territorial"
           mix={navBrandStyle}
         >
-          <div mix={navLogoStyle} aria-hidden="true">
-            SPT
-          </div>
+      
+      <div mix={containerLogo}>
+            <div mix={ImgLogo} role="img"
+        aria-label=" Tlaquepaque"></div>
           <div mix={navBrandTextStyle}>
-            <span
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: "11px",
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                color: "rgba(255,255,255,0.65)",
-                lineHeight: 1.2,
-              })}
-            >
-              Municipio de San Pedro Tlaquepaque
-            </span>
-            <span
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: "14px",
-                fontWeight: 700,
-                color: colors.white,
-                lineHeight: 1.3,
-              })}
-            >
-              Ordenamiento Territorial
-            </span>
+      </div>
+ 
           </div>
         </a>
 
