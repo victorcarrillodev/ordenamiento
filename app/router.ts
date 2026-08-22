@@ -3,6 +3,7 @@ import { staticFiles } from 'remix/middleware/static'
 
 import controller from './actions/controller.tsx'
 import participationController from './actions/participation/controller.tsx'
+import poetdumController from "./actions/poetdum/controller.tsx"
 import { render } from './middleware/render.tsx'
 import { routes } from './routes.ts'
 
@@ -20,3 +21,4 @@ export const router = createRouter<AppContext>({
 
 router.map(routes, controller)
 router.map(routes.participation, participationController)
+router.map(routes.poetdum,poetdumController)
