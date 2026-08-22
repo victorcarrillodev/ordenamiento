@@ -6,6 +6,7 @@
  */
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
+import {NavBar} from "../../components/Nav.tsx"
 
 import {
   btnPrimaryProps,
@@ -162,6 +163,8 @@ export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
             {success ? <SuccessMessage /> : <ParticipationForm errors={errors} />}
           </div>
         </div>
+      <NavBar/>
+
       </Document>
     )
   }
