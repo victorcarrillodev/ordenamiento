@@ -19,7 +19,7 @@ const navInnerStyle = css({
   maxWidth: "full",
   margin: "0 auto",
   padding: "0 24px",
-  height: "70px",
+  height: "100px",
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
@@ -43,7 +43,6 @@ const ImgLogo = css({
   backgroundSize: "contain",
   backgroundRepeat: "no-repeat",
   backgroundPosition: "center",
-  backgroundColor: "rgba(253 251 251 / 0.95)",
   borderRadius: "8px",
   padding: "6px 10px",
   width: "170px",
@@ -76,8 +75,8 @@ const navLinkStyle = css({
   textDecoration: "none",
   transition: "background 180ms ease, color 180ms ease",
   "&:hover": {
-    background: "rgba(255,255,255,0.12)",
-    color: colors.white,
+
+    color: "#b23357",
   },
 });
 

@@ -3,7 +3,7 @@ import { Document } from '../document.tsx'
 import { NavBar } from '../../components/NavBar.tsx'
 import { css } from 'remix/ui'
 const title=css({
-  margin:"3rem",
+  margin:"5rem",
   textAlign:"center",
   color: "rgb(171, 163, 163)",
 
