@@ -9,7 +9,7 @@ export function PoetdumPage(handle: Handle<{ id: string }>) {
      <br /><br /><br />
 
         <main>
-             <h1></h1>
+             <h1>poetdum</h1>
              <section>
               <h2>ELABORACIÓN DEL POETDUM</h2>
               <div>
@@ -38,7 +38,6 @@ Navega por el calendario para planificar tu asistencia y no perderte ningún eve
               </div>
              </section>
              <h1>hola mundo </h1>
-             
              <section>
               <div>
                 <h5>aqui ira un backgraun image</h5>

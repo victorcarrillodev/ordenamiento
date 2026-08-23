@@ -1,12 +1,14 @@
 import { css } from "remix/ui";
 import { colors, FONT_STACK } from "../ui/civic-horizon.ts";
 const navbarStyle = css({
+  
+  alignItems:"center",
   position: "fixed",
   top: 0,
   left: 0,
   right: 0,
   zIndex: 100,
-  background: "rgba(140,29,61,0.96)",
+  background: "rgba(255,255,255,255)",
   backdropFilter: "blur(12px)",
   WebkitBackdropFilter: "blur(12px)",
   borderBottom: `1px solid rgba(255,255,255,0.1)`,
@@ -62,10 +64,10 @@ const navLinksStyle = css({
 });
 
 const navLinkStyle = css({
+  color:"black",
   textAlign:"center",
   padding: "8px 16px",
   borderRadius: "6px",
-  color: "rgba(255,255,255,0.85)",
   fontFamily: FONT_STACK,
   fontSize: "14px",
   fontWeight: 600,
@@ -81,8 +83,8 @@ const navLinkStyle = css({
 const navCtaStyle = css({
   padding: "9px 20px",
   borderRadius: "6px",
-  background: colors.gold400,
-  color: colors.gray950,
+  background:"black",
+  color: "white",
   fontFamily: FONT_STACK,
   fontSize: "13px",
   fontWeight: 700,
@@ -120,17 +122,8 @@ export function NavBar() {
         {/* Nav links */}
         <div mix={navLinksStyle}>
           <a href="/" mix={navLinkStyle}>
-            Inicio
-          </a>
-          <a href="/#que-es" mix={navLinkStyle}>
-            El Programa
-          </a>
-          <a href="/#proceso" mix={navLinkStyle}>
-            Proceso
-          </a>
-          <a href="/#documentos" mix={navLinkStyle}>
-            Documentos
-          </a>
+            Inicio  y proceso
+       </a>
           <a href="/poetdum" mix={navLinkStyle}>
             {" "}
             Elaboración del POETDUM
