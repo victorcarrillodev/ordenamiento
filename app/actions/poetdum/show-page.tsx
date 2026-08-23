@@ -107,9 +107,18 @@ const actText = css({
   fontSize: '18px',
   color: '#444444',
 })
-const holaMundo = css({
-  color: 'grey',
-  fontSize: '70px',
+const detalles =css({
+  padding:"2rem",
+  display:"flex",
+  justifyContent:"center"
+})
+const button=css({
+  borderRadius:"1rem",
+    backgroundColor: "#C84067",
+height:"2.5rem",
+width:"7rem",
+
+  
 })
 const futter = css({
   display: 'flex',
@@ -216,10 +225,13 @@ export function PoetdumPage() {
               asistencia y no perderte ningún evento.
             </p>
           </section>
+          <div mix={detalles
+          }>
+            <button mix ={button}>Detalles de la  reunion</button>
+          </div>
           <br />
           <br />
           <br />
-          <h1 mix={holaMundo}>hola mundo </h1>
           <section mix={futter}>
             <img
               mix={logoFuter}
