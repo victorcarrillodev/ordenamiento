@@ -1,16 +1,51 @@
-import type { Handle } from 'remix/ui'
 import { Document } from '../document.tsx'
 import { NavBar } from '../../components/NavBar.tsx'
 import { css } from 'remix/ui'
-const title=css({
-  margin:"5rem",
-  textAlign:"center",
-  color: "rgb(171, 163, 163)",
+import { Mapa } from '../../components/Mapa.tsx'
+
+const title = css({
+  margin: '5rem',
+  textAlign: 'center',
+  color: 'rgb(171, 163, 163)',
+})
+
+const containerMap = css({
+  display: 'flex',
+  flexDirection: 'row',
+  width: '70%',
+  height: '50%',
+  padding:"100px",
+})
+const infoMap = css({
+  paddingTop:"50px",
+  paddingLeft:"30px"
 
 })
-const parrafo=css({
- 
+const color1=css({
+  width:"20px",
+  height:"10px",
+  backgroundColor:"greenyellow"
+
 })
+const color2=css({
+  width:"20px",
+  height:"10px",
+  backgroundColor:"darkorange"
+
+})
+const color3=css({
+  width:"20px",
+  height:"10px",
+  backgroundColor:"cornflowerblue"
+
+})
+const color4=css({
+  width:"20px",
+  height:"10px",
+  backgroundColor:"red"
+
+})
+
 const docOficial = css({
   margin: '0px',
   display: 'flex',
@@ -72,27 +107,27 @@ const actText = css({
   fontSize: '18px',
   color: '#444444',
 })
-const holaMundo=css({
-  color:"grey",
-  fontSize:"70px"
+const holaMundo = css({
+  color: 'grey',
+  fontSize: '70px',
 })
 const futter = css({
-  display: "flex",
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: "2rem",
-  height: "8rem",
-  backgroundColor: "#101909",
-  color: "white",
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '2rem',
+  height: '8rem',
+  backgroundColor: '#101909',
+  color: 'white',
 })
-const logoFuter =css({
-  marginRight: "20rem",
-  width:"50px",
-  height:"70px"
+const logoFuter = css({
+  marginRight: '20rem',
+  width: '50px',
+  height: '70px',
 })
 
-export function PoetdumPage(handle: Handle<{ id: string }>) {
+export function PoetdumPage() {
   return () => {
     return (
       <Document title="poetdum">
@@ -102,19 +137,48 @@ export function PoetdumPage(handle: Handle<{ id: string }>) {
         <br />
 
         <main>
-          <h1 mix={title} >ELABORACIÓN DEL POETDUM</h1>
+          
+          <h1 mix={title}>ELABORACIÓN DEL POETDUM</h1>
           <div>
-            <ul>
-              <li mix={parrafo}><p>parrafo 1.</p></li>
-              <li mix={parrafo}><p>parrafo 2.</p></li>
-              <li mix={parrafo}><p>parrafo 3.</p></li>
-            </ul>
-            <div>
-              <img
-                src="https://imgs.search.brave.com/rapUnoqLO3crJwhfYp2tbIvgb4a2VG-DOxQJEXHGnpU/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9pbWcu/bWFnbmlmaWMuY29t/L3ZlY3Rvci1ncmF0/aXMvbWFwYS1jaXVk/YWQtZXRpcXVldGEt/aG9tZS1waW5fMTI4/NC00MjM0MC5qcGc_/c2VtdD1haXNfaHli/cmlkJnc9NzQwJnE9/ODA"
-                alt="mapa"
-              />
-              
+            <div mix={containerMap}>
+              <Mapa />
+              <div mix={infoMap}>
+                <section>
+                  <table>
+                    <tr>
+                      
+                     
+                    </tr>
+                  </table>
+                  <table >
+                    <thead>
+                      <tr>
+                        <th>Simbologia</th>
+                        <th > Color</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>proteccion</td>
+                        <td mix={color1}></td>
+                      </tr>
+                      <tr>
+                        <td>Conservacion</td>
+                        <td mix={color2}></td>
+                      </tr>
+                      <tr>
+                        <td>Restauracion</td>
+                        <td mix={color3}></td>
+                      </tr>
+                      <tr>
+                        <td>Aprovechamiento sustentable</td>
+                        <td mix={color4}>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </section>
+              </div>
             </div>
           </div>
 
@@ -152,21 +216,21 @@ export function PoetdumPage(handle: Handle<{ id: string }>) {
               asistencia y no perderte ningún evento.
             </p>
           </section>
-          <br /><br /><br />
+          <br />
+          <br />
+          <br />
           <h1 mix={holaMundo}>hola mundo </h1>
-        <section mix={futter}>
-  <img
-    mix={logoFuter}
-    src="https://ordenamiento.tlaquepaque.gob.mx/img/logos-02.png"
-    alt="Logo"
-  />
+          <section mix={futter}>
+            <img
+              mix={logoFuter}
+              src="https://ordenamiento.tlaquepaque.gob.mx/img/logos-02.png"
+              alt="Logo"
+            />
 
-  <p>
-    <strong>
-      © Copyright 2026 Todos los Derechos Reservados | Aviso de privacidad
-    </strong>
-  </p>
-</section>
+            <p>
+              <strong>© Copyright 2026 Todos los Derechos Reservados | Aviso de privacidad</strong>
+            </p>
+          </section>
         </main>
       </Document>
     )
