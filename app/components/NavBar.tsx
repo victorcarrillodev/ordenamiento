@@ -15,7 +15,8 @@ const navbarStyle = css({
 });
 
 const navInnerStyle = css({
-  maxWidth: "1200px",
+  boxShadow: "0 5px 10px rgba(0, 0, 0, 0.25)",
+  maxWidth: "full",
   margin: "0 auto",
   padding: "0 24px",
   height: "70px",

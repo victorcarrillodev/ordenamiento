@@ -10,6 +10,7 @@ import {NavBar} from "../../components/NavBar.tsx"
 
 import {
   btnPrimaryProps,
+  btnPrimaryStyle,
   colors,
   eyebrowProps,
   FONT_STACK,
@@ -92,7 +93,7 @@ const legendStyle = css({
 
 export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
   return () => {
-    const { errors = {}, success = false } = handle.props
+    let { errors = {}, success = false } = handle.props
 
     return (
       <Document
@@ -114,14 +115,7 @@ export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
               padding: '48px 24px 64px',
             })}
           >
-            <div
-              mix={css({
-                ...sectionContainerProps,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '16px',
-              })}
-            >
+            <div mix={css({ ...sectionContainerProps, display: 'flex', flexDirection: 'column', gap: '16px' })}>
               <a
                 href="/"
                 mix={css({
@@ -139,34 +133,15 @@ export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
                 })}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path
-                    d="M19 12H5M12 19l-7-7 7-7"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
+                  <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
                 Volver al inicio
               </a>
-              <span mix={css({ ...eyebrowProps, color: colors.gold400 })}>
-                Participación ciudadana
-              </span>
-              <h1
-                mix={css({ ...headingLProps, color: colors.white, margin: 0, maxWidth: '600px' })}
-              >
+              <span mix={css({ ...eyebrowProps, color: colors.gold400 })}>Participación ciudadana</span>
+              <h1 mix={css({ ...headingLProps, color: colors.white, margin: 0, maxWidth: '600px' })}>
                 Registra tu observación y participación
               </h1>
-              <p
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '16px',
-                  lineHeight: 1.7,
-                  color: 'rgba(255,255,255,0.72)',
-                  margin: 0,
-                  maxWidth: '560px',
-                })}
-              >
+              <p mix={css({ fontFamily: FONT_STACK, fontSize: '16px', lineHeight: 1.7, color: 'rgba(255,255,255,0.72)', margin: 0, maxWidth: '560px' })}>
                 Comparte tus observaciones, propuestas y documentos técnicos con el equipo
                 responsable del Programa de Ordenamiento Territorial.
               </p>
@@ -233,19 +208,10 @@ function SuccessMessage() {
       <h2 mix={css({ ...headingMProps, margin: 0, color: colors.green700 })}>
         ¡Participación registrada con éxito!
       </h2>
-      <p
-        mix={css({
-          fontFamily: FONT_STACK,
-          fontSize: '16px',
-          lineHeight: 1.7,
-          color: colors.gray500,
-          margin: 0,
-          maxWidth: '480px',
-        })}
-      >
-        Tu registro ha sido recibido correctamente. El equipo técnico revisará tu aportación en el
-        contexto del Programa de Ordenamiento Territorial. Gracias por contribuir al futuro de San
-        Pedro Tlaquepaque.
+      <p mix={css({ fontFamily: FONT_STACK, fontSize: '16px', lineHeight: 1.7, color: colors.gray500, margin: 0, maxWidth: '480px' })}>
+        Tu registro ha sido recibido correctamente. El equipo técnico revisará tu aportación
+        en el contexto del Programa de Ordenamiento Territorial. Gracias por contribuir al
+        futuro de San Pedro Tlaquepaque.
       </p>
       <a href="/" mix={css({ ...btnPrimaryProps, marginTop: '8px' })}>
         Volver al portal
@@ -260,7 +226,7 @@ function SuccessMessage() {
 
 function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
   return () => {
-    const { errors } = handle.props
+    let { errors } = handle.props
 
     return (
       <div
@@ -285,42 +251,22 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
           <div
             aria-hidden="true"
             mix={css({
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
+              width: '40px', height: '40px', borderRadius: '10px',
               background: 'rgba(255,255,255,0.12)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-              flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '20px', flexShrink: 0,
             })}
           >
             📋
           </div>
           <div>
-            <p
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '14px',
-                fontWeight: 700,
-                color: colors.white,
-                margin: 0,
-              })}
-            >
+            <p mix={css({ fontFamily: FONT_STACK, fontSize: '14px', fontWeight: 700, color: colors.white, margin: 0 })}>
               Formulario de participación ciudadana
             </p>
-            <p
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '12px',
-                color: 'rgba(255,255,255,0.65)',
-                margin: 0,
-                marginTop: '2px',
-              })}
-            >
+            <p mix={css({ fontFamily: FONT_STACK, fontSize: '12px', color: 'rgba(255,255,255,0.65)', margin: 0, marginTop: '2px' })}>
               Campos marcados con{' '}
-              <span mix={css({ color: colors.gold300, fontWeight: 700 })}>*</span> son obligatorios
+              <span mix={css({ color: colors.gold300, fontWeight: 700 })}>*</span>{' '}
+              son obligatorios
             </p>
           </div>
         </div>
@@ -356,9 +302,7 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
               <div mix={fieldGroupStyle}>
                 <label for="nombre" mix={labelStyle}>
                   Nombre completo{' '}
-                  <span mix={css({ color: colors.burgundy900 })} aria-hidden="true">
-                    *
-                  </span>
+                  <span mix={css({ color: colors.burgundy900 })} aria-hidden="true">*</span>
                 </label>
                 <input
                   id="nombre"
@@ -371,9 +315,7 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
                   mix={css(errors.nombre ? { ...inputProps, ...inputErrorProps } : inputProps)}
                 />
                 {errors.nombre && (
-                  <span id="nombre-error" role="alert" mix={errorMsgStyle}>
-                    ⚠ {errors.nombre}
-                  </span>
+                  <span id="nombre-error" role="alert" mix={errorMsgStyle}>⚠ {errors.nombre}</span>
                 )}
               </div>
 
@@ -381,9 +323,7 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
               <div mix={fieldGroupStyle}>
                 <label for="email" mix={labelStyle}>
                   Correo electrónico{' '}
-                  <span mix={css({ color: colors.burgundy900 })} aria-hidden="true">
-                    *
-                  </span>
+                  <span mix={css({ color: colors.burgundy900 })} aria-hidden="true">*</span>
                 </label>
                 <input
                   id="email"
@@ -396,9 +336,7 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
                   mix={css(errors.email ? { ...inputProps, ...inputErrorProps } : inputProps)}
                 />
                 {errors.email && (
-                  <span id="email-error" role="alert" mix={errorMsgStyle}>
-                    ⚠ {errors.email}
-                  </span>
+                  <span id="email-error" role="alert" mix={errorMsgStyle}>⚠ {errors.email}</span>
                 )}
               </div>
             </div>
@@ -413,9 +351,7 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
             >
               {/* Domicilio */}
               <div mix={fieldGroupStyle}>
-                <label for="domicilio" mix={labelStyle}>
-                  Domicilio
-                </label>
+                <label for="domicilio" mix={labelStyle}>Domicilio</label>
                 <input
                   id="domicilio"
                   name="domicilio"
@@ -429,9 +365,7 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
               <div mix={fieldGroupStyle}>
                 <label for="municipio" mix={labelStyle}>
                   Colonia / Municipio{' '}
-                  <span mix={css({ color: colors.burgundy900 })} aria-hidden="true">
-                    *
-                  </span>
+                  <span mix={css({ color: colors.burgundy900 })} aria-hidden="true">*</span>
                 </label>
                 <input
                   id="municipio"
@@ -444,18 +378,14 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
                   mix={css(errors.municipio ? { ...inputProps, ...inputErrorProps } : inputProps)}
                 />
                 {errors.municipio && (
-                  <span id="municipio-error" role="alert" mix={errorMsgStyle}>
-                    ⚠ {errors.municipio}
-                  </span>
+                  <span id="municipio-error" role="alert" mix={errorMsgStyle}>⚠ {errors.municipio}</span>
                 )}
               </div>
             </div>
 
             {/* Institución */}
             <div mix={fieldGroupStyle}>
-              <label for="institucion" mix={labelStyle}>
-                Institución u organización
-              </label>
+              <label for="institucion" mix={labelStyle}>Institución u organización</label>
               <input
                 id="institucion"
                 name="institucion"
@@ -473,9 +403,7 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
             <div mix={fieldGroupStyle}>
               <label for="observacion" mix={labelStyle}>
                 Observación o propuesta{' '}
-                <span mix={css({ color: colors.burgundy900 })} aria-hidden="true">
-                  *
-                </span>
+                <span mix={css({ color: colors.burgundy900 })} aria-hidden="true">*</span>
               </label>
               <textarea
                 id="observacion"
@@ -492,24 +420,13 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
                 )}
               />
               {errors.observacion && (
-                <span id="observacion-error" role="alert" mix={errorMsgStyle}>
-                  ⚠ {errors.observacion}
-                </span>
+                <span id="observacion-error" role="alert" mix={errorMsgStyle}>⚠ {errors.observacion}</span>
               )}
             </div>
           </fieldset>
 
           {/* ── Section 3: Archivos ── */}
-          <fieldset
-            mix={css({
-              border: 'none',
-              padding: 0,
-              margin: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-            })}
-          >
+          <fieldset mix={css({ border: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '16px' })}>
             <legend mix={legendStyle}>3. Documentos adjuntos (opcional)</legend>
 
             <div
@@ -529,28 +446,16 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
               <div
                 aria-hidden="true"
                 mix={css({
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '14px',
+                  width: '56px', height: '56px', borderRadius: '14px',
                   background: colors.burgundy50,
                   border: `1px solid ${colors.burgundy900}20`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '26px',
                 })}
               >
                 📁
               </div>
-              <p
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  color: colors.gray700,
-                  margin: 0,
-                })}
-              >
+              <p mix={css({ fontFamily: FONT_STACK, fontSize: '15px', fontWeight: 600, color: colors.gray700, margin: 0 })}>
                 Arrastra tus archivos aquí o{' '}
                 <label
                   for="archivos"
@@ -564,14 +469,7 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
                   selecciónalos
                 </label>
               </p>
-              <p
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '13px',
-                  color: colors.gray400,
-                  margin: 0,
-                })}
-              >
+              <p mix={css({ fontFamily: FONT_STACK, fontSize: '13px', color: colors.gray400, margin: 0 })}>
                 PDF, SHP, JPG, DWG · Hasta 850 MB por archivo
               </p>
               <input
@@ -612,19 +510,10 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
                     alignItems: 'center',
                   })}
                 >
-                  <span
-                    mix={css({
-                      fontFamily: FONT_STACK,
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      color: colors.burgundy900,
-                    })}
-                  >
+                  <span mix={css({ fontFamily: FONT_STACK, fontSize: '12px', fontWeight: 700, color: colors.burgundy900 })}>
                     {fmt.label}
                   </span>
-                  <span
-                    mix={css({ fontFamily: FONT_STACK, fontSize: '11px', color: colors.gray400 })}
-                  >
+                  <span mix={css({ fontFamily: FONT_STACK, fontSize: '11px', color: colors.gray400 })}>
                     {fmt.desc}
                   </span>
                 </div>
@@ -644,55 +533,27 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
               alignItems: 'flex-start',
             })}
           >
-            <span aria-hidden="true" mix={css({ fontSize: '18px', flexShrink: 0 })}>
-              ℹ️
-            </span>
-            <p
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '13px',
-                lineHeight: 1.65,
-                color: colors.gray700,
-                margin: 0,
-              })}
-            >
+            <span aria-hidden="true" mix={css({ fontSize: '18px', flexShrink: 0 })}>ℹ️</span>
+            <p mix={css({ fontFamily: FONT_STACK, fontSize: '13px', lineHeight: 1.65, color: colors.gray700, margin: 0 })}>
               La información proporcionada será tratada de conformidad con la{' '}
-              <strong>
-                Ley General de Protección de Datos Personales en Posesión de Sujetos Obligados
-              </strong>{' '}
-              y únicamente utilizada en el marco del Programa de Ordenamiento Ecológico Territorial
-              y de Desarrollo Urbano de San Pedro Tlaquepaque.
+              <strong>Ley General de Protección de Datos Personales en Posesión de Sujetos
+              Obligados</strong> y únicamente utilizada en el marco del Programa de Ordenamiento
+              Ecológico Territorial y de Desarrollo Urbano de San Pedro Tlaquepaque.
             </p>
           </div>
 
           {/* ── Consent checkbox ── */}
-          <label
-            mix={css({ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' })}
-          >
+          <label mix={css({ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' })}>
             <input
               id="consentimiento"
               name="consentimiento"
               type="checkbox"
               required
-              mix={css({
-                width: '18px',
-                height: '18px',
-                marginTop: '2px',
-                accentColor: colors.burgundy900,
-                flexShrink: 0,
-                cursor: 'pointer',
-              })}
+              mix={css({ width: '18px', height: '18px', marginTop: '2px', accentColor: colors.burgundy900, flexShrink: 0, cursor: 'pointer' })}
             />
-            <span
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '14px',
-                lineHeight: 1.6,
-                color: colors.gray700,
-              })}
-            >
-              Doy mi consentimiento para que la información proporcionada sea utilizada con fines
-              del proceso de ordenamiento territorial del Municipio de San Pedro Tlaquepaque.{' '}
+            <span mix={css({ fontFamily: FONT_STACK, fontSize: '14px', lineHeight: 1.6, color: colors.gray700 })}>
+              Doy mi consentimiento para que la información proporcionada sea utilizada con fines del proceso
+              de ordenamiento territorial del Municipio de San Pedro Tlaquepaque.{' '}
               <span mix={css({ color: '#dc2626' })}>*</span>
             </span>
           </label>
@@ -706,13 +567,7 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
             >
               Enviar participación
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M22 2L11 13M22 2L15 22l-4-9-9-4 19-7z"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
+                <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 19-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             </button>
           </div>
