@@ -1,0 +1,59 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: ordenamiento-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ordenamiento
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d ordenamiento']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Sin `ports:`: solo alcanzable desde otros contenedores de esta red.
+
+  backend:
+    build: ./backend
+    container_name: ordenamiento-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/ordenamiento
+      SESSION_SECRET: ${SESSION_SECRET:-cambia-esto-en-produccion}
+      ROOT_EMAIL: ${ROOT_EMAIL:-root@ordenamiento.gob.mx}
+      ROOT_PASSWORD: ${ROOT_PASSWORD}
+      ROOT_NAME: ${ROOT_NAME:-Administrador Root}
+      PORT: 5920
+      NODE_ENV: production
+    volumes:
+      - uploads:/app/uploads
+      # Cuentas admin extra (ej. la de Leo). Copia backend/seed-admins.example.json
+      # a backend/seed-admins.json y descomenta la línea de abajo:
+      # - ./backend/seed-admins.json:/app/seed-admins.json:ro
+    # Sin `ports:`: solo el contenedor `web` le habla, por la red interna.
+
+  web:
+    build: .
+    container_name: ordenamiento-web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      BACKEND_URL: http://backend:5920
+      PORT: 44100
+      NODE_ENV: production
+    ports:
+      # Solo accesible desde el propio servidor (127.0.0.1). El reverse proxy
+      # (nginx/apache de ac.tlaquepaque.gob.mx) es el que lo expone al público
+      # en /ordena — ver deploy/nginx-ordena.conf.
+      - '127.0.0.1:44100:44100'
+
+volumes:
+  pgdata:
+  uploads:

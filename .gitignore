@@ -6,3 +6,8 @@ tmp/
 .worktrees/
 swarmforge/
 .ai-practice/
+
+# Variables de entorno (secretos) - nunca commiteadas
+.env
+.env.*
+!.env.example

@@ -1,5 +1,9 @@
 # Ordenamiento Backend
 
+> Para levantar el stack completo (web + backend + BD) en un solo
+> `docker compose up`, usa el `docker-compose.yml` de la raíz del repo, no
+> este. El de aquí sirve para desarrollar/probar solo el backend.
+
 API de participaciones de ordenamiento ecológico. **Relacional** (usuarios,
 participaciones, estados) + **vectorial** (contenido de PDFs y campos de
 formularios) sobre **Postgres + pgvector**, con la "fórmula única" **TF-IDF**
