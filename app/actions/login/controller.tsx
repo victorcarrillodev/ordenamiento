@@ -12,8 +12,8 @@ import * as f from 'remix/data-schema/form-data'
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { loginBackend } from '../../backend.ts'
-import { routes } from '../../routes.ts'
+import { BACKEND_URL, loginBackend } from '../../backend.ts'
+import { adminRoutes, routes } from '../../routes.ts'
 import { LoginPage } from './page.tsx'
 import type { LoginErrors } from '../../ui/login/types.ts'
 
@@ -29,7 +29,43 @@ export default createController(routes.login, {
     },
 
     async action(context) {
+      // Añadir nombre al manejo de registro admin + campos
       const formData = await context.request.formData()
+      const intent = String(formData.get('intent') ?? 'login')
+
+      // ── Registro de nuevo administrador (por si se olvida la cuenta) ──
+      if (intent === 'registro') {
+        const name = String(formData.get('name') ?? '').trim()
+        const email = String(formData.get('email') ?? '').trim()
+        const password = String(formData.get('password') ?? '')
+
+        if (!name || !email || password.length < 8) {
+          return context.render(
+            <LoginPage errors={{ name: 'Completa nombre, correo y contraseña (mín. 8)' }} />,
+            { status: 422 },
+          )
+        }
+
+        const regResponse = await fetch(`${BACKEND_URL}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email, name, password, role: 'user' }),
+        })
+
+        if (!regResponse.ok) {
+          const data = (await regResponse.json().catch(() => ({}))) as { error?: string }
+          return context.render(
+            <LoginPage errors={{ email: data.error ?? 'No se pudo crear la cuenta' }} />,
+            { status: regResponse.status },
+          )
+        }
+
+        const token = regResponse.headers.get('set-cookie')
+        // Usuario creado: entra como ciudadano a "haz tu participación"
+        return redirect(routes.participation.index.href() + '?success=1', {
+          headers: token ? { 'set-cookie': token } : undefined,
+        })
+      }
 
       const parsed = s.parseSafe(loginSchema, formData, {
         errorMap(ctx) {
@@ -67,8 +103,9 @@ export default createController(routes.login, {
         )
       }
 
-      // El usuario entra a "haz tu participación"
-      return redirect(routes.participation.index.href(), {
+      // Redirigir por rol: admin → dashboard, ciudadano → participación
+      const dest = result.user?.role === 'admin' ? adminRoutes.index.href() : routes.participation.index.href()
+      return redirect(dest, {
         headers: result.setCookie ? { 'set-cookie': result.setCookie } : undefined,
       })
     },

@@ -29,7 +29,7 @@ export function Document(handle: Handle<DocumentProps>) {
           <meta charSet="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <meta name="description" content={description} />
-          <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+          <link rel="icon" type="image/png" href="/consultapublica.png" />
           {/* Montserrat – primary institutional typeface */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -37,6 +37,7 @@ export function Document(handle: Handle<DocumentProps>) {
             rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap"
           />
+          <script src="https://code.iconify.design/3/3.1.1/iconify-icon.min.js"></script>
           <title>{title}</title>
           {head}
           {entryPreloads.map((href) => (

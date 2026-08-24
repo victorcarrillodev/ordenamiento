@@ -18,6 +18,9 @@ export interface ParticipationInput {
   longitud?: string
   observacion?: string
   estado?: Estado
+  fuente?: string
+  genero?: string
+  tematica?: string
   creadoPor?: number
 }
 
@@ -33,7 +36,8 @@ export async function createParticipation(
   const rows = await sql<{ id: number }[]>`--sql
     INSERT INTO participations (
       folio, origen, nombre, correo, calle, numero, colonia, municipio,
-      institucion, ocupacion, latitud, longitud, observacion, estado, creado_por
+      institucion, ocupacion, latitud, longitud, observacion, estado,
+      fuente, genero, tematica, creado_por
     )
     VALUES (
       ${folio},
@@ -50,6 +54,9 @@ export async function createParticipation(
       ${input.longitud ?? ''},
       ${input.observacion ?? ''},
       ${input.estado ?? 'En proceso'},
+      ${input.fuente ?? ''},
+      ${input.genero ?? ''},
+      ${input.tematica ?? ''},
       ${input.creadoPor ?? null}
     )
     RETURNING id
@@ -110,9 +117,22 @@ export async function listParticipations(filters: ListFilters): Promise<ListResu
     `SELECT
         p.id, p.folio, p.origen, p.nombre, p.correo, p.calle, p.numero,
         p.colonia, p.municipio, p.institucion, p.ocupacion, p.latitud, p.longitud,
-        p.observacion, p.estado, p.created_at AS fecha
+        p.observacion, p.estado, p.created_at AS fecha,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', a.id,
+              'nombre_original', a.nombre_original,
+              'mime', a.mime,
+              'size', a.size
+            )
+          ) FILTER (WHERE a.id IS NOT NULL),
+          '[]'::json
+        ) AS adjuntos
       FROM participations p
+      LEFT JOIN attachments a ON a.participation_id = p.id
       ${whereSql}
+      GROUP BY p.id
       ORDER BY p.created_at DESC
       ${limitSql}`,
     limitParams,

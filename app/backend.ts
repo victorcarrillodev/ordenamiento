@@ -40,3 +40,32 @@ export async function loginBackend(email: string, password: string): Promise<Log
     setCookie: response.headers.get('set-cookie') ?? undefined,
   }
 }
+
+export interface AdminUser {
+  id: number
+  name: string
+  role: string
+}
+
+/**
+ * Fetch al backend reenviando la cookie de sesión del navegador.
+ */
+export async function backendFetch(
+  request: Request,
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
+  const headers = new Headers(init?.headers)
+  const cookie = request.headers.get('cookie')
+  if (cookie) headers.set('cookie', cookie)
+  return fetch(`${BACKEND_URL}${path}`, { ...init, headers })
+}
+
+/**
+ * Usuario autenticado según el backend (o null si no hay sesión válida).
+ */
+export async function backendUser(request: Request): Promise<AdminUser | null> {
+  const response = await backendFetch(request, '/api/auth/me')
+  const data = (await response.json().catch(() => ({}))) as { user?: AdminUser | null }
+  return data.user ?? null
+}

@@ -8,6 +8,7 @@ import { Document } from '../document.tsx'
 import { LoginFooter } from '../../ui/login/login-footer.tsx'
 import { LoginForm } from '../../ui/login/login-form.tsx'
 import { LoginHeader } from '../../ui/login/login-header.tsx'
+import { TextField } from '../../ui/login/text-field.tsx'
 import type { LoginErrors } from '../../ui/login/types.ts'
 
 export interface LoginPageProps {
@@ -35,6 +36,44 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
               />
               <div class="login__body">
                 <LoginForm errors={errors} />
+              </div>
+              <div class="login__admin">
+                <details class="login__admin-details">
+                  <summary>¿Necesitas crear un administrador?</summary>
+                  <form class="login__form login__register" method="POST" action="/login" noValidate>
+                    <input type="hidden" name="intent" value="registro" />
+                    <TextField
+                      id="name"
+                      name="name"
+                      label="Nombre completo"
+                      type="text"
+                      placeholder="Admin"
+                      autoComplete="name"
+                      error={errors.name}
+                    />
+                    <TextField
+                      id="email-reg"
+                      name="email"
+                      label="Correo electrónico"
+                      type="email"
+                      placeholder="admin@ejemplo.com"
+                      autoComplete="email"
+                      error={errors.email}
+                    />
+                    <TextField
+                      id="password-reg"
+                      name="password"
+                      label="Contraseña (mín. 8)"
+                      type="password"
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      error={errors.password}
+                    />
+                    <button class="login__submit login__submit--accent" type="submit">
+                      Registrar administrador
+                    </button>
+                  </form>
+                </details>
               </div>
               <LoginFooter
                 links={[

@@ -7,7 +7,7 @@ export interface TextFieldProps {
   id: string
   name: string
   label: string
-  type: 'email' | 'password'
+  type: 'email' | 'password' | 'text'
   placeholder: string
   autoComplete?: string
   error?: string
@@ -45,7 +45,7 @@ export function LockIcon() {
 export function TextField(handle: Handle<TextFieldProps>) {
   return () => {
     const { id, name, label, type, placeholder, autoComplete, error, labelAside } = handle.props
-    const icon = type === 'email' ? <MailIcon /> : <LockIcon />
+    const icon = type === 'email' ? <MailIcon /> : type === 'password' ? <LockIcon /> : null
 
     const input = (() => {
       const props = {
@@ -58,6 +58,7 @@ export function TextField(handle: Handle<TextFieldProps>) {
         'aria-describedby': error ? `${id}-error` : undefined,
         required: true,
       }
+      if (type === 'text') return <input type="text" {...props} />
       return type === 'email' ? (
         <input type="email" {...props} />
       ) : (

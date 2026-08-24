@@ -1,5 +1,5 @@
 import { mkdir, writeFile, readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { join, isAbsolute } from 'node:path'
 
 import {
   clearSessionCookie,
@@ -11,6 +11,8 @@ import {
   verifySessionToken,
   type SessionUser,
 } from './auth/auth.ts'
+import { seedRootAdmin } from './seed.ts'
+import { seedDemoData } from './seed-demo.ts'
 import { migrate } from './db/migrate.ts'
 import { ingestParticipation } from './services/ingest.ts'
 import { nextFolio } from './services/folio.ts'
@@ -24,6 +26,16 @@ import {
   type Origen,
 } from './services/participations.ts'
 import { searchParticipations } from './services/search.ts'
+import {
+  ingestSkillKnowledge,
+  searchSkillKnowledge,
+} from './services/skill-knowledge.ts'
+import { createReunion, deleteReunion, listReuniones } from './services/reuniones.ts'
+import { listAvisos, createAviso, deleteAviso } from './services/avisos.ts'
+import { listPoel, createPoelSesion, deletePoelSesion } from './services/poel.ts'
+import { exportTableToXlsx, isExportable } from './services/export.ts'
+import { participationDocx } from './services/word.ts'
+import { enviarParticipacion, mailConfigurado } from './services/mail.ts'
 import { sql } from './db/pool.ts'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
@@ -308,13 +320,69 @@ export async function handleRequest(request: Request): Promise<Response> {
       WHERE id = ${Number(attachMatch.aid)} AND participation_id = ${Number(attachMatch.id)}
     `
     if (rows.length === 0) return json({ error: 'Archivo no encontrado' }, 404)
-    const file = await readFile(rows[0].ruta_local)
+    // Resuelve rutas relativas contra UPLOAD_DIR (datos viejos la guardaron relativa)
+    const ruta = isAbsolute(rows[0].ruta_local)
+      ? rows[0].ruta_local
+      : join(UPLOAD_DIR, rows[0].ruta_local)
+    let file: Buffer
+    try {
+      file = await readFile(ruta)
+    } catch (err) {
+      return json({ error: 'Archivo en disco no disponible' }, 404)
+    }
+    const isDownload = url.searchParams.get('download') === '1'
     return new Response(new Uint8Array(file), {
       headers: {
         'content-type': rows[0].mime,
-        'content-disposition': `inline; filename="${rows[0].nombre_original}"`,
+        'content-disposition': `${isDownload ? 'attachment' : 'inline'}; filename="${rows[0].nombre_original}"`,
       },
     })
+  }
+
+  // Descargar Word (.docx) con los datos — autenticado
+  const wordMatch = method === 'GET' ? matchPath(pathname, '/api/participations/:id/word') : null
+  if (wordMatch) {
+    const authError = requireAuth()
+    if (authError) return authError
+    const rows = await sql<Array<{
+      id: number; folio: string; origen: string; nombre: string; correo: string
+      calle: string; numero: string; colonia: string; municipio: string
+      institucion: string; ocupacion: string; latitud: string; longitud: string
+      observacion: string; estado: string; fuente: string; genero: string
+      tematica: string; created_at: Date
+    }>>`
+      SELECT id, folio, origen, nombre, correo, calle, numero, colonia, municipio,
+             institucion, ocupacion, latitud, longitud, observacion, estado,
+             fuente, genero, tematica, created_at
+      FROM participations WHERE id = ${Number(wordMatch.id)}
+    `
+    if (rows.length === 0) return json({ error: 'No encontrado' }, 404)
+    const buffer = await participationDocx(rows[0])
+    return new Response(new Uint8Array(buffer), {
+      headers: {
+        'content-type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'content-disposition': `attachment; filename="participacion-${rows[0].folio}.docx"`,
+      },
+    })
+  }
+
+  // Enviar participación por correo — autenticado
+  if (method === 'POST' && pathname === '/api/participations/enviar') {
+    const authError = requireAuth()
+    if (authError) return authError
+    const body = (await request.json()) as { id?: number; para?: string }
+    if (!body.id || !body.para) return json({ error: 'Faltan datos: id, para' }, 400)
+    if (!mailConfigurado()) {
+      return json({ error: 'Correo no configurado: define SMTP_HOST, SMTP_USER y SMTP_PASS' }, 503)
+    }
+    try {
+      const r = await enviarParticipacion(Number(body.id), body.para)
+      return json({ ok: true, ...r })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg === 'NO_ENCONTRADA') return json({ error: 'Participación no encontrada' }, 404)
+      return json({ error: `No se pudo enviar: ${msg}` }, 502)
+    }
   }
 
   // Búsqueda híbrida
@@ -330,10 +398,223 @@ export async function handleRequest(request: Request): Promise<Response> {
     return json({ query: q, results })
   }
 
+  // Ingesta de conocimiento (RAG skill_knowledge) — solo admin
+  if (method === 'POST' && pathname === '/api/knowledge') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const body = (await request.json()) as { title?: string; kind?: string; content?: string }
+    if (!body.title || !body.content) {
+      return json({ error: 'Faltan datos: title, content' }, 400)
+    }
+    const chunks = await ingestSkillKnowledge(body.title, body.kind ?? 'general', body.content)
+    return json({ ok: true, chunks }, 201)
+  }
+
+  // Búsqueda semántica de conocimiento — autenticado
+  if (method === 'GET' && pathname === '/api/knowledge/search') {
+    const authError = requireAuth()
+    if (authError) return authError
+    const q = url.searchParams.get('q') ?? ''
+    if (!q) return json({ error: 'Faltan datos: q' }, 400)
+    const results = await searchSkillKnowledge(q, {
+      kind: url.searchParams.get('kind') ?? undefined,
+      limit: safePositiveInt(url.searchParams.get('limit'), 10),
+    })
+    return json({ query: q, results })
+  }
+
+  // ── Reuniones (bitácora) ─────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/reuniones') {
+    const authError = requireAuth()
+    if (authError) return authError
+    return json({ reuniones: await listReuniones() })
+  }
+
+  if (method === 'POST' && pathname === '/api/reuniones') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const body = (await request.json()) as {
+      titulo?: string
+      fecha?: string
+      horaInicio?: string
+      horaFin?: string
+    }
+    if (!body.titulo || !body.fecha) return json({ error: 'Faltan datos: titulo, fecha' }, 400)
+    const reunion = await createReunion({
+      titulo: body.titulo,
+      fecha: body.fecha,
+      horaInicio: body.horaInicio,
+      horaFin: body.horaFin,
+      creadoPor: user?.id,
+    })
+    return json({ ok: true, reunion }, 201)
+  }
+
+  const reunionDeleteMatch =
+    method === 'DELETE' ? matchPath(pathname, '/api/reuniones/:id') : null
+  if (reunionDeleteMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    if (!(await deleteReunion(Number(reunionDeleteMatch.id)))) {
+      return json({ error: 'No encontrado' }, 404)
+    }
+    return json({ ok: true })
+  }
+
+  // ── Exportación a Excel (.xlsx) — solo admin ────────────────────────
+  const exportMatch = method === 'GET' ? matchPath(pathname, '/api/export/:tabla') : null
+  if (exportMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const tabla = exportMatch.tabla.replace(/\.xlsx$/i, '')
+    if (!isExportable(tabla)) return json({ error: 'Tabla no exportable' }, 400)
+    const buffer = await exportTableToXlsx(tabla)
+    return new Response(new Uint8Array(buffer), {
+      headers: {
+        'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'content-disposition': `attachment; filename="${tabla}.xlsx"`,
+      },
+    })
+  }
+
+  // ── Usuarios (solo root/admin) ────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/users') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const users = await sql<Array<{ id: number; email: string; name: string; role: string; created_at: string }>>`
+      SELECT id, email, name, role, created_at::text AS created_at FROM users ORDER BY id
+    `
+    return json({ users })
+  }
+
+  if (method === 'POST' && pathname === '/api/users') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const body = (await request.json()) as { email?: string; name?: string; password?: string; role?: 'admin' | 'user' }
+    if (!body.email || !body.name || !body.password) {
+      return json({ error: 'Faltan datos: email, name, password' }, 400)
+    }
+    try {
+      const { id } = await registerUser({
+        email: body.email,
+        name: body.name,
+        password: body.password,
+        role: body.role ?? 'user',
+      })
+      return json({ ok: true, id }, 201)
+    } catch (err) {
+      if (err instanceof Error && err.message === 'EMAIL_TAKEN') {
+        return json({ error: 'El correo ya está registrado' }, 409)
+      }
+      throw err
+    }
+  }
+
+  // ── Stats para el dashboard — autenticado ───────────────────────────
+  if (method === 'GET' && pathname === '/api/stats') {
+    const authError = requireAuth()
+    if (authError) return authError
+    const [users, digital, fisica, estados, fuente, genero, tematica] = await Promise.all([
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM users`,
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM participations WHERE origen = 'digital'`,
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM participations WHERE origen = 'fisica'`,
+      sql<{ estado: string; n: string }[]>`
+        SELECT estado, count(*)::text AS n FROM participations GROUP BY estado
+      `,
+      sql<{ k: string; n: string }[]>`
+        SELECT fuente AS k, count(*)::text AS n FROM participations GROUP BY fuente ORDER BY count(*) DESC
+      `,
+      sql<{ k: string; n: string }[]>`
+        SELECT genero AS k, count(*)::text AS n FROM participations GROUP BY genero ORDER BY count(*) DESC
+      `,
+      sql<{ k: string; n: string }[]>`
+        SELECT tematica AS k, count(*)::text AS n FROM participations GROUP BY tematica ORDER BY count(*) DESC
+      `,
+    ])
+    const tu: Array<[string, number]> = fuente
+      .filter((r) => r.k)
+      .map((r) => [r.k, Number(r.n)])
+    const tg: Array<[string, number]> = genero
+      .filter((r) => r.k)
+      .map((r) => [r.k, Number(r.n)])
+    const tt: Array<[string, number]> = tematica
+      .filter((r) => r.k)
+      .map((r) => [r.k, Number(r.n)])
+    return json({
+      usuarios: Number(users[0].n),
+      digitales: Number(digital[0].n),
+      fisicas: Number(fisica[0].n),
+      resultado: estados.map((r) => ({ estado: r.estado, total: Number(r.n) })),
+      fuente: tu,
+      genero: tg,
+      tematica: tt,
+    })
+  }
+
+  // ── Avisos (solo admin) ─────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/avisos') {
+    const authError = requireAuth()
+    if (authError) return authError
+    return json({ avisos: await listAvisos() })
+  }
+
+  if (method === 'POST' && pathname === '/api/avisos') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const body = (await request.json()) as { titulo?: string; descripcion?: string }
+    if (!body.titulo) return json({ error: 'Falta titulo' }, 400)
+    const aviso = await createAviso({ titulo: body.titulo, descripcion: body.descripcion, creadoPor: user?.id })
+    return json({ ok: true, aviso }, 201)
+  }
+
+  const avisoDeleteMatch = method === 'DELETE' ? matchPath(pathname, '/api/avisos/:id') : null
+  if (avisoDeleteMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    if (!(await deleteAviso(Number(avisoDeleteMatch.id)))) return json({ error: 'No encontrado' }, 404)
+    return json({ ok: true })
+  }
+
+  // ── Sesiones POEL (solo admin) ─────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/poel') {
+    const authError = requireAuth()
+    if (authError) return authError
+    return json({ sesiones: await listPoel() })
+  }
+
+  if (method === 'POST' && pathname === '/api/poel') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const body = (await request.json()) as {
+      categoria?: string; orden?: number; titulo?: string
+      descripcion?: string; fecha?: string; ubicacion?: string
+    }
+    if (!body.titulo) return json({ error: 'Falta titulo' }, 400)
+    const sesion = await createPoelSesion({
+      categoria: body.categoria ?? '',
+      orden: body.orden ?? 0,
+      titulo: body.titulo,
+      descripcion: body.descripcion,
+      fecha: body.fecha || null,
+      ubicacion: body.ubicacion ?? '',
+    })
+    return json({ ok: true, sesion }, 201)
+  }
+
+  const poelDeleteMatch = method === 'DELETE' ? matchPath(pathname, '/api/poel/:id') : null
+  if (poelDeleteMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    if (!(await deletePoelSesion(Number(poelDeleteMatch.id)))) return json({ error: 'No encontrado' }, 404)
+    return json({ ok: true })
+  }
+
   return json({ error: 'No encontrado' }, 404)
 }
 
 export async function init(): Promise<void> {
   await migrate()
+  await seedRootAdmin()
+  await seedDemoData()
   console.log('[server] listo para recibir requests')
 }

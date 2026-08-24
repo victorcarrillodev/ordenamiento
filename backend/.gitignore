@@ -4,3 +4,8 @@ data/
 .env
 *.log
 test-*.pdf
+
+# Variables de entorno (secretos) - nunca commiteadas
+.env
+.env.*
+!.env.docker.example
