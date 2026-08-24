@@ -6,6 +6,7 @@
  */
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
+import { routes } from '../../routes.ts'
 import {NavBar} from "../../components/NavBar.tsx"
 
 import {
@@ -117,7 +118,7 @@ export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
           >
             <div mix={css({ ...sectionContainerProps, display: 'flex', flexDirection: 'column', gap: '16px' })}>
               <a
-                href="/"
+                href={routes.home.href()}
                 mix={css({
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -213,7 +214,7 @@ function SuccessMessage() {
         en el contexto del Programa de Ordenamiento Territorial. Gracias por contribuir al
         futuro de San Pedro Tlaquepaque.
       </p>
-      <a href="/" mix={css({ ...btnPrimaryProps, marginTop: '8px' })}>
+      <a href={routes.home.href()} mix={css({ ...btnPrimaryProps, marginTop: '8px' })}>
         Volver al portal
       </a>
     </div>
@@ -275,7 +276,7 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
         <form
           id="participation-form"
           method="POST"
-          action="/participation"
+          action={routes.participation.action.href()}
           encType="multipart/form-data"
           mix={css({
             padding: '40px',

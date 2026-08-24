@@ -1,4 +1,4 @@
-FROM oven/bun:1.3-base AS base
+FROM oven/bun:1-slim AS base
 WORKDIR /app
 
 # Copiar manifiesto de dependencias

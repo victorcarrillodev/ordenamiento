@@ -1,5 +1,6 @@
 import type { Handle } from 'remix/ui'
 
+import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 
 export interface PoelPageProps {
@@ -25,7 +26,7 @@ export function PoelPage(handle: Handle<PoelPageProps>) {
       <AdminLayout user={user} active="poel" title="Gestión de sesiones POEL">
         <h1 class="page-title">Gestión de sesiones POEL</h1>
         <p class="breadcrumb">
-          <a href="/admin">Vista general</a> / Sesiones POEL
+          <a href={adminRoutes.index.href()}>Vista general</a> / Sesiones POEL
         </p>
 
         {error ? <p class="form-error">{error}</p> : null}

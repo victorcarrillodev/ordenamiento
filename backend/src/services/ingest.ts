@@ -17,40 +17,48 @@ export interface IngestAttachmentPayload {
 
 /**
  * Vectoriza el contenido de una participación:
- *  - El texto de sus adjuntos (PDF/escaneo).
+ *  - El texto de sus adjuntos PDF (si el archivo es PDF con capa de texto).
  *  - Sus campos de formulario (observación, nombre, colonia, institución...).
- * Cada sección se convierte en chunks poblados de embedding TF-IDF 512D.
+ * Acepta cualquier tipo de archivo; solo intenta parsear texto en PDFs.
+ * Cada sección se convierte en chunks con embedding TF-IDF 512D.
  */
 export async function ingestParticipation(
   participationId: number,
   fields: Record<string, string>,
-  pdfBuffer?: Buffer,
-  pdfMeta?: IngestAttachmentPayload,
+  fileBuffer?: Buffer,
+  fileMeta?: IngestAttachmentPayload,
 ): Promise<IngestResult> {
   let chunks = 0
   let needsOcr = false
 
-  // 1) Adjunto: guardar archivo + vectorizar su contenido
-  if (pdfBuffer && pdfMeta) {
+  // 1) Adjunto: guardar registro + vectorizar si es PDF
+  if (fileBuffer && fileMeta) {
     await sql`--sql
       INSERT INTO attachments (participation_id, nombre_original, mime, size, ruta_local)
       VALUES (
         ${participationId},
-        ${pdfMeta.nombreOriginal},
-        ${pdfMeta.mime},
-        ${pdfBuffer.length},
-        ${pdfMeta.rutaLocal}
+        ${fileMeta.nombreOriginal},
+        ${fileMeta.mime},
+        ${fileBuffer.length},
+        ${fileMeta.rutaLocal}
       )
     `
 
+    // Solo extraer texto si el adjunto es PDF (no intentar parsear DWG, JPG, etc.)
+    const isPdf =
+      fileMeta.mime === 'application/pdf' ||
+      fileMeta.nombreOriginal.toLowerCase().endsWith('.pdf')
+
     let text = ''
-    try {
-      text = await extractPdfText(pdfBuffer)
-    } catch (err) {
-      if (err instanceof TextLayerMissingError) {
-        needsOcr = true
-      } else {
-        throw err
+    if (isPdf) {
+      try {
+        text = await extractPdfText(fileBuffer)
+      } catch (err) {
+        if (err instanceof TextLayerMissingError) {
+          needsOcr = true
+        } else {
+          throw err
+        }
       }
     }
 

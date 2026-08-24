@@ -1,5 +1,6 @@
 import type { Handle } from 'remix/ui'
 
+import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 
 export interface NuevaPageProps {
@@ -38,7 +39,7 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
       <AdminLayout user={user} active="participaciones" title="Nueva participación física">
         <h1 class="page-title">Ingresa aquí tu participación</h1>
         <p class="breadcrumb">
-          <a href="/admin/participaciones?origen=fisica">Volver a participaciones físicas</a> / Formulario de participación
+          <a href={`${adminRoutes.participaciones.href()}?origen=fisica`}>Volver a participaciones físicas</a> / Formulario de participación
         </p>
 
         {error ? <p class="form-error">{error}</p> : null}
@@ -123,7 +124,7 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
           <p class="form-hint">Los campos marcados con (*) son obligatorios</p>
 
           <div class="btn-row-admin">
-            <a class="btn btn--ghost" href="/admin/participaciones?origen=fisica">Cancelar</a>
+            <a class="btn btn--ghost" href={`${adminRoutes.participaciones.href()}?origen=fisica`}>Cancelar</a>
             <button type="submit" class="btn btn--dark">Registrar participación</button>
           </div>
         </form>

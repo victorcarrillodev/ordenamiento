@@ -1,5 +1,6 @@
 import type { Handle } from 'remix/ui'
 
+import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 
 export interface ReunionesPageProps {
@@ -8,8 +9,9 @@ export interface ReunionesPageProps {
     id: number
     titulo: string
     fecha: string
-    hora_inicio: string
-    hora_fin: string
+    hora_inicio: string | null
+    hora_fin: string | null
+    created_at: string
   }>
   error?: string
   ok?: string
@@ -29,7 +31,7 @@ export function ReunionesPage(handle: Handle<ReunionesPageProps>) {
       <AdminLayout user={user} active="reuniones" title="Gestión de Reuniones">
         <h1 class="page-title">Gestión de Reuniones</h1>
         <p class="breadcrumb">
-          <a href="/admin">Vista general</a> / Gestión de reuniones
+          <a href={adminRoutes.index.href()}>Vista general</a> / Gestión de reuniones
         </p>
 
         {error ? <p class="form-error">{error}</p> : null}
@@ -63,7 +65,7 @@ export function ReunionesPage(handle: Handle<ReunionesPageProps>) {
         <div class="panel">
           <div class="panel__head">
             <h2 class="panel__title" style="margin: 0;">Reuniones registradas</h2>
-            <a class="btn btn--excel" href="/admin/exportar?tabla=reuniones">
+            <a class="btn btn--excel" href={`${adminRoutes.exportar.href()}?tabla=reuniones`}>
               ⬇ Exportar a Excel
             </a>
           </div>

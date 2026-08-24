@@ -22,8 +22,33 @@ declare module 'remix/router' {
   }
 }
 
+const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
+const publicStatic = staticFiles('./public', { index: false })
+
+function staticWithPrefix() {
+  return async (context: any, next: () => Promise<Response>) => {
+    const url = new URL(context.request.url)
+    if (url.pathname === '/' || url.pathname === '') {
+      return Response.redirect(new URL(basePath ? `${basePath}/` : '/', context.request.url), 302)
+    }
+    if (basePath && url.pathname.startsWith(basePath + '/')) {
+      const strippedUrl = new URL(context.request.url)
+      strippedUrl.pathname = url.pathname.slice(basePath.length) || '/'
+      const res = await publicStatic(
+        { ...context, request: new Request(strippedUrl, context.request), url: strippedUrl },
+        async () => null as any,
+      )
+      if (res) return res
+    } else {
+      const res = await publicStatic(context, async () => null as any)
+      if (res) return res
+    }
+    return next()
+  }
+}
+
 export const router = createRouter<AppContext>({
-  middleware: [staticFiles('./public', { index: false }), render()],
+  middleware: [staticWithPrefix(), render()],
 })
 
 router.map(routes, controller)

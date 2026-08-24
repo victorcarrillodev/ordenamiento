@@ -1,31 +1,63 @@
 /**
- * TF-IDF puro (matemática, sin IA)
+ * TF-IDF mejorado (matemática, sin IA)
  *
  * Genera vectores de N dimensiones con normalización L2. Cada dimensión
  * corresponde a un "término" del vocabulario. Es la "fórmula única" interna:
  *
- *   texto → limpiar → tokenizar → pesos TF-IDF → vector L2 (512D)
+ *   texto → limpiar → tokenizar → stopwords → pesos TF-IDF/BM25 → vector L2 (512D)
  *
- * Usa un tablero hash de tamaño fijo (feature space). La colisión suma pesos
- * en la misma coordenada; la similitud coseno se conserva en ese espacio.
+ * Mejoras v2:
+ *  - Lista exhaustiva de stopwords en español (artículos, preposiciones, conjunciones,
+ *    pronombres, verbos auxiliares comunes) para mejorar la señal/ruido.
+ *  - Suavizado BM25-like: TF saturada en k1=1.2 en lugar de log puro.
+ *  - IDF batch: getIdfMap hace UNA sola query para todos los términos (no N+1).
+ *  - Normalización L2 preservada para que producto punto = similitud coseno.
  *
  * Separación pura/IO: aquí solo viven funciones SIN efectos (matemática).
- * El conteo de documentos por término (docsWithTerm) vive en services/.
+ * El conteo de documentos por término (docsWithTerm) vive en services/knowledge.ts.
  */
 
 export const DIMENSIONS = 512
 
+// ── Stopwords en español ────────────────────────────────────────────────────
+// Palabras de alta frecuencia que no aportan valor semántico al vector.
+const STOPWORDS = new Set([
+  // artículos
+  'el','la','los','las','un','una','unos','unas','lo',
+  // preposiciones
+  'a','ante','bajo','con','contra','de','desde','durante','en','entre',
+  'hacia','hasta','mediante','para','por','segun','sin','sobre','tras',
+  // conjunciones
+  'y','e','ni','o','u','pero','sino','aunque','porque','pues','que',
+  'si','como','cuando','donde','mientras','ya','tambien','ademas',
+  // pronombres
+  'yo','tu','el','ella','nosotros','vosotros','ellos','ellas',
+  'me','te','se','nos','os','le','les','mi','mis','su','sus',
+  'este','esta','estos','estas','ese','esa','esos','esas',
+  'aquel','aquella','aquellos','aquellas',
+  // verbos auxiliares / cópula comunes
+  'es','son','era','eran','fue','fueron','ser','estar','tener',
+  'ha','han','hay','haber','puede','pueden','debe','deben',
+  // adverbios frecuentes
+  'no','si','muy','mas','menos','bien','mal','solo','aqui','ahi',
+  'alla','antes','despues','siempre','nunca','todo','todos','toda',
+  'todas','otro','otra','otros','otras',
+  // palabras muy cortas que pasan el filtro de longitud >2
+  'del','las','los','por','que','con','una','sus','los',
+])
+
 /**
- * Tokeniza un texto: minúsculas, quita acentos y signos, separa palabras.
+ * Tokeniza un texto: minúsculas, quita acentos y signos, separa palabras,
+ * filtra stopwords y tokens muy cortos/largos.
  */
 export function tokenize(text: string): string[] {
   return text
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // quita acentos
+    .replace(/[\u0300-\u036f]/g, '')  // quita acentos
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
-    .filter((t) => t.length > 2)
+    .filter((t) => t.length > 2 && t.length < 40 && !STOPWORDS.has(t))
 }
 
 /**
@@ -40,62 +72,67 @@ function hashTerm(term: string): number {
   return (h >>> 0) % DIMENSIONS
 }
 
+// Parámetros BM25-like
+const K1 = 1.2   // saturación de TF: limita el peso de términos muy repetidos
+const B  = 0.75  // no se usa (requiere longitud media del corpus), simplificado
+
 /**
- * Frecuencia de término con normalización logarítmica:
- * una palabra repetida 10 veces no pesa 10x.
+ * TF saturada estilo BM25: (k1+1)*freq / (k1 + freq)
+ * Evita que un término repetido 100 veces pese 100x más que uno que aparece una vez.
  */
 export function tf(frequency: number): number {
-  return 1 + Math.log(frequency);
+  return ((K1 + 1) * frequency) / (K1 + frequency)
 }
 
 /**
- * Frecuencia inversa de documento suavizada:
- * los términos raros y relevantes pesan más que los comunes.
- * El `+1` es el piso neutro: nunca pesa 0 ni negativo.
+ * IDF suavizado (Robertson & Sparck Jones):
+ *   ln((N - df + 0.5) / (df + 0.5)) + 1
+ * Siempre ≥ 1 para df > 0.
  */
 export function idf(totalDocs: number, docsWithTerm: number): number {
-  return Math.log(totalDocs / (1 + docsWithTerm)) + 1;
+  const df = Math.min(docsWithTerm, totalDocs)  // df nunca puede superar N
+  return Math.log((totalDocs - df + 0.5) / (df + 0.5) + 1) + 1
 }
 
 /**
- * TF-IDF: el producto que da a cada término su peso final.
+ * TF-IDF combinado.
  */
 export function tfidf(
   frequency: number,
   totalDocs: number,
   docsWithTerm: number,
 ): number {
-  return tf(frequency) * idf(totalDocs, docsWithTerm);
+  return tf(frequency) * idf(totalDocs, docsWithTerm)
 }
 
 /**
  * Vector TF-IDF de un texto (sin pesos de corpus externos).
  */
 export function featurize(text: string): Float32Array {
-  return featurizeWeighted(text);
+  return featurizeWeighted(text)
 }
 
 /**
- * Vector TF-IDF ponderado: aplica log-tf y, si hay mapa IDF,
+ * Vector TF-IDF ponderado: aplica TF saturada (BM25-like) y, si hay mapa IDF,
  * escala cada término antes de normalizar L2.
  */
 export function featurizeWeighted(
   text: string,
   idfWeights?: Record<string, number>,
 ): Float32Array {
-  const counts = new Map<string, number>();
+  const counts = new Map<string, number>()
   for (const term of tokenize(text)) {
-    counts.set(term, (counts.get(term) ?? 0) + 1);
+    counts.set(term, (counts.get(term) ?? 0) + 1)
   }
 
-  const vec = new Float32Array(DIMENSIONS);
+  const vec = new Float32Array(DIMENSIONS)
   for (const [term, freq] of counts) {
-    const tfw = 1 + Math.log(freq);
-    const idfw = idfWeights?.[term] ?? 1;
-    vec[hashTerm(term)] += tfw * idfw;
+    const tfw = tf(freq)
+    const idfw = idfWeights?.[term] ?? 1
+    vec[hashTerm(term)] += tfw * idfw
   }
 
-  return l2Normalize(vec);
+  return l2Normalize(vec)
 }
 
 /**

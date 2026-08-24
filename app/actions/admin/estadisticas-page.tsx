@@ -1,5 +1,6 @@
 import type { Handle } from 'remix/ui'
 
+import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 
 export interface EstadisticasPageProps {
@@ -105,7 +106,7 @@ export function EstadisticasPage(handle: Handle<EstadisticasPageProps>) {
       <AdminLayout user={user} active="estadisticas" title={titulo}>
         <h1 class="page-title">{titulo}</h1>
         <p class="breadcrumb">
-          <a href="/admin">Vista general</a> / {titulo}
+          <a href={adminRoutes.index.href()}>Vista general</a> / {titulo}
         </p>
 
         <div class="charts-row">

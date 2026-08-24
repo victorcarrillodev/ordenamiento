@@ -1,5 +1,6 @@
 import type { Handle } from 'remix/ui'
 
+import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 
 interface Adjunto {
@@ -53,13 +54,13 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
       <AdminLayout user={user} active="participaciones" title={titulo}>
         <h1 class="page-title">{titulo}</h1>
         <p class="breadcrumb">
-          <a href="/admin">Vista general</a> / {titulo}
+          <a href={adminRoutes.index.href()}>Vista general</a> / {titulo}
         </p>
 
         <div class="panel">
           {origen === 'fisica' ? (
             <div class="panel__head">
-              <a class="btn btn--green" href="/admin/participaciones/nueva?origen=fisica">
+              <a class="btn btn--green" href={`${adminRoutes.participacionNueva.index.href()}?origen=fisica`}>
                 ＋ Ingresa aquí tu participación
               </a>
             </div>
@@ -103,11 +104,11 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
                       </td>
                       <td>
                         <div style="display: flex; gap: 6px;">
-                          <a class="btn btn--green" href={`/admin/participaciones/${p.id}`} title="Ver detalle">
+                          <a class="btn btn--green" href={adminRoutes.participacionDetalle.href({ id: p.id })} title="Ver detalle">
                             👁 Ver
                           </a>
                           {p.adjuntos.length > 0 ? (
-                            <a class="btn btn--excel" href={`/admin/participaciones/${p.id}/word`} title="Descargar datos (.docx)">
+                            <a class="btn btn--excel" href={adminRoutes.word.href({ id: p.id })} title="Descargar datos (.docx)">
                               ⬇
                             </a>
                           ) : null}

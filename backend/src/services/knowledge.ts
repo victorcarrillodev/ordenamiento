@@ -11,29 +11,51 @@ export type IdCorpus = 'participation_chunks' | 'skill_knowledge'
  * Adaptador de corpus (IO): calcula el peso IDF de un conjunto de términos
  * contando en cuántos chunks aparece cada uno, con la fórmula suavizada.
  *
- * Política vs IO: este módulo toca la base de datos; el cómputo puro de
- * vectores vive en `src/vector/tfidf.ts`. `N` (total de filas) se calcula
- * UNA sola vez por llamada y no dentro del bucle (evita N+1 en el count).
+ * Mejora v2: una SOLA query batch con unnest + ILIKE ANY para evitar N+1.
+ *
+ * Fórmula IDF Robertson-Sparck Jones suavizada:
+ *   ln((N - df + 0.5) / (df + 0.5) + 1) + 1
+ * Siempre ≥ 1; N = total de chunks en el corpus.
  */
 export async function getIdfMap(
   terms: string[],
   table: IdCorpus = 'participation_chunks',
 ): Promise<Record<string, number>> {
+  if (terms.length === 0) return {}
+
+  // Total de chunks en el corpus (una sola query)
   const total = await sql<{ n: string }[]>`
     SELECT count(*)::text AS n FROM ${sql(table)}
   `
   const N = Number(total[0].n)
   if (N === 0) return {}
 
+  // Conteo de chunks que contienen cada término — UNA sola query con unnest
+  // Se construye dinámicamente porque sql tagged-template no soporta arrays de LIKE.
+  const termList = [...new Set(terms)]  // deduplicar
+  const patterns = termList.map((t) => `%${t}%`)
+
+  // Consulta batch: para cada término del array, cuenta los chunks que lo contienen
+  const rows = await sql<Array<{ term: string; d: string }>>`
+    SELECT t.term, count(c.id)::text AS d
+    FROM unnest(${patterns}::text[]) WITH ORDINALITY AS t(pattern, ord)
+    JOIN unnest(${termList}::text[]) WITH ORDINALITY AS u(term, ord) ON u.ord = t.ord
+    LEFT JOIN ${sql(table)} c ON c.content ILIKE t.pattern
+    GROUP BY t.term
+  `
+
   const result: Record<string, number> = {}
-  for (const term of terms) {
-    const row = await sql<{ d: string }[]>`
-      SELECT count(*)::text AS d
-      FROM ${sql(table)}
-      WHERE content ILIKE ${'%' + term + '%'}
-    `
-    const docsWithTerm = Number(row[0].d)
-    result[term] = Math.log(N / (1 + docsWithTerm)) + 1
+  for (const row of rows) {
+    const df = Number(row.d)
+    result[row.term] = Math.log((N - df + 0.5) / (df + 0.5) + 1) + 1
   }
+
+  // Términos sin match en el corpus → IDF máximo (término muy raro → muy relevante)
+  for (const term of termList) {
+    if (!(term in result)) {
+      result[term] = Math.log((N + 0.5) / 0.5 + 1) + 1
+    }
+  }
+
   return result
 }

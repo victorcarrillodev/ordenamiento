@@ -35,11 +35,11 @@ import { listAvisos, createAviso, deleteAviso } from './services/avisos.ts'
 import { listPoel, createPoelSesion, deletePoelSesion } from './services/poel.ts'
 import { exportTableToXlsx, isExportable } from './services/export.ts'
 import { participationDocx } from './services/word.ts'
-import { enviarParticipacion, mailConfigurado } from './services/mail.ts'
+import { enviarParticipacion, enviarAcuseReciboParticipacion, enviarAviso, enviarCorreoPrueba, mailConfigurado } from './services/mail.ts'
 import { sql } from './db/pool.ts'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
-const MAX_UPLOAD_BYTES = 850 * 1024 * 1024 // 850 MB (formulario)
+const MAX_UPLOAD_BYTES = 220 * 1024 * 1024 // 220 MB (formulario)
 
 function json(data: unknown, init?: number | ResponseInit): Response {
   if (typeof init === 'number') {
@@ -242,20 +242,22 @@ export async function handleRequest(request: Request): Promise<Response> {
       folio,
     )
 
-    // Véctorizar adjunto + campos
-    let pdfBuffer: Buffer | undefined
-    let pdfMeta: { nombreOriginal: string; mime: string; rutaLocal: string } | undefined
-    const file = form.get('pdf') as unknown as File | null
+    // Vectorizar adjunto + campos
+    // Se acepta cualquier tipo de archivo. El campo del formulario es 'archivo'
+    // (se mantiene compatibilidad con el nombre legacy 'pdf').
+    let fileBuffer: Buffer | undefined
+    let fileMeta: { nombreOriginal: string; mime: string; rutaLocal: string } | undefined
+    const file = (form.get('archivo') ?? form.get('pdf')) as unknown as File | null
     if (file && file.size > 0 && file instanceof File) {
       if (file.size > MAX_UPLOAD_BYTES) {
-        return json({ error: 'Archivo demasiado grande (máx 850 MB)' }, 413)
+        return json({ error: 'Archivo demasiado grande (máx 220 MB)' }, 413)
       }
       await mkdir(UPLOAD_DIR, { recursive: true })
       const safeName = `${Date.now()}-${String(file.name).replace(/[^a-z0-9_.-]/gi, '_')}`
       const dest = join(UPLOAD_DIR, safeName)
-      pdfBuffer = Buffer.from(await file.arrayBuffer())
-      await writeFile(dest, pdfBuffer)
-      pdfMeta = {
+      fileBuffer = Buffer.from(await file.arrayBuffer())
+      await writeFile(dest, fileBuffer)
+      fileMeta = {
         nombreOriginal: String(file.name),
         mime: file.type || 'application/octet-stream',
         rutaLocal: dest,
@@ -274,9 +276,18 @@ export async function handleRequest(request: Request): Promise<Response> {
         observacion: String(form.get('observacion') ?? ''),
         folio,
       },
-      pdfBuffer,
-      pdfMeta,
+      fileBuffer,
+      fileMeta,
     )
+
+    const userEmail = String(form.get('correo') ?? '').trim()
+    if (userEmail && mailConfigurado()) {
+      try {
+        await enviarAcuseReciboParticipacion(created.participationId, userEmail)
+      } catch (err) {
+        console.error('[mail] No se pudo enviar acuse automático:', err)
+      }
+    }
 
     return json({ id: created.participationId, folio: created.folio, ...ingest }, 201)
   }
@@ -382,6 +393,43 @@ export async function handleRequest(request: Request): Promise<Response> {
       const msg = err instanceof Error ? err.message : String(err)
       if (msg === 'NO_ENCONTRADA') return json({ error: 'Participación no encontrada' }, 404)
       return json({ error: `No se pudo enviar: ${msg}` }, 502)
+    }
+  }
+
+  // Enviar aviso oficial por correo — admin
+  if (method === 'POST' && pathname === '/api/avisos/enviar') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const body = (await request.json()) as { id?: number; para?: string }
+    if (!body.id || !body.para) return json({ error: 'Faltan datos: id, para' }, 400)
+    if (!mailConfigurado()) {
+      return json({ error: 'Correo no configurado: define SMTP_HOST, SMTP_USER y SMTP_PASS' }, 503)
+    }
+    try {
+      const r = await enviarAviso(Number(body.id), body.para)
+      return json({ ok: true, ...r })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg === 'NO_ENCONTRADO') return json({ error: 'Aviso no encontrado' }, 404)
+      return json({ error: `No se pudo enviar: ${msg}` }, 502)
+    }
+  }
+
+  // Enviar correo de prueba SMTP — admin
+  if (method === 'POST' && pathname === '/api/mail/test') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const body = (await request.json()) as { para?: string }
+    const destino = body.para || 'kostyblack456@gmail.com'
+    if (!mailConfigurado()) {
+      return json({ error: 'Correo no configurado: define SMTP_HOST, SMTP_USER y SMTP_PASS' }, 503)
+    }
+    try {
+      const r = await enviarCorreoPrueba(destino)
+      return json({ ok: true, para: destino, ...r })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      return json({ error: `No se pudo enviar prueba: ${msg}` }, 502)
     }
   }
 

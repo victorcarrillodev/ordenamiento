@@ -1,6 +1,8 @@
 import type { Handle } from 'remix/ui'
 
+import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+
 interface Adjunto { id: number; nombre_original: string; mime: string; size: number }
 interface Detalle {
   id: number
@@ -66,7 +68,7 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
       <AdminLayout user={user} active="participaciones" title={titulo}>
         <h1 class="page-title">{titulo}</h1>
         <p class="breadcrumb">
-          <a href={`/admin/participaciones?origen=${p?.origen ?? 'fisica'}`}>Volver a participaciones</a>
+          <a href={`${adminRoutes.participaciones.href()}?origen=${p?.origen ?? 'fisica'}`}>Volver a participaciones</a>
         </p>
 
         {!p ? (
@@ -105,8 +107,8 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
                 <h2 class="panel__title" style="margin:0;">Adjunto</h2>
                 {p.adjuntos.map((a) => (
                   <span key={a.id} style="display:flex; gap:8px;">
-                    <a class="btn btn--green" href={`/admin/participaciones/${p.id}/adjuntos/${a.id}`}>👁 Ver PDF</a>
-                    <a class="btn btn--excel" href={`/admin/participaciones/${p.id}/word`}>⬇ Descargar datos (.docx)</a>
+                    <a class="btn btn--green" href={adminRoutes.adjunto.href({ id: p.id, aid: a.id })}>👁 Ver PDF</a>
+                    <a class="btn btn--excel" href={adminRoutes.word.href({ id: p.id })}>⬇ Descargar datos (.docx)</a>
                   </span>
                 ))}
               </div>
@@ -115,7 +117,7 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
               ) : (
                 <iframe
                   class="pdf-frame"
-                  src={`/admin/participaciones/${p.id}/adjuntos/${p.adjuntos[0].id}`}
+                  src={adminRoutes.adjunto.href({ id: p.id, aid: p.adjuntos[0].id })}
                   title="Vista del documento"
                 />
               )}
@@ -123,7 +125,7 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
 
             <div class="panel">
               <h2 class="panel__title">📨 Enviar por correo</h2>
-              <form method="post" action={`/admin/participaciones/${p.id}/enviar`} class="form-row">
+              <form method="post" action={adminRoutes.participacionEnviar.action.href({ id: p.id })} class="form-row">
                 <div class="form-field">
                   <label for="para">Enviar a (correo)</label>
                   <input id="para" name="para" type="email" placeholder="destinatario@ejemplo.com" required />

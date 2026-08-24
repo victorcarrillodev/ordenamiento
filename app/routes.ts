@@ -1,15 +1,16 @@
 import { form, get, route } from 'remix/routes'
 
+const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
+
 export const routes = route({
-  assets: get('/assets/*path'),
-  home: '/',
-  login: form('login'),
-  participation: form('participation'),
-
-  poetdum:{
-    show:get("/poetdum")
-  }
-
+  assets: get(`${basePath}/assets/*path`),
+  home: `${basePath}`,
+  homeSlash: `${basePath}/`,
+  login: form(`${basePath}/login`),
+  participation: form(`${basePath}/participation`),
+  poetdum: {
+    show: get(`${basePath}/poetdum`),
+  },
 })
 
 /**
@@ -17,18 +18,19 @@ export const routes = route({
  * Se mapea completo con UN controller en app/actions/admin/controller.tsx.
  */
 export const adminRoutes = route({
-  index: get('admin'),
-  reuniones: form('admin/reuniones'),
-  exportar: get('admin/exportar'),
-  usuarios: form('admin/usuarios'),
-  participaciones: get('admin/participaciones'),
-  participacionDetalle: get('admin/participaciones/:id'),
-  participacionNueva: form('admin/participaciones/nueva'),
-  participacionEnviar: form('admin/participaciones/:id/enviar'),
-  word: get('admin/participaciones/:id/word'),
-  adjunto: get('admin/participaciones/:id/adjuntos/:aid'),
-  avisos: form('admin/avisos'),
-  poel: form('admin/poel'),
-  estadisticas: get('admin/estadisticas'),
-  cuenta: get('admin/cuenta'),
+  index: get(`${basePath}/admin`),
+  reuniones: form(`${basePath}/admin/reuniones`),
+  exportar: get(`${basePath}/admin/exportar`),
+  usuarios: form(`${basePath}/admin/usuarios`),
+  participaciones: get(`${basePath}/admin/participaciones`),
+  participacionDetalle: get(`${basePath}/admin/participaciones/:id`),
+  participacionNueva: form(`${basePath}/admin/participaciones/nueva`),
+  participacionEnviar: form(`${basePath}/admin/participaciones/:id/enviar`),
+  word: get(`${basePath}/admin/participaciones/:id/word`),
+  adjunto: get(`${basePath}/admin/participaciones/:id/adjuntos/:aid`),
+  avisos: form(`${basePath}/admin/avisos`),
+  poel: form(`${basePath}/admin/poel`),
+  estadisticas: get(`${basePath}/admin/estadisticas`),
+  cuenta: get(`${basePath}/admin/cuenta`),
 })
+

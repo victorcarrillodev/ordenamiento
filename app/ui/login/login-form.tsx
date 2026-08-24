@@ -3,6 +3,7 @@
  */
 import type { Handle } from 'remix/ui'
 
+import { routes } from '../../routes.ts'
 import type { LoginErrors } from './types.ts'
 import { TextField } from './text-field.tsx'
 
@@ -15,7 +16,7 @@ export function LoginForm(handle: Handle<LoginFormProps>) {
     const { errors = {} } = handle.props
 
     return (
-      <form class="login__form" method="POST" action="/login" noValidate>
+      <form class="login__form" method="POST" action={routes.login.action.href()} noValidate>
         <TextField
           id="email"
           name="email"

@@ -1,7 +1,7 @@
 import type { Handle } from 'remix/ui'
 
+import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
-import { BACKEND_URL } from '../../backend.ts'
 
 export interface ExportarPageProps {
   user: { name: string; role: string }
@@ -21,7 +21,7 @@ export function ExportarPage(handle: Handle<ExportarPageProps>) {
       <AdminLayout user={user} active="exportar" title="Exportar tablas">
         <h1 class="page-title">Exportar tablas</h1>
         <p class="breadcrumb">
-          <a href="/admin">Vista general</a> / Exportar tablas
+          <a href={adminRoutes.index.href()}>Vista general</a> / Exportar tablas
         </p>
 
         <div class="export-grid">
@@ -29,9 +29,7 @@ export function ExportarPage(handle: Handle<ExportarPageProps>) {
             <div class="export-card" key={t.slug}>
               <h3>{t.nombre}</h3>
               <p>{t.desc}</p>
-              {/* Descarga directa desde el backend (sin doble proxy): más rápido.
-                  La cookie de sesión se comparte porque es del mismo dominio localhost. */}
-              <a class="btn btn--excel" href={`${BACKEND_URL}/api/export/${t.slug}.xlsx`}>
+              <a class="btn btn--excel" href={`${adminRoutes.exportar.href()}?tabla=${t.slug}`}>
                 ⬇ Descargar .xlsx
               </a>
             </div>

@@ -1,5 +1,6 @@
 import type { Handle } from 'remix/ui'
 
+import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 
 export interface CuentaPageProps {
@@ -14,7 +15,7 @@ export function CuentaPage(handle: Handle<CuentaPageProps>) {
       <AdminLayout user={user} active="cuenta" title="Mi cuenta">
         <h1 class="page-title">Mi cuenta</h1>
         <p class="breadcrumb">
-          <a href="/admin">Vista general</a> / Mi cuenta
+          <a href={adminRoutes.index.href()}>Vista general</a> / Mi cuenta
         </p>
 
         <div class="panel">

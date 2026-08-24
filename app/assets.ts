@@ -6,8 +6,12 @@ const nodeEnv = process.env.NODE_ENV ?? 'development'
 const isDevelopment = nodeEnv === 'development'
 const isHmr = Boolean(isDevelopment && process.env.REMIX_NODE_HMR)
 
+const basePath = process.env.BASE_PATH
+  ? `${process.env.BASE_PATH.replace(/\/$/, '')}/assets`
+  : '/ordena/assets'
+
 export const assetServer = createAssetServer({
-  basePath: '/assets',
+  basePath,
   rootDir,
   fileMap: {
     'app/*path': 'app/*path',

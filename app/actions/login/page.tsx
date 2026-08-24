@@ -4,12 +4,15 @@
  */
 import type { Handle } from 'remix/ui'
 
+import { routes } from '../../routes.ts'
 import { Document } from '../document.tsx'
 import { LoginFooter } from '../../ui/login/login-footer.tsx'
 import { LoginForm } from '../../ui/login/login-form.tsx'
 import { LoginHeader } from '../../ui/login/login-header.tsx'
 import { TextField } from '../../ui/login/text-field.tsx'
 import type { LoginErrors } from '../../ui/login/types.ts'
+
+const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 
 export interface LoginPageProps {
   errors?: LoginErrors
@@ -23,7 +26,7 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
       <Document
         title="Iniciar Sesión – Portal de Ordenamiento Ecológico"
         description="Accede al Portal de Ordenamiento Ecológico de San Pedro Tlaquepaque."
-        head={<link rel="stylesheet" href="/login.css" />}
+        head={<link rel="stylesheet" href={`${basePath}/login.css`} />}
       >
         <main class="login">
           <div class="login__viewport">
@@ -31,7 +34,7 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
               <LoginHeader
                 title="Iniciar Sesión"
                 subtitle="Portal de Ordenamiento Ecológico"
-                logoSrc="/images/tlaquepaque.png"
+                logoSrc={`${basePath}/images/tlaquepaque.png`}
                 logoAlt="Logo Tlaquepaque"
               />
               <div class="login__body">
@@ -40,7 +43,7 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
               <div class="login__admin">
                 <details class="login__admin-details">
                   <summary>¿Necesitas crear un administrador?</summary>
-                  <form class="login__form login__register" method="POST" action="/login" noValidate>
+                  <form class="login__form login__register" method="POST" action={routes.login.action.href()} noValidate>
                     <input type="hidden" name="intent" value="registro" />
                     <TextField
                       id="name"

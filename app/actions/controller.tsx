@@ -14,5 +14,8 @@ export default createController(routes, {
     home(context) {
       return context.render(<HomePage />)
     },
+    homeSlash(context) {
+      return context.render(<HomePage />)
+    },
   },
 })

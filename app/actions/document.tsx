@@ -14,6 +14,8 @@ const DEFAULT_TITLE = 'Portal de Ordenamiento Territorial – San Pedro Tlaquepa
 const DEFAULT_DESCRIPTION =
   'Bitácora Ambiental del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano del Municipio de San Pedro Tlaquepaque, Jalisco.'
 
+const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
+
 export function Document(handle: Handle<DocumentProps>) {
   return () => {
     const {
@@ -29,7 +31,7 @@ export function Document(handle: Handle<DocumentProps>) {
           <meta charSet="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <meta name="description" content={description} />
-          <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+          <link rel="icon" type="image/svg+xml" href={`${basePath}/favicon.svg`} />
           <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
           {/* Montserrat – primary institutional typeface */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />

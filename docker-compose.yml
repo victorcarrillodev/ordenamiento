@@ -31,6 +31,11 @@ services:
       ROOT_NAME: ${ROOT_NAME:-Administrador Root}
       PORT: 5920
       NODE_ENV: production
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-}
     volumes:
       - uploads:/app/uploads
       # Cuentas admin extra (ej. la de Leo). Copia backend/seed-admins.example.json
@@ -46,12 +51,17 @@ services:
       - backend
     environment:
       BACKEND_URL: http://backend:5920
+      BASE_PATH: /ordena
       PORT: 44100
       NODE_ENV: production
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-}
     ports:
-      # Solo accesible desde el propio servidor (127.0.0.1). El reverse proxy
-      # (nginx/apache de ac.tlaquepaque.gob.mx) es el que lo expone al público
-      # en /ordena — ver deploy/nginx-ordena.conf.
+      # Compatible con la configuración de Apache (43100) y acceso directo (44100)
+      - '127.0.0.1:43100:44100'
       - '127.0.0.1:44100:44100'
 
 volumes:

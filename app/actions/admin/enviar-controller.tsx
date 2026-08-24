@@ -11,7 +11,7 @@ import { adminRoutes } from '../../routes.ts'
 export default createController(adminRoutes.participacionEnviar, {
   actions: {
     async index(context) {
-      return redirect(`/admin/participaciones/${context.params.id}`)
+      return redirect(adminRoutes.participacionDetalle.href({ id: context.params.id }))
     },
 
     async action(context) {
@@ -20,7 +20,7 @@ export default createController(adminRoutes.participacionEnviar, {
 
       const formData = await context.request.formData()
       const para = String(formData.get('para') ?? '').trim()
-      const base = `/admin/participaciones/${context.params.id}`
+      const base = adminRoutes.participacionDetalle.href({ id: context.params.id })
 
       if (!para || !para.includes('@')) {
         return redirect(base + '?mail=error')

@@ -22,6 +22,9 @@ import {
 } from "../ui/civic-horizon.ts";
 import { Document } from "./document.tsx";
 import { NavBar } from "../components/NavBar.tsx";
+import { routes } from "../routes.ts";
+
+const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 
 // ---------------------------------------------------------------------------
 // Page root
@@ -185,7 +188,7 @@ function HeroSection() {
             Conoce el programa
           </a>
           <a
-            href="/participation"
+            href={routes.participation.index.href()}
             id="hero-participa-btn"
             mix={btnSecondaryStyle}
           >
@@ -354,7 +357,7 @@ function WhatIsThisSite() {
           })}
         >
           <img
-            src="/images/ecology-split.jpg"
+            src={`${basePath}/images/ecology-split.jpg`}
             alt="División entre ecosistema verde y zona árida de Jalisco, representando el equilibrio ecológico"
             mix={css({
               width: "100%",
@@ -1157,7 +1160,7 @@ function ParticipationCta() {
           </span>
         </div>
 
-        <a href="/participation" id="participa-cta-btn" mix={btnGoldStyle}>
+        <a href={routes.participation.index.href()} id="participa-cta-btn" mix={btnGoldStyle}>
           Registra tu participación
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path

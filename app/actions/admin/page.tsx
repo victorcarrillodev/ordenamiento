@@ -1,5 +1,6 @@
 import type { Handle } from 'remix/ui'
 
+import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 
 export interface AdminPageProps {
@@ -140,7 +141,7 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
         <div class="panel">
           <div class="panel__head">
             <h2 class="panel__title" style="margin: 0;">Exportar</h2>
-            <a class="btn btn--excel" href="/admin/exportar?tabla=reuniones">
+            <a class="btn btn--excel" href={`${adminRoutes.exportar.href()}?tabla=reuniones`}>
               ⬇ Reuniones a Excel
             </a>
           </div>
@@ -151,7 +152,7 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
 
         <div class="panel" id="usuarios">
           <h2 class="panel__title">👥 Usuarios (crear cuenta)</h2>
-          <form method="post" action="/admin/usuarios" class="form-row" style="margin-bottom: 14px;">
+          <form method="post" action={adminRoutes.usuarios.action.href()} class="form-row" style="margin-bottom: 14px;">
             <div class="form-field">
               <label for="u-name">Nombre</label>
               <input id="u-name" name="name" required />

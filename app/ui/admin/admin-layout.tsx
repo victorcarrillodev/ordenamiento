@@ -94,16 +94,18 @@ const MENU: Array<{
   },
 ]
 
+const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
+
 export function AdminLayout(handle: Handle<AdminLayoutProps>) {
   return () => {
     const { children, user, active, title } = handle.props
 
     return (
-      <Document title={`${title} – Bitácora Ambiental`} head={<link rel="stylesheet" href="/admin.css" />}>
+      <Document title={`${title} – Bitácora Ambiental`} head={<link rel="stylesheet" href={`${basePath}/admin.css`} />}>
         <div class="admin">
           <aside class="sidebar">
             <div class="sidebar__brand">
-              <img src="/images/tlaquepaque.png" alt="Tlaquepaque" />
+              <img src={`${basePath}/images/tlaquepaque.png`} alt="Tlaquepaque" />
               <div class="sidebar__brand-text">
                 ADMINISTRADOR
                 <br />

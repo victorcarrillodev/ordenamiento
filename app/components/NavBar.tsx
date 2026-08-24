@@ -1,5 +1,6 @@
 import { css } from "remix/ui";
 import { colors, FONT_STACK } from "../ui/civic-horizon.ts";
+import { routes } from "../routes.ts";
 const navbarStyle = css({
   
   alignItems:"center",
@@ -105,7 +106,7 @@ export function NavBar() {
       <div mix={navInnerStyle}>
         {/* Brand */}
         <a
-          href="/"
+          href={routes.home.href()}
           aria-label="Inicio – Portal de Ordenamiento Territorial"
           mix={navBrandStyle}
         >
@@ -121,17 +122,17 @@ export function NavBar() {
 
         {/* Nav links */}
         <div mix={navLinksStyle}>
-          <a href="/" mix={navLinkStyle}>
+          <a href={routes.home.href()} mix={navLinkStyle}>
             Inicio  y proceso
        </a>
-          <a href="/poetdum" mix={navLinkStyle}>
+          <a href={routes.poetdum.show.href()} mix={navLinkStyle}>
             {" "}
             Elaboración del POETDUM
           </a>
         </div>
 
         {/* CTA */}
-        <a href="/participation" id="nav-participar-btn" mix={navCtaStyle}>
+        <a href={routes.participation.index.href()} id="nav-participar-btn" mix={navCtaStyle}>
           Subir participacion
         </a>
       </div>
