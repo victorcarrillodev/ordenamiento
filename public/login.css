@@ -1,0 +1,356 @@
+/* ===========================================================================
+   Login – POETDUM Tlaquepaque
+   Verde institucional + dorado (Material 3)
+   CSS aparte del markup; clases BEM bajo el prefijo `.login`
+   ========================================================================== */
+
+.login {
+  --login-bg: #faf9f6;
+  --login-surface: #ffffff;
+  --login-surface-low: #f4f4f0;
+  --login-surface-variant: #e2e3df;
+  --login-primary: #154212;
+  --login-primary-container: #2d5a27;
+  --login-on-primary: #ffffff;
+  --login-on-surface: #1a1c1a;
+  --login-on-surface-variant: #42493e;
+  --login-outline: #72796e;
+  --login-outline-variant: #c2c9bb;
+  --login-secondary-container: #fdd170;
+  --login-error: #ba1a1a;
+
+  --login-font-heading: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+  --login-font-body: 'Inter', 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--login-font-body);
+  color: var(--login-on-surface);
+  background-color: var(--login-bg);
+  background-image: radial-gradient(var(--login-outline-variant) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.login *,
+.login *::before,
+.login *::after {
+  box-sizing: border-box;
+}
+
+.login__viewport {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.login__card {
+  width: 100%;
+  max-width: 28rem;
+  background: var(--login-surface);
+  border: 1px solid var(--login-surface-variant);
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 40px rgba(26, 28, 26, 0.12);
+  overflow: hidden;
+  z-index: 10;
+}
+
+/* ---------------------------------------------------------------------------
+   Header
+   -------------------------------------------------------------------------- */
+
+.login__header {
+  padding: 2rem;
+  border-bottom: 1px solid var(--login-surface-variant);
+  text-align: center;
+}
+
+.login__logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.login__logo {
+  height: 4rem;
+  width: auto;
+}
+
+.login__title {
+  margin: 0;
+  font-family: var(--login-font-heading);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.33;
+  letter-spacing: -0.01em;
+  color: var(--login-primary);
+}
+
+.login__subtitle {
+  margin: 0.5rem 0 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--login-on-surface-variant);
+}
+
+/* ---------------------------------------------------------------------------
+   Form
+   -------------------------------------------------------------------------- */
+
+.login__body {
+  padding: 2rem;
+}
+
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.login__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.login__field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.login__label {
+  font-family: var(--login-font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  line-height: 1.43;
+  color: var(--login-on-surface);
+}
+
+.login__forgot {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.33;
+  color: var(--login-primary);
+  text-decoration: none;
+}
+
+.login__forgot:hover {
+  text-decoration: underline;
+}
+
+.login__input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login__icon {
+  position: absolute;
+  left: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--login-outline);
+  pointer-events: none;
+}
+
+.login__icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: block;
+}
+
+.login__input {
+  width: 100%;
+  padding: 0.5rem 2.5rem 0.5rem 2.5rem;
+  font-family: var(--login-font-body);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--login-on-surface);
+  background: var(--login-surface);
+  border: 1px solid var(--login-outline-variant);
+  border-radius: 0.125rem;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.login__input::placeholder {
+  color: var(--login-outline-variant);
+}
+
+.login__input:focus {
+  outline: none;
+  border-color: var(--login-primary-container);
+  box-shadow: 0 0 0 2px rgba(45, 90, 39, 0.2);
+}
+
+.login__input--error {
+  border-color: var(--login-error);
+}
+
+.login__input--error:focus {
+  border-color: var(--login-error);
+  box-shadow: 0 0 0 2px rgba(186, 26, 26, 0.2);
+}
+
+.login__visibility {
+  position: absolute;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  color: var(--login-outline);
+  background: transparent;
+  border: none;
+  border-radius: 0.125rem;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.login__visibility:hover {
+  color: var(--login-primary);
+}
+
+.login__visibility svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: block;
+}
+
+.login__error {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--login-error);
+}
+
+.login__submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  font-family: var(--login-font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--login-on-primary);
+  background: var(--login-primary-container);
+  border: none;
+  border-radius: 0.125rem;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    transform 120ms ease;
+}
+
+.login__submit:hover {
+  background: var(--login-primary);
+}
+
+.login__submit:active {
+  transform: scale(0.98);
+}
+
+.login__submit svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: block;
+}
+
+/* ---------------------------------------------------------------------------
+   Card footer
+   -------------------------------------------------------------------------- */
+
+.login__footer {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  padding: 1rem;
+  border-top: 1px solid var(--login-surface-variant);
+  background: var(--login-surface-low);
+  text-align: center;
+}
+
+.login__footer-link {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--login-on-surface-variant);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.login__footer-link:hover {
+  color: var(--login-primary);
+}
+
+.login__footer-link svg {
+  width: 1rem;
+  height: 1rem;
+  display: block;
+}
+
+/* ---------------------------------------------------------------------------
+   Page footer
+   -------------------------------------------------------------------------- */
+
+.login__page-footer {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--login-on-surface-variant);
+  background: var(--login-surface-low);
+  border-top: 1px solid var(--login-surface-variant);
+}
+
+.login__page-footer-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.login__page-footer-links a {
+  color: var(--login-on-surface-variant);
+  text-decoration: none;
+}
+
+.login__page-footer-links a:hover {
+  color: var(--login-primary);
+}
+
+@media (min-width: 768px) {
+  .login__page-footer {
+    flex-direction: row;
+    padding: 1rem 2rem;
+  }
+}
+
+/* Admin account creation */
+.login__admin { margin-top: 1rem; }
+.login__admin-details summary {
+  cursor: pointer; text-align: center; font-size: 0.85rem;
+  color: #6b7280; padding: 0.5rem; border-radius: 8px;
+}
+.login__admin-details summary:hover { color: #111827; background: #f3f4f6; }
+.login__register { margin-top: 0.75rem; }
+.login__submit--accent { background: #1f2937; }
+.login__submit--accent:hover { background: #374151; }

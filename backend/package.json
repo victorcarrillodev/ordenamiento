@@ -1,0 +1,23 @@
+{
+  "name": "ordenamiento-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/server.ts",
+    "start": "bun src/server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "docx": "^9.7.1",
+    "jszip": "^3.10.1",
+    "nodemailer": "^9.0.5",
+    "pdf-parse": "^1.1.1",
+    "postgres": "^3.4.5",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/nodemailer": "^8.0.1",
+    "typescript": "latest"
+  }
+}

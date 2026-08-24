@@ -1,0 +1,44 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: ordenamiento-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ordenamiento
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d ordenamiento']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    container_name: ordenamiento-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/ordenamiento
+      SESSION_SECRET: ${SESSION_SECRET:-cambia-esto-en-produccion}
+      # Cuenta ROOT: se define en entorno/secrets (o `.env` gitignorado),
+      # nunca hardcodeada aquí. Si falta, el seed falla en producción.
+      ROOT_EMAIL: ${ROOT_EMAIL:-root@ordenamiento.gob.mx}
+      ROOT_PASSWORD: ${ROOT_PASSWORD}
+      ROOT_NAME: ${ROOT_NAME:-Administrador Root}
+      PORT: 5920
+      NODE_ENV: production
+    ports:
+      - '5920:5920'
+    volumes:
+      - uploads:/app/uploads
+
+volumes:
+  pgdata:
+  uploads:
