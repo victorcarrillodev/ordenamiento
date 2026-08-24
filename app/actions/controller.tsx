@@ -1,6 +1,7 @@
 import { createController } from 'remix/router'
 
 import { assetServer } from '../assets.ts'
+import { getPublicTheme } from '../backend.ts'
 import { routes } from '../routes.ts'
 import { HomePage } from './home-page.tsx'
 
@@ -11,11 +12,13 @@ export default createController(routes, {
         (await assetServer.fetch(context.request)) ?? new Response('Not Found', { status: 404 })
       )
     },
-    home(context) {
-      return context.render(<HomePage />)
+    async home(context) {
+      const theme = await getPublicTheme(context.request)
+      return context.render(<HomePage theme={theme} />)
     },
-    homeSlash(context) {
-      return context.render(<HomePage />)
+    async homeSlash(context) {
+      const theme = await getPublicTheme(context.request)
+      return context.render(<HomePage theme={theme} />)
     },
   },
 })

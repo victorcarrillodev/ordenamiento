@@ -136,11 +136,12 @@ const logoFuter = css({
   height: '70px',
 })
 
-export function PoetdumPage() {
+export function PoetdumPage(handle?: any) {
   return () => {
+    const theme = handle?.props?.theme
     return (
       <Document title="poetdum">
-        <NavBar />
+        <NavBar theme={theme} />
         <br />
         <br />
         <br />

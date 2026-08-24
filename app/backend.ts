@@ -81,3 +81,19 @@ export async function requireAdminUser(request: Request): Promise<AdminUser | Re
   const user = await backendUser(request)
   return user ?? redirect(routes.login.index.href())
 }
+
+/**
+ * Obtiene la configuración de diseño activa desde el backend
+ */
+export async function getPublicTheme(request: Request): Promise<any> {
+  try {
+    const res = await backendFetch(request, '/api/settings/theme')
+    if (res.ok) {
+      const data = await res.json()
+      return data.theme ?? null
+    }
+  } catch (err) {
+    console.error('[backend] Error al cargar tema:', err)
+  }
+  return null
+}

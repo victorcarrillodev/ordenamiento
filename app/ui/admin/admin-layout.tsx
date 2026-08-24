@@ -17,7 +17,18 @@ export interface AdminLayoutProps {
     | 'estadisticas'
     | 'usuarios'
     | 'exportar'
+    | 'personalizacion'
   title: string
+  theme?: {
+    sidebarFondo?: string
+    sidebarTexto?: string
+    topbarFondo?: string
+    topbarTexto?: string
+    colorAcento?: string
+    adminBg?: string
+    adminLogo?: string
+    adminTitulo?: string
+  }
 }
 
 const MENU: Array<{
@@ -31,6 +42,12 @@ const MENU: Array<{
     href: adminRoutes.index.href(),
     label: 'Vista general',
     icon: <Icon name="mdi:home" />,
+  },
+  {
+    key: 'personalizacion',
+    href: adminRoutes.personalizacion.index.href(),
+    label: 'Personalización y Marca',
+    icon: <Icon name="mdi:palette-outline" />,
   },
   {
     key: 'cuenta',
@@ -98,18 +115,38 @@ const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 
 export function AdminLayout(handle: Handle<AdminLayoutProps>) {
   return () => {
-    const { children, user, active, title } = handle.props
+    const { children, user, active, title, theme } = handle.props
+    const customLogo = theme?.adminLogo || `${basePath}/images/tlaquepaque.png`
+    const customTitle = theme?.adminTitulo || 'ADMINISTRADOR BITÁCORA AMBIENTAL'
+    const dynamicStyles = theme
+      ? `
+        :root {
+          ${theme.adminBg ? `--a-bg: ${theme.adminBg};` : ''}
+          ${theme.sidebarFondo ? `--a-sidebar: ${theme.sidebarFondo};` : ''}
+          ${theme.topbarFondo ? `--a-dark: ${theme.topbarFondo};` : ''}
+          ${theme.colorAcento ? `--a-blue: ${theme.colorAcento};` : ''}
+        }
+        ${theme.sidebarTexto ? `.sidebar__item { color: ${theme.sidebarTexto}; }` : ''}
+        ${theme.topbarTexto ? `.topbar { color: ${theme.topbarTexto}; }` : ''}
+      `
+      : ''
 
     return (
-      <Document title={`${title} – Bitácora Ambiental`} head={<link rel="stylesheet" href={`${basePath}/admin.css`} />}>
+      <Document
+        title={`${title} – Bitácora Ambiental`}
+        head={
+          <>
+            <link rel="stylesheet" href={`${basePath}/admin.css`} />
+            {dynamicStyles && <style>{dynamicStyles}</style>}
+          </>
+        }
+      >
         <div class="admin">
           <aside class="sidebar">
             <div class="sidebar__brand">
-              <img src={`${basePath}/images/tlaquepaque.png`} alt="Tlaquepaque" />
-              <div class="sidebar__brand-text">
-                ADMINISTRADOR
-                <br />
-                BITÁCORA AMBIENTAL
+              <img src={customLogo} alt="Logo" />
+              <div class="sidebar__brand-text" style="white-space: pre-line;">
+                {customTitle}
               </div>
             </div>
             <nav class="sidebar__menu">

@@ -161,3 +161,32 @@ CREATE TABLE IF NOT EXISTS poel_sesiones (
   activo      BOOLEAN NOT NULL DEFAULT true,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ---------------------------------------------------------------------------
+-- Personalización Visual y Marca (Site Customizations & Theming)
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS site_customizations (
+  id          INT PRIMARY KEY DEFAULT 1,
+  config      JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_by  BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ---------------------------------------------------------------------------
+-- Auditoría de Seguridad e Historial de Cambios ("Quién y Por Qué")
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS customization_audit_logs (
+  id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id          BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  user_name        TEXT NOT NULL,
+  user_email       TEXT NOT NULL,
+  motivo           TEXT NOT NULL DEFAULT '',
+  section          TEXT NOT NULL DEFAULT 'general', -- 'usuario' | 'panel' | 'general'
+  changes_summary  TEXT NOT NULL DEFAULT '',
+  snapshot         JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_customization_audit_fecha ON customization_audit_logs (created_at DESC);

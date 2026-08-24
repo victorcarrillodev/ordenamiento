@@ -27,41 +27,41 @@ import { routes } from "../routes.ts";
 const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 
 // ---------------------------------------------------------------------------
-// Page root
-// ---------------------------------------------------------------------------
+export interface HomePageProps {
+  theme?: any;
+}
 
-export function HomePage() {
-  return () => (
-    <Document>
-      <div
-        mix={css({
-          "& *, & *::before, & *::after": { boxSizing: "border-box" },
-          fontFamily: FONT_STACK,
-          margin: 0,
-          padding: 0,
-        })}
-      >
-        <NavBar />
-        <main id="main-content">
-          <HeroSection />
-          <WhatIsThisSite />
-          <ActionCardsGrid />
-          <WhatIsTheProgram />
-          <ProcessTimeline />
-          <ParticipationCta />
-        </main>
-        <SiteFooter />
-      </div>
-    </Document>
-  );
+export function HomePage(handle?: Handle<HomePageProps>) {
+  return () => {
+    const theme = handle?.props?.theme;
+    return (
+      <Document>
+        <div
+          mix={css({
+            "& *, & *::before, & *::after": { boxSizing: "border-box" },
+            fontFamily: FONT_STACK,
+            margin: 0,
+            padding: 0,
+          })}
+        >
+          <NavBar theme={theme} />
+          <main id="main-content">
+            <HeroSection theme={theme} />
+            <WhatIsThisSite theme={theme} />
+            <ActionCardsGrid theme={theme} />
+            <WhatIsTheProgram />
+            <ProcessTimeline />
+            <ParticipationCta />
+          </main>
+          <SiteFooter theme={theme} />
+        </div>
+      </Document>
+    );
+  };
 }
 
 // ---------------------------------------------------------------------------
-// NavBar
-// ---------------------------------------------------------------------------
-<NavBar/>
-// ---------------------------------------------------------------------------
-// Hero Section
+// Hero Section with Carousel Support
 // ---------------------------------------------------------------------------
 
 const heroStyle = css({
@@ -74,30 +74,9 @@ const heroStyle = css({
   paddingTop: "70px",
 });
 
-const heroImageStyle = css({
-  position: "absolute",
-  inset: 0,
-  backgroundImage:
-    "url(https://imgs.search.brave.com/8f1SgJygGgIrQH2BcZXess4TRcaOtm3FXVfawE9VxRE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTEy/NTUyNzc3Mi9lcy9m/b3RvL3RsYXF1ZXBh/cXVlLmpwZz9zPTYx/Mng2MTImdz0wJms9/MjAmYz1VU3FwdjNw/OEJxbG9LY0JaY01q/YUdPNkpQWW1Va0xl/N1FYUGx5YVREM1Zz/PQ)",
-  backgroundSize: "cover",
-  backgroundPosition: "center 40%",
-  backgroundRepeat: "no-repeat",
-});
-
-const heroOverlayStyle = css({
-  position: "absolute",
-  inset: 0,
-  background: `linear-gradient(
-    160deg,
-    rgba(15,17,23,0.82) 0%,
-    rgba(140,29,61,0.70) 50%,
-    rgba(15,17,23,0.75) 100%
-  )`,
-});
-
 const heroContentStyle = css({
   position: "relative",
-  zIndex: 2,
+  zIndex: 3,
   maxWidth: "900px",
   margin: "0 auto",
   padding: "80px 24px",
@@ -108,496 +87,706 @@ const heroContentStyle = css({
   gap: "32px",
 });
 
-function HeroSection() {
-  return () => (
-    <section id="inicio" aria-label="Bienvenida al portal" mix={heroStyle}>
-      <div
-        mix={heroImageStyle}
-        role="img"
-        aria-label="Vista aérea de San Pedro Tlaquepaque"
-      />
-      <div mix={heroOverlayStyle} aria-hidden="true" />
+function HeroSection({ theme }: { theme?: any }) {
+  return () => {
+    const u = theme?.usuario || {};
+    const c = u.colores || {};
+    const img = u.imagenes || {};
+    const txt = u.textos || {};
 
-      <div mix={heroContentStyle}>
-        {/* Eyebrow bar */}
-        <div mix={css({ display: 'flex', alignItems: 'center', gap: '12px' })}>
-          <div
-            mix={css({ width: '32px', height: '2px', background: colors.gold400 })}
-            aria-hidden="true"
-          />
-          <span
-            mix={css({
-              fontFamily: FONT_STACK,
-              fontSize: "11px",
-              fontWeight: 700,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              color: colors.gold400,
-            })}
-          >
-            Bitácora Ambiental · San Pedro Tlaquepaque
-          </span>
-          <div
-            mix={css({ width: '32px', height: '2px', background: colors.gold400 })}
-            aria-hidden="true"
-          />
-        </div>
+    const rawImgs = Array.isArray(img.heroImagenes) && img.heroImagenes.length > 0
+      ? img.heroImagenes
+      : [
+          "https://imgs.search.brave.com/8f1SgJygGgIrQH2BcZXess4TRcaOtm3FXVfawE9VxRE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTEy/NTUyNzc3Mi9lcy9m/b3RvL3RsYXF1ZXBh/cXVlLmpwZz9zPTYx/Mng2MTImdz0wJms9/MjAmYz1VU3FwdjNw/OEJxbG9LY0JaY01q/YUdPNkpQWW1Va0xl/N1FYUGx5YVREM1Zz/PQ",
+        ];
 
-        {/* Main heading */}
-        <h1
-          mix={css({
-            ...headingXLProps,
-            margin: 0,
-            textAlign: "center",
-          })}
-        >
-          Programa de Ordenamiento{" "}
-          <span
-            mix={css({
-              color: colors.gold400,
-              display: "block",
-              "@media (max-width: 600px)": { display: "inline" },
-            })}
-          >
-            Ecológico Territorial
-          </span>{" "}
-          y de Desarrollo Urbano
-        </h1>
+    const hasCarousel = rawImgs.length > 1;
+    const accentColor = c.acento || colors.gold400;
+    const primaryColor = c.primario || colors.burgundy900;
+    const heroOverlay = `linear-gradient(
+      160deg,
+      ${c.heroGradienteInicio || "rgba(15,17,23,0.82)"} 0%,
+      ${c.heroGradienteCentro || "rgba(140,29,61,0.70)"} 50%,
+      ${c.heroGradienteFin || "rgba(15,17,23,0.75)"} 100%
+    )`;
 
-        {/* Sub-heading */}
-        <p
-          mix={css({
-            fontFamily: FONT_STACK,
-            fontSize: "clamp(16px, 2.5vw, 20px)",
-            lineHeight: 1.65,
-            color: "rgba(255,255,255,0.82)",
-            maxWidth: "680px",
-            margin: 0,
-            textAlign: "center",
-          })}
-        >
-          Un proceso participativo para planificar el territorio de forma sustentable, preservando
-          nuestro patrimonio natural y construyendo el municipio que merecemos.
-        </p>
+    const cintillo = txt.heroCintillo || "Bitácora Ambiental · San Pedro Tlaquepaque";
+    const titulo = txt.heroTitulo || "Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano";
+    const tituloResaltado = txt.heroTituloResaltado || "Ecológico Territorial";
+    const subtitulo =
+      txt.heroSubtitulo ||
+      "Un proceso participativo para planificar el territorio de forma sustentable, preservando nuestro patrimonio natural y construyendo el municipio que merecemos.";
+    const btn1Text = txt.heroBtn1 || "Conoce el programa";
+    const btn2Text = txt.heroBtn2 || "Registra tu participación";
 
-        {/* CTAs */}
-        <div
-          mix={css({ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' })}
-        >
-          <a href="#que-es" id="hero-conoce-btn" mix={btnGoldStyle}>
-            Conoce el programa
-          </a>
-          <a
-            href={routes.participation.index.href()}
-            id="hero-participa-btn"
-            mix={btnSecondaryStyle}
-          >
-            Registra tu participación
-          </a>
-        </div>
-
-        {/* Scroll indicator */}
-        <div
-          aria-hidden="true"
-          mix={css({
-            position: "absolute",
-            bottom: "32px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "8px",
-            opacity: 0.6,
-            animation: "bounce 2s infinite",
-            "@keyframes bounce": {
-              "0%, 100%": { transform: "translateX(-50%) translateY(0)" },
-              "50%": { transform: "translateX(-50%) translateY(8px)" },
-            },
-          })}
-        >
-          <span
-            mix={css({
-              fontFamily: FONT_STACK,
-              fontSize: "10px",
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              color: "rgba(255,255,255,0.7)",
-            })}
-          >
-            Explorar
-          </span>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M12 5v14M5 12l7 7 7-7"
-              stroke="rgba(255,255,255,0.7)"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+    return (
+      <section id="inicio" aria-label="Bienvenida al portal" mix={heroStyle}>
+        {/* Slides / Background */}
+        <div id="hero-slider" style="position: absolute; inset: 0; z-index: 1;">
+          {rawImgs.map((src: string, idx: number) => (
+            <div
+              key={idx}
+              class={`hero-slide slide-${idx}`}
+              style={`
+                position: absolute;
+                inset: 0;
+                background-image: url(${src});
+                background-size: cover;
+                background-position: center 40%;
+                background-repeat: no-repeat;
+                opacity: ${idx === 0 ? '1' : '0'};
+                transition: opacity 1000ms ease-in-out, transform 8000ms ease-out;
+                transform: scale(${idx === 0 ? '1.02' : '1'});
+              `}
+              role="img"
+              aria-label={`Vista ${idx + 1}`}
             />
-          </svg>
+          ))}
         </div>
-      </div>
-    </section>
-  );
+
+        {/* Dynamic Overlay */}
+        <div
+          style={`position: absolute; inset: 0; z-index: 2; background: ${heroOverlay};`}
+          aria-hidden="true"
+        />
+
+        {/* Carousel controls if 2+ photos */}
+        {hasCarousel && (
+          <>
+            <button
+              type="button"
+              id="hero-prev-btn"
+              aria-label="Foto anterior"
+              style="position: absolute; left: 24px; top: 50%; transform: translateY(-50%); z-index: 4; background: rgba(0,0,0,0.35); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; backdrop-filter: blur(8px); transition: background 200ms ease;"
+            >
+              ❮
+            </button>
+            <button
+              type="button"
+              id="hero-next-btn"
+              aria-label="Siguiente foto"
+              style="position: absolute; right: 24px; top: 50%; transform: translateY(-50%); z-index: 4; background: rgba(0,0,0,0.35); color: #fff; border: 1px solid rgba(255,255,255,0.25); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; backdrop-filter: blur(8px); transition: background 200ms ease;"
+            >
+              ❯
+            </button>
+
+            {/* Dots */}
+            <div
+              id="hero-dots"
+              style="position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%); z-index: 4; display: flex; gap: 8px;"
+            >
+              {rawImgs.map((_: any, idx: number) => (
+                <button
+                  type="button"
+                  class={`hero-dot dot-${idx}`}
+                  aria-label={`Ir a foto ${idx + 1}`}
+                  style={`
+                    width: ${idx === 0 ? '24px' : '8px'};
+                    height: 8px;
+                    border-radius: 4px;
+                    border: none;
+                    background: ${idx === 0 ? accentColor : 'rgba(255,255,255,0.45)'};
+                    cursor: pointer;
+                    transition: all 300ms ease;
+                  `}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Main Content */}
+        <div mix={heroContentStyle}>
+          {/* Eyebrow bar */}
+          <div mix={css({ display: "flex", alignItems: "center", gap: "12px" })}>
+            <div
+              style={`width: 32px; height: 2px; background: ${accentColor};`}
+              aria-hidden="true"
+            />
+            <span
+              style={`
+                font-family: ${FONT_STACK};
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.2em;
+                text-transform: uppercase;
+                color: ${accentColor};
+              `}
+            >
+              {cintillo}
+            </span>
+            <div
+              style={`width: 32px; height: 2px; background: ${accentColor};`}
+              aria-hidden="true"
+            />
+          </div>
+
+          {/* Main heading */}
+          <h1
+            mix={css({
+              ...headingXLProps,
+              margin: 0,
+              textAlign: "center",
+            })}
+          >
+            {titulo.includes(tituloResaltado) ? (
+              <>
+                {titulo.split(tituloResaltado)[0]}
+                <span
+                  style={`
+                    color: ${accentColor};
+                    display: block;
+                  `}
+                >
+                  {tituloResaltado}
+                </span>
+                {titulo.split(tituloResaltado)[1]}
+              </>
+            ) : (
+              titulo
+            )}
+          </h1>
+
+          {/* Sub-heading */}
+          <p
+            mix={css({
+              fontFamily: FONT_STACK,
+              fontSize: "clamp(16px, 2.5vw, 20px)",
+              lineHeight: 1.65,
+              color: "rgba(255,255,255,0.88)",
+              maxWidth: "680px",
+              margin: 0,
+              textAlign: "center",
+            })}
+          >
+            {subtitulo}
+          </p>
+
+          {/* CTAs */}
+          <div
+            mix={css({
+              display: "flex",
+              gap: "16px",
+              flexWrap: "wrap",
+              justifyContent: "center",
+            })}
+          >
+            <a
+              href="#que-es"
+              id="hero-conoce-btn"
+              style={`
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 14px 32px;
+                border-radius: 6px;
+                background: ${accentColor};
+                color: #0f1117;
+                font-family: ${FONT_STACK};
+                font-size: 14px;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                text-decoration: none;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+                transition: transform 150ms ease;
+              `}
+            >
+              {btn1Text}
+            </a>
+            <a
+              href={routes.participation.index.href()}
+              id="hero-participa-btn"
+              style={`
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 13px 31px;
+                border-radius: 6px;
+                background: transparent;
+                color: #ffffff;
+                font-family: ${FONT_STACK};
+                font-size: 14px;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                text-decoration: none;
+                border: 2px solid rgba(255,255,255,0.7);
+                transition: background 200ms ease;
+              `}
+            >
+              {btn2Text}
+            </a>
+          </div>
+
+          {/* Scroll indicator */}
+          <div
+            aria-hidden="true"
+            mix={css({
+              position: "absolute",
+              bottom: "20px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "6px",
+              opacity: 0.6,
+            })}
+          >
+            <span
+              style={`
+                font-family: ${FONT_STACK};
+                font-size: 10px;
+                letter-spacing: 0.15em;
+                text-transform: uppercase;
+                color: rgba(255,255,255,0.7);
+              `}
+            >
+              Explorar
+            </span>
+          </div>
+        </div>
+
+        {/* Carousel Script (if 2+ images) */}
+        {hasCarousel && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function() {
+                  var total = ${rawImgs.length};
+                  var current = 0;
+                  var interval = null;
+                  var accent = '${accentColor}';
+
+                  function showSlide(index) {
+                    current = (index + total) % total;
+                    var slides = document.querySelectorAll('.hero-slide');
+                    var dots = document.querySelectorAll('.hero-dot');
+                    for (var i = 0; i < slides.length; i++) {
+                      slides[i].style.opacity = i === current ? '1' : '0';
+                      slides[i].style.transform = i === current ? 'scale(1.02)' : 'scale(1)';
+                    }
+                    for (var d = 0; d < dots.length; d++) {
+                      dots[d].style.width = d === current ? '24px' : '8px';
+                      dots[d].style.background = d === current ? accent : 'rgba(255,255,255,0.45)';
+                    }
+                  }
+
+                  function startTimer() {
+                    stopTimer();
+                    interval = setInterval(function() {
+                      showSlide(current + 1);
+                    }, 5000);
+                  }
+
+                  function stopTimer() {
+                    if (interval) clearInterval(interval);
+                  }
+
+                  var prev = document.getElementById('hero-prev-btn');
+                  var next = document.getElementById('hero-next-btn');
+                  if (prev) {
+                    prev.addEventListener('click', function() {
+                      showSlide(current - 1);
+                      startTimer();
+                    });
+                  }
+                  if (next) {
+                    next.addEventListener('click', function() {
+                      showSlide(current + 1);
+                      startTimer();
+                    });
+                  }
+
+                  var dotsContainer = document.getElementById('hero-dots');
+                  if (dotsContainer) {
+                    var allDots = dotsContainer.querySelectorAll('.hero-dot');
+                    allDots.forEach(function(dot, idx) {
+                      dot.addEventListener('click', function() {
+                        showSlide(idx);
+                        startTimer();
+                      });
+                    });
+                  }
+
+                  startTimer();
+                })();
+              `,
+            }}
+          />
+        )}
+      </section>
+    );
+  };
 }
 
 // ---------------------------------------------------------------------------
 // What Is This Site
 // ---------------------------------------------------------------------------
 
-function WhatIsThisSite() {
-  return () => (
-    <section
-      id="que-es"
-      aria-labelledby="que-es-heading"
-      mix={css({
-        ...sectionPaddingProps,
-        background: colors.gray50,
-      })}
-    >
-      <div
+function WhatIsThisSite({ theme }: { theme?: any }) {
+  return () => {
+    const u = theme?.usuario || {};
+    const c = u.colores || {};
+    const img = u.imagenes || {};
+    const txt = u.textos || {};
+
+    const primary = c.primario || colors.burgundy900;
+    const cintillo = txt.queEsCintillo || "¿Qué es este sitio?";
+    const titulo = txt.queEsTitulo || "Tu ventana al ordenamiento territorial del municipio";
+    const p1 =
+      txt.queEsParrafo1 ||
+      "Este portal es la Bitácora Ambiental del Municipio de San Pedro Tlaquepaque — un espacio oficial y transparente donde los ciudadanos, investigadores y funcionarios pueden dar seguimiento al avance del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.";
+    const p2 =
+      txt.queEsParrafo2 ||
+      "Aquí encontrarás documentos técnicos, calendarios de actividades, las fases del proceso y un mecanismo directo para registrar tus observaciones y participar en la toma de decisiones sobre el territorio que habitamos.";
+    const ecoImg = img.imagenEcologia || `${basePath}/images/ecology-split.jpg`;
+
+    return (
+      <section
+        id="que-es"
+        aria-labelledby="que-es-heading"
         mix={css({
-          ...sectionContainerProps,
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "80px",
-          alignItems: "center",
-          "@media (max-width: 900px)": {
-            gridTemplateColumns: "1fr",
-            gap: "48px",
-          },
+          ...sectionPaddingProps,
+          background: colors.gray50,
         })}
       >
-        {/* Text column */}
-        <div mix={css({ display: 'flex', flexDirection: 'column', gap: '24px' })}>
-          <span mix={css({ ...eyebrowProps, color: colors.burgundy900 })}>¿Qué es este sitio?</span>
-          <h2 id="que-es-heading" mix={css({ ...headingLProps, margin: 0 })}>
-            Tu ventana al ordenamiento territorial del municipio
-          </h2>
-          <p mix={css({ ...bodyLargeProps, margin: 0 })}>
-            Este portal es la <strong>Bitácora Ambiental</strong> del Municipio de San Pedro
-            Tlaquepaque — un espacio oficial y transparente donde los ciudadanos, investigadores y
-            funcionarios pueden dar seguimiento al avance del Programa de Ordenamiento Ecológico
-            Territorial y de Desarrollo Urbano.
-          </p>
-          <p mix={css({ ...bodyProps, margin: 0 })}>
-            Aquí encontrarás documentos técnicos, calendarios de actividades, las fases del proceso
-            y un mecanismo directo para registrar tus observaciones y participar en la toma de
-            decisiones sobre el territorio que habitamos.
-          </p>
-
-          {/* Feature bullets */}
-          <div
-            mix={css({ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' })}
-          >
-            {[
-              "Acceso a documentos técnicos oficiales",
-              "Seguimiento de fases y avances del programa",
-              "Participación ciudadana directa y simplificada",
-              "Consulta del calendario de actividades",
-            ].map((feature) => (
-              <div
-                key={feature}
-                mix={css({ display: 'flex', alignItems: 'flex-start', gap: '12px' })}
-              >
-                <div
-                  mix={css({
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: colors.burgundy900,
-                    flexShrink: 0,
-                    marginTop: "2px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  })}
-                  aria-hidden="true"
-                >
-                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                    <path
-                      d="M1 4l3 3 5-6"
-                      stroke="white"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </div>
-                <span
-                  mix={css({
-                    fontFamily: FONT_STACK,
-                    fontSize: '15px',
-                    lineHeight: 1.5,
-                    color: colors.gray700,
-                  })}
-                >
-                  {feature}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Image column */}
         <div
           mix={css({
-            position: "relative",
-            borderRadius: "16px",
-            overflow: "hidden",
-            aspectRatio: "4/3",
-            boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
+            ...sectionContainerProps,
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "80px",
+            alignItems: "center",
+            "@media (max-width: 900px)": {
+              gridTemplateColumns: "1fr",
+              gap: "48px",
+            },
           })}
         >
-          <img
-            src={`${basePath}/images/ecology-split.jpg`}
-            alt="División entre ecosistema verde y zona árida de Jalisco, representando el equilibrio ecológico"
-            mix={css({
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              display: "block",
-            })}
-          />
+          {/* Text column */}
+          <div mix={css({ display: "flex", flexDirection: "column", gap: "24px" })}>
+            <span style={`font-family: ${FONT_STACK}; font-size: 12px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: ${primary};`}>
+              {cintillo}
+            </span>
+            <h2 id="que-es-heading" mix={css({ ...headingLProps, margin: 0 })}>
+              {titulo}
+            </h2>
+            <p mix={css({ ...bodyLargeProps, margin: 0 })}>{p1}</p>
+            <p mix={css({ ...bodyProps, margin: 0 })}>{p2}</p>
+
+            {/* Feature bullets */}
+            <div
+              mix={css({ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" })}
+            >
+              {[
+                "Acceso a documentos técnicos oficiales",
+                "Seguimiento de fases y avances del programa",
+                "Participación ciudadana directa y simplificada",
+                "Consulta del calendario de actividades",
+              ].map((feature) => (
+                <div
+                  key={feature}
+                  mix={css({ display: "flex", alignItems: "flex-start", gap: "12px" })}
+                >
+                  <div
+                    style={`
+                      width: 20px;
+                      height: 20px;
+                      border-radius: 50%;
+                      background: ${primary};
+                      flex-shrink: 0;
+                      margin-top: 2px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                    `}
+                    aria-hidden="true"
+                  >
+                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                      <path
+                        d="M1 4l3 3 5-6"
+                        stroke="white"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <span
+                    mix={css({
+                      fontFamily: FONT_STACK,
+                      fontSize: "15px",
+                      lineHeight: 1.5,
+                      color: colors.gray700,
+                    })}
+                  >
+                    {feature}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Image column */}
           <div
             mix={css({
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              background:
-                "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)",
-              padding: "32px 24px 20px",
+              position: "relative",
+              borderRadius: "16px",
+              overflow: "hidden",
+              aspectRatio: "4/3",
+              boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
             })}
           >
-            <p
+            <img
+              src={ecoImg}
+              alt="Equilibrio ecológico y territorial"
               mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '12px',
-                color: 'rgba(255,255,255,0.8)',
-                margin: 0,
-                letterSpacing: '0.05em',
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+              })}
+            />
+            <div
+              mix={css({
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)",
+                padding: "32px 24px 20px",
               })}
             >
-              Equilibrio ecológico • Jalisco, México
-            </p>
+              <p
+                mix={css({
+                  fontFamily: FONT_STACK,
+                  fontSize: "12px",
+                  color: "rgba(255,255,255,0.8)",
+                  margin: 0,
+                  letterSpacing: "0.05em",
+                })}
+              >
+                Equilibrio ecológico • Jalisco, México
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
-  );
+      </section>
+    );
+  };
 }
 
 // ---------------------------------------------------------------------------
 // Action Cards Grid
 // ---------------------------------------------------------------------------
 
-interface ActionCard {
-  id: string;
-  icon: string;
-  eyebrow: string;
-  title: string;
-  description: string;
-  href: string;
-  cta: string;
-  accent: string;
-}
+function ActionCardsGrid({ theme }: { theme?: any }) {
+  return () => {
+    const u = theme?.usuario || {};
+    const c = u.colores || {};
+    const ico = u.iconos || {};
+    const txt = u.textos || {};
 
-const ACTION_CARDS: ActionCard[] = [
-  {
-    id: 'card-programa',
-    icon: '🏛️',
-    eyebrow: 'Marco normativo',
-    title: 'Conoce el Programa',
-    description:
-      'Explora los fundamentos legales, objetivos y alcances del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
-    href: '#que-es-el-programa',
-    cta: 'Ver programa',
-    accent: colors.burgundy900,
-  },
-  {
-    id: 'card-proceso',
-    icon: '⚙️',
-    eyebrow: 'Metodología',
-    title: 'Conoce el Proceso',
-    description:
-      'Entiende las cinco fases del proceso: desde la formulación hasta la evaluación continua del ordenamiento territorial.',
-    href: '#proceso',
-    cta: 'Ver fases',
-    accent: colors.green700,
-  },
-  {
-    id: 'card-calendario',
-    icon: '📅',
-    eyebrow: 'Agenda de participación',
-    title: 'Calendario de Actividades',
-    description:
-      'Consulta las fechas de talleres, mesas de trabajo, consultas públicas y sesiones técnicas del programa.',
-    href: '#calendario',
-    cta: 'Ver calendario',
-    accent: colors.gold500,
-  },
-  {
-    id: 'card-documentos',
-    icon: '📄',
-    eyebrow: 'Repositorio técnico',
-    title: 'Consulta Documentos',
-    description:
-      'Accede a la memoria técnica, estudios de diagnóstico, cartografía y acuerdos oficiales del proceso de ordenamiento.',
-    href: '#documentos',
-    cta: 'Ver documentos',
-    accent: colors.gray700,
-  },
-];
+    const primary = c.primario || colors.burgundy900;
+    const secondary = c.secundario || colors.green700;
+    const accent = c.acento || colors.gold500;
 
-function ActionCardsGrid() {
-  return () => (
-    <section
-      aria-labelledby="acciones-heading"
-      mix={css({ ...sectionPaddingProps, background: colors.white })}
-    >
-      <div mix={css(sectionContainerProps)}>
-        <div
-          mix={css({
-            textAlign: "center",
-            marginBottom: "64px",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "16px",
-          })}
-        >
-          <span mix={css({ ...eyebrowProps, color: colors.burgundy900 })}>
-            Explora lo que puedes hacer aquí
-          </span>
-          <h2 id="acciones-heading" mix={css({ ...headingLProps, margin: 0, maxWidth: '600px' })}>
-            Todo lo que necesitas para estar informado y participar
-          </h2>
+    const cards = [
+      {
+        id: "card-programa",
+        icon: ico.cardPrograma || "🏛️",
+        eyebrow: "Marco normativo",
+        title: txt.card1Titulo || "Conoce el Programa",
+        description:
+          txt.card1Desc ||
+          "Explora los fundamentos legales, objetivos y alcances del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.",
+        href: "#que-es-el-programa",
+        cta: "Ver programa",
+        accent: primary,
+      },
+      {
+        id: "card-proceso",
+        icon: ico.cardProceso || "⚙️",
+        eyebrow: "Metodología",
+        title: txt.card2Titulo || "Conoce el Proceso",
+        description:
+          txt.card2Desc ||
+          "Entiende las cinco fases del proceso: desde la formulación hasta la evaluación continua del ordenamiento territorial.",
+        href: "#proceso",
+        cta: "Ver fases",
+        accent: secondary,
+      },
+      {
+        id: "card-calendario",
+        icon: ico.cardCalendario || "📅",
+        eyebrow: "Agenda de participación",
+        title: txt.card3Titulo || "Calendario de Actividades",
+        description:
+          txt.card3Desc ||
+          "Consulta las fechas de talleres, mesas de trabajo, consultas públicas y sesiones técnicas del programa.",
+        href: "#calendario",
+        cta: "Ver calendario",
+        accent: accent,
+      },
+      {
+        id: "card-documentos",
+        icon: ico.cardDocumentos || "📄",
+        eyebrow: "Repositorio técnico",
+        title: txt.card4Titulo || "Consulta Documentos",
+        description:
+          txt.card4Desc ||
+          "Accede a la memoria técnica, estudios de diagnóstico, cartografía y acuerdos oficiales del proceso de ordenamiento.",
+        href: "#documentos",
+        cta: "Ver documentos",
+        accent: colors.gray700,
+      },
+    ];
+
+    return (
+      <section
+        aria-labelledby="acciones-heading"
+        mix={css({ ...sectionPaddingProps, background: colors.white })}
+      >
+        <div mix={css(sectionContainerProps)}>
+          <div
+            mix={css({
+              textAlign: "center",
+              marginBottom: "64px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "16px",
+            })}
+          >
+            <span style={`font-family: ${FONT_STACK}; font-size: 12px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: ${primary};`}>
+              Explora lo que puedes hacer aquí
+            </span>
+            <h2 id="acciones-heading" mix={css({ ...headingLProps, margin: 0, maxWidth: "600px" })}>
+              Todo lo que necesitas para estar informado y participar
+            </h2>
+          </div>
+
+          <div
+            mix={css({
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: "24px",
+              "@media (max-width: 1024px)": {
+                gridTemplateColumns: "repeat(2, 1fr)",
+              },
+              "@media (max-width: 600px)": { gridTemplateColumns: "1fr" },
+            })}
+          >
+            {cards.map((card) => (
+              <a
+                key={card.id}
+                id={card.id}
+                href={card.href}
+                mix={css({
+                  ...cardProps,
+                  textDecoration: "none",
+                  color: "inherit",
+                  cursor: "pointer",
+                })}
+              >
+                <div
+                  style={`
+                    width: 56px;
+                    height: 56px;
+                    border-radius: 14px;
+                    background: ${card.accent}18;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 26px;
+                    flex-shrink: 0;
+                    border: 1px solid ${card.accent}28;
+                  `}
+                  aria-hidden="true"
+                >
+                  {card.icon}
+                </div>
+
+                <div
+                  mix={css({
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                    flex: 1,
+                  })}
+                >
+                  <span
+                    style={`
+                      font-family: ${FONT_STACK};
+                      font-size: 11px;
+                      font-weight: 700;
+                      letter-spacing: 0.12em;
+                      text-transform: uppercase;
+                      color: ${card.accent};
+                    `}
+                  >
+                    {card.eyebrow}
+                  </span>
+                  <h3
+                    mix={css({
+                      fontFamily: FONT_STACK,
+                      fontSize: "17px",
+                      fontWeight: 700,
+                      lineHeight: 1.3,
+                      color: colors.gray900,
+                      margin: 0,
+                    })}
+                  >
+                    {card.title}
+                  </h3>
+                  <p
+                    mix={css({
+                      fontFamily: FONT_STACK,
+                      fontSize: "14px",
+                      lineHeight: 1.6,
+                      color: colors.gray500,
+                      margin: 0,
+                    })}
+                  >
+                    {card.description}
+                  </p>
+                </div>
+
+                <div
+                  style={`
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-family: ${FONT_STACK};
+                    font-size: 13px;
+                    font-weight: 700;
+                    color: ${card.accent};
+                    letter-spacing: 0.04em;
+                    margin-top: auto;
+                  `}
+                >
+                  {card.cta}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M5 12h14M12 5l7 7-7 7"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+              </a>
+            ))}
+          </div>
         </div>
-
-        <div
-          mix={css({
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "24px",
-            "@media (max-width: 1024px)": {
-              gridTemplateColumns: "repeat(2, 1fr)",
-            },
-            "@media (max-width: 600px)": { gridTemplateColumns: "1fr" },
-          })}
-        >
-          {ACTION_CARDS.map((card) => (
-            <a
-              key={card.id}
-              id={card.id}
-              href={card.href}
-              mix={css({
-                ...cardProps,
-                textDecoration: 'none',
-                color: 'inherit',
-                cursor: 'pointer',
-              })}
-            >
-              <div
-                mix={css({
-                  width: "56px",
-                  height: "56px",
-                  borderRadius: "14px",
-                  background: `${card.accent}18`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "26px",
-                  flexShrink: 0,
-                  border: `1px solid ${card.accent}28`,
-                })}
-                aria-hidden="true"
-              >
-                {card.icon}
-              </div>
-
-              <div
-                mix={css({
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
-                  flex: 1,
-                })}
-              >
-                <span
-                  mix={css({
-                    fontFamily: FONT_STACK,
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    letterSpacing: "0.12em",
-                    textTransform: "uppercase",
-                    color: card.accent,
-                  })}
-                >
-                  {card.eyebrow}
-                </span>
-                <h3
-                  mix={css({
-                    fontFamily: FONT_STACK,
-                    fontSize: '17px',
-                    fontWeight: 700,
-                    lineHeight: 1.3,
-                    color: colors.gray900,
-                    margin: 0,
-                  })}
-                >
-                  {card.title}
-                </h3>
-                <p
-                  mix={css({
-                    fontFamily: FONT_STACK,
-                    fontSize: '14px',
-                    lineHeight: 1.6,
-                    color: colors.gray500,
-                    margin: 0,
-                  })}
-                >
-                  {card.description}
-                </p>
-              </div>
-
-              <div
-                mix={css({
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  fontFamily: FONT_STACK,
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  color: card.accent,
-                  letterSpacing: "0.04em",
-                  marginTop: "auto",
-                })}
-              >
-                {card.cta}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path
-                    d="M5 12h14M12 5l7 7-7 7"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </div>
-            </a>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
+      </section>
+    );
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1181,201 +1370,220 @@ function ParticipationCta() {
 // Footer
 // ---------------------------------------------------------------------------
 
-function SiteFooter() {
-  return () => (
-    <footer mix={css({ background: colors.gray950, padding: '64px 24px 32px' })}>
-      <div
-        mix={css({
-          ...sectionContainerProps,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '48px',
-        })}
+function SiteFooter({ theme }: { theme?: any }) {
+  return () => {
+    const u = theme?.usuario || {};
+    const c = u.colores || {};
+    const img = u.imagenes || {};
+    const txt = u.textos || {};
+
+    const footerBg = c.footerFondo || colors.gray950;
+    const footerText = c.footerTexto || "#ffffff";
+    const accent = c.acento || colors.gold400;
+    const footerLogo = img.logoFooter || "";
+    const entidad = txt.footerEntidad || "Municipio de San Pedro Tlaquepaque";
+    const desc =
+      txt.footerDesc ||
+      "Portal oficial de la Bitácora Ambiental del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.";
+    const contacto =
+      txt.footerContacto ||
+      "Dirección de Medio Ambiente y Ecología\nH. Ayuntamiento de San Pedro Tlaquepaque\nJalisco, México";
+    const email = txt.footerEmail || "ordenamiento@tlaquepaque.gob.mx";
+    const copyright =
+      txt.footerCopyright ||
+      "© 2026 H. Ayuntamiento de San Pedro Tlaquepaque. Todos los derechos reservados.";
+
+    return (
+      <footer
+        style={`background: ${footerBg}; color: ${footerText}; padding: 64px 24px 32px;`}
       >
-        {/* Top row */}
         <div
           mix={css({
-            display: "grid",
-            gridTemplateColumns: "2fr 1fr 1fr",
+            ...sectionContainerProps,
+            display: "flex",
+            flexDirection: "column",
             gap: "48px",
-            "@media (max-width: 768px)": {
-              gridTemplateColumns: "1fr",
-              gap: "40px",
-            },
           })}
         >
-          {/* Brand column */}
+          {/* Top row */}
           <div
-            mix={css({ display: "flex", flexDirection: "column", gap: "16px" })}
+            mix={css({
+              display: "grid",
+              gridTemplateColumns: "2fr 1fr 1fr",
+              gap: "48px",
+              "@media (max-width: 768px)": {
+                gridTemplateColumns: "1fr",
+                gap: "40px",
+              },
+            })}
           >
-            <div
-              mix={css({ display: "flex", alignItems: "center", gap: "12px" })}
-            >
-              <div
-                mix={css({
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  background: `linear-gradient(135deg, ${colors.gold400} 0%, ${colors.gold500} 100%)`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "12px",
-                  fontWeight: 900,
-                  color: colors.burgundy900,
-                  flexShrink: 0,
-                })}
-                aria-hidden="true"
-              >
-                SPT
+            {/* Brand column */}
+            <div mix={css({ display: "flex", flexDirection: "column", gap: "16px" })}>
+              <div mix={css({ display: "flex", alignItems: "center", gap: "12px" })}>
+                {footerLogo ? (
+                  <img
+                    src={footerLogo}
+                    alt="Logo Footer"
+                    style="max-height: 44px; max-width: 120px; object-fit: contain;"
+                  />
+                ) : (
+                  <div
+                    style={`
+                      width: 40px;
+                      height: 40px;
+                      border-radius: 50%;
+                      background: linear-gradient(135deg, ${accent} 0%, #c9a227 100%);
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-size: 12px;
+                      font-weight: 900;
+                      color: #0f1117;
+                      flex-shrink: 0;
+                    `}
+                    aria-hidden="true"
+                  >
+                    SPT
+                  </div>
+                )}
+                <span
+                  style={`
+                    font-family: ${FONT_STACK};
+                    font-size: 15px;
+                    font-weight: 700;
+                    color: ${footerText};
+                  `}
+                >
+                  {entidad}
+                </span>
               </div>
-              <span
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  color: colors.white,
-                })}
+              <p
+                style={`
+                  font-family: ${FONT_STACK};
+                  font-size: 14px;
+                  line-height: 1.7;
+                  color: rgba(255,255,255,0.7);
+                  margin: 0;
+                  max-width: 360px;
+                `}
               >
-                Municipio de San Pedro Tlaquepaque
-              </span>
+                {desc}
+              </p>
             </div>
-            <p
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '14px',
-                lineHeight: 1.7,
-                color: colors.gray400,
-                margin: 0,
-                maxWidth: '360px',
-              })}
-            >
-              Portal oficial de la Bitácora Ambiental del Programa de Ordenamiento Ecológico
-              Territorial y de Desarrollo Urbano.
-            </p>
-          </div>
 
-          {/* Navigation */}
-          <div mix={css({ display: 'flex', flexDirection: 'column', gap: '12px' })}>
-            <span
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '11px',
-                fontWeight: 700,
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase',
-                color: colors.gray500,
-              })}
-            >
-              Navegación
-            </span>
-            {[
-              "Inicio",
-              "El Programa",
-              "El Proceso",
-              "Documentos",
-              "Calendario",
-              ""
-            ].map((link) => (
-              <a
-                key={link}
-                href="#"
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '14px',
-                  color: colors.gray400,
-                  textDecoration: 'none',
-                  transition: 'color 150ms ease',
-                  '&:hover': { color: colors.white },
-                })}
+            {/* Navigation */}
+            <div mix={css({ display: "flex", flexDirection: "column", gap: "12px" })}>
+              <span
+                style={`
+                  font-family: ${FONT_STACK};
+                  font-size: 11px;
+                  font-weight: 700;
+                  letter-spacing: 0.15em;
+                  text-transform: uppercase;
+                  color: rgba(255,255,255,0.5);
+                `}
               >
-                {link}
+                Navegación
+              </span>
+              {[
+                { label: "Inicio", href: routes.home.href() },
+                { label: "El Programa", href: "#que-es-el-programa" },
+                { label: "El Proceso", href: "#proceso" },
+                { label: "Documentos", href: "#documentos" },
+                { label: "Elaboración POETDUM", href: routes.poetdum.show.href() },
+              ].map((link) => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  style={`
+                    font-family: ${FONT_STACK};
+                    font-size: 14px;
+                    color: rgba(255,255,255,0.7);
+                    text-decoration: none;
+                    transition: color 150ms ease;
+                  `}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+
+            {/* Contact */}
+            <div mix={css({ display: "flex", flexDirection: "column", gap: "12px" })}>
+              <span
+                style={`
+                  font-family: ${FONT_STACK};
+                  font-size: 11px;
+                  font-weight: 700;
+                  letter-spacing: 0.15em;
+                  text-transform: uppercase;
+                  color: rgba(255,255,255,0.5);
+                `}
+              >
+                Contacto
+              </span>
+              <p
+                style={`
+                  font-family: ${FONT_STACK};
+                  font-size: 14px;
+                  line-height: 1.7;
+                  color: rgba(255,255,255,0.7);
+                  margin: 0;
+                  white-space: pre-line;
+                `}
+              >
+                {contacto}
+              </p>
+              <a
+                href={`mailto:${email}`}
+                style={`
+                  font-family: ${FONT_STACK};
+                  font-size: 14px;
+                  color: ${accent};
+                  text-decoration: none;
+                `}
+              >
+                {email}
               </a>
-            ))}
+            </div>
           </div>
 
-          {/* Contact */}
-          <div mix={css({ display: 'flex', flexDirection: 'column', gap: '12px' })}>
-            <span
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '11px',
-                fontWeight: 700,
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase',
-                color: colors.gray500,
-              })}
-            >
-              Contacto
-            </span>
+          {/* Divider */}
+          <div style="height: 1px; background: rgba(255,255,255,0.12);" aria-hidden="true" />
+
+          {/* Bottom bar */}
+          <div
+            mix={css({
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "16px",
+            })}
+          >
             <p
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '14px',
-                lineHeight: 1.7,
-                color: colors.gray400,
-                margin: 0,
-              })}
+              style={`
+                font-family: ${FONT_STACK};
+                font-size: 13px;
+                color: rgba(255,255,255,0.55);
+                margin: 0;
+              `}
             >
-              Dirección de Medio Ambiente y Ecología
-              <br />
-              H. Ayuntamiento de San Pedro Tlaquepaque
-              <br />
-              Jalisco, México
+              {copyright}
             </p>
-            <a
-              href="mailto:ordenamiento@tlaquepaque.gob.mx"
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '14px',
-                color: colors.gold400,
-                textDecoration: 'none',
-                '&:hover': { color: colors.gold300 },
-              })}
+            <p
+              style={`
+                font-family: ${FONT_STACK};
+                font-size: 13px;
+                color: rgba(255,255,255,0.55);
+                margin: 0;
+              `}
             >
-              ordenamiento@tlaquepaque.gob.mx
-            </a>
+              Portal de Ordenamiento Territorial · Bitácora Ambiental
+            </p>
           </div>
         </div>
-
-        {/* Divider */}
-        <div
-          mix={css({ height: "1px", background: colors.gray800 })}
-          aria-hidden="true"
-        />
-
-        {/* Bottom bar */}
-        <div
-          mix={css({
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '16px',
-          })}
-        >
-          <p
-            mix={css({
-              fontFamily: FONT_STACK,
-              fontSize: '13px',
-              color: colors.gray500,
-              margin: 0,
-            })}
-          >
-            © 2026 H. Ayuntamiento de San Pedro Tlaquepaque. Todos los derechos reservados.
-          </p>
-          <p
-            mix={css({
-              fontFamily: FONT_STACK,
-              fontSize: '13px',
-              color: colors.gray500,
-              margin: 0,
-            })}
-          >
-            Portal de Ordenamiento Territorial · Bitácora Ambiental
-          </p>
-        </div>
-      </div>
-    </footer>
-  );
+      </footer>
+    );
+  };
 }

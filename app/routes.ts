@@ -32,5 +32,6 @@ export const adminRoutes = route({
   poel: form(`${basePath}/admin/poel`),
   estadisticas: get(`${basePath}/admin/estadisticas`),
   cuenta: get(`${basePath}/admin/cuenta`),
+  personalizacion: form(`${basePath}/admin/personalizacion`),
 })
 

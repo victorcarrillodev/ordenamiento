@@ -1,5 +1,6 @@
 import { mkdir, writeFile, readFile } from 'node:fs/promises'
 import { join, isAbsolute } from 'node:path'
+import { Buffer } from 'node:buffer'
 
 import {
   clearSessionCookie,
@@ -36,9 +37,18 @@ import { listPoel, createPoelSesion, deletePoelSesion } from './services/poel.ts
 import { exportTableToXlsx, isExportable } from './services/export.ts'
 import { participationDocx } from './services/word.ts'
 import { enviarParticipacion, enviarAcuseReciboParticipacion, enviarAviso, enviarCorreoPrueba, mailConfigurado } from './services/mail.ts'
+import {
+  getCustomizations,
+  saveCustomizations,
+  listAuditLogs,
+  restoreAuditSnapshot,
+  saveUploadedBrandingImage,
+  DEFAULT_THEME_CONFIG,
+} from './services/customizations.ts'
 import { sql } from './db/pool.ts'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
+const BRANDING_DIR = join(process.cwd(), 'uploads', 'branding')
 const MAX_UPLOAD_BYTES = 220 * 1024 * 1024 // 220 MB (formulario)
 
 function json(data: unknown, init?: number | ResponseInit): Response {
@@ -649,12 +659,104 @@ export async function handleRequest(request: Request): Promise<Response> {
     return json({ ok: true, sesion }, 201)
   }
 
-  const poelDeleteMatch = method === 'DELETE' ? matchPath(pathname, '/api/poel/:id') : null
-  if (poelDeleteMatch) {
+  // ── Personalización y Marca (Theme Settings & Audit) ─────────────
+  if (method === 'GET' && pathname === '/api/settings/theme') {
+    const theme = await getCustomizations()
+    return json({ ok: true, theme })
+  }
+
+  if (method === 'POST' && pathname === '/api/settings/theme') {
     const authError = requireAdmin()
     if (authError) return authError
-    if (!(await deletePoelSesion(Number(poelDeleteMatch.id)))) return json({ error: 'No encontrado' }, 404)
-    return json({ ok: true })
+    const body = (await request.json()) as {
+      config?: Partial<typeof DEFAULT_THEME_CONFIG>
+      motivo?: string
+      section?: 'usuario' | 'panel' | 'general'
+    }
+    if (!body.config) return json({ error: 'Falta config' }, 400)
+    const motivo = (body.motivo ?? '').trim()
+    if (!motivo) return json({ error: 'Debes indicar el motivo del cambio por seguridad' }, 400)
+
+    const updated = await saveCustomizations({
+      config: body.config,
+      user: {
+        id: user!.id,
+        name: user!.name,
+        email: (user as any).email || user!.name,
+      },
+      motivo,
+      section: body.section,
+    })
+    return json({ ok: true, theme: updated })
+  }
+
+  if (method === 'GET' && pathname === '/api/settings/audit') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const logs = await listAuditLogs()
+    return json({ ok: true, logs })
+  }
+
+  const restoreMatch =
+    method === 'POST' ? matchPath(pathname, '/api/settings/restore/:id') : null
+  if (restoreMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const body = (await request.json().catch(() => ({}))) as { motivo?: string }
+    const restored = await restoreAuditSnapshot(
+      Number(restoreMatch.id),
+      {
+        id: user!.id,
+        name: user!.name,
+        email: (user as any).email || user!.name,
+      },
+      body.motivo || 'Restauración de versión anterior',
+    )
+    if (!restored) return json({ error: 'Registro de auditoría no encontrado' }, 404)
+    return json({ ok: true, theme: restored })
+  }
+
+  if (method === 'POST' && pathname === '/api/settings/upload') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const form = await request.formData()
+    const file = (form.get('file') ?? form.get('imagen')) as unknown as File | null
+    if (!file || !(file instanceof File) || file.size === 0) {
+      return json({ error: 'No se envió ninguna imagen válida' }, 400)
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      return json({ error: 'La imagen excede el límite de 20 MB' }, 413)
+    }
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const res = await saveUploadedBrandingImage(buffer, file.name)
+    return json({ ok: true, url: res.url, filename: res.filename }, 201)
+  }
+
+  const brandingAssetMatch =
+    method === 'GET' ? matchPath(pathname, '/api/settings/assets/:file') : null
+  if (brandingAssetMatch) {
+    const filename = brandingAssetMatch.file.replace(/[^a-zA-Z0-9_.-]/g, '')
+    const fullPath = join(BRANDING_DIR, filename)
+    try {
+      const fileBytes = await readFile(fullPath)
+      const ext = filename.split('.').pop()?.toLowerCase() ?? ''
+      let mime = 'application/octet-stream'
+      if (ext === 'png') mime = 'image/png'
+      else if (ext === 'jpg' || ext === 'jpeg') mime = 'image/jpeg'
+      else if (ext === 'webp') mime = 'image/webp'
+      else if (ext === 'svg') mime = 'image/svg+xml'
+      else if (ext === 'gif') mime = 'image/gif'
+      else if (ext === 'ico') mime = 'image/x-icon'
+
+      return new Response(new Uint8Array(fileBytes), {
+        headers: {
+          'content-type': mime,
+          'cache-control': 'public, max-age=86400',
+        },
+      })
+    } catch {
+      return json({ error: 'Archivo no encontrado' }, 404)
+    }
   }
 
   return json({ error: 'No encontrado' }, 404)
