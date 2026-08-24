@@ -35,12 +35,8 @@ cd backend
 docker compose up -d --build
 ```
 
-Crea la BD y la API. La BD arranca vacía (sin usuarios). Para crear el admin:
-
-```sh
-# dentro del contenedor de la api
-docker compose exec api bun src/seed.ts
-```
+Crea la BD y la API. Al arrancar, la API siembra sola la cuenta ROOT (ver
+`ROOT_PASSWORD` abajo) y datos de demo — no hace falta ningún paso manual.
 
 ### En local (Bun + Postgres nativo)
 
@@ -51,10 +47,7 @@ docker compose up -d db
 # 2. Instalar dependencias
 bun install
 
-# 3. Migrar + seed de ejemplo
-bun run src/seed.ts
-
-# 4. Servidor
+# 3. Servidor (migra el schema y siembra ROOT + demo al arrancar)
 bun run dev
 ```
 
@@ -67,9 +60,10 @@ Servidor en `http://localhost:5920`.
   Configura un valor real en un archivo `.env` local (no versionado).
 - `DATABASE_URL` por defecto usa credenciales de desarrollo
   (`postgres:postgres`). Cámbialas en tu entorno real.
-- La contraseña del admin de seed (`admin123`) es **solo para desarrollo**.
-  En producción crea usuarios reales con `/api/auth/register` o el seed con
-  contraseñas fuertes.
+- La cuenta ROOT nunca tiene password hardcodeado: se define con
+  `ROOT_PASSWORD` (ver `.env.docker.example`). En desarrollo, si falta, se
+  genera uno aleatorio temporal visible solo en el log de arranque. En
+  producción, si falta, el servidor no arranca (fail-fast).
 
 ## Endpoints
 

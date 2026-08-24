@@ -6,8 +6,8 @@
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { backendFetch, backendUser } from '../../backend.ts'
-import { adminRoutes, routes } from '../../routes.ts'
+import { backendFetch, requireAdminUser } from '../../backend.ts'
+import { adminRoutes } from '../../routes.ts'
 
 export default createController(adminRoutes.usuarios, {
   actions: {
@@ -16,8 +16,8 @@ export default createController(adminRoutes.usuarios, {
     },
 
     async action(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
       if (user.role !== 'admin') return redirect(adminRoutes.index.href())
 
       const formData = await context.request.formData()

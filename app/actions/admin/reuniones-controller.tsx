@@ -6,8 +6,8 @@
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { backendFetch, backendUser } from '../../backend.ts'
-import { adminRoutes, routes } from '../../routes.ts'
+import { backendFetch, requireAdminUser } from '../../backend.ts'
+import { adminRoutes } from '../../routes.ts'
 import { ReunionesPage } from './reuniones-page.tsx'
 
 interface Reunion {
@@ -27,14 +27,14 @@ async function reunionesDe(request: Request): Promise<Reunion[]> {
 export default createController(adminRoutes.reuniones, {
   actions: {
     async index(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
       return context.render(<ReunionesPage user={user} reuniones={await reunionesDe(context.request)} />)
     },
 
     async action(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
 
       const formData = await context.request.formData()
       const intent = String(formData.get('intent') ?? 'crear')

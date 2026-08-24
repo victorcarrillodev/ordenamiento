@@ -4,8 +4,8 @@
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { backendFetch, backendUser } from '../../backend.ts'
-import { adminRoutes, routes } from '../../routes.ts'
+import { backendFetch, requireAdminUser } from '../../backend.ts'
+import { adminRoutes } from '../../routes.ts'
 import { AvisosPage } from './avisos-page.tsx'
 import { PoelPage } from './poel-page.tsx'
 
@@ -22,14 +22,14 @@ async function poelDe(request: Request) {
 export const avisosController = createController(adminRoutes.avisos, {
   actions: {
     async index(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
       return context.render(<AvisosPage user={user} avisos={await avisosDe(context.request)} />)
     },
 
     async action(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
 
       const formData = await context.request.formData()
       const intent = String(formData.get('intent') ?? 'crear')
@@ -51,14 +51,14 @@ export const avisosController = createController(adminRoutes.avisos, {
 export const poelController = createController(adminRoutes.poel, {
   actions: {
     async index(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
       return context.render(<PoelPage user={user} sesiones={await poelDe(context.request)} />)
     },
 
     async action(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
 
       const formData = await context.request.formData()
       const intent = String(formData.get('intent') ?? 'crear')

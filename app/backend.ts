@@ -3,6 +3,9 @@
  * El servidor Remix actúa como intermediario: hace fetch al backend (5920)
  * y reenvía la cookie de sesión del admin al navegador.
  */
+import { redirect } from 'remix/response/redirect'
+
+import { routes } from './routes.ts'
 
 export const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:5920'
 
@@ -68,4 +71,13 @@ export async function backendUser(request: Request): Promise<AdminUser | null> {
   const response = await backendFetch(request, '/api/auth/me')
   const data = (await response.json().catch(() => ({}))) as { user?: AdminUser | null }
   return data.user ?? null
+}
+
+/**
+ * Exige sesión de admin: devuelve el usuario, o un redirect a /login listo
+ * para retornar directamente desde la action (`if (user instanceof Response) return user`).
+ */
+export async function requireAdminUser(request: Request): Promise<AdminUser | Response> {
+  const user = await backendUser(request)
+  return user ?? redirect(routes.login.index.href())
 }

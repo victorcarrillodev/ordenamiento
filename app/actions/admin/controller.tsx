@@ -4,11 +4,10 @@
  *   adminRoutes.exportar  → GET /admin/exportar   (página o descarga .xlsx)
  * La ruta form() de reuniones se mapea por separado (reuniones-controller.tsx).
  */
-import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { backendFetch, backendUser } from '../../backend.ts'
-import { adminRoutes, routes } from '../../routes.ts'
+import { backendFetch, requireAdminUser } from '../../backend.ts'
+import { adminRoutes } from '../../routes.ts'
 import { AdminPage } from './page.tsx'
 import { ExportarPage } from './exportar-page.tsx'
 import { ParticipacionesPage } from './participaciones-page.tsx'
@@ -40,8 +39,8 @@ interface AdminUserRow {
 export default createController(adminRoutes, {
   actions: {
     async index(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
 
       const response = await backendFetch(context.request, '/api/stats')
       const stats: Stats = response.ok
@@ -74,8 +73,8 @@ export default createController(adminRoutes, {
     },
 
     async exportar(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
 
       const tabla = new URL(context.request.url).searchParams.get('tabla')
       if (!tabla) return context.render(<ExportarPage user={user} />)
@@ -97,8 +96,8 @@ export default createController(adminRoutes, {
     },
 
     async participaciones(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
 
       const origenParam = new URL(context.request.url).searchParams.get('origen')
       const origen = origenParam === 'fisica' ? 'fisica' : 'digital'
@@ -114,8 +113,8 @@ export default createController(adminRoutes, {
     },
 
     async adjunto(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
 
       const { id, aid } = context.params
       const download = new URL(context.request.url).searchParams.get('download') === '1'
@@ -137,8 +136,8 @@ export default createController(adminRoutes, {
     },
 
     async estadisticas(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
       const origen = new URL(context.request.url).searchParams.get('origen') === 'fisica' ? 'fisica' : 'digital'
       const response = await backendFetch(context.request, '/api/stats')
       const stats = response.ok ? await response.json() : null
@@ -147,14 +146,14 @@ export default createController(adminRoutes, {
     },
 
     async cuenta(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
       return context.render(<CuentaPage user={user} />)
     },
 
     async participacionDetalle(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
 
       const response = await backendFetch(context.request, `/api/participations/${context.params.id}`)
       const raw = response.ok ? (await response.json()) : null
@@ -177,8 +176,8 @@ export default createController(adminRoutes, {
     },
 
     async word(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
 
       const response = await backendFetch(context.request, `/api/participations/${context.params.id}/word`)
       if (!response.ok) return new Response('Not Found', { status: response.status })

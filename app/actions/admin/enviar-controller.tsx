@@ -5,8 +5,8 @@
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { backendFetch, backendUser } from '../../backend.ts'
-import { adminRoutes, routes } from '../../routes.ts'
+import { backendFetch, requireAdminUser } from '../../backend.ts'
+import { adminRoutes } from '../../routes.ts'
 
 export default createController(adminRoutes.participacionEnviar, {
   actions: {
@@ -15,8 +15,8 @@ export default createController(adminRoutes.participacionEnviar, {
     },
 
     async action(context) {
-      const user = await backendUser(context.request)
-      if (!user) return redirect(routes.login.index.href())
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
 
       const formData = await context.request.formData()
       const para = String(formData.get('para') ?? '').trim()
