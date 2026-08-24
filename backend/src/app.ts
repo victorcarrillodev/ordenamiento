@@ -11,7 +11,7 @@ import {
   verifySessionToken,
   type SessionUser,
 } from './auth/auth.ts'
-import { seedRootAdmin } from './seed.ts'
+import { seedRootAdmin, seedExtraAdmins } from './seed.ts'
 import { seedDemoData } from './seed-demo.ts'
 import { migrate } from './db/migrate.ts'
 import { ingestParticipation } from './services/ingest.ts'
@@ -615,6 +615,7 @@ export async function handleRequest(request: Request): Promise<Response> {
 export async function init(): Promise<void> {
   await migrate()
   await seedRootAdmin()
+  await seedExtraAdmins()
   await seedDemoData()
   console.log('[server] listo para recibir requests')
 }

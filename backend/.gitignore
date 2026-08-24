@@ -9,3 +9,7 @@ test-*.pdf
 .env
 .env.*
 !.env.docker.example
+
+# Archivo semilla de cuentas admin (contraseñas reales) - nunca commiteado
+seed-admins.json
+!seed-admins.example.json

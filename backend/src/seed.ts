@@ -1,4 +1,6 @@
 import { randomBytes } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
 import { sql } from './db/pool.ts'
 import { registerUser } from './auth/auth.ts'
@@ -50,4 +52,48 @@ export async function seedRootAdmin(): Promise<void> {
   })
 
   console.log(`[seed] cuenta ROOT creada: ${ROOT_EMAIL} (id ${id})`)
+}
+
+const SEED_ADMINS_PATH = process.env.SEED_ADMINS_FILE ?? join(process.cwd(), 'seed-admins.json')
+
+interface SeedAdminEntry {
+  email: string
+  name: string
+  password: string
+  role?: 'admin' | 'user'
+}
+
+/**
+ * Siembra cuentas extra (admins u otras) desde un archivo JSON opcional.
+ * Copia `seed-admins.example.json` a `seed-admins.json` (gitignorado, igual
+ * que `.env`) y agrega ahí tantas cuentas como necesites. Idempotente: las
+ * cuentas cuyo correo ya existe se omiten sin error.
+ */
+export async function seedExtraAdmins(): Promise<void> {
+  let raw: string
+  try {
+    raw = await readFile(SEED_ADMINS_PATH, 'utf8')
+  } catch {
+    return // Archivo opcional: sin él, no se siembra nada extra.
+  }
+
+  const entries = JSON.parse(raw) as SeedAdminEntry[]
+
+  for (const entry of entries) {
+    try {
+      const { id } = await registerUser({
+        email: entry.email,
+        name: entry.name,
+        password: entry.password,
+        role: entry.role ?? 'admin',
+      })
+      console.log(`[seed] cuenta creada desde seed-admins.json: ${entry.email} (id ${id})`)
+    } catch (err) {
+      if (err instanceof Error && err.message === 'EMAIL_TAKEN') {
+        console.log(`[seed] ${entry.email} ya existe; se omite`)
+        continue
+      }
+      throw err
+    }
+  }
 }

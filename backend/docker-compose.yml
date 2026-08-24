@@ -38,6 +38,10 @@ services:
       - '5920:5920'
     volumes:
       - uploads:/app/uploads
+      # Archivo semilla opcional para crear más cuentas admin al arrancar.
+      # Copia seed-admins.example.json a seed-admins.json (gitignorado) y
+      # descomenta esta línea:
+      # - ./seed-admins.json:/app/seed-admins.json:ro
 
 volumes:
   pgdata:

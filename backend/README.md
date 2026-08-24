@@ -53,6 +53,22 @@ bun run dev
 
 Servidor en `http://localhost:5920`.
 
+### Cuentas admin (más allá de ROOT)
+
+Para que se creen otras cuentas admin al arrancar (por ejemplo la de Leo),
+copia `seed-admins.example.json` a `seed-admins.json` (gitignorado, igual que
+`.env`) y agrega ahí tantas entradas como necesites:
+
+```json
+[
+  { "email": "leo@ordenamiento.gob.mx", "name": "Leo", "password": "...", "role": "admin" }
+]
+```
+
+Es idempotente: al reiniciar, las cuentas cuyo correo ya existe se omiten sin
+error. En Docker, descomenta el volumen correspondiente en
+`docker-compose.yml`; en local, basta con que el archivo esté en `backend/`.
+
 ## Seguridad
 
 - `SESSION_SECRET **debe** estar set en producción. En `docker-compose.yml` se
