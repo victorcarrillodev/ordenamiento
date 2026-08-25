@@ -65,7 +65,7 @@ export default createController(adminRoutes.participacionNueva, {
 
       const created = (await response.json().catch(() => ({}))) as { folio?: string }
       return redirect(
-        adminRoutes.participacionNueva.href() +
+        adminRoutes.participacionNueva.index.href() +
           (created.folio ? `?registrado=${encodeURIComponent(created.folio)}` : ''),
       )
     },

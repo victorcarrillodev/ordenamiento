@@ -125,7 +125,7 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
             fecha: `${d} de ${nombreMeses[mes]} de ${anio}`,
             ubicacion: s.ubicacion || 'San Pedro Tlaquepaque',
             descripcion: `Sesión del Comité del Programa de Ordenamiento Ecológico Local (Categoría: ${s.categoria}).`,
-            linkHref: adminRoutes.poel.href(),
+            linkHref: adminRoutes.poel.index.href(),
             linkTexto: 'Gestionar Sesiones POEL →',
           })
         }

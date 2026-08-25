@@ -102,7 +102,11 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
               <div class="card__label" id="live-clock-date">{ahora.fecha}</div>
             </div>
           </div>
-          <a href={adminRoutes.usuarios.href()} class="card card--link" title="Gestionar Usuarios">
+          <a
+            href={adminRoutes.usuarios.index.href()}
+            class="card card--link"
+            title="Gestionar Usuarios"
+          >
             <div class="card__icon violet">👥</div>
             <div>
               <div class="card__label">
