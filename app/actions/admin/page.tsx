@@ -12,7 +12,7 @@ export interface AdminPageProps {
     resultado: Array<{ estado: string; total: number }>
   }
   users: Array<{ id: number; email: string; name: string; role: string; created_at: string }>
-  ahora: { dia: string; fecha: string; hora: string }
+  ahora: { dia: string; saludo?: string; fecha: string; hora: string }
 }
 
 const COLORS: Record<string, string> = {
@@ -91,47 +91,107 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
         <p class="breadcrumb">Vista general</p>
 
         <div class="cards">
-          <div class="card">
+          <div class="card card--clock">
             <div class="card__icon blue">🕐</div>
             <div>
               <div class="card__label">
-                {ahora.dia} <span>| Buenos días</span>
+                <span id="live-clock-day">{ahora.dia}</span> <span>| </span>
+                <span id="live-clock-greeting">{ahora.saludo ?? 'Buenos días'}</span>
               </div>
-              <div class="card__value">{ahora.hora}</div>
-              <div class="card__label">{ahora.fecha}</div>
+              <div class="card__value" id="live-clock-time">{ahora.hora}</div>
+              <div class="card__label" id="live-clock-date">{ahora.fecha}</div>
             </div>
           </div>
-          <div class="card">
+          <a href={adminRoutes.usuarios.href()} class="card card--link" title="Gestionar Usuarios">
             <div class="card__icon violet">👥</div>
             <div>
               <div class="card__label">
                 Usuarios <span>| Total</span>
               </div>
               <div class="card__value">{stats.usuarios}</div>
-              <div class="card__action green">Gestionar</div>
+              <div class="card__action green">Gestionar →</div>
             </div>
-          </div>
-          <div class="card">
+          </a>
+          <a
+            href={`${adminRoutes.participaciones.href()}?origen=digital`}
+            class="card card--link"
+            title="Ver Participaciones Digitales"
+          >
             <div class="card__icon green">🖥️</div>
             <div>
               <div class="card__label">
                 Participaciones Digitales <span>| Total</span>
               </div>
               <div class="card__value">{stats.digitales}</div>
-              <div class="card__action green">Gestionar</div>
+              <div class="card__action green">Gestionar →</div>
             </div>
-          </div>
-          <div class="card">
+          </a>
+          <a
+            href={`${adminRoutes.participaciones.href()}?origen=fisica`}
+            class="card card--link"
+            title="Ver Participaciones Físicas"
+          >
             <div class="card__icon amber">📋</div>
             <div>
               <div class="card__label">
                 Participaciones físicas <span>| Total</span>
               </div>
               <div class="card__value">{stats.fisicas}</div>
-              <div class="card__action amber">Gestionar</div>
+              <div class="card__action amber">Gestionar →</div>
             </div>
-          </div>
+          </a>
         </div>
+
+        {/* Script de reloj en tiempo real para zona horaria de México */}
+        <script
+          innerHTML={`
+            (function() {
+              function updateClock() {
+                try {
+                  var formatter = new Intl.DateTimeFormat('es-MX', {
+                    timeZone: 'America/Mexico_City',
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    second: 'numeric',
+                    hour12: false
+                  });
+                  var parts = formatter.formatToParts(new Date());
+                  var map = {};
+                  for (var i = 0; i < parts.length; i++) {
+                    map[parts[i].type] = parts[i].value;
+                  }
+                  var h = parseInt(map.hour, 10) || 0;
+                  var m = (map.minute || '00').padStart(2, '0');
+                  var ampm = h < 12 ? 'am' : 'pm';
+                  var h12 = h % 12 === 0 ? 12 : h % 12;
+                  var timeStr = (h12 < 10 ? '0' + h12 : h12) + ':' + m + ' ' + ampm;
+                  
+                  var greeting = 'Buenos días';
+                  if (h >= 12 && h < 19) greeting = 'Buenas tardes';
+                  else if (h >= 19 || h < 5) greeting = 'Buenas noches';
+
+                  var day = map.weekday ? map.weekday.charAt(0).toUpperCase() + map.weekday.slice(1) : '';
+                  var dateStr = map.day + ' de ' + map.month + ' de ' + map.year;
+
+                  var elTime = document.getElementById('live-clock-time');
+                  var elGreeting = document.getElementById('live-clock-greeting');
+                  var elDay = document.getElementById('live-clock-day');
+                  var elDate = document.getElementById('live-clock-date');
+
+                  if (elTime) elTime.textContent = timeStr;
+                  if (elGreeting) elGreeting.textContent = greeting;
+                  if (elDay) elDay.textContent = day;
+                  if (elDate) elDate.textContent = dateStr;
+                } catch(e) {}
+              }
+              setInterval(updateClock, 1000);
+            })();
+          `}
+        />
 
         <div class="panel">
           <h2 class="panel__title" style="text-align: center;">

@@ -36,11 +36,12 @@ const participationSchema = f.object({
 
 export default createController(routes.participation, {
   actions: {
-    /** GET /participation — render empty form or success screen (público) */
+    /** GET /participation — render empty form or success screen with official receipt (público) */
     index(context) {
       const url = new URL(context.request.url)
       const success = url.searchParams.get('success') === '1'
-      return context.render(<ParticipationPage success={success} />)
+      const folio = url.searchParams.get('folio') ?? undefined
+      return context.render(<ParticipationPage success={success} folio={folio} />)
     },
 
     /** POST /participation — validate, persist al backend, y redirige o re-renderiza con errores */
@@ -92,6 +93,7 @@ export default createController(routes.participation, {
         body.set('pdf', pdf, pdf.name)
       }
 
+      let createdFolio = ''
       let backendOk = false
       try {
         const response = await fetch(`${BACKEND_URL}/api/participations`, {
@@ -99,6 +101,10 @@ export default createController(routes.participation, {
           body,
         })
         backendOk = response.ok
+        if (backendOk) {
+          const resData = (await response.json().catch(() => ({}))) as { folio?: string }
+          createdFolio = resData.folio ?? ''
+        }
       } catch {
         // Si la red falló, backendOk queda en false
       }
@@ -115,8 +121,11 @@ export default createController(routes.participation, {
         )
       }
 
-      // Redirect a GET con indicador de éxito
-      return redirect(routes.participation.index.href() + '?success=1')
+      // Redirect a GET con indicador de éxito y folio oficial
+      const successUrl = new URL(routes.participation.index.href(), 'http://localhost')
+      successUrl.searchParams.set('success', '1')
+      if (createdFolio) successUrl.searchParams.set('folio', createdFolio)
+      return redirect(successUrl.pathname + successUrl.search)
     },
   },
 })

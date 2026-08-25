@@ -6,6 +6,7 @@ import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 export interface NuevaPageProps {
   user: { name: string; role: string }
   error?: string
+  folioRegistrado?: string
 }
 
 interface CampoProps {
@@ -40,7 +41,7 @@ function Campo(handle: Handle<CampoProps>) {
 
 export function NuevaPage(handle: Handle<NuevaPageProps>) {
   return () => {
-    const { user, error } = handle.props
+    const { user, error, folioRegistrado } = handle.props
 
     return (
       <AdminLayout user={user} active="participaciones" title="Nueva participación física">
@@ -53,6 +54,17 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
         </p>
 
         {error ? <p class="form-error">{error}</p> : null}
+
+        {folioRegistrado ? (
+          <div
+            class="form-card__notice"
+            style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-size: 14px; margin-bottom: 16px; border-radius: 8px; padding: 12px 16px;"
+          >
+            ✅ Participación física registrada con éxito bajo el{' '}
+            <strong>Folio Oficial: {folioRegistrado}</strong>. Los campos se han limpiado para la
+            siguiente captura.
+          </div>
+        ) : null}
 
         <form method="post" class="panel form-card" enctype="multipart/form-data">
           <div class="form-card__notice">

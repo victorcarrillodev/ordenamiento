@@ -66,9 +66,36 @@ export default createController(adminRoutes, {
         users = usersData.users
       }
 
-      const now = new Date()
-      const hh = String(now.getHours()).padStart(2, '0')
-      const mm = String(now.getMinutes()).padStart(2, '0')
+      // Obtener hora y fecha real de México (America/Mexico_City)
+      const parts = new Intl.DateTimeFormat('es-MX', {
+        timeZone: 'America/Mexico_City',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: false,
+      }).formatToParts(new Date())
+
+      const getPart = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
+      const rawHour = parseInt(getPart('hour'), 10) || 0
+      const rawMin = getPart('minute').padStart(2, '0')
+      const ampm = rawHour < 12 ? 'am' : 'pm'
+      const displayHour12 = rawHour % 12 === 0 ? 12 : rawHour % 12
+      const formattedHour = `${String(displayHour12).padStart(2, '0')}:${rawMin} ${ampm}`
+
+      let saludo = 'Buenos días'
+      if (rawHour >= 12 && rawHour < 19) {
+        saludo = 'Buenas tardes'
+      } else if (rawHour >= 19 || rawHour < 5) {
+        saludo = 'Buenas noches'
+      }
+
+      const rawWeekday = getPart('weekday')
+      const diaCapitalizado = rawWeekday.charAt(0).toUpperCase() + rawWeekday.slice(1)
+      const fechaTexto = `${getPart('day')} de ${getPart('month')} de ${getPart('year')}`
 
       return context.render(
         <AdminPage
@@ -76,9 +103,10 @@ export default createController(adminRoutes, {
           stats={stats}
           users={users}
           ahora={{
-            dia: DIAS[now.getDay()],
-            fecha: `${now.getDate()} de ${MESES[now.getMonth()]} de ${now.getFullYear()}`,
-            hora: `${hh}:${mm} ${now.getHours() < 12 ? 'am' : 'pm'}`,
+            dia: diaCapitalizado,
+            saludo,
+            fecha: fechaTexto,
+            hora: formattedHour,
           }}
         />,
       )

@@ -58,21 +58,35 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
     const offsetInicio = primerDia === 0 ? 6 : primerDia - 1 // Lunes = 0
     const totalDias = new Date(anio, mes + 1, 0).getDate()
 
-    // Agrupar eventos por día
-    const eventosPorDia: Record<
-      number,
-      Array<{ tipo: 'aviso' | 'reunion' | 'poel'; titulo: string; subtitulo?: string }>
-    > = {}
+    // Agrupar eventos por día con detalle completo
+    interface EventoDetallado {
+      tipo: 'aviso' | 'reunion' | 'poel'
+      id: number
+      titulo: string
+      subtitulo?: string
+      fecha?: string
+      hora?: string
+      ubicacion?: string
+      descripcion?: string
+      linkHref: string
+      linkTexto: string
+    }
+
+    const eventosPorDia: Record<number, Array<EventoDetallado>> = {}
 
     // 1) Avisos
     avisos.forEach((a, idx) => {
-      // Si no tiene fecha específica, distribuir de muestra o en el día de hoy
       const diaNum = Math.min(totalDias, Math.max(1, hoy.getDate() - idx * 2))
       if (!eventosPorDia[diaNum]) eventosPorDia[diaNum] = []
       eventosPorDia[diaNum].push({
         tipo: 'aviso',
+        id: a.id,
         titulo: a.titulo,
         subtitulo: a.descripcion?.slice(0, 40) + (a.descripcion?.length > 40 ? '…' : ''),
+        fecha: a.fecha || `${diaNum} de ${nombreMeses[mes]} de ${anio}`,
+        descripcion: a.descripcion || 'Aviso oficial emitido por el Portal de Ordenamiento Territorial.',
+        linkHref: '#tabla-avisos',
+        linkTexto: 'Ver en lista de avisos',
       })
     })
 
@@ -84,8 +98,14 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
           if (!eventosPorDia[d]) eventosPorDia[d] = []
           eventosPorDia[d].push({
             tipo: 'reunion',
+            id: r.id,
             titulo: r.titulo,
             subtitulo: r.hora_inicio ? `🕒 ${r.hora_inicio}` : undefined,
+            fecha: `${d} de ${nombreMeses[mes]} de ${anio}`,
+            hora: r.hora_inicio ? `${r.hora_inicio}${r.hora_fin ? ' - ' + r.hora_fin : ''}` : undefined,
+            descripcion: `Reunión de trabajo técnico institucional para el seguimiento del ordenamiento territorial.`,
+            linkHref: adminRoutes.reuniones.index.href(),
+            linkTexto: 'Gestionar Reuniones →',
           })
         }
       }
@@ -99,8 +119,14 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
           if (!eventosPorDia[d]) eventosPorDia[d] = []
           eventosPorDia[d].push({
             tipo: 'poel',
+            id: s.id,
             titulo: s.titulo,
             subtitulo: s.ubicacion ? `📍 ${s.ubicacion}` : undefined,
+            fecha: `${d} de ${nombreMeses[mes]} de ${anio}`,
+            ubicacion: s.ubicacion || 'San Pedro Tlaquepaque',
+            descripcion: `Sesión del Comité del Programa de Ordenamiento Ecológico Local (Categoría: ${s.categoria}).`,
+            linkHref: adminRoutes.poel.href(),
+            linkTexto: 'Gestionar Sesiones POEL →',
           })
         }
       }
@@ -251,13 +277,27 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
                         }
 
                         return (
-                          <div
+                          <button
                             key={eIdx}
-                            title={`${e.titulo}${e.subtitulo ? ' — ' + e.subtitulo : ''}`}
-                            style={`font-size: 11px; padding: 3px 6px; border-radius: 4px; background: ${bg}; color: ${color}; border: 1px solid ${border}; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`}
+                            type="button"
+                            class="cal-event-btn"
+                            data-tipo={e.tipo}
+                            data-titulo={e.titulo}
+                            data-fecha={e.fecha ?? ''}
+                            data-hora={e.hora ?? ''}
+                            data-ubicacion={e.ubicacion ?? ''}
+                            data-desc={e.descripcion ?? ''}
+                            data-href={e.linkHref}
+                            data-linktext={e.linkTexto}
+                            onclick="window.showCalEvent(this)"
+                            title={`Clic para ver información: ${e.titulo}`}
                           >
-                            {icon} {e.titulo}
-                          </div>
+                            <div
+                              style={`font-size: 11px; padding: 3px 6px; border-radius: 4px; background: ${bg}; color: ${color}; border: 1px solid ${border}; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left;`}
+                            >
+                              {icon} {e.titulo}
+                            </div>
+                          </button>
                         )
                       })}
                     </div>
@@ -269,7 +309,7 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
         </div>
 
         {/* Panel Lista de Avisos */}
-        <div class="panel">
+        <div class="panel" id="tabla-avisos">
           <h2 class="panel__title">Avisos registrados en el sistema</h2>
           <div class="table-wrap">
             <table>
@@ -343,6 +383,123 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
             </table>
           </div>
         </div>
+
+        {/* Modal interactivo de detalle de evento */}
+        <div
+          id="cal-detail-modal"
+          class="cal-modal-backdrop"
+          style="display: none;"
+          onclick="if(event.target === this) window.hideCalEvent()"
+        >
+          <div class="cal-modal">
+            <div class="cal-modal__header">
+              <span id="cal-m-tag" class="cal-modal__tag">📢 Aviso Oficial</span>
+              <button
+                type="button"
+                class="cal-modal__close"
+                onclick="window.hideCalEvent()"
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+            <h3 id="cal-m-title" class="cal-modal__title">Título del Evento</h3>
+            <div class="cal-modal__info">
+              <div id="cal-m-fecha">📅 Fecha: —</div>
+              <div id="cal-m-hora" style="display: none;">🕒 Hora: —</div>
+              <div id="cal-m-lugar" style="display: none;">📍 Ubicación: —</div>
+            </div>
+            <div id="cal-m-desc" class="cal-modal__desc">Descripción</div>
+            <div class="cal-modal__actions">
+              <button
+                type="button"
+                class="btn btn--white"
+                style="border: 1px solid #cbd5e1;"
+                onclick="window.hideCalEvent()"
+              >
+                Cerrar
+              </button>
+              <a id="cal-m-link" href="#" class="btn btn--dark">
+                Ir a la sección →
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <script
+          innerHTML={`
+            window.showCalEvent = function(btn) {
+              var modal = document.getElementById('cal-detail-modal');
+              if (!modal) return;
+              var tipo = btn.getAttribute('data-tipo');
+              var titulo = btn.getAttribute('data-titulo') || '';
+              var fecha = btn.getAttribute('data-fecha') || '';
+              var hora = btn.getAttribute('data-hora') || '';
+              var ubicacion = btn.getAttribute('data-ubicacion') || '';
+              var desc = btn.getAttribute('data-desc') || '';
+              var href = btn.getAttribute('data-href') || '#';
+              var linktext = btn.getAttribute('data-linktext') || 'Ver más';
+
+              var tagEl = document.getElementById('cal-m-tag');
+              var titleEl = document.getElementById('cal-m-title');
+              var fechaEl = document.getElementById('cal-m-fecha');
+              var horaEl = document.getElementById('cal-m-hora');
+              var lugarEl = document.getElementById('cal-m-lugar');
+              var descEl = document.getElementById('cal-m-desc');
+              var linkEl = document.getElementById('cal-m-link');
+
+              if (titleEl) titleEl.textContent = titulo;
+              if (fechaEl) fechaEl.textContent = '📅 Fecha: ' + fecha;
+              
+              if (horaEl) {
+                if (hora) {
+                  horaEl.textContent = '🕒 Horario: ' + hora;
+                  horaEl.style.display = 'block';
+                } else {
+                  horaEl.style.display = 'none';
+                }
+              }
+
+              if (lugarEl) {
+                if (ubicacion) {
+                  lugarEl.textContent = '📍 Ubicación: ' + ubicacion;
+                  lugarEl.style.display = 'block';
+                } else {
+                  lugarEl.style.display = 'none';
+                }
+              }
+
+              if (descEl) descEl.textContent = desc;
+              if (linkEl) {
+                linkEl.href = href;
+                linkEl.textContent = linktext;
+              }
+
+              if (tagEl) {
+                if (tipo === 'reunion') {
+                  tagEl.textContent = '👥 Reunión de Trabajo';
+                  tagEl.style.background = '#F0FDF4';
+                  tagEl.style.color = '#166534';
+                } else if (tipo === 'poel') {
+                  tagEl.textContent = '🏛️ Sesión POEL';
+                  tagEl.style.background = '#FEFCE8';
+                  tagEl.style.color = '#854D0E';
+                } else {
+                  tagEl.textContent = '📢 Aviso Oficial';
+                  tagEl.style.background = '#FAF5FF';
+                  tagEl.style.color = '#7E22CE';
+                }
+              }
+
+              modal.style.display = 'flex';
+            };
+
+            window.hideCalEvent = function() {
+              var modal = document.getElementById('cal-detail-modal');
+              if (modal) modal.style.display = 'none';
+            };
+          `}
+        />
       </AdminLayout>
     )
   }
