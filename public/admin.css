@@ -78,10 +78,16 @@ a {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
   padding: 9px 12px;
+  border: none;
   border-radius: 8px;
+  background: transparent;
+  font-family: inherit;
   font-size: 13px;
+  text-align: left;
   color: #475066;
+  cursor: pointer;
 }
 .sidebar__item:hover {
   background: #eef2fb;

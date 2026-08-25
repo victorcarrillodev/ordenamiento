@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { requireAdminUser } from './backend.ts'
+import { logoutBackend, requireAdminUser } from './backend.ts'
 
 /**
  * requireAdminUser() is the single guard every /admin/* controller calls
@@ -42,5 +42,31 @@ describe('requireAdminUser', () => {
     const result = await requireAdminUser(new Request('http://localhost/ordena/admin'))
     expect(result).not.toBeInstanceOf(Response)
     expect(result).toEqual({ id: 1, name: 'Root', role: 'admin' })
+  })
+})
+
+/**
+ * Regression test: the sidebar's "Cerrar sesión" button used to be a plain
+ * `<a href="/login">` that never called this endpoint at all, so the
+ * session cookie stayed valid after "logging out" and /admin/* let the
+ * same session straight back in.
+ */
+describe('logoutBackend', () => {
+  it('calls POST /api/auth/logout and forwards the expiring Set-Cookie', async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'set-cookie': 'ordenamiento_session=; HttpOnly; Path=/; Max-Age=0' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const setCookie = await logoutBackend(new Request('http://localhost/ordena/admin'))
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(String(url)).toContain('/api/auth/logout')
+    expect(init?.method).toBe('POST')
+    expect(setCookie).toContain('Max-Age=0')
   })
 })

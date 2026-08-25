@@ -1,4 +1,4 @@
-import { form, get, route } from 'remix/routes'
+import { form, get, post, route } from 'remix/routes'
 
 const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 
@@ -7,6 +7,7 @@ export const routes = route({
   home: `${basePath}`,
   homeSlash: `${basePath}/`,
   login: form(`${basePath}/login`),
+  logout: post(`${basePath}/logout`),
   participation: form(`${basePath}/participation`),
   poetdum: {
     show: get(`${basePath}/poetdum`),

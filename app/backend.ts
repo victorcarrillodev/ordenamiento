@@ -45,6 +45,16 @@ export async function loginBackend(email: string, password: string): Promise<Log
   }
 }
 
+/**
+ * Cierra la sesión contra el backend y devuelve la cookie ya vencida para
+ * reenviar al navegador (el backend es quien firma/borra la cookie; este
+ * servidor solo hace de intermediario, igual que en loginBackend).
+ */
+export async function logoutBackend(request: Request): Promise<string | undefined> {
+  const response = await backendFetch(request, '/api/auth/logout', { method: 'POST' })
+  return response.headers.get('set-cookie') ?? undefined
+}
+
 export interface AdminUser {
   id: number
   name: string

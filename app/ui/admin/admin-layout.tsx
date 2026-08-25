@@ -167,10 +167,12 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
                 </a>
               ))}
               <div class="sidebar__label">CUENTA</div>
-              <a href={routes.login.index.href()} class="sidebar__item sidebar__logout">
-                <Icon name="mdi:logout" />
-                Cerrar sesión
-              </a>
+              <form method="post" action={routes.logout.href()}>
+                <button type="submit" class="sidebar__item sidebar__logout">
+                  <Icon name="mdi:logout" />
+                  Cerrar sesión
+                </button>
+              </form>
             </nav>
           </aside>
           <div class="admin-main">
