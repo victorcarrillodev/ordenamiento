@@ -385,37 +385,42 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
         </div>
 
         {/* Modal interactivo de detalle de evento */}
-        <div
-          id="cal-detail-modal"
-          class="cal-modal-backdrop"
-          style="display: none;"
-          onclick="if(event.target === this) window.hideCalEvent()"
-        >
+        <div id="cal-detail-modal" class="cal-modal-backdrop" style="display: none;">
           <div class="cal-modal">
             <div class="cal-modal__header">
-              <span id="cal-m-tag" class="cal-modal__tag">📢 Aviso Oficial</span>
+              <span id="cal-m-tag" class="cal-modal__tag">
+                📢 Aviso Oficial
+              </span>
               <button
+                id="cal-m-close"
                 type="button"
                 class="cal-modal__close"
-                onclick="window.hideCalEvent()"
                 aria-label="Cerrar"
               >
                 ✕
               </button>
             </div>
-            <h3 id="cal-m-title" class="cal-modal__title">Título del Evento</h3>
+            <h3 id="cal-m-title" class="cal-modal__title">
+              Título del Evento
+            </h3>
             <div class="cal-modal__info">
               <div id="cal-m-fecha">📅 Fecha: —</div>
-              <div id="cal-m-hora" style="display: none;">🕒 Hora: —</div>
-              <div id="cal-m-lugar" style="display: none;">📍 Ubicación: —</div>
+              <div id="cal-m-hora" style="display: none;">
+                🕒 Hora: —
+              </div>
+              <div id="cal-m-lugar" style="display: none;">
+                📍 Ubicación: —
+              </div>
             </div>
-            <div id="cal-m-desc" class="cal-modal__desc">Descripción</div>
+            <div id="cal-m-desc" class="cal-modal__desc">
+              Descripción
+            </div>
             <div class="cal-modal__actions">
               <button
+                id="cal-m-btn-close"
                 type="button"
                 class="btn btn--white"
                 style="border: 1px solid #cbd5e1;"
-                onclick="window.hideCalEvent()"
               >
                 Cerrar
               </button>
@@ -425,81 +430,6 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
             </div>
           </div>
         </div>
-
-        <script
-          innerHTML={`
-            window.showCalEvent = function(btn) {
-              var modal = document.getElementById('cal-detail-modal');
-              if (!modal) return;
-              var tipo = btn.getAttribute('data-tipo');
-              var titulo = btn.getAttribute('data-titulo') || '';
-              var fecha = btn.getAttribute('data-fecha') || '';
-              var hora = btn.getAttribute('data-hora') || '';
-              var ubicacion = btn.getAttribute('data-ubicacion') || '';
-              var desc = btn.getAttribute('data-desc') || '';
-              var href = btn.getAttribute('data-href') || '#';
-              var linktext = btn.getAttribute('data-linktext') || 'Ver más';
-
-              var tagEl = document.getElementById('cal-m-tag');
-              var titleEl = document.getElementById('cal-m-title');
-              var fechaEl = document.getElementById('cal-m-fecha');
-              var horaEl = document.getElementById('cal-m-hora');
-              var lugarEl = document.getElementById('cal-m-lugar');
-              var descEl = document.getElementById('cal-m-desc');
-              var linkEl = document.getElementById('cal-m-link');
-
-              if (titleEl) titleEl.textContent = titulo;
-              if (fechaEl) fechaEl.textContent = '📅 Fecha: ' + fecha;
-              
-              if (horaEl) {
-                if (hora) {
-                  horaEl.textContent = '🕒 Horario: ' + hora;
-                  horaEl.style.display = 'block';
-                } else {
-                  horaEl.style.display = 'none';
-                }
-              }
-
-              if (lugarEl) {
-                if (ubicacion) {
-                  lugarEl.textContent = '📍 Ubicación: ' + ubicacion;
-                  lugarEl.style.display = 'block';
-                } else {
-                  lugarEl.style.display = 'none';
-                }
-              }
-
-              if (descEl) descEl.textContent = desc;
-              if (linkEl) {
-                linkEl.href = href;
-                linkEl.textContent = linktext;
-              }
-
-              if (tagEl) {
-                if (tipo === 'reunion') {
-                  tagEl.textContent = '👥 Reunión de Trabajo';
-                  tagEl.style.background = '#F0FDF4';
-                  tagEl.style.color = '#166534';
-                } else if (tipo === 'poel') {
-                  tagEl.textContent = '🏛️ Sesión POEL';
-                  tagEl.style.background = '#FEFCE8';
-                  tagEl.style.color = '#854D0E';
-                } else {
-                  tagEl.textContent = '📢 Aviso Oficial';
-                  tagEl.style.background = '#FAF5FF';
-                  tagEl.style.color = '#7E22CE';
-                }
-              }
-
-              modal.style.display = 'flex';
-            };
-
-            window.hideCalEvent = function() {
-              var modal = document.getElementById('cal-detail-modal');
-              if (modal) modal.style.display = 'none';
-            };
-          `}
-        />
       </AdminLayout>
     )
   }
