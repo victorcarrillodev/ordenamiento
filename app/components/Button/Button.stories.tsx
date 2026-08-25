@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/html-vite'
 
-import { mountRemix } from '../../.storybook/remix-root.ts'
+import { mountRemix } from '../../../.storybook/remix-root.ts'
 import Button, { type ButtonProps } from './Button.tsx'
 
 const meta: Meta<ButtonProps> = {

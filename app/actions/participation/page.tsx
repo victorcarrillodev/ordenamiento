@@ -7,7 +7,7 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { routes } from '../../routes.ts'
-import {NavBar} from "../../components/NavBar.tsx"
+import {NavBar} from "../../components/Nav/NavBar.tsx"
 
 import {
   btnPrimaryProps,
