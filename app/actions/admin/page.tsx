@@ -107,7 +107,7 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
             </div>
           </div>
           <a
-            href={`${adminRoutes.index.href()}#usuarios`}
+            href={adminRoutes.usuarios.href()}
             class="card card--link"
             title="Gestionar Usuarios"
           >

@@ -292,6 +292,7 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
                             data-desc={e.descripcion ?? ''}
                             data-href={e.linkHref}
                             data-linktext={e.linkTexto}
+
                             title={`Clic para ver información: ${e.titulo}`}
                           >
                             <div
@@ -427,6 +428,7 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
             </div>
           </div>
         </div>
+
       </AdminLayout>
     )
   }
