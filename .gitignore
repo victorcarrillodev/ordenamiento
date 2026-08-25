@@ -6,6 +6,7 @@ tmp/
 .worktrees/
 swarmforge/
 .ai-practice/
+storybook-static/
 
 # Variables de entorno (secretos) - nunca commiteadas
 .env

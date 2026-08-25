@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format:check": "prettier --check .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "engines": {
     "node": ">=24.3.0"
@@ -23,13 +25,17 @@
   },
   "devDependencies": {
     "@eslint/js": "latest",
+    "@storybook/html": "^10.5.10",
+    "@storybook/html-vite": "^10.5.10",
     "@types/leaflet": "^1.9.22",
     "@types/node": "latest",
     "eslint": "latest",
     "eslint-config-prettier": "latest",
     "prettier": "latest",
+    "storybook": "^10.5.10",
     "typescript": "latest",
     "typescript-eslint": "latest",
+    "vite": "^8.2.2",
     "vitest": "latest"
   }
 }
