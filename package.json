@@ -33,7 +33,6 @@
     "eslint": "latest",
     "eslint-config-prettier": "latest",
     "prettier": "latest",
-    "storybook": "^10.5.10",
     "typescript": "latest",
     "typescript-eslint": "latest",
     "vite": "^8.2.2",
