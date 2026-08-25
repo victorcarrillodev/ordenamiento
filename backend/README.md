@@ -64,9 +64,7 @@ copia `seed-admins.example.json` a `seed-admins.json` (gitignorado, igual que
 `.env`) y agrega ahí tantas entradas como necesites:
 
 ```json
-[
-  { "email": "leo@ordenamiento.gob.mx", "name": "Leo", "password": "...", "role": "admin" }
-]
+[{ "email": "leo@ordenamiento.gob.mx", "name": "Leo", "password": "...", "role": "admin" }]
 ```
 
 Es idempotente: al reiniciar, las cuentas cuyo correo ya existe se omiten sin
@@ -75,9 +73,9 @@ error. En Docker, descomenta el volumen correspondiente en
 
 ## Seguridad
 
-- `SESSION_SECRET **debe** estar set en producción. En `docker-compose.yml` se
-  lee de `.env` (`SESSION_SECRET`); si no, usa un placeholder inseguro.
-  Configura un valor real en un archivo `.env` local (no versionado).
+- `SESSION_SECRET **debe** estar set en producción. En `docker-compose.yml`se
+lee de`.env` (`SESSION_SECRET`); si no, usa un placeholder inseguro.
+Configura un valor real en un archivo `.env` local (no versionado).
 - `DATABASE_URL` por defecto usa credenciales de desarrollo
   (`postgres:postgres`). Cámbialas en tu entorno real.
 - La cuenta ROOT nunca tiene password hardcodeado: se define con

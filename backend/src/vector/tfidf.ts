@@ -23,27 +23,139 @@ export const DIMENSIONS = 512
 // Palabras de alta frecuencia que no aportan valor semántico al vector.
 const STOPWORDS = new Set([
   // artículos
-  'el','la','los','las','un','una','unos','unas','lo',
+  'el',
+  'la',
+  'los',
+  'las',
+  'un',
+  'una',
+  'unos',
+  'unas',
+  'lo',
   // preposiciones
-  'a','ante','bajo','con','contra','de','desde','durante','en','entre',
-  'hacia','hasta','mediante','para','por','segun','sin','sobre','tras',
+  'a',
+  'ante',
+  'bajo',
+  'con',
+  'contra',
+  'de',
+  'desde',
+  'durante',
+  'en',
+  'entre',
+  'hacia',
+  'hasta',
+  'mediante',
+  'para',
+  'por',
+  'segun',
+  'sin',
+  'sobre',
+  'tras',
   // conjunciones
-  'y','e','ni','o','u','pero','sino','aunque','porque','pues','que',
-  'si','como','cuando','donde','mientras','ya','tambien','ademas',
+  'y',
+  'e',
+  'ni',
+  'o',
+  'u',
+  'pero',
+  'sino',
+  'aunque',
+  'porque',
+  'pues',
+  'que',
+  'si',
+  'como',
+  'cuando',
+  'donde',
+  'mientras',
+  'ya',
+  'tambien',
+  'ademas',
   // pronombres
-  'yo','tu','el','ella','nosotros','vosotros','ellos','ellas',
-  'me','te','se','nos','os','le','les','mi','mis','su','sus',
-  'este','esta','estos','estas','ese','esa','esos','esas',
-  'aquel','aquella','aquellos','aquellas',
+  'yo',
+  'tu',
+  'el',
+  'ella',
+  'nosotros',
+  'vosotros',
+  'ellos',
+  'ellas',
+  'me',
+  'te',
+  'se',
+  'nos',
+  'os',
+  'le',
+  'les',
+  'mi',
+  'mis',
+  'su',
+  'sus',
+  'este',
+  'esta',
+  'estos',
+  'estas',
+  'ese',
+  'esa',
+  'esos',
+  'esas',
+  'aquel',
+  'aquella',
+  'aquellos',
+  'aquellas',
   // verbos auxiliares / cópula comunes
-  'es','son','era','eran','fue','fueron','ser','estar','tener',
-  'ha','han','hay','haber','puede','pueden','debe','deben',
+  'es',
+  'son',
+  'era',
+  'eran',
+  'fue',
+  'fueron',
+  'ser',
+  'estar',
+  'tener',
+  'ha',
+  'han',
+  'hay',
+  'haber',
+  'puede',
+  'pueden',
+  'debe',
+  'deben',
   // adverbios frecuentes
-  'no','si','muy','mas','menos','bien','mal','solo','aqui','ahi',
-  'alla','antes','despues','siempre','nunca','todo','todos','toda',
-  'todas','otro','otra','otros','otras',
+  'no',
+  'si',
+  'muy',
+  'mas',
+  'menos',
+  'bien',
+  'mal',
+  'solo',
+  'aqui',
+  'ahi',
+  'alla',
+  'antes',
+  'despues',
+  'siempre',
+  'nunca',
+  'todo',
+  'todos',
+  'toda',
+  'todas',
+  'otro',
+  'otra',
+  'otros',
+  'otras',
   // palabras muy cortas que pasan el filtro de longitud >2
-  'del','las','los','por','que','con','una','sus','los',
+  'del',
+  'las',
+  'los',
+  'por',
+  'que',
+  'con',
+  'una',
+  'sus',
+  'los',
 ])
 
 /**
@@ -54,7 +166,7 @@ export function tokenize(text: string): string[] {
   return text
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')  // quita acentos
+    .replace(/[\u0300-\u036f]/g, '') // quita acentos
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
     .filter((t) => t.length > 2 && t.length < 40 && !STOPWORDS.has(t))
@@ -72,9 +184,10 @@ function hashTerm(term: string): number {
   return (h >>> 0) % DIMENSIONS
 }
 
-// Parámetros BM25-like
-const K1 = 1.2   // saturación de TF: limita el peso de términos muy repetidos
-const B  = 0.75  // no se usa (requiere longitud media del corpus), simplificado
+// Parámetros BM25-like. K1 satura la TF: limita el peso de términos muy
+// repetidos. El parámetro B (normalización por longitud, típicamente 0.75)
+// no se aplica aquí porque requeriría la longitud media del corpus.
+const K1 = 1.2
 
 /**
  * TF saturada estilo BM25: (k1+1)*freq / (k1 + freq)
@@ -90,18 +203,14 @@ export function tf(frequency: number): number {
  * Siempre ≥ 1 para df > 0.
  */
 export function idf(totalDocs: number, docsWithTerm: number): number {
-  const df = Math.min(docsWithTerm, totalDocs)  // df nunca puede superar N
+  const df = Math.min(docsWithTerm, totalDocs) // df nunca puede superar N
   return Math.log((totalDocs - df + 0.5) / (df + 0.5) + 1) + 1
 }
 
 /**
  * TF-IDF combinado.
  */
-export function tfidf(
-  frequency: number,
-  totalDocs: number,
-  docsWithTerm: number,
-): number {
+export function tfidf(frequency: number, totalDocs: number, docsWithTerm: number): number {
   return tf(frequency) * idf(totalDocs, docsWithTerm)
 }
 
@@ -116,10 +225,7 @@ export function featurize(text: string): Float32Array {
  * Vector TF-IDF ponderado: aplica TF saturada (BM25-like) y, si hay mapa IDF,
  * escala cada término antes de normalizar L2.
  */
-export function featurizeWeighted(
-  text: string,
-  idfWeights?: Record<string, number>,
-): Float32Array {
+export function featurizeWeighted(text: string, idfWeights?: Record<string, number>): Float32Array {
   const counts = new Map<string, number>()
   for (const term of tokenize(text)) {
     counts.set(term, (counts.get(term) ?? 0) + 1)

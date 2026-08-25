@@ -17,8 +17,18 @@ import { DetallePage } from './detalle-page.tsx'
 
 const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 const MESES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
 ]
 
 interface Stats {
@@ -50,7 +60,9 @@ export default createController(adminRoutes, {
       let users: AdminUserRow[] = []
       if (user.role === 'admin') {
         const usersResponse = await backendFetch(context.request, '/api/users')
-        const usersData = usersResponse.ok ? await usersResponse.json() : { users: [] as AdminUserRow[] }
+        const usersData = usersResponse.ok
+          ? await usersResponse.json()
+          : { users: [] as AdminUserRow[] }
         users = usersData.users
       }
 
@@ -79,7 +91,10 @@ export default createController(adminRoutes, {
       const tabla = new URL(context.request.url).searchParams.get('tabla')
       if (!tabla) return context.render(<ExportarPage user={user} />)
 
-      const response = await backendFetch(context.request, `/api/export/${encodeURIComponent(tabla)}`)
+      const response = await backendFetch(
+        context.request,
+        `/api/export/${encodeURIComponent(tabla)}`,
+      )
       if (!response.ok) {
         return context.render(<ExportarPage user={user} />, { status: response.status })
       }
@@ -126,11 +141,9 @@ export default createController(adminRoutes, {
 
       return new Response(response.body, {
         headers: {
-          'content-type':
-            response.headers.get('content-type') ?? 'application/octet-stream',
+          'content-type': response.headers.get('content-type') ?? 'application/octet-stream',
           'content-disposition':
-            response.headers.get('content-disposition') ??
-            (download ? 'attachment' : 'inline'),
+            response.headers.get('content-disposition') ?? (download ? 'attachment' : 'inline'),
         },
       })
     },
@@ -138,7 +151,8 @@ export default createController(adminRoutes, {
     async estadisticas(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
-      const origen = new URL(context.request.url).searchParams.get('origen') === 'fisica' ? 'fisica' : 'digital'
+      const origen =
+        new URL(context.request.url).searchParams.get('origen') === 'fisica' ? 'fisica' : 'digital'
       const response = await backendFetch(context.request, '/api/stats')
       const stats = response.ok ? await response.json() : null
       if (!stats) return new Response('Error', { status: 502 })
@@ -155,19 +169,24 @@ export default createController(adminRoutes, {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
 
-      const response = await backendFetch(context.request, `/api/participations/${context.params.id}`)
-      const raw = response.ok ? (await response.json()) : null
+      const response = await backendFetch(
+        context.request,
+        `/api/participations/${context.params.id}`,
+      )
+      const raw = response.ok ? await response.json() : null
       const p = raw
         ? {
             ...raw,
             fecha: raw.created_at as string,
             // getParticipation devuelve `attachments`; la página espera `adjuntos`
-            adjuntos: (raw.attachments ?? []).map((a: { id: number; nombre_original: string; mime: string; size: number }) => ({
-              id: a.id,
-              nombre_original: a.nombre_original,
-              mime: a.mime,
-              size: a.size,
-            })),
+            adjuntos: (raw.attachments ?? []).map(
+              (a: { id: number; nombre_original: string; mime: string; size: number }) => ({
+                id: a.id,
+                nombre_original: a.nombre_original,
+                mime: a.mime,
+                size: a.size,
+              }),
+            ),
           }
         : null
       const mailParam = new URL(context.request.url).searchParams.get('mail')
@@ -179,7 +198,10 @@ export default createController(adminRoutes, {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
 
-      const response = await backendFetch(context.request, `/api/participations/${context.params.id}/word`)
+      const response = await backendFetch(
+        context.request,
+        `/api/participations/${context.params.id}/word`,
+      )
       if (!response.ok) return new Response('Not Found', { status: response.status })
 
       return new Response(response.body, {
@@ -188,7 +210,8 @@ export default createController(adminRoutes, {
             response.headers.get('content-type') ??
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           'content-disposition':
-            response.headers.get('content-disposition') ?? 'attachment; filename="participacion.docx"',
+            response.headers.get('content-disposition') ??
+            'attachment; filename="participacion.docx"',
         },
       })
     },

@@ -146,6 +146,10 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
 
 const BRANDING_UPLOAD_DIR = join(process.cwd(), 'uploads', 'branding')
 
+// Fusión recursiva genérica de objetos anidados de forma arbitraria (la
+// config JSONB de site_customizations); un tipo recursivo preciso aquí no
+// aportaría seguridad real sobre datos que ya vienen sin tipar desde la BD.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function deepMerge(target: any, source: any): any {
   if (!source || typeof source !== 'object') return target
   const output = { ...target }
@@ -167,6 +171,7 @@ function deepMerge(target: any, source: any): any {
 
 export async function getCustomizations(): Promise<ThemeConfig> {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- columna JSONB, forma dinámica
     const rows = await sql<Array<{ config: any }>>`
       SELECT config FROM site_customizations WHERE id = 1 LIMIT 1
     `
@@ -237,17 +242,20 @@ export interface AuditLogEntry {
 
 export async function listAuditLogs(limit = 50): Promise<AuditLogEntry[]> {
   try {
-    const rows = await sql<Array<{
-      id: number
-      user_id: number | null
-      user_name: string
-      user_email: string
-      motivo: string
-      section: string
-      changes_summary: string
-      snapshot: any
-      created_at: string
-    }>>`
+    const rows = await sql<
+      Array<{
+        id: number
+        user_id: number | null
+        user_name: string
+        user_email: string
+        motivo: string
+        section: string
+        changes_summary: string
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- columna JSONB, forma dinámica
+        snapshot: any
+        created_at: string
+      }>
+    >`
       SELECT id, user_id, user_name, user_email, motivo, section, changes_summary, snapshot, created_at::text
       FROM customization_audit_logs
       ORDER BY created_at DESC
@@ -268,6 +276,7 @@ export async function restoreAuditSnapshot(
   user: { id: number; name: string; email: string },
   motivo = 'Restauración de versión anterior desde auditoría',
 ): Promise<ThemeConfig | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- columna JSONB, forma dinámica
   const rows = await sql<Array<{ snapshot: any }>>`
     SELECT snapshot FROM customization_audit_logs WHERE id = ${logId} LIMIT 1
   `

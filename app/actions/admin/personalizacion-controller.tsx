@@ -63,7 +63,9 @@ export default createController(adminRoutes.personalizacion, {
       if (actionType === 'restore') {
         const logId = Number(formData.get('log_id'))
         if (!logId) {
-          return redirect(`${adminRoutes.personalizacion.index.href()}?tab=historial&err=ID+inválido`)
+          return redirect(
+            `${adminRoutes.personalizacion.index.href()}?tab=historial&err=ID+inválido`,
+          )
         }
         const res = await backendFetch(context.request, `/api/settings/restore/${logId}`, {
           method: 'POST',
@@ -71,7 +73,9 @@ export default createController(adminRoutes.personalizacion, {
           body: JSON.stringify({ motivo: `Restaurado desde registro de auditoría #${logId}` }),
         })
         if (!res.ok) {
-          return redirect(`${adminRoutes.personalizacion.index.href()}?tab=historial&err=Error+al+restaurar`)
+          return redirect(
+            `${adminRoutes.personalizacion.index.href()}?tab=historial&err=Error+al+restaurar`,
+          )
         }
         return redirect(
           `${adminRoutes.personalizacion.index.href()}?tab=historial&msg=Versión+restaurada+correctamente`,
@@ -122,8 +126,7 @@ export default createController(adminRoutes.personalizacion, {
               logoNavbar: uploadedNavLogo || String(formData.get('logo_navbar') ?? ''),
               logoFooter: uploadedFooterLogo || String(formData.get('logo_footer') ?? ''),
               heroImagenes: rawHeroImages.length > 0 ? rawHeroImages : undefined,
-              imagenEcologia:
-                uploadedEcoImg || String(formData.get('imagen_ecologia') ?? ''),
+              imagenEcologia: uploadedEcoImg || String(formData.get('imagen_ecologia') ?? ''),
             },
             iconos: {
               cardPrograma: String(formData.get('ico_card1') ?? '🏛️'),

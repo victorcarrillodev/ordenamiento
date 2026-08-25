@@ -25,7 +25,14 @@ function Campo(handle: Handle<CampoProps>) {
         <label for={name}>
           {label} {required ? <span class="req">*</span> : null}
         </label>
-        <input id={name} name={name} type="text" value={value} required={required} placeholder={placeholder} />
+        <input
+          id={name}
+          name={name}
+          type="text"
+          value={value}
+          required={required}
+          placeholder={placeholder}
+        />
       </div>
     )
   }
@@ -39,7 +46,10 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
       <AdminLayout user={user} active="participaciones" title="Nueva participación física">
         <h1 class="page-title">Ingresa aquí tu participación</h1>
         <p class="breadcrumb">
-          <a href={`${adminRoutes.participaciones.href()}?origen=fisica`}>Volver a participaciones físicas</a> / Formulario de participación
+          <a href={`${adminRoutes.participaciones.href()}?origen=fisica`}>
+            Volver a participaciones físicas
+          </a>{' '}
+          / Formulario de participación
         </p>
 
         {error ? <p class="form-error">{error}</p> : null}
@@ -55,9 +65,18 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
           </div>
 
           <div class="form-grid">
-            <Campo label="Nombre completo" name="nombre" required placeholder="Ej. María González López" />
+            <Campo
+              label="Nombre completo"
+              name="nombre"
+              required
+              placeholder="Ej. María González López"
+            />
             <Campo label="Correo" name="correo" required placeholder="correo@ejemplo.com" />
-            <Campo label="Domicilio de quien participa" name="domicilio" placeholder="Calle, colonia, municipio" />
+            <Campo
+              label="Domicilio de quien participa"
+              name="domicilio"
+              placeholder="Calle, colonia, municipio"
+            />
             <Campo label="Municipio" name="municipio" value="Tlaquepaque" />
             <Campo label="Institución o empresa" name="institucion" />
             <Campo label="Ocupación o puesto" name="ocupacion" />
@@ -79,7 +98,12 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
 
           <div class="form-field form-field--wide">
             <label for="pdf">Subir archivo</label>
-            <input id="pdf" name="pdf" type="file" accept=".pdf,.shp,.jpg,.jpeg,.dwg,.png,.xlsx,.docx" />
+            <input
+              id="pdf"
+              name="pdf"
+              type="file"
+              accept=".pdf,.shp,.jpg,.jpeg,.dwg,.png,.xlsx,.docx"
+            />
             <span class="form-hint">Archivo: PDF, SHP, JPG, DWG, Word, Excel, formato abierto</span>
           </div>
 
@@ -109,7 +133,9 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
                 <option value="Servicios Ambientales">Servicios Ambientales</option>
                 <option value="Gestión del Agua">Gestión del Agua</option>
                 <option value="Gestión de Riesgo">Gestión de Riesgo</option>
-                <option value="Desarrollo urbano y gestión de suelo">Desarrollo urbano y gestión de suelo</option>
+                <option value="Desarrollo urbano y gestión de suelo">
+                  Desarrollo urbano y gestión de suelo
+                </option>
                 <option value="Vivienda">Vivienda</option>
                 <option value="Movilidad">Movilidad</option>
                 <option value="Equipamiento">Equipamiento</option>
@@ -124,8 +150,12 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
           <p class="form-hint">Los campos marcados con (*) son obligatorios</p>
 
           <div class="btn-row-admin">
-            <a class="btn btn--ghost" href={`${adminRoutes.participaciones.href()}?origen=fisica`}>Cancelar</a>
-            <button type="submit" class="btn btn--dark">Registrar participación</button>
+            <a class="btn btn--ghost" href={`${adminRoutes.participaciones.href()}?origen=fisica`}>
+              Cancelar
+            </a>
+            <button type="submit" class="btn btn--dark">
+              Registrar participación
+            </button>
           </div>
         </form>
       </AdminLayout>

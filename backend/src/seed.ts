@@ -31,7 +31,9 @@ export async function seedRootAdmin(): Promise<void> {
     }
     // Dev: password aleatorio temporal, solo visible en esta consola.
     password = 'R_' + randomBytes(12).toString('base64url')
-    console.log(`[seed] ROOT creado con password temporal: ${password} (cámbialo con ROOT_PASSWORD)`)
+    console.log(
+      `[seed] ROOT creado con password temporal: ${password} (cámbialo con ROOT_PASSWORD)`,
+    )
   }
 
   const existing = await sql<{ id: number }[]>`
@@ -39,7 +41,9 @@ export async function seedRootAdmin(): Promise<void> {
   `
   if (existing.length > 0) {
     if (!process.env.ROOT_PASSWORD) {
-      console.log(`[seed] ROOT ya existe (${ROOT_EMAIL}); para cambiarlo define ROOT_PASSWORD y borra el usuario.`)
+      console.log(
+        `[seed] ROOT ya existe (${ROOT_EMAIL}); para cambiarlo define ROOT_PASSWORD y borra el usuario.`,
+      )
     }
     return
   }

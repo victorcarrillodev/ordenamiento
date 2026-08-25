@@ -15,12 +15,6 @@ export interface AdminPageProps {
   ahora: { dia: string; fecha: string; hora: string }
 }
 
-const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-const MESES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-]
-
 const COLORS: Record<string, string> = {
   Procedente: '#16a34a',
   'En proceso': '#d97706',
@@ -40,7 +34,13 @@ function Donut(handle: Handle<{ data: Array<{ estado: string; total: number }> }
     let offset = 0
     return (
       <div class="donut-wrap">
-        <svg width="190" height="190" viewBox="0 0 190 190" role="img" aria-label="Resultado de participaciones">
+        <svg
+          width="190"
+          height="190"
+          viewBox="0 0 190 190"
+          role="img"
+          aria-label="Resultado de participaciones"
+        >
           <g transform="rotate(-90 95 95)">
             {data.map((d) => {
               const len = (d.total / total) * c
@@ -134,25 +134,35 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
         </div>
 
         <div class="panel">
-          <h2 class="panel__title" style="text-align: center;">Resultado</h2>
+          <h2 class="panel__title" style="text-align: center;">
+            Resultado
+          </h2>
           <Donut data={stats.resultado} />
         </div>
 
         <div class="panel">
           <div class="panel__head">
-            <h2 class="panel__title" style="margin: 0;">Exportar</h2>
+            <h2 class="panel__title" style="margin: 0;">
+              Exportar
+            </h2>
             <a class="btn btn--excel" href={`${adminRoutes.exportar.href()}?tabla=reuniones`}>
               ⬇ Reuniones a Excel
             </a>
           </div>
           <p class="breadcrumb" style="margin: 0;">
-            Descarga rápida de la tabla de reuniones en formato .xlsx, o usa «Exportar tablas» en el menú.
+            Descarga rápida de la tabla de reuniones en formato .xlsx, o usa «Exportar tablas» en el
+            menú.
           </p>
         </div>
 
         <div class="panel" id="usuarios">
           <h2 class="panel__title">👥 Usuarios (crear cuenta)</h2>
-          <form method="post" action={adminRoutes.usuarios.action.href()} class="form-row" style="margin-bottom: 14px;">
+          <form
+            method="post"
+            action={adminRoutes.usuarios.action.href()}
+            class="form-row"
+            style="margin-bottom: 14px;"
+          >
             <div class="form-field">
               <label for="u-name">Nombre</label>
               <input id="u-name" name="name" required />
@@ -172,7 +182,9 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
                 <option value="admin">Admin</option>
               </select>
             </div>
-            <button type="submit" class="btn btn--dark">＋ Crear usuario</button>
+            <button type="submit" class="btn btn--dark">
+              ＋ Crear usuario
+            </button>
           </form>
           <div class="table-wrap">
             <table>
@@ -187,7 +199,9 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
               <tbody>
                 {users.length === 0 ? (
                   <tr>
-                    <td colspan={4} class="empty">Sin usuarios</td>
+                    <td colspan={4} class="empty">
+                      Sin usuarios
+                    </td>
                   </tr>
                 ) : (
                   users.map((u) => (

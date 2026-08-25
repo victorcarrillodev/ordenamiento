@@ -2,6 +2,7 @@ import type { Handle, RemixNode } from 'remix/ui'
 
 import { Document } from '../../actions/document.tsx'
 import { adminRoutes, routes } from '../../routes.ts'
+import { isSafeCssColor } from '../civic-horizon.ts'
 import { Icon } from './icon.tsx'
 
 export interface AdminLayoutProps {
@@ -118,16 +119,21 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
     const { children, user, active, title, theme } = handle.props
     const customLogo = theme?.adminLogo || `${basePath}/images/tlaquepaque.png`
     const customTitle = theme?.adminTitulo || 'ADMINISTRADOR BITÁCORA AMBIENTAL'
+    // Estos valores vienen del formulario de Personalización y se insertan
+    // como texto crudo de <style> (sin escapar), así que se validan primero:
+    // un valor como `red;}</style><script>...` guardado ahí inyectaría
+    // markup en el panel de cualquier administrador que visite /admin/*.
+    const safeColor = (value?: string) => (isSafeCssColor(value) ? value : null)
     const dynamicStyles = theme
       ? `
         :root {
-          ${theme.adminBg ? `--a-bg: ${theme.adminBg};` : ''}
-          ${theme.sidebarFondo ? `--a-sidebar: ${theme.sidebarFondo};` : ''}
-          ${theme.topbarFondo ? `--a-dark: ${theme.topbarFondo};` : ''}
-          ${theme.colorAcento ? `--a-blue: ${theme.colorAcento};` : ''}
+          ${safeColor(theme.adminBg) ? `--a-bg: ${safeColor(theme.adminBg)};` : ''}
+          ${safeColor(theme.sidebarFondo) ? `--a-sidebar: ${safeColor(theme.sidebarFondo)};` : ''}
+          ${safeColor(theme.topbarFondo) ? `--a-dark: ${safeColor(theme.topbarFondo)};` : ''}
+          ${safeColor(theme.colorAcento) ? `--a-blue: ${safeColor(theme.colorAcento)};` : ''}
         }
-        ${theme.sidebarTexto ? `.sidebar__item { color: ${theme.sidebarTexto}; }` : ''}
-        ${theme.topbarTexto ? `.topbar { color: ${theme.topbarTexto}; }` : ''}
+        ${safeColor(theme.sidebarTexto) ? `.sidebar__item { color: ${safeColor(theme.sidebarTexto)}; }` : ''}
+        ${safeColor(theme.topbarTexto) ? `.topbar { color: ${safeColor(theme.topbarTexto)}; }` : ''}
       `
       : ''
 
@@ -161,10 +167,12 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
                 </a>
               ))}
               <div class="sidebar__label">CUENTA</div>
-              <a href={routes.login.index.href()} class="sidebar__item sidebar__logout">
-                <Icon name="mdi:logout" />
-                Cerrar sesión
-              </a>
+              <form method="post" action={routes.logout.href()}>
+                <button type="submit" class="sidebar__item sidebar__logout">
+                  <Icon name="mdi:logout" />
+                  Cerrar sesión
+                </button>
+              </form>
             </nav>
           </aside>
           <div class="admin-main">

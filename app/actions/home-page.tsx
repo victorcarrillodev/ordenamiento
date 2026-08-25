@@ -3,22 +3,23 @@
  * Civic Horizon Design System
  * San Pedro Tlaquepaque, Jalisco
  */
-import type { Handle } from "remix/ui";
-import { css } from "remix/ui";
+import type { Handle } from 'remix/ui'
+import { css } from 'remix/ui'
 
 import {
   bodyLargeProps,
   bodyProps,
   btnGoldStyle,
-  btnSecondaryStyle,
   cardProps,
   colors,
   eyebrowProps,
   FONT_STACK,
   headingLProps,
   headingXLProps,
+  isSafeCssColor,
   sectionContainerProps,
   sectionPaddingProps,
+  type ThemeData,
 } from "../ui/civic-horizon.ts";
 import { Document } from "./document.tsx";
 import { NavBar } from "../components/Nav/NavBar.tsx";
@@ -28,7 +29,7 @@ const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 
 // ---------------------------------------------------------------------------
 export interface HomePageProps {
-  theme?: any;
+  theme?: ThemeData
 }
 
 export function HomePage(handle: Handle<HomePageProps>) {
@@ -38,7 +39,7 @@ export function HomePage(handle: Handle<HomePageProps>) {
       <Document>
         <div
           mix={css({
-            "& *, & *::before, & *::after": { boxSizing: "border-box" },
+            '& *, & *::before, & *::after': { boxSizing: 'border-box' },
             fontFamily: FONT_STACK,
             margin: 0,
             padding: 0,
@@ -56,8 +57,8 @@ export function HomePage(handle: Handle<HomePageProps>) {
           <SiteFooter theme={theme} />
         </div>
       </Document>
-    );
-  };
+    )
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -65,59 +66,63 @@ export function HomePage(handle: Handle<HomePageProps>) {
 // ---------------------------------------------------------------------------
 
 const heroStyle = css({
-  position: "relative",
-  minHeight: "100vh",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  overflow: "hidden",
-  paddingTop: "70px",
-});
+  position: 'relative',
+  minHeight: '100vh',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  overflow: 'hidden',
+  paddingTop: '70px',
+})
 
 const heroContentStyle = css({
-  position: "relative",
+  position: 'relative',
   zIndex: 3,
-  maxWidth: "900px",
-  margin: "0 auto",
-  padding: "80px 24px",
-  textAlign: "center",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: "32px",
-});
+  maxWidth: '900px',
+  margin: '0 auto',
+  padding: '80px 24px',
+  textAlign: 'center',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '32px',
+})
 
-function HeroSection(handle: Handle<{ theme?: any }>) {
+function HeroSection(handle: Handle<{ theme?: ThemeData }>) {
   return () => {
-    const u = handle.props.theme?.usuario || {};
+    const { theme } = handle.props;
+    const u = theme?.usuario || {};
     const c = u.colores || {};
     const img = u.imagenes || {};
     const txt = u.textos || {};
 
-    const rawImgs = Array.isArray(img.heroImagenes) && img.heroImagenes.length > 0
-      ? img.heroImagenes
-      : [
-          "https://imgs.search.brave.com/8f1SgJygGgIrQH2BcZXess4TRcaOtm3FXVfawE9VxRE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTEy/NTUyNzc3Mi9lcy9m/b3RvL3RsYXF1ZXBh/cXVlLmpwZz9zPTYx/Mng2MTImdz0wJms9/MjAmYz1VU3FwdjNw/OEJxbG9LY0JaY01q/YUdPNkpQWW1Va0xl/N1FYUGx5YVREM1Zz/PQ",
-        ];
+    const rawImgs =
+      Array.isArray(img.heroImagenes) && img.heroImagenes.length > 0
+        ? img.heroImagenes
+        : [
+            'https://imgs.search.brave.com/8f1SgJygGgIrQH2BcZXess4TRcaOtm3FXVfawE9VxRE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTEy/NTUyNzc3Mi9lcy9m/b3RvL3RsYXF1ZXBh/cXVlLmpwZz9zPTYx/Mng2MTImdz0wJms9/MjAmYz1VU3FwdjNw/OEJxbG9LY0JaY01q/YUdPNkpQWW1Va0xl/N1FYUGx5YVREM1Zz/PQ',
+          ]
 
-    const hasCarousel = rawImgs.length > 1;
-    const accentColor = c.acento || colors.gold400;
-    const primaryColor = c.primario || colors.burgundy900;
+    const hasCarousel = rawImgs.length > 1
+    // Validado: este valor se interpola sin escapar dentro de un <script> más
+    // abajo (ver innerHTML), así que no puede tomarse tal cual del tema.
+    const accentColor = isSafeCssColor(c.acento) ? c.acento : colors.gold400
     const heroOverlay = `linear-gradient(
       160deg,
-      ${c.heroGradienteInicio || "rgba(15,17,23,0.82)"} 0%,
-      ${c.heroGradienteCentro || "rgba(140,29,61,0.70)"} 50%,
-      ${c.heroGradienteFin || "rgba(15,17,23,0.75)"} 100%
-    )`;
+      ${c.heroGradienteInicio || 'rgba(15,17,23,0.82)'} 0%,
+      ${c.heroGradienteCentro || 'rgba(140,29,61,0.70)'} 50%,
+      ${c.heroGradienteFin || 'rgba(15,17,23,0.75)'} 100%
+    )`
 
-    const cintillo = txt.heroCintillo || "Bitácora Ambiental · San Pedro Tlaquepaque";
-    const titulo = txt.heroTitulo || "Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano";
-    const tituloResaltado = txt.heroTituloResaltado || "Ecológico Territorial";
+    const cintillo = txt.heroCintillo || 'Bitácora Ambiental · San Pedro Tlaquepaque'
+    const titulo =
+      txt.heroTitulo || 'Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano'
+    const tituloResaltado = txt.heroTituloResaltado || 'Ecológico Territorial'
     const subtitulo =
       txt.heroSubtitulo ||
-      "Un proceso participativo para planificar el territorio de forma sustentable, preservando nuestro patrimonio natural y construyendo el municipio que merecemos.";
-    const btn1Text = txt.heroBtn1 || "Conoce el programa";
-    const btn2Text = txt.heroBtn2 || "Registra tu participación";
+      'Un proceso participativo para planificar el territorio de forma sustentable, preservando nuestro patrimonio natural y construyendo el municipio que merecemos.'
+    const btn1Text = txt.heroBtn1 || 'Conoce el programa'
+    const btn2Text = txt.heroBtn2 || 'Registra tu participación'
 
     return (
       <section id="inicio" aria-label="Bienvenida al portal" mix={heroStyle}>
@@ -175,7 +180,7 @@ function HeroSection(handle: Handle<{ theme?: any }>) {
               id="hero-dots"
               style="position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%); z-index: 4; display: flex; gap: 8px;"
             >
-              {rawImgs.map((_: any, idx: number) => (
+              {rawImgs.map((_: string, idx: number) => (
                 <button
                   type="button"
                   class={`hero-dot dot-${idx}`}
@@ -198,7 +203,7 @@ function HeroSection(handle: Handle<{ theme?: any }>) {
         {/* Main Content */}
         <div mix={heroContentStyle}>
           {/* Eyebrow bar */}
-          <div mix={css({ display: "flex", alignItems: "center", gap: "12px" })}>
+          <div mix={css({ display: 'flex', alignItems: 'center', gap: '12px' })}>
             <div
               style={`width: 32px; height: 2px; background: ${accentColor};`}
               aria-hidden="true"
@@ -226,7 +231,7 @@ function HeroSection(handle: Handle<{ theme?: any }>) {
             mix={css({
               ...headingXLProps,
               margin: 0,
-              textAlign: "center",
+              textAlign: 'center',
             })}
           >
             {titulo.includes(tituloResaltado) ? (
@@ -251,12 +256,12 @@ function HeroSection(handle: Handle<{ theme?: any }>) {
           <p
             mix={css({
               fontFamily: FONT_STACK,
-              fontSize: "clamp(16px, 2.5vw, 20px)",
+              fontSize: 'clamp(16px, 2.5vw, 20px)',
               lineHeight: 1.65,
-              color: "rgba(255,255,255,0.88)",
-              maxWidth: "680px",
+              color: 'rgba(255,255,255,0.88)',
+              maxWidth: '680px',
               margin: 0,
-              textAlign: "center",
+              textAlign: 'center',
             })}
           >
             {subtitulo}
@@ -265,10 +270,10 @@ function HeroSection(handle: Handle<{ theme?: any }>) {
           {/* CTAs */}
           <div
             mix={css({
-              display: "flex",
-              gap: "16px",
-              flexWrap: "wrap",
-              justifyContent: "center",
+              display: 'flex',
+              gap: '16px',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
             })}
           >
             <a
@@ -325,14 +330,14 @@ function HeroSection(handle: Handle<{ theme?: any }>) {
           <div
             aria-hidden="true"
             mix={css({
-              position: "absolute",
-              bottom: "20px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "6px",
+              position: 'absolute',
+              bottom: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '6px',
               opacity: 0.6,
             })}
           >
@@ -417,31 +422,32 @@ function HeroSection(handle: Handle<{ theme?: any }>) {
           />
         )}
       </section>
-    );
-  };
+    )
+  }
 }
 
 // ---------------------------------------------------------------------------
 // What Is This Site
 // ---------------------------------------------------------------------------
 
-function WhatIsThisSite(handle: Handle<{ theme?: any }>) {
+function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
   return () => {
-    const u = handle.props.theme?.usuario || {};
+    const { theme } = handle.props;
+    const u = theme?.usuario || {};
     const c = u.colores || {};
     const img = u.imagenes || {};
     const txt = u.textos || {};
 
-    const primary = c.primario || colors.burgundy900;
-    const cintillo = txt.queEsCintillo || "¿Qué es este sitio?";
-    const titulo = txt.queEsTitulo || "Tu ventana al ordenamiento territorial del municipio";
+    const primary = c.primario || colors.burgundy900
+    const cintillo = txt.queEsCintillo || '¿Qué es este sitio?'
+    const titulo = txt.queEsTitulo || 'Tu ventana al ordenamiento territorial del municipio'
     const p1 =
       txt.queEsParrafo1 ||
-      "Este portal es la Bitácora Ambiental del Municipio de San Pedro Tlaquepaque — un espacio oficial y transparente donde los ciudadanos, investigadores y funcionarios pueden dar seguimiento al avance del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.";
+      'Este portal es la Bitácora Ambiental del Municipio de San Pedro Tlaquepaque — un espacio oficial y transparente donde los ciudadanos, investigadores y funcionarios pueden dar seguimiento al avance del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.'
     const p2 =
       txt.queEsParrafo2 ||
-      "Aquí encontrarás documentos técnicos, calendarios de actividades, las fases del proceso y un mecanismo directo para registrar tus observaciones y participar en la toma de decisiones sobre el territorio que habitamos.";
-    const ecoImg = img.imagenEcologia || `${basePath}/images/ecology-split.jpg`;
+      'Aquí encontrarás documentos técnicos, calendarios de actividades, las fases del proceso y un mecanismo directo para registrar tus observaciones y participar en la toma de decisiones sobre el territorio que habitamos.'
+    const ecoImg = img.imagenEcologia || `${basePath}/images/ecology-split.jpg`
 
     return (
       <section
@@ -455,19 +461,21 @@ function WhatIsThisSite(handle: Handle<{ theme?: any }>) {
         <div
           mix={css({
             ...sectionContainerProps,
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "80px",
-            alignItems: "center",
-            "@media (max-width: 900px)": {
-              gridTemplateColumns: "1fr",
-              gap: "48px",
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '80px',
+            alignItems: 'center',
+            '@media (max-width: 900px)': {
+              gridTemplateColumns: '1fr',
+              gap: '48px',
             },
           })}
         >
           {/* Text column */}
-          <div mix={css({ display: "flex", flexDirection: "column", gap: "24px" })}>
-            <span style={`font-family: ${FONT_STACK}; font-size: 12px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: ${primary};`}>
+          <div mix={css({ display: 'flex', flexDirection: 'column', gap: '24px' })}>
+            <span
+              style={`font-family: ${FONT_STACK}; font-size: 12px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: ${primary};`}
+            >
               {cintillo}
             </span>
             <h2 id="que-es-heading" mix={css({ ...headingLProps, margin: 0 })}>
@@ -478,17 +486,17 @@ function WhatIsThisSite(handle: Handle<{ theme?: any }>) {
 
             {/* Feature bullets */}
             <div
-              mix={css({ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" })}
+              mix={css({ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' })}
             >
               {[
-                "Acceso a documentos técnicos oficiales",
-                "Seguimiento de fases y avances del programa",
-                "Participación ciudadana directa y simplificada",
-                "Consulta del calendario de actividades",
+                'Acceso a documentos técnicos oficiales',
+                'Seguimiento de fases y avances del programa',
+                'Participación ciudadana directa y simplificada',
+                'Consulta del calendario de actividades',
               ].map((feature) => (
                 <div
                   key={feature}
-                  mix={css({ display: "flex", alignItems: "flex-start", gap: "12px" })}
+                  mix={css({ display: 'flex', alignItems: 'flex-start', gap: '12px' })}
                 >
                   <div
                     style={`
@@ -517,7 +525,7 @@ function WhatIsThisSite(handle: Handle<{ theme?: any }>) {
                   <span
                     mix={css({
                       fontFamily: FONT_STACK,
-                      fontSize: "15px",
+                      fontSize: '15px',
                       lineHeight: 1.5,
                       color: colors.gray700,
                     })}
@@ -532,40 +540,40 @@ function WhatIsThisSite(handle: Handle<{ theme?: any }>) {
           {/* Image column */}
           <div
             mix={css({
-              position: "relative",
-              borderRadius: "16px",
-              overflow: "hidden",
-              aspectRatio: "4/3",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
+              position: 'relative',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              aspectRatio: '4/3',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
             })}
           >
             <img
               src={ecoImg}
               alt="Equilibrio ecológico y territorial"
               mix={css({
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                display: "block",
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
               })}
             />
             <div
               mix={css({
-                position: "absolute",
+                position: 'absolute',
                 bottom: 0,
                 left: 0,
                 right: 0,
-                background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)",
-                padding: "32px 24px 20px",
+                background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)',
+                padding: '32px 24px 20px',
               })}
             >
               <p
                 mix={css({
                   fontFamily: FONT_STACK,
-                  fontSize: "12px",
-                  color: "rgba(255,255,255,0.8)",
+                  fontSize: '12px',
+                  color: 'rgba(255,255,255,0.8)',
                   margin: 0,
-                  letterSpacing: "0.05em",
+                  letterSpacing: '0.05em',
                 })}
               >
                 Equilibrio ecológico • Jalisco, México
@@ -574,75 +582,76 @@ function WhatIsThisSite(handle: Handle<{ theme?: any }>) {
           </div>
         </div>
       </section>
-    );
-  };
+    )
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Action Cards Grid
 // ---------------------------------------------------------------------------
 
-function ActionCardsGrid(handle: Handle<{ theme?: any }>) {
+function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
   return () => {
-    const u = handle.props.theme?.usuario || {};
+    const { theme } = handle.props;
+    const u = theme?.usuario || {};
     const c = u.colores || {};
     const ico = u.iconos || {};
     const txt = u.textos || {};
 
-    const primary = c.primario || colors.burgundy900;
-    const secondary = c.secundario || colors.green700;
-    const accent = c.acento || colors.gold500;
+    const primary = c.primario || colors.burgundy900
+    const secondary = c.secundario || colors.green700
+    const accent = c.acento || colors.gold500
 
     const cards = [
       {
-        id: "card-programa",
-        icon: ico.cardPrograma || "🏛️",
-        eyebrow: "Marco normativo",
-        title: txt.card1Titulo || "Conoce el Programa",
+        id: 'card-programa',
+        icon: ico.cardPrograma || '🏛️',
+        eyebrow: 'Marco normativo',
+        title: txt.card1Titulo || 'Conoce el Programa',
         description:
           txt.card1Desc ||
-          "Explora los fundamentos legales, objetivos y alcances del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.",
-        href: "#que-es-el-programa",
-        cta: "Ver programa",
+          'Explora los fundamentos legales, objetivos y alcances del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
+        href: '#que-es-el-programa',
+        cta: 'Ver programa',
         accent: primary,
       },
       {
-        id: "card-proceso",
-        icon: ico.cardProceso || "⚙️",
-        eyebrow: "Metodología",
-        title: txt.card2Titulo || "Conoce el Proceso",
+        id: 'card-proceso',
+        icon: ico.cardProceso || '⚙️',
+        eyebrow: 'Metodología',
+        title: txt.card2Titulo || 'Conoce el Proceso',
         description:
           txt.card2Desc ||
-          "Entiende las cinco fases del proceso: desde la formulación hasta la evaluación continua del ordenamiento territorial.",
-        href: "#proceso",
-        cta: "Ver fases",
+          'Entiende las cinco fases del proceso: desde la formulación hasta la evaluación continua del ordenamiento territorial.',
+        href: '#proceso',
+        cta: 'Ver fases',
         accent: secondary,
       },
       {
-        id: "card-calendario",
-        icon: ico.cardCalendario || "📅",
-        eyebrow: "Agenda de participación",
-        title: txt.card3Titulo || "Calendario de Actividades",
+        id: 'card-calendario',
+        icon: ico.cardCalendario || '📅',
+        eyebrow: 'Agenda de participación',
+        title: txt.card3Titulo || 'Calendario de Actividades',
         description:
           txt.card3Desc ||
-          "Consulta las fechas de talleres, mesas de trabajo, consultas públicas y sesiones técnicas del programa.",
-        href: "#calendario",
-        cta: "Ver calendario",
+          'Consulta las fechas de talleres, mesas de trabajo, consultas públicas y sesiones técnicas del programa.',
+        href: '#calendario',
+        cta: 'Ver calendario',
         accent: accent,
       },
       {
-        id: "card-documentos",
-        icon: ico.cardDocumentos || "📄",
-        eyebrow: "Repositorio técnico",
-        title: txt.card4Titulo || "Consulta Documentos",
+        id: 'card-documentos',
+        icon: ico.cardDocumentos || '📄',
+        eyebrow: 'Repositorio técnico',
+        title: txt.card4Titulo || 'Consulta Documentos',
         description:
           txt.card4Desc ||
-          "Accede a la memoria técnica, estudios de diagnóstico, cartografía y acuerdos oficiales del proceso de ordenamiento.",
-        href: "#documentos",
-        cta: "Ver documentos",
+          'Accede a la memoria técnica, estudios de diagnóstico, cartografía y acuerdos oficiales del proceso de ordenamiento.',
+        href: '#documentos',
+        cta: 'Ver documentos',
         accent: colors.gray700,
       },
-    ];
+    ]
 
     return (
       <section
@@ -652,31 +661,33 @@ function ActionCardsGrid(handle: Handle<{ theme?: any }>) {
         <div mix={css(sectionContainerProps)}>
           <div
             mix={css({
-              textAlign: "center",
-              marginBottom: "64px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "16px",
+              textAlign: 'center',
+              marginBottom: '64px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '16px',
             })}
           >
-            <span style={`font-family: ${FONT_STACK}; font-size: 12px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: ${primary};`}>
+            <span
+              style={`font-family: ${FONT_STACK}; font-size: 12px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: ${primary};`}
+            >
               Explora lo que puedes hacer aquí
             </span>
-            <h2 id="acciones-heading" mix={css({ ...headingLProps, margin: 0, maxWidth: "600px" })}>
+            <h2 id="acciones-heading" mix={css({ ...headingLProps, margin: 0, maxWidth: '600px' })}>
               Todo lo que necesitas para estar informado y participar
             </h2>
           </div>
 
           <div
             mix={css({
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gap: "24px",
-              "@media (max-width: 1024px)": {
-                gridTemplateColumns: "repeat(2, 1fr)",
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '24px',
+              '@media (max-width: 1024px)': {
+                gridTemplateColumns: 'repeat(2, 1fr)',
               },
-              "@media (max-width: 600px)": { gridTemplateColumns: "1fr" },
+              '@media (max-width: 600px)': { gridTemplateColumns: '1fr' },
             })}
           >
             {cards.map((card) => (
@@ -686,9 +697,9 @@ function ActionCardsGrid(handle: Handle<{ theme?: any }>) {
                 href={card.href}
                 mix={css({
                   ...cardProps,
-                  textDecoration: "none",
-                  color: "inherit",
-                  cursor: "pointer",
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
                 })}
               >
                 <div
@@ -711,9 +722,9 @@ function ActionCardsGrid(handle: Handle<{ theme?: any }>) {
 
                 <div
                   mix={css({
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
                     flex: 1,
                   })}
                 >
@@ -732,7 +743,7 @@ function ActionCardsGrid(handle: Handle<{ theme?: any }>) {
                   <h3
                     mix={css({
                       fontFamily: FONT_STACK,
-                      fontSize: "17px",
+                      fontSize: '17px',
                       fontWeight: 700,
                       lineHeight: 1.3,
                       color: colors.gray900,
@@ -744,7 +755,7 @@ function ActionCardsGrid(handle: Handle<{ theme?: any }>) {
                   <p
                     mix={css({
                       fontFamily: FONT_STACK,
-                      fontSize: "14px",
+                      fontSize: '14px',
                       lineHeight: 1.6,
                       color: colors.gray500,
                       margin: 0,
@@ -783,8 +794,8 @@ function ActionCardsGrid(handle: Handle<{ theme?: any }>) {
           </div>
         </div>
       </section>
-    );
-  };
+    )
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -799,8 +810,8 @@ function WhatIsTheProgram() {
       mix={css({
         ...sectionPaddingProps,
         background: `linear-gradient(135deg, ${colors.gray900} 0%, ${colors.burgundy900} 100%)`,
-        position: "relative",
-        overflow: "hidden",
+        position: 'relative',
+        overflow: 'hidden',
       })}
     >
       {/* Decorative circles */}
@@ -814,7 +825,7 @@ function WhatIsTheProgram() {
           height: '400px',
           borderRadius: '50%',
           background: `radial-gradient(circle, rgba(201,162,39,0.15) 0%, transparent 70%)`,
-          pointerEvents: "none",
+          pointerEvents: 'none',
         })}
       />
       <div
@@ -827,32 +838,26 @@ function WhatIsTheProgram() {
           height: '300px',
           borderRadius: '50%',
           background: `radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)`,
-          pointerEvents: "none",
+          pointerEvents: 'none',
         })}
       />
 
-      <div
-        mix={css({ ...sectionContainerProps, position: "relative", zIndex: 1 })}
-      >
+      <div mix={css({ ...sectionContainerProps, position: 'relative', zIndex: 1 })}>
         <div
           mix={css({
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "80px",
-            alignItems: "start",
-            "@media (max-width: 900px)": {
-              gridTemplateColumns: "1fr",
-              gap: "48px",
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '80px',
+            alignItems: 'start',
+            '@media (max-width: 900px)': {
+              gridTemplateColumns: '1fr',
+              gap: '48px',
             },
           })}
         >
           {/* Left: headline + stats */}
-          <div
-            mix={css({ display: "flex", flexDirection: "column", gap: "24px" })}
-          >
-            <span mix={css({ ...eyebrowProps, color: colors.gold400 })}>
-              ¿Qué es el Programa?
-            </span>
+          <div mix={css({ display: 'flex', flexDirection: 'column', gap: '24px' })}>
+            <span mix={css({ ...eyebrowProps, color: colors.gold400 })}>¿Qué es el Programa?</span>
             <h2
               id="programa-heading"
               mix={css({ ...headingLProps, color: colors.white, margin: 0 })}
@@ -882,21 +887,21 @@ function WhatIsTheProgram() {
               })}
             >
               {[
-                { value: "5", label: "Fases del proceso" },
-                { value: "2026", label: "Año de inicio" },
-                { value: "600k+", label: "Habitantes beneficiados" },
-                { value: "100%", label: "Participación abierta" },
+                { value: '5', label: 'Fases del proceso' },
+                { value: '2026', label: 'Año de inicio' },
+                { value: '600k+', label: 'Habitantes beneficiados' },
+                { value: '100%', label: 'Participación abierta' },
               ].map((stat) => (
                 <div
                   key={stat.label}
                   mix={css({
-                    background: "rgba(255,255,255,0.07)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    borderRadius: "12px",
-                    padding: "20px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "4px",
+                    background: 'rgba(255,255,255,0.07)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
                   })}
                 >
                   <span
@@ -956,13 +961,13 @@ function WhatIsTheProgram() {
 
             <div
               mix={css({
-                background: "rgba(201,162,39,0.12)",
+                background: 'rgba(201,162,39,0.12)',
                 border: `1px solid rgba(201,162,39,0.3)`,
-                borderRadius: "12px",
-                padding: "24px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
+                borderRadius: '12px',
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
               })}
             >
               <span
@@ -995,7 +1000,7 @@ function WhatIsTheProgram() {
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -1003,10 +1008,10 @@ function WhatIsTheProgram() {
 // ---------------------------------------------------------------------------
 
 interface TimelineStep {
-  number: string;
-  title: string;
-  description: string;
-  color: string;
+  number: string
+  title: string
+  description: string
+  color: string
 }
 
 const TIMELINE_STEPS: TimelineStep[] = [
@@ -1057,45 +1062,40 @@ function ProcessTimeline() {
       <div mix={css(sectionContainerProps)}>
         <div
           mix={css({
-            textAlign: "center",
-            marginBottom: "72px",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "16px",
+            textAlign: 'center',
+            marginBottom: '72px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px',
           })}
         >
-          <span mix={css({ ...eyebrowProps, color: colors.burgundy900 })}>
-            Fases del proceso
-          </span>
-          <h2
-            id="proceso-heading"
-            mix={css({ ...headingLProps, margin: 0, maxWidth: "560px" })}
-          >
+          <span mix={css({ ...eyebrowProps, color: colors.burgundy900 })}>Fases del proceso</span>
+          <h2 id="proceso-heading" mix={css({ ...headingLProps, margin: 0, maxWidth: '560px' })}>
             Cinco etapas hacia un territorio ordenado y sustentable
           </h2>
         </div>
 
         <div
           mix={css({
-            position: "relative",
-            display: "grid",
-            gridTemplateColumns: "repeat(5, 1fr)",
-            "@media (max-width: 900px)": { gridTemplateColumns: "1fr" },
+            position: 'relative',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            '@media (max-width: 900px)': { gridTemplateColumns: '1fr' },
           })}
         >
           {/* Connector line (desktop only) */}
           <div
             aria-hidden="true"
             mix={css({
-              position: "absolute",
-              top: "28px",
-              left: "calc(10% + 28px)",
-              right: "calc(10% + 28px)",
-              height: "2px",
+              position: 'absolute',
+              top: '28px',
+              left: 'calc(10% + 28px)',
+              right: 'calc(10% + 28px)',
+              height: '2px',
               background: `linear-gradient(to right, ${colors.burgundy900}, ${colors.gold500}, ${colors.green700}, ${colors.gray300}, ${colors.burgundy900})`,
               zIndex: 0,
-              "@media (max-width: 900px)": { display: "none" },
+              '@media (max-width: 900px)': { display: 'none' },
             })}
           />
 
@@ -1109,44 +1109,42 @@ function ProcessTimeline() {
         </div>
       </div>
     </section>
-  );
+  )
 }
 
-function TimelineStepCard(
-  handle: Handle<{ step: TimelineStep; isLast: boolean }>,
-) {
+function TimelineStepCard(handle: Handle<{ step: TimelineStep; isLast: boolean }>) {
   return () => {
     const { step, isLast } = handle.props
     return (
       <div
         mix={css({
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "20px",
-          padding: "0 12px",
-          position: "relative",
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '20px',
+          padding: '0 12px',
+          position: 'relative',
           zIndex: 1,
-          "@media (max-width: 900px)": {
-            flexDirection: "row",
-            alignItems: "flex-start",
-            padding: "0 0 40px 0",
-            gap: "24px",
+          '@media (max-width: 900px)': {
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            padding: '0 0 40px 0',
+            gap: '24px',
           },
         })}
       >
         <div
           mix={css({
-            width: "56px",
-            height: "56px",
-            borderRadius: "50%",
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
             background: step.color,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             flexShrink: 0,
             boxShadow: `0 4px 16px ${step.color}55`,
-            border: "3px solid white",
+            border: '3px solid white',
           })}
           aria-hidden="true"
         >
@@ -1164,11 +1162,11 @@ function TimelineStepCard(
 
         <div
           mix={css({
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-            textAlign: "center",
-            "@media (max-width: 900px)": { textAlign: "left" },
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            textAlign: 'center',
+            '@media (max-width: 900px)': { textAlign: 'left' },
           })}
         >
           <h3
@@ -1200,13 +1198,13 @@ function TimelineStepCard(
           <div
             aria-hidden="true"
             mix={css({
-              display: "none",
-              "@media (max-width: 900px)": {
-                display: "block",
-                position: "absolute",
-                top: "56px",
-                left: "27px",
-                width: "2px",
+              display: 'none',
+              '@media (max-width: 900px)': {
+                display: 'block',
+                position: 'absolute',
+                top: '56px',
+                left: '27px',
+                width: '2px',
                 bottom: 0,
                 background: `linear-gradient(to bottom, ${step.color}, transparent)`,
               },
@@ -1214,8 +1212,8 @@ function TimelineStepCard(
           />
         )}
       </div>
-    );
-  };
+    )
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1228,54 +1226,52 @@ function ParticipationCta() {
       aria-labelledby="participa-heading"
       mix={css({
         background: `linear-gradient(135deg, ${colors.burgundy900} 0%, ${colors.gray900} 100%)`,
-        padding: "96px 24px",
-        position: "relative",
-        overflow: "hidden",
+        padding: '96px 24px',
+        position: 'relative',
+        overflow: 'hidden',
       })}
     >
       <div
         aria-hidden="true"
         mix={css({
-          position: "absolute",
+          position: 'absolute',
           inset: 0,
           backgroundImage: `radial-gradient(circle at 20% 50%, rgba(201,162,39,0.12) 0%, transparent 50%),
                             radial-gradient(circle at 80% 50%, rgba(255,255,255,0.05) 0%, transparent 40%)`,
-          pointerEvents: "none",
+          pointerEvents: 'none',
         })}
       />
 
       <div
         mix={css({
           ...sectionContainerProps,
-          position: "relative",
+          position: 'relative',
           zIndex: 1,
-          textAlign: "center",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "32px",
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '32px',
         })}
       >
         <div
           aria-hidden="true"
           mix={css({
-            width: "72px",
-            height: "72px",
-            borderRadius: "20px",
+            width: '72px',
+            height: '72px',
+            borderRadius: '20px',
             background: `rgba(201,162,39,0.15)`,
             border: `1px solid rgba(201,162,39,0.3)`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "32px",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '32px',
           })}
         >
           ✍️
         </div>
 
-        <span mix={css({ ...eyebrowProps, color: colors.gold400 })}>
-          Participación ciudadana
-        </span>
+        <span mix={css({ ...eyebrowProps, color: colors.gold400 })}>Participación ciudadana</span>
 
         <h2
           id="participa-heading"
@@ -1283,7 +1279,7 @@ function ParticipationCta() {
             ...headingLProps,
             color: colors.white,
             margin: 0,
-            maxWidth: "640px",
+            maxWidth: '640px',
           })}
         >
           Tu voz transforma el territorio de Tlaquepaque
@@ -1306,25 +1302,25 @@ function ParticipationCta() {
 
         <div
           mix={css({
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "8px",
-            justifyContent: "center",
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '8px',
+            justifyContent: 'center',
           })}
         >
-          {[".PDF", ".SHP", ".JPG", ".DWG"].map((fmt) => (
+          {['.PDF', '.SHP', '.JPG', '.DWG'].map((fmt) => (
             <span
               key={fmt}
               mix={css({
-                padding: "4px 12px",
-                borderRadius: "4px",
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.15)",
+                padding: '4px 12px',
+                borderRadius: '4px',
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
                 fontFamily: FONT_STACK,
-                fontSize: "12px",
+                fontSize: '12px',
                 fontWeight: 700,
-                letterSpacing: "0.1em",
-                color: "rgba(255,255,255,0.7)",
+                letterSpacing: '0.1em',
+                color: 'rgba(255,255,255,0.7)',
               })}
             >
               {fmt}
@@ -1332,18 +1328,18 @@ function ParticipationCta() {
           ))}
           <span
             mix={css({
-              padding: "4px 12px",
-              borderRadius: "4px",
-              background: "rgba(201,162,39,0.15)",
+              padding: '4px 12px',
+              borderRadius: '4px',
+              background: 'rgba(201,162,39,0.15)',
               border: `1px solid rgba(201,162,39,0.3)`,
               fontFamily: FONT_STACK,
-              fontSize: "12px",
+              fontSize: '12px',
               fontWeight: 700,
-              letterSpacing: "0.1em",
+              letterSpacing: '0.1em',
               color: colors.gold300,
             })}
           >
-            Hasta 850 MB
+            Hasta 220 MB
           </span>
         </div>
 
@@ -1361,63 +1357,62 @@ function ParticipationCta() {
         </a>
       </div>
     </section>
-  );
+  )
 }
 
 // ---------------------------------------------------------------------------
 // Footer
 // ---------------------------------------------------------------------------
 
-function SiteFooter(handle: Handle<{ theme?: any }>) {
+function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
   return () => {
-    const u = handle.props.theme?.usuario || {};
+    const { theme } = handle.props;
+    const u = theme?.usuario || {};
     const c = u.colores || {};
     const img = u.imagenes || {};
     const txt = u.textos || {};
 
-    const footerBg = c.footerFondo || colors.gray950;
-    const footerText = c.footerTexto || "#ffffff";
-    const accent = c.acento || colors.gold400;
-    const footerLogo = img.logoFooter || "";
-    const entidad = txt.footerEntidad || "Municipio de San Pedro Tlaquepaque";
+    const footerBg = c.footerFondo || colors.gray950
+    const footerText = c.footerTexto || '#ffffff'
+    const accent = c.acento || colors.gold400
+    const footerLogo = img.logoFooter || ''
+    const entidad = txt.footerEntidad || 'Municipio de San Pedro Tlaquepaque'
     const desc =
       txt.footerDesc ||
-      "Portal oficial de la Bitácora Ambiental del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.";
+      'Portal oficial de la Bitácora Ambiental del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.'
     const contacto =
       txt.footerContacto ||
-      "Dirección de Medio Ambiente y Ecología\nH. Ayuntamiento de San Pedro Tlaquepaque\nJalisco, México";
-    const email = txt.footerEmail || "ordenamiento@tlaquepaque.gob.mx";
+      'Dirección de Medio Ambiente y Ecología\nH. Ayuntamiento de San Pedro Tlaquepaque\nJalisco, México'
+    const email = txt.footerEmail || 'ordenamiento@tlaquepaque.gob.mx'
     const copyright =
       txt.footerCopyright ||
-      "© 2026 H. Ayuntamiento de San Pedro Tlaquepaque. Todos los derechos reservados.";
+      '© 2026 H. Ayuntamiento de San Pedro Tlaquepaque. Todos los derechos reservados.'
 
     return (
-      <footer
-        style={`background: ${footerBg}; color: ${footerText}; padding: 64px 24px 32px;`}
-      >
+      <footer style={`background: ${footerBg}; color: ${footerText}; padding: 64px 24px 32px;`}>
         <div
           mix={css({
             ...sectionContainerProps,
-            display: "flex",
-            flexDirection: "column",
-            gap: "48px",
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '48px',
           })}
         >
           {/* Top row */}
           <div
             mix={css({
-              display: "grid",
-              gridTemplateColumns: "2fr 1fr 1fr",
-              gap: "48px",
-              "@media (max-width: 768px)": {
-                gridTemplateColumns: "1fr",
-                gap: "40px",
+              display: 'grid',
+              gridTemplateColumns: '2fr 1fr 1fr',
+              gap: '48px',
+              '@media (max-width: 768px)': {
+                gridTemplateColumns: '1fr',
+                gap: '40px',
               },
             })}
           >
             {/* Brand column */}
-            <div mix={css({ display: "flex", flexDirection: "column", gap: "16px" })}>
-              <div mix={css({ display: "flex", alignItems: "center", gap: "12px" })}>
+            <div mix={css({ display: 'flex', flexDirection: 'column', gap: '16px' })}>
+              <div mix={css({ display: 'flex', alignItems: 'center', gap: '12px' })}>
                 {footerLogo ? (
                   <img
                     src={footerLogo}
@@ -1470,7 +1465,7 @@ function SiteFooter(handle: Handle<{ theme?: any }>) {
             </div>
 
             {/* Navigation */}
-            <div mix={css({ display: "flex", flexDirection: "column", gap: "12px" })}>
+            <div mix={css({ display: 'flex', flexDirection: 'column', gap: '12px' })}>
               <span
                 style={`
                   font-family: ${FONT_STACK};
@@ -1484,11 +1479,11 @@ function SiteFooter(handle: Handle<{ theme?: any }>) {
                 Navegación
               </span>
               {[
-                { label: "Inicio", href: routes.home.href() },
-                { label: "El Programa", href: "#que-es-el-programa" },
-                { label: "El Proceso", href: "#proceso" },
-                { label: "Documentos", href: "#documentos" },
-                { label: "Elaboración POETDUM", href: routes.poetdum.show.href() },
+                { label: 'Inicio', href: routes.home.href() },
+                { label: 'El Programa', href: '#que-es-el-programa' },
+                { label: 'El Proceso', href: '#proceso' },
+                { label: 'Documentos', href: '#documentos' },
+                { label: 'Elaboración POETDUM', href: routes.poetdum.show.href() },
               ].map((link) => (
                 <a
                   key={link.label}
@@ -1507,7 +1502,7 @@ function SiteFooter(handle: Handle<{ theme?: any }>) {
             </div>
 
             {/* Contact */}
-            <div mix={css({ display: "flex", flexDirection: "column", gap: "12px" })}>
+            <div mix={css({ display: 'flex', flexDirection: 'column', gap: '12px' })}>
               <span
                 style={`
                   font-family: ${FONT_STACK};
@@ -1552,11 +1547,11 @@ function SiteFooter(handle: Handle<{ theme?: any }>) {
           {/* Bottom bar */}
           <div
             mix={css({
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "16px",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '16px',
             })}
           >
             <p
@@ -1582,6 +1577,6 @@ function SiteFooter(handle: Handle<{ theme?: any }>) {
           </div>
         </div>
       </footer>
-    );
-  };
+    )
+  }
 }

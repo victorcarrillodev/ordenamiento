@@ -37,12 +37,7 @@ export const avisosController = createController(adminRoutes.avisos, {
       ])
 
       return context.render(
-        <AvisosPage
-          user={user}
-          avisos={avisos}
-          reuniones={reuniones}
-          sesiones={sesiones}
-        />,
+        <AvisosPage user={user} avisos={avisos} reuniones={reuniones} sesiones={sesiones} />,
       )
     },
 
@@ -110,7 +105,9 @@ export const poelController = createController(adminRoutes.poel, {
       const intent = String(formData.get('intent') ?? 'crear')
 
       if (intent === 'eliminar') {
-        await backendFetch(context.request, `/api/poel/${Number(formData.get('id'))}`, { method: 'DELETE' })
+        await backendFetch(context.request, `/api/poel/${Number(formData.get('id'))}`, {
+          method: 'DELETE',
+        })
       } else {
         await backendFetch(context.request, '/api/poel', {
           method: 'POST',

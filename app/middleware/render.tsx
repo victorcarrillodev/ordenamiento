@@ -8,6 +8,32 @@ import { renderToStream } from 'remix/ui/server'
 
 import { assetServer } from '../assets.ts'
 
+/**
+ * Cabeceras de seguridad (OWASP Secure Headers Project) aplicadas a toda
+ * respuesta HTML renderizada. Los orígenes externos de la CSP son los que el
+ * sitio usa realmente: Google Fonts, Iconify, unpkg (Leaflet) y los tiles
+ * ArcGIS/OSM del mapa.
+ */
+const SECURITY_HEADERS: Record<string, string> = {
+  'content-security-policy': [
+    "default-src 'self'",
+    "script-src 'self' https://code.iconify.design https://unpkg.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https:",
+    "connect-src 'self' https://api.iconify.design",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'self'",
+  ].join('; '),
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': 'SAMEORIGIN',
+  'referrer-policy': 'strict-origin-when-cross-origin',
+  'permissions-policy': 'geolocation=(), microphone=(), camera=(), payment=()',
+  'cross-origin-opener-policy': 'same-origin',
+}
+
 export function render() {
   return renderWith(
     ({ request, router }) =>
@@ -37,7 +63,11 @@ export function render() {
           },
         })
 
-        return createHtmlResponse(stream, init)
+        const headers = new Headers(init?.headers)
+        for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+          if (!headers.has(name)) headers.set(name, value)
+        }
+        return createHtmlResponse(stream, { ...init, headers })
       },
   )
 }

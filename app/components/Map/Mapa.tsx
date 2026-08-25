@@ -2,8 +2,7 @@ import { clientEntry, css, type Handle } from 'remix/ui'
 
 type Leaflet = typeof import('leaflet')
 
-const LEAFLET_URL =
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+const LEAFLET_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 
 const mapa = css({
   width: '100%',
@@ -28,9 +27,7 @@ function loadLeaflet(): Promise<Leaflet | null> {
     script.src = LEAFLET_URL
 
     script.onload = () => {
-      resolve(
-        (window as unknown as { L?: Leaflet }).L ?? null
-      )
+      resolve((window as unknown as { L?: Leaflet }).L ?? null)
     }
 
     script.onerror = () => {
@@ -74,23 +71,17 @@ export const Mapa = clientEntry(
           // MAPA
           // ==========================================
 
-          map = L.map(elemento).setView(
-            [20.6767, -103.3475],
-            13
-          )
+          map = L.map(elemento).setView([20.6767, -103.3475], 13)
 
           // ==========================================
           // MAPA NORMAL - OPENSTREETMAP
           // ==========================================
 
-          const osm = L.tileLayer(
-            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            {
-              attribution:
-                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-              maxZoom: 19,
-            }
-          )
+          const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 19,
+          })
 
           // ==========================================
           // MAPA SATÉLITE
@@ -99,10 +90,9 @@ export const Mapa = clientEntry(
           const satellite = L.tileLayer(
             'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             {
-              attribution:
-                'Tiles &copy; Esri',
+              attribution: 'Tiles &copy; Esri',
               maxZoom: 19,
-            }
+            },
           )
 
           // ==========================================
@@ -112,19 +102,15 @@ export const Mapa = clientEntry(
           const dark = L.tileLayer(
             'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
             {
-              attribution:
-                '&copy; OpenStreetMap &copy; CARTO',
+              attribution: '&copy; OpenStreetMap &copy; CARTO',
               maxZoom: 20,
-            }
+            },
           )
-          const terrain = L.tileLayer(
-  'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-  {
-    attribution:
-      'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap',
-    maxZoom: 17,
-  }
-)
+          const terrain = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution:
+              'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap',
+            maxZoom: 17,
+          })
 
           // ==========================================
           // MAPA POR DEFECTO
@@ -132,12 +118,11 @@ export const Mapa = clientEntry(
 
           osm.addTo(map)
 
-      
           const baseMaps = {
             '🗺️ Mapa': osm,
             '🛰️ Satélite': satellite,
             '🌙 Oscuro': dark,
-              '🏔️ Terreno': terrain,
+            '🏔️ Terreno': terrain,
           }
 
           // ==========================================
@@ -155,13 +140,7 @@ export const Mapa = clientEntry(
           // MARCADOR
           // ==========================================
 
-          L.marker([
-            20.6767,
-            -103.3475,
-          ])
-            .addTo(map)
-            .bindPopup('<b>Guadalajara</b>')
-            .openPopup()
+          L.marker([20.6767, -103.3475]).addTo(map).bindPopup('<b>Guadalajara</b>').openPopup()
         })
       }
 

@@ -3,7 +3,12 @@ import type { Handle } from 'remix/ui'
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 
-interface Adjunto { id: number; nombre_original: string; mime: string; size: number }
+interface Adjunto {
+  id: number
+  nombre_original: string
+  mime: string
+  size: number
+}
 interface Detalle {
   id: number
   folio: string
@@ -68,19 +73,29 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
       <AdminLayout user={user} active="participaciones" title={titulo}>
         <h1 class="page-title">{titulo}</h1>
         <p class="breadcrumb">
-          <a href={`${adminRoutes.participaciones.href()}?origen=${p?.origen ?? 'fisica'}`}>Volver a participaciones</a>
+          <a href={`${adminRoutes.participaciones.href()}?origen=${p?.origen ?? 'fisica'}`}>
+            Volver a participaciones
+          </a>
         </p>
 
         {!p ? (
-          <div class="panel"><p class="empty">No se encontró la participación.</p></div>
+          <div class="panel">
+            <p class="empty">No se encontró la participación.</p>
+          </div>
         ) : (
           <>
             {mail === 'ok' ? <p class="form-ok">📨 Participación enviada por correo.</p> : null}
-            {mail === 'error' ? <p class="form-error">⚠️ No se pudo enviar. Revisa la dirección o la configuración de correo.</p> : null}
+            {mail === 'error' ? (
+              <p class="form-error">
+                ⚠️ No se pudo enviar. Revisa la dirección o la configuración de correo.
+              </p>
+            ) : null}
 
             <div class="panel">
               <div class="panel__head">
-                <h2 class="panel__title" style="margin:0;">Datos de la participación</h2>
+                <h2 class="panel__title" style="margin:0;">
+                  Datos de la participación
+                </h2>
                 <span class={'badge ' + (ESTADO_BADGE[p.estado] ?? 'en-proceso')}>{p.estado}</span>
               </div>
               <div class="detalle-grid">
@@ -104,13 +119,25 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
 
             <div class="panel">
               <div class="panel__head">
-                <h2 class="panel__title" style="margin:0;">Adjunto</h2>
+                <h2 class="panel__title" style="margin:0;">
+                  Adjuntos
+                </h2>
                 {p.adjuntos.map((a) => (
-                  <span key={a.id} style="display:flex; gap:8px;">
-                    <a class="btn btn--green" href={adminRoutes.adjunto.href({ id: p.id, aid: a.id })}>👁 Ver PDF</a>
-                    <a class="btn btn--excel" href={adminRoutes.word.href({ id: p.id })}>⬇ Descargar datos (.docx)</a>
+                  <span key={a.id} style="display:flex; gap:8px; align-items:center;">
+                    <span class="meta-label">
+                      {a.nombre_original} · {fmtSize(a.size)}
+                    </span>
+                    <a
+                      class="btn btn--green"
+                      href={adminRoutes.adjunto.href({ id: p.id, aid: a.id })}
+                    >
+                      👁 Ver
+                    </a>
                   </span>
                 ))}
+                <a class="btn btn--excel" href={adminRoutes.word.href({ id: p.id })}>
+                  ⬇ Descargar datos (.docx)
+                </a>
               </div>
               {p.adjuntos.length === 0 ? (
                 <p class="empty">Esta participación no tiene documento adjunto.</p>
@@ -125,12 +152,24 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
 
             <div class="panel">
               <h2 class="panel__title">📨 Enviar por correo</h2>
-              <form method="post" action={adminRoutes.participacionEnviar.action.href({ id: p.id })} class="form-row">
+              <form
+                method="post"
+                action={adminRoutes.participacionEnviar.action.href({ id: p.id })}
+                class="form-row"
+              >
                 <div class="form-field">
                   <label for="para">Enviar a (correo)</label>
-                  <input id="para" name="para" type="email" placeholder="destinatario@ejemplo.com" required />
+                  <input
+                    id="para"
+                    name="para"
+                    type="email"
+                    placeholder="destinatario@ejemplo.com"
+                    required
+                  />
                 </div>
-                <button type="submit" class="btn btn--dark">✉ Enviar datos + PDF</button>
+                <button type="submit" class="btn btn--dark">
+                  ✉ Enviar datos + PDF
+                </button>
               </form>
             </div>
           </>

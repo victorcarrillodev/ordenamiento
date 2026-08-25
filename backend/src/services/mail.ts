@@ -18,9 +18,13 @@ const MAIL_FROM =
 
 /**
  * true si hay configuración SMTP suficiente para enviar.
+ * Nota: se comprueba `process.env.SMTP_HOST` directamente (no la constante
+ * `SMTP_HOST`, que ya trae un fallback a 127.0.0.1) para que un despliegue
+ * sin SMTP configurado responda con el 503 "correo no configurado" en vez
+ * de intentar conectar a localhost y fallar de forma confusa.
  */
 export function mailConfigurado(): boolean {
-  return Boolean(SMTP_HOST)
+  return Boolean(process.env.SMTP_HOST)
 }
 
 function getTransporter() {
@@ -449,10 +453,7 @@ export async function enviarParticipacion(
 /**
  * Envía por correo un Aviso institucional oficial.
  */
-export async function enviarAviso(
-  avisoId: number,
-  para: string,
-): Promise<{ enviado: true }> {
+export async function enviarAviso(avisoId: number, para: string): Promise<{ enviado: true }> {
   if (!mailConfigurado()) {
     throw new Error('SMTP_NO_CONFIGURADO')
   }
@@ -509,9 +510,7 @@ export async function enviarAviso(
 /**
  * Envía un correo de prueba de verificación de conexión SMTP.
  */
-export async function enviarCorreoPrueba(
-  para: string,
-): Promise<{ enviado: true }> {
+export async function enviarCorreoPrueba(para: string): Promise<{ enviado: true }> {
   if (!mailConfigurado()) {
     throw new Error('SMTP_NO_CONFIGURADO')
   }
@@ -561,6 +560,6 @@ function escapeHtml(s: string): string {
         '>': '&gt;',
         '"': '&quot;',
         "'": '&#39;',
-      }[c] ?? c),
+      })[c] ?? c,
   )
 }

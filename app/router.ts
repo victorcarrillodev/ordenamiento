@@ -4,7 +4,7 @@ import { staticFiles } from 'remix/middleware/static'
 import controller from './actions/controller.tsx'
 import loginController from './actions/login/controller.tsx'
 import participationController from './actions/participation/controller.tsx'
-import poetdumController from "./actions/poetdum/controller.tsx"
+import poetdumController from './actions/poetdum/controller.tsx'
 import adminController from './actions/admin/controller.tsx'
 import adminReunionesController from './actions/admin/reuniones-controller.tsx'
 import adminUsuariosController from './actions/admin/usuarios-controller.tsx'
@@ -27,6 +27,19 @@ const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 const publicStatic = staticFiles('./public', { index: false })
 
 function staticWithPrefix() {
+  // publicStatic siempre resuelve a una Response (sirve el archivo o cae al
+  // `next` que se le pase); este `next` falso devuelve null a propósito para
+  // distinguir "no había archivo estático" de una Response real, así el
+  // wrapper puede seguir con el `next` real de la cadena de middleware.
+  const noStaticFile = async () => null as unknown as Response
+
+  // `context` es RequestContext (clase con estado privado). Este wrapper
+  // necesita una copia temporal con `request`/`url` distintos solo para la
+  // consulta a `publicStatic`, sin tocar el `context` real que sigue por el
+  // resto de la cadena — por eso se construye un objeto plano en vez de
+  // mutar la instancia, y por eso su tipo no puede ser el RequestContext
+  // nominal completo (no expone un `.clone()`/`.with()` público para esto).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return async (context: any, next: () => Promise<Response>) => {
     const url = new URL(context.request.url)
     if (url.pathname === '/' || url.pathname === '') {
@@ -37,11 +50,11 @@ function staticWithPrefix() {
       strippedUrl.pathname = url.pathname.slice(basePath.length) || '/'
       const res = await publicStatic(
         { ...context, request: new Request(strippedUrl, context.request), url: strippedUrl },
-        async () => null as any,
+        noStaticFile,
       )
       if (res) return res
     } else {
-      const res = await publicStatic(context, async () => null as any)
+      const res = await publicStatic(context, noStaticFile)
       if (res) return res
     }
     return next()
@@ -55,7 +68,7 @@ export const router = createRouter<AppContext>({
 router.map(routes, controller)
 router.map(routes.login, loginController)
 router.map(routes.participation, participationController)
-router.map(routes.poetdum,poetdumController)
+router.map(routes.poetdum, poetdumController)
 router.map(adminRoutes, adminController)
 router.map(adminRoutes.reuniones, adminReunionesController)
 router.map(adminRoutes.usuarios, adminUsuariosController)

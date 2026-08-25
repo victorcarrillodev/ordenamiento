@@ -104,7 +104,8 @@ export default createController(routes.login, {
       }
 
       // Redirigir por rol: admin → dashboard, ciudadano → participación
-      const dest = result.user?.role === 'admin' ? adminRoutes.index.href() : routes.participation.index.href()
+      const dest =
+        result.user?.role === 'admin' ? adminRoutes.index.href() : routes.participation.index.href()
       return redirect(dest, {
         headers: result.setCookie ? { 'set-cookie': result.setCookie } : undefined,
       })

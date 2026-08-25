@@ -14,6 +14,34 @@ import { css } from 'remix/ui'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type CSSProps = Record<string, any>
 
+/**
+ * Configuración de personalización visual (site_customizations en el
+ * backend, ver backend/src/services/customizations.ts `ThemeConfig`).
+ * Frontend y backend son despliegues separados sin módulos compartidos, así
+ * que el frontend la trata como JSON externo de forma deliberadamente laxa
+ * en vez de duplicar aquí, y potencialmente desincronizar, esa forma anidada
+ * completa. `null` cubre "sin tema configurado" / "no se pudo consultar al
+ * backend" (ver getPublicTheme en app/backend.ts).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ThemeData = Record<string, any> | null
+
+/**
+ * Valida que un valor sea un color CSS de forma segura (hex o rgb/rgba).
+ *
+ * Los colores de `usuario.colores`/`panel` vienen de site_customizations,
+ * editable desde el panel de Personalización, y algunos call sites los
+ * interpolan directo en texto crudo de `<style>`/`<script>` (sin escapar,
+ * a diferencia de un atributo JSX normal). Sin esta validación, guardar un
+ * valor como `red; } </style><script>...` desde ese formulario inyectaría
+ * CSS/JS en el sitio público o en el panel de otros administradores.
+ */
+export function isSafeCssColor(value: unknown): value is string {
+  return (
+    typeof value === 'string' && /^#[0-9a-fA-F]{3,8}$|^rgba?\([0-9.,\s%]+\)$/.test(value.trim())
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Color Palette
 // ---------------------------------------------------------------------------

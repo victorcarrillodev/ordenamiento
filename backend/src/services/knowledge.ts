@@ -17,10 +17,19 @@ export type IdCorpus = 'participation_chunks' | 'skill_knowledge'
  *   ln((N - df + 0.5) / (df + 0.5) + 1) + 1
  * Siempre ≥ 1; N = total de chunks en el corpus.
  */
+const ID_CORPUS_TABLES: readonly IdCorpus[] = ['participation_chunks', 'skill_knowledge']
+
 export async function getIdfMap(
   terms: string[],
   table: IdCorpus = 'participation_chunks',
 ): Promise<Record<string, number>> {
+  // El tipo `IdCorpus` no protege en runtime (se borra al compilar), y este
+  // nombre de tabla se interpola como identificador SQL más abajo. Se
+  // revalida aquí contra la lista blanca real para que un futuro llamador
+  // que derive `table` de datos externos no abra una inyección SQL.
+  if (!ID_CORPUS_TABLES.includes(table)) {
+    throw new Error(`Tabla no permitida para IDF: ${table}`)
+  }
   if (terms.length === 0) return {}
 
   // Total de chunks en el corpus (una sola query)
@@ -32,7 +41,7 @@ export async function getIdfMap(
 
   // Conteo de chunks que contienen cada término — UNA sola query con unnest
   // Se construye dinámicamente porque sql tagged-template no soporta arrays de LIKE.
-  const termList = [...new Set(terms)]  // deduplicar
+  const termList = [...new Set(terms)] // deduplicar
   const patterns = termList.map((t) => `%${t}%`)
 
   // Consulta batch: para cada término del array, cuenta los chunks que lo contienen
