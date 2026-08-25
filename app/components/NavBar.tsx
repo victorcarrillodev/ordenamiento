@@ -7,9 +7,9 @@ export interface NavBarProps {
   theme?: any;
 }
 
-export function NavBar(handle?: Handle<NavBarProps>) {
+export function NavBar(handle: Handle<NavBarProps>) {
   return () => {
-    const theme = handle?.props?.theme;
+    const theme = handle.props.theme;
     const u = theme?.usuario || {};
     const c = u.colores || {};
     const img = u.imagenes || {};

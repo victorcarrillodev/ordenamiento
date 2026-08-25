@@ -1,8 +1,7 @@
 import { Document } from '../document.tsx'
 import { NavBar } from '../../components/NavBar.tsx'
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 import { Mapa } from '../../components/Mapa.tsx'
-
 const title = css({
   margin: '5rem',
   textAlign: 'center',
@@ -136,9 +135,9 @@ const logoFuter = css({
   height: '70px',
 })
 
-export function PoetdumPage(handle?: any) {
+export function PoetdumPage(handle: Handle<{ theme?: any }>) {
   return () => {
-    const theme = handle?.props?.theme
+    const theme = handle.props.theme
     return (
       <Document title="poetdum">
         <NavBar theme={theme} />
@@ -147,7 +146,7 @@ export function PoetdumPage(handle?: any) {
         <br />
 
         <main>
-          
+        
           <h1 mix={title}>ELABORACIÓN DEL POETDUM</h1>
           <div>
             <div mix={containerMap}>

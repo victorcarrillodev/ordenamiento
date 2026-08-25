@@ -31,9 +31,9 @@ export interface HomePageProps {
   theme?: any;
 }
 
-export function HomePage(handle?: Handle<HomePageProps>) {
+export function HomePage(handle: Handle<HomePageProps>) {
   return () => {
-    const theme = handle?.props?.theme;
+    const theme = handle.props.theme;
     return (
       <Document>
         <div
@@ -87,9 +87,9 @@ const heroContentStyle = css({
   gap: "32px",
 });
 
-function HeroSection({ theme }: { theme?: any }) {
+function HeroSection(handle: Handle<{ theme?: any }>) {
   return () => {
-    const u = theme?.usuario || {};
+    const u = handle.props.theme?.usuario || {};
     const c = u.colores || {};
     const img = u.imagenes || {};
     const txt = u.textos || {};
@@ -353,8 +353,7 @@ function HeroSection({ theme }: { theme?: any }) {
         {/* Carousel Script (if 2+ images) */}
         {hasCarousel && (
           <script
-            dangerouslySetInnerHTML={{
-              __html: `
+            innerHTML={`
                 (function() {
                   var total = ${rawImgs.length};
                   var current = 0;
@@ -414,8 +413,7 @@ function HeroSection({ theme }: { theme?: any }) {
 
                   startTimer();
                 })();
-              `,
-            }}
+              `}
           />
         )}
       </section>
@@ -427,9 +425,9 @@ function HeroSection({ theme }: { theme?: any }) {
 // What Is This Site
 // ---------------------------------------------------------------------------
 
-function WhatIsThisSite({ theme }: { theme?: any }) {
+function WhatIsThisSite(handle: Handle<{ theme?: any }>) {
   return () => {
-    const u = theme?.usuario || {};
+    const u = handle.props.theme?.usuario || {};
     const c = u.colores || {};
     const img = u.imagenes || {};
     const txt = u.textos || {};
@@ -584,9 +582,9 @@ function WhatIsThisSite({ theme }: { theme?: any }) {
 // Action Cards Grid
 // ---------------------------------------------------------------------------
 
-function ActionCardsGrid({ theme }: { theme?: any }) {
+function ActionCardsGrid(handle: Handle<{ theme?: any }>) {
   return () => {
-    const u = theme?.usuario || {};
+    const u = handle.props.theme?.usuario || {};
     const c = u.colores || {};
     const ico = u.iconos || {};
     const txt = u.textos || {};
@@ -1370,9 +1368,9 @@ function ParticipationCta() {
 // Footer
 // ---------------------------------------------------------------------------
 
-function SiteFooter({ theme }: { theme?: any }) {
+function SiteFooter(handle: Handle<{ theme?: any }>) {
   return () => {
-    const u = theme?.usuario || {};
+    const u = handle.props.theme?.usuario || {};
     const c = u.colores || {};
     const img = u.imagenes || {};
     const txt = u.textos || {};
