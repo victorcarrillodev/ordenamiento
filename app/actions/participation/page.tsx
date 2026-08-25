@@ -30,6 +30,7 @@ export interface FormErrors {
   email?: string
   municipio?: string
   observacion?: string
+  archivos?: string
 }
 
 export interface ParticipationPageProps {
@@ -481,6 +482,11 @@ function ParticipationForm(handle: Handle<{ errors: FormErrors }>) {
             >
               PDF, SHP, JPG, DWG · hasta 220 MB por archivo
             </span>
+            {errors.archivos && (
+              <span id="archivos-error" role="alert" mix={errorMsgStyle}>
+                ⚠ {errors.archivos}
+              </span>
+            )}
           </div>
 
           <p

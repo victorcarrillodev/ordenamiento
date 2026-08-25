@@ -53,6 +53,7 @@ export function sessionCookie(token: string): string {
   const attrs = [
     `ordenamiento_session=${encodeURIComponent(token)}`,
     'HttpOnly',
+    'Secure',
     'Path=/',
     'SameSite=Lax',
     `Max-Age=${MAX_AGE_SECONDS}`,
@@ -61,7 +62,14 @@ export function sessionCookie(token: string): string {
 }
 
 export function clearSessionCookie(): string {
-  return ['ordenamiento_session=', 'HttpOnly', 'Path=/', 'SameSite=Lax', 'Max-Age=0'].join('; ')
+  return [
+    'ordenamiento_session=',
+    'HttpOnly',
+    'Secure',
+    'Path=/',
+    'SameSite=Lax',
+    'Max-Age=0',
+  ].join('; ')
 }
 
 export interface SessionUser {

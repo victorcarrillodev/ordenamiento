@@ -15,43 +15,48 @@ export interface IngestAttachmentPayload {
   rutaLocal: string
 }
 
+export interface IngestFile {
+  buffer: Buffer
+  meta: IngestAttachmentPayload
+}
+
 /**
  * Vectoriza el contenido de una participación:
  *  - El texto de sus adjuntos PDF (si el archivo es PDF con capa de texto).
  *  - Sus campos de formulario (observación, nombre, colonia, institución...).
- * Acepta cualquier tipo de archivo; solo intenta parsear texto en PDFs.
+ * Acepta cualquier tipo de archivo permitido; solo intenta parsear texto en PDFs.
  * Cada sección se convierte en chunks con embedding TF-IDF 512D.
  */
 export async function ingestParticipation(
   participationId: number,
   fields: Record<string, string>,
-  fileBuffer?: Buffer,
-  fileMeta?: IngestAttachmentPayload,
+  files?: IngestFile[],
 ): Promise<IngestResult> {
   let chunks = 0
   let needsOcr = false
 
-  // 1) Adjunto: guardar registro + vectorizar si es PDF
-  if (fileBuffer && fileMeta) {
+  // 1) Adjuntos: guardar registro + vectorizar si es PDF
+  for (const file of files ?? []) {
     await sql`--sql
       INSERT INTO attachments (participation_id, nombre_original, mime, size, ruta_local)
       VALUES (
         ${participationId},
-        ${fileMeta.nombreOriginal},
-        ${fileMeta.mime},
-        ${fileBuffer.length},
-        ${fileMeta.rutaLocal}
+        ${file.meta.nombreOriginal},
+        ${file.meta.mime},
+        ${file.buffer.length},
+        ${file.meta.rutaLocal}
       )
     `
 
     // Solo extraer texto si el adjunto es PDF (no intentar parsear DWG, JPG, etc.)
     const isPdf =
-      fileMeta.mime === 'application/pdf' || fileMeta.nombreOriginal.toLowerCase().endsWith('.pdf')
+      file.meta.mime === 'application/pdf' ||
+      file.meta.nombreOriginal.toLowerCase().endsWith('.pdf')
 
     let text = ''
     if (isPdf) {
       try {
-        text = await extractPdfText(fileBuffer)
+        text = await extractPdfText(file.buffer)
       } catch (err) {
         if (err instanceof TextLayerMissingError) {
           needsOcr = true

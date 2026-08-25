@@ -64,7 +64,7 @@ describe('logoutBackend', () => {
     const setCookie = await logoutBackend(new Request('http://localhost/ordena/admin'))
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
-    const [url, init] = fetchMock.mock.calls[0]
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit | undefined]
     expect(String(url)).toContain('/api/auth/logout')
     expect(init?.method).toBe('POST')
     expect(setCookie).toContain('Max-Age=0')

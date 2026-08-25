@@ -87,18 +87,29 @@ export default createController(routes.participation, {
       body.set('institucion', parsed.value.institucion)
       body.set('observacion', parsed.value.observacion)
 
-      const pdf = formData.get('archivos')
-      if (pdf instanceof File && pdf.size > 0) {
-        body.set('pdf', pdf, pdf.name)
+      // Adjuntos: el input acepta varios archivos; se reenvían todos al
+      // backend con su nombre de campo original.
+      const adjuntos = formData.getAll('archivos').filter(
+        (entry): entry is File => entry instanceof File && entry.size > 0,
+      )
+      for (const adjunto of adjuntos) {
+        body.append('pdf', adjunto, adjunto.name)
       }
 
       let backendOk = false
+      let backendError: string | undefined
       try {
         const response = await fetch(`${BACKEND_URL}/api/participations`, {
           method: 'POST',
           body,
         })
         backendOk = response.ok
+        if (!response.ok) {
+          // Propaga el motivo real (p. ej. "Archivo rechazado: ...") para que
+          // el ciudadano vea por qué falló en vez de un genérico.
+          const data = (await response.json().catch(() => ({}))) as { error?: string }
+          backendError = data.error
+        }
       } catch {
         // Si la red falló, backendOk queda en false
       }
@@ -107,8 +118,10 @@ export default createController(routes.participation, {
         return context.render(
           <ParticipationPage
             errors={{
-              observacion:
-                'No se pudo registrar. Verifica que el servicio esté activo e inténtalo de nuevo.',
+              archivos: backendError,
+              observacion: backendError
+                ? undefined
+                : 'No se pudo registrar. Verifica que el servicio esté activo e inténtalo de nuevo.',
             }}
           />,
           { status: 502 },

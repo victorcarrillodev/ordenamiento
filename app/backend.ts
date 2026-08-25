@@ -98,15 +98,24 @@ export async function requireAdminUser(request: Request): Promise<AdminUser | Re
   return user?.role === 'admin' ? user : redirect(routes.login.index.href())
 }
 
+// Caché del tema público (TTL corto): la portada se renderiza por cada
+// visita y, bajo picos de tráfico, no debe golpear al backend en cada render.
+// Un cambio de Personalización tarda como máximo TTL en reflejarse.
+const THEME_TTL_MS = 30_000
+let themeCache: { data: ThemeData | null; expires: number } | null = null
+
 /**
  * Obtiene la configuración de diseño activa desde el backend
  */
 export async function getPublicTheme(request: Request): Promise<ThemeData> {
+  const now = Date.now()
+  if (themeCache && now < themeCache.expires) return themeCache.data
   try {
     const res = await backendFetch(request, '/api/settings/theme')
     if (res.ok) {
       const data = await res.json()
-      return data.theme ?? null
+      themeCache = { data: data.theme ?? null, expires: now + THEME_TTL_MS }
+      return themeCache.data as ThemeData
     }
   } catch (err) {
     console.error('[backend] Error al cargar tema:', err)
