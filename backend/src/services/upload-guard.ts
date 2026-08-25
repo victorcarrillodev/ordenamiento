@@ -15,6 +15,7 @@
 // Extensiones prohibidas explícitamente aunque alguien las intente renombrar.
 const DENIED_EXTENSIONS = new Set([
   // Ejecutables e instaladores
+<<<<<<< HEAD
   'exe',
   'dll',
   'com',
@@ -83,6 +84,19 @@ const DENIED_EXTENSIONS = new Set([
   'xlsb',
   'pptm',
   'ppsm',
+=======
+  'exe', 'dll', 'com', 'scr', 'msi', 'msp', 'mst', 'cpl', 'ocx', 'sys', 'drv',
+  'jar', 'apk', 'app', 'deb', 'rpm',
+  // Scripts de shell / sistema / autorun
+  'bat', 'cmd', 'sh', 'bash', 'zsh', 'ps1', 'psd1', 'psm1', 'vbs', 'vbe', 'js',
+  'jse', 'ws', 'wsf', 'wsc', 'wsh', 'hta', 'reg', 'lnk', 'scpt',
+  // Web activo (puede ejecutar script en el navegador del admin)
+  'html', 'htm', 'xhtml', 'shtml', 'svg', 'xml', 'xsl', 'xslt', 'php', 'phtml',
+  'php3', 'php4', 'php5', 'asp', 'aspx', 'ascx', 'jsp', 'jspx', 'cfm', 'cgi',
+  'pl', 'py', 'rb',
+  // Office con macros habilitadas
+  'docm', 'dotm', 'xlsm', 'xlsb', 'pptm', 'ppsm',
+>>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
 ])
 
 // Whitelist de negocio: extension -> MIME canónico con el que se sirve.
@@ -136,6 +150,7 @@ const INLINE_EXTENSIONS = new Set(['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif'])
 
 // Familias de firma binaria -> extensiones que legítimamente la presentan.
 type SignatureFamily =
+<<<<<<< HEAD
   | 'pdf'
   | 'jpg'
   | 'png'
@@ -155,6 +170,11 @@ type SignatureFamily =
   | 'rtf'
   | 'text'
   | 'unknown'
+=======
+  | 'pdf' | 'jpg' | 'png' | 'gif' | 'webp' | 'bmp' | 'tiff' | 'wav'
+  | 'zip' | 'ole' | 'dwg' | 'shapefile' | 'ftyp' | 'mp3' | '7z' | 'rar'
+  | 'rtf' | 'text' | 'unknown'
+>>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
 
 const FAMILY_EXTENSIONS: Record<SignatureFamily, string[]> = {
   pdf: ['pdf'],
@@ -202,10 +222,14 @@ export function detectFileFamily(buffer: Buffer): SignatureFamily {
   }
   if (startsWith(buffer, [0x42, 0x4d])) return 'bmp'
   if (asciiAt(buffer, 0, 'II*\u0000') || asciiAt(buffer, 0, 'MM\u0000*')) return 'tiff'
+<<<<<<< HEAD
   if (
     startsWith(buffer, [0x50, 0x4b, 0x03, 0x04]) ||
     startsWith(buffer, [0x50, 0x4b, 0x05, 0x06])
   ) {
+=======
+  if (startsWith(buffer, [0x50, 0x4b, 0x03, 0x04]) || startsWith(buffer, [0x50, 0x4b, 0x05, 0x06])) {
+>>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
     return 'zip'
   }
   if (startsWith(buffer, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1])) return 'ole'
@@ -214,11 +238,15 @@ export function detectFileFamily(buffer: Buffer): SignatureFamily {
   // Shapefile ESRI (.shp/.shx): código de archivo 9994 big-endian.
   if (startsWith(buffer, [0x00, 0x00, 0x27, 0x0a])) return 'shapefile'
   if (asciiAt(buffer, 4, 'ftyp')) return 'ftyp'
+<<<<<<< HEAD
   if (
     asciiAt(buffer, 0, 'ID3') ||
     startsWith(buffer, [0xff, 0xfb]) ||
     startsWith(buffer, [0xff, 0xf3])
   ) {
+=======
+  if (asciiAt(buffer, 0, 'ID3') || startsWith(buffer, [0xff, 0xfb]) || startsWith(buffer, [0xff, 0xf3])) {
+>>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
     return 'mp3'
   }
   if (startsWith(buffer, [0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c])) return '7z'
@@ -275,10 +303,14 @@ export function sanitizeFilename(filename: string): string {
 /** Cabecera content-disposition segura (filename citado + RFC 5987 para Unicode). */
 export function contentDispositionHeader(kind: 'inline' | 'attachment', filename: string): string {
   const safe = filename.replace(/["\\]/g, '_').replace(/[\r\n]/g, '')
+<<<<<<< HEAD
   const encoded = encodeURIComponent(safe).replace(
     /['()*]/g,
     (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
   )
+=======
+  const encoded = encodeURIComponent(safe).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)
+>>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
   return `${kind}; filename="${safe}"; filename*=UTF-8''${encoded}`
 }
 
@@ -313,15 +345,26 @@ export interface UploadVerdict {
  * Valida un archivo subido en profundidad. `declaredMime` solo se recibe como
  * pista informativa: la decisión se toma con extensión + firma + contenido.
  */
+<<<<<<< HEAD
 export function validateUpload(input: { filename: string; buffer: Buffer }): UploadVerdict {
+=======
+export function validateUpload(input: {
+  filename: string
+  buffer: Buffer
+}): UploadVerdict {
+>>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
   const ext = getExtension(input.filename)
 
   if (!ext) return { ok: false, reason: 'el archivo no tiene extensión reconocible' }
   if (DENIED_EXTENSIONS.has(ext)) {
+<<<<<<< HEAD
     return {
       ok: false,
       reason: `los archivos .${ext} no están permitidos por política de seguridad`,
     }
+=======
+    return { ok: false, reason: `los archivos .${ext} no están permitidos por política de seguridad` }
+>>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
   }
 
   const safeMime = ALLOWED_MIMES[ext]

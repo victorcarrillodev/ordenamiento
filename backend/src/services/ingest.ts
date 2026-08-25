@@ -29,10 +29,16 @@ export interface IngestFile {
  * Cada sección se convierte en chunks con embedding TF-IDF 512D.
  */
 export async function ingestParticipation(
+<<<<<<< HEAD
   dbOrParticipationId: Sql | number,
   participationIdOrFields: number | Record<string, string>,
   maybeFieldsOrFiles?: Record<string, string> | IngestFile[],
   maybeFiles?: IngestFile[],
+=======
+  participationId: number,
+  fields: Record<string, string>,
+  files?: IngestFile[],
+>>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
 ): Promise<IngestResult> {
   const isDb = typeof dbOrParticipationId === 'function' && 'unsafe' in dbOrParticipationId
   const db: Sql = isDb ? (dbOrParticipationId as Sql) : sql
@@ -49,7 +55,11 @@ export async function ingestParticipation(
 
   // 1) Adjuntos: guardar registro + vectorizar si es PDF
   for (const file of files ?? []) {
+<<<<<<< HEAD
     await db`--sql
+=======
+    await sql`--sql
+>>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
       INSERT INTO attachments (participation_id, nombre_original, mime, size, ruta_local)
       VALUES (
         ${participationId},

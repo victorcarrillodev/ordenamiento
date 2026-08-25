@@ -49,6 +49,7 @@ export default createController(routes.participation, {
         }
       }
 
+<<<<<<< HEAD
       try {
         let formData: FormData
         try {
@@ -84,6 +85,59 @@ export default createController(routes.participation, {
         }
 
         const parsed = s.parseSafe(participationSchema, formData, { errorMap })
+=======
+      // Enviar al backend para persistir y vectorizar (origen digital, público)
+      const body = new FormData()
+      body.set('origen', 'digital')
+      body.set('nombre', parsed.value.nombre)
+      body.set('correo', parsed.value.email)
+      body.set('municipio', parsed.value.municipio)
+      body.set('colonia', parsed.value.municipio)
+      body.set('calle', parsed.value.domicilio)
+      body.set('institucion', parsed.value.institucion)
+      body.set('observacion', parsed.value.observacion)
+
+      // Adjuntos: el input acepta varios archivos; se reenvían todos al
+      // backend con su nombre de campo original.
+      const adjuntos = formData.getAll('archivos').filter(
+        (entry): entry is File => entry instanceof File && entry.size > 0,
+      )
+      for (const adjunto of adjuntos) {
+        body.append('pdf', adjunto, adjunto.name)
+      }
+
+      let backendOk = false
+      let backendError: string | undefined
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/participations`, {
+          method: 'POST',
+          body,
+        })
+        backendOk = response.ok
+        if (!response.ok) {
+          // Propaga el motivo real (p. ej. "Archivo rechazado: ...") para que
+          // el ciudadano vea por qué falló en vez de un genérico.
+          const data = (await response.json().catch(() => ({}))) as { error?: string }
+          backendError = data.error
+        }
+      } catch {
+        // Si la red falló, backendOk queda en false
+      }
+
+      if (!backendOk) {
+        return context.render(
+          <ParticipationPage
+            errors={{
+              archivos: backendError,
+              observacion: backendError
+                ? undefined
+                : 'No se pudo registrar. Verifica que el servicio esté activo e inténtalo de nuevo.',
+            }}
+          />,
+          { status: 502 },
+        )
+      }
+>>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
 
         if (!parsed.success) {
           const errors: FormErrors = toFormErrors(parsed.issues)

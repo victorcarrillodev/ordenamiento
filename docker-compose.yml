@@ -27,6 +27,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+<<<<<<< HEAD
     healthcheck:
       test:
         [
@@ -37,6 +38,17 @@ services:
       timeout: 3s
       retries: 10
       start_period: 5s
+=======
+    # Tolerancia a picos: techo de memoria para que una ráfaga de uploads no
+    # OOM-pee al host entero (la BD y el proxy viven en la misma máquina).
+    mem_limit: 1g
+    healthcheck:
+      test: ['CMD-SHELL', 'bun -e "fetch(`http://127.0.0.1:5920/api/health`).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+>>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/ordenamiento
       SESSION_SECRET: ${SESSION_SECRET:-ordenamiento-secret-key-change-in-production}
@@ -68,6 +80,7 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+<<<<<<< HEAD
     healthcheck:
       test:
         [
@@ -78,6 +91,9 @@ services:
       timeout: 3s
       retries: 10
       start_period: 5s
+=======
+    mem_limit: 512m
+>>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
     environment:
       BACKEND_URL: http://backend:5920
       BASE_PATH: /ordena
