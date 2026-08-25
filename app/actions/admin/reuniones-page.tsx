@@ -11,7 +11,6 @@ export interface ReunionesPageProps {
     fecha: string
     hora_inicio: string | null
     hora_fin: string | null
-    created_at: string
   }>
   error?: string
   ok?: string
@@ -64,7 +63,9 @@ export function ReunionesPage(handle: Handle<ReunionesPageProps>) {
 
         <div class="panel">
           <div class="panel__head">
-            <h2 class="panel__title" style="margin: 0;">Reuniones registradas</h2>
+            <h2 class="panel__title" style="margin: 0;">
+              Reuniones registradas
+            </h2>
             <a class="btn btn--excel" href={`${adminRoutes.exportar.href()}?tabla=reuniones`}>
               ⬇ Exportar a Excel
             </a>

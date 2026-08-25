@@ -83,6 +83,7 @@ export default createController(routes.participation, {
       body.set('correo', parsed.value.email)
       body.set('municipio', parsed.value.municipio)
       body.set('colonia', parsed.value.municipio)
+      body.set('calle', parsed.value.domicilio)
       body.set('institucion', parsed.value.institucion)
       body.set('observacion', parsed.value.observacion)
 

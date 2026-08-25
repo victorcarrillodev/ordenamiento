@@ -3,9 +3,12 @@ import { join, isAbsolute } from 'node:path'
 import { Buffer } from 'node:buffer'
 
 import {
+  clearLoginAttempts,
   clearSessionCookie,
   createSessionToken,
   getUserById,
+  isLoginRateLimited,
+  recordLoginFailure,
   registerUser,
   sessionCookie,
   verifyCredentials,
@@ -27,16 +30,19 @@ import {
   type Origen,
 } from './services/participations.ts'
 import { searchParticipations } from './services/search.ts'
-import {
-  ingestSkillKnowledge,
-  searchSkillKnowledge,
-} from './services/skill-knowledge.ts'
+import { ingestSkillKnowledge, searchSkillKnowledge } from './services/skill-knowledge.ts'
 import { createReunion, deleteReunion, listReuniones } from './services/reuniones.ts'
 import { listAvisos, createAviso, deleteAviso } from './services/avisos.ts'
 import { listPoel, createPoelSesion, deletePoelSesion } from './services/poel.ts'
 import { exportTableToXlsx, isExportable } from './services/export.ts'
 import { participationDocx } from './services/word.ts'
-import { enviarParticipacion, enviarAcuseReciboParticipacion, enviarAviso, enviarCorreoPrueba, mailConfigurado } from './services/mail.ts'
+import {
+  enviarParticipacion,
+  enviarAcuseReciboParticipacion,
+  enviarAviso,
+  enviarCorreoPrueba,
+  mailConfigurado,
+} from './services/mail.ts'
 import {
   getCustomizations,
   saveCustomizations,
@@ -123,12 +129,15 @@ export async function handleRequest(request: Request): Promise<Response> {
   }
 
   // ── Auth ─────────────────────────────────────────────────────────────
+  // Registro público (autoservicio). NUNCA confiar en un rol enviado por el
+  // cliente aquí: esta ruta no exige sesión, así que aceptar `role` del body
+  // permitiría que cualquiera se cree una cuenta admin. Crear administradores
+  // solo es posible ya autenticado como admin, vía POST /api/users.
   if (method === 'POST' && pathname === '/api/auth/register') {
     const body = (await request.json()) as {
       email?: string
       name?: string
       password?: string
-      role?: 'admin' | 'user'
     }
     if (!body.email || !body.name || !body.password) {
       return json({ error: 'Faltan datos: email, name, password' }, 400)
@@ -138,7 +147,7 @@ export async function handleRequest(request: Request): Promise<Response> {
         email: body.email,
         name: body.name,
         password: body.password,
-        role: body.role ?? 'user',
+        role: 'user',
       })
       const token = await createSessionToken(user.id)
       return json(
@@ -158,8 +167,15 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (!body.email || !body.password) {
       return json({ error: 'Faltan datos: email, password' }, 400)
     }
+    if (isLoginRateLimited(body.email)) {
+      return json({ error: 'Demasiados intentos fallidos. Intenta de nuevo más tarde.' }, 429)
+    }
     const user = await verifyCredentials(body.email, body.password)
-    if (!user) return json({ error: 'Credenciales inválidas' }, 401)
+    if (!user) {
+      recordLoginFailure(body.email)
+      return json({ error: 'Credenciales inválidas' }, 401)
+    }
+    clearLoginAttempts(body.email)
 
     const token = await createSessionToken(user.id)
     return json(
@@ -183,9 +199,9 @@ export async function handleRequest(request: Request): Promise<Response> {
   const requireAdmin = (): Response | null =>
     user?.role === 'admin' ? null : json({ error: 'Requiere rol admin' }, 403)
 
-  // Listado con filtros + paginación
+  // Listado con filtros + paginación — expone PII de participantes: solo admin.
   if (method === 'GET' && pathname === '/api/participations') {
-    const authError = requireAuth()
+    const authError = requireAdmin()
     if (authError) return authError
 
     const origen = url.searchParams.get('origen')
@@ -209,10 +225,10 @@ export async function handleRequest(request: Request): Promise<Response> {
     return json(result)
   }
 
-  // Detalle
+  // Detalle — expone PII de un participante: solo admin.
   const detailMatch = method === 'GET' ? matchPath(pathname, '/api/participations/:id') : null
   if (detailMatch) {
-    const authError = requireAuth()
+    const authError = requireAdmin()
     if (authError) return authError
     const participation = await getParticipation(Number(detailMatch.id))
     if (!participation) return json({ error: 'No encontrado' }, 404)
@@ -331,7 +347,8 @@ export async function handleRequest(request: Request): Promise<Response> {
   const attachMatch =
     method === 'GET' ? matchPath(pathname, '/api/participations/:id/attachments/:aid') : null
   if (attachMatch) {
-    const authError = requireAuth()
+    // Descarga el archivo adjunto de un participante: solo admin.
+    const authError = requireAdmin()
     if (authError) return authError
     const rows = await sql<
       Array<{ ruta_local: string; nombre_original: string; mime: string }>
@@ -348,7 +365,7 @@ export async function handleRequest(request: Request): Promise<Response> {
     let file: Buffer
     try {
       file = await readFile(ruta)
-    } catch (err) {
+    } catch {
       return json({ error: 'Archivo en disco no disponible' }, 404)
     }
     const isDownload = url.searchParams.get('download') === '1'
@@ -363,15 +380,32 @@ export async function handleRequest(request: Request): Promise<Response> {
   // Descargar Word (.docx) con los datos — autenticado
   const wordMatch = method === 'GET' ? matchPath(pathname, '/api/participations/:id/word') : null
   if (wordMatch) {
-    const authError = requireAuth()
+    // Exporta los datos completos (PII) de un participante a Word: solo admin.
+    const authError = requireAdmin()
     if (authError) return authError
-    const rows = await sql<Array<{
-      id: number; folio: string; origen: string; nombre: string; correo: string
-      calle: string; numero: string; colonia: string; municipio: string
-      institucion: string; ocupacion: string; latitud: string; longitud: string
-      observacion: string; estado: string; fuente: string; genero: string
-      tematica: string; created_at: Date
-    }>>`
+    const rows = await sql<
+      Array<{
+        id: number
+        folio: string
+        origen: string
+        nombre: string
+        correo: string
+        calle: string
+        numero: string
+        colonia: string
+        municipio: string
+        institucion: string
+        ocupacion: string
+        latitud: string
+        longitud: string
+        observacion: string
+        estado: string
+        fuente: string
+        genero: string
+        tematica: string
+        created_at: Date
+      }>
+    >`
       SELECT id, folio, origen, nombre, correo, calle, numero, colonia, municipio,
              institucion, ocupacion, latitud, longitud, observacion, estado,
              fuente, genero, tematica, created_at
@@ -389,7 +423,8 @@ export async function handleRequest(request: Request): Promise<Response> {
 
   // Enviar participación por correo — autenticado
   if (method === 'POST' && pathname === '/api/participations/enviar') {
-    const authError = requireAuth()
+    // Envía los datos (PII) de un participante por correo: solo admin.
+    const authError = requireAdmin()
     if (authError) return authError
     const body = (await request.json()) as { id?: number; para?: string }
     if (!body.id || !body.para) return json({ error: 'Faltan datos: id, para' }, 400)
@@ -430,7 +465,8 @@ export async function handleRequest(request: Request): Promise<Response> {
     const authError = requireAdmin()
     if (authError) return authError
     const body = (await request.json()) as { para?: string }
-    const destino = body.para || 'kostyblack456@gmail.com'
+    const destino = (body.para ?? '').trim()
+    if (!destino) return json({ error: 'Falta datos: para' }, 400)
     if (!mailConfigurado()) {
       return json({ error: 'Correo no configurado: define SMTP_HOST, SMTP_USER y SMTP_PASS' }, 503)
     }
@@ -443,9 +479,9 @@ export async function handleRequest(request: Request): Promise<Response> {
     }
   }
 
-  // Búsqueda híbrida
+  // Búsqueda híbrida — busca dentro del contenido (PII) de participaciones: solo admin.
   if (method === 'GET' && pathname === '/api/search') {
-    const authError = requireAuth()
+    const authError = requireAdmin()
     if (authError) return authError
     const q = url.searchParams.get('q') ?? ''
     if (!q) return json({ error: 'Faltan datos: q' }, 400)
@@ -468,9 +504,9 @@ export async function handleRequest(request: Request): Promise<Response> {
     return json({ ok: true, chunks }, 201)
   }
 
-  // Búsqueda semántica de conocimiento — autenticado
+  // Búsqueda semántica de conocimiento — herramienta interna: solo admin.
   if (method === 'GET' && pathname === '/api/knowledge/search') {
-    const authError = requireAuth()
+    const authError = requireAdmin()
     if (authError) return authError
     const q = url.searchParams.get('q') ?? ''
     if (!q) return json({ error: 'Faltan datos: q' }, 400)
@@ -508,8 +544,7 @@ export async function handleRequest(request: Request): Promise<Response> {
     return json({ ok: true, reunion }, 201)
   }
 
-  const reunionDeleteMatch =
-    method === 'DELETE' ? matchPath(pathname, '/api/reuniones/:id') : null
+  const reunionDeleteMatch = method === 'DELETE' ? matchPath(pathname, '/api/reuniones/:id') : null
   if (reunionDeleteMatch) {
     const authError = requireAdmin()
     if (authError) return authError
@@ -539,7 +574,9 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (method === 'GET' && pathname === '/api/users') {
     const authError = requireAdmin()
     if (authError) return authError
-    const users = await sql<Array<{ id: number; email: string; name: string; role: string; created_at: string }>>`
+    const users = await sql<
+      Array<{ id: number; email: string; name: string; role: string; created_at: string }>
+    >`
       SELECT id, email, name, role, created_at::text AS created_at FROM users ORDER BY id
     `
     return json({ users })
@@ -548,7 +585,12 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (method === 'POST' && pathname === '/api/users') {
     const authError = requireAdmin()
     if (authError) return authError
-    const body = (await request.json()) as { email?: string; name?: string; password?: string; role?: 'admin' | 'user' }
+    const body = (await request.json()) as {
+      email?: string
+      name?: string
+      password?: string
+      role?: 'admin' | 'user'
+    }
     if (!body.email || !body.name || !body.password) {
       return json({ error: 'Faltan datos: email, name, password' }, 400)
     }
@@ -568,9 +610,9 @@ export async function handleRequest(request: Request): Promise<Response> {
     }
   }
 
-  // ── Stats para el dashboard — autenticado ───────────────────────────
+  // ── Stats para el dashboard — solo admin ─────────────────────────────
   if (method === 'GET' && pathname === '/api/stats') {
-    const authError = requireAuth()
+    const authError = requireAdmin()
     if (authError) return authError
     const [users, digital, fisica, estados, fuente, genero, tematica] = await Promise.all([
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM users`,
@@ -589,15 +631,9 @@ export async function handleRequest(request: Request): Promise<Response> {
         SELECT tematica AS k, count(*)::text AS n FROM participations GROUP BY tematica ORDER BY count(*) DESC
       `,
     ])
-    const tu: Array<[string, number]> = fuente
-      .filter((r) => r.k)
-      .map((r) => [r.k, Number(r.n)])
-    const tg: Array<[string, number]> = genero
-      .filter((r) => r.k)
-      .map((r) => [r.k, Number(r.n)])
-    const tt: Array<[string, number]> = tematica
-      .filter((r) => r.k)
-      .map((r) => [r.k, Number(r.n)])
+    const tu: Array<[string, number]> = fuente.filter((r) => r.k).map((r) => [r.k, Number(r.n)])
+    const tg: Array<[string, number]> = genero.filter((r) => r.k).map((r) => [r.k, Number(r.n)])
+    const tt: Array<[string, number]> = tematica.filter((r) => r.k).map((r) => [r.k, Number(r.n)])
     return json({
       usuarios: Number(users[0].n),
       digitales: Number(digital[0].n),
@@ -621,7 +657,11 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (authError) return authError
     const body = (await request.json()) as { titulo?: string; descripcion?: string }
     if (!body.titulo) return json({ error: 'Falta titulo' }, 400)
-    const aviso = await createAviso({ titulo: body.titulo, descripcion: body.descripcion, creadoPor: user?.id })
+    const aviso = await createAviso({
+      titulo: body.titulo,
+      descripcion: body.descripcion,
+      creadoPor: user?.id,
+    })
     return json({ ok: true, aviso }, 201)
   }
 
@@ -629,7 +669,8 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (avisoDeleteMatch) {
     const authError = requireAdmin()
     if (authError) return authError
-    if (!(await deleteAviso(Number(avisoDeleteMatch.id)))) return json({ error: 'No encontrado' }, 404)
+    if (!(await deleteAviso(Number(avisoDeleteMatch.id))))
+      return json({ error: 'No encontrado' }, 404)
     return json({ ok: true })
   }
 
@@ -644,8 +685,12 @@ export async function handleRequest(request: Request): Promise<Response> {
     const authError = requireAdmin()
     if (authError) return authError
     const body = (await request.json()) as {
-      categoria?: string; orden?: number; titulo?: string
-      descripcion?: string; fecha?: string; ubicacion?: string
+      categoria?: string
+      orden?: number
+      titulo?: string
+      descripcion?: string
+      fecha?: string
+      ubicacion?: string
     }
     if (!body.titulo) return json({ error: 'Falta titulo' }, 400)
     const sesion = await createPoelSesion({
@@ -657,6 +702,16 @@ export async function handleRequest(request: Request): Promise<Response> {
       ubicacion: body.ubicacion ?? '',
     })
     return json({ ok: true, sesion }, 201)
+  }
+
+  const poelDeleteMatch = method === 'DELETE' ? matchPath(pathname, '/api/poel/:id') : null
+  if (poelDeleteMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    if (!(await deletePoelSesion(Number(poelDeleteMatch.id)))) {
+      return json({ error: 'No encontrado' }, 404)
+    }
+    return json({ ok: true })
   }
 
   // ── Personalización y Marca (Theme Settings & Audit) ─────────────
@@ -682,7 +737,7 @@ export async function handleRequest(request: Request): Promise<Response> {
       user: {
         id: user!.id,
         name: user!.name,
-        email: (user as any).email || user!.name,
+        email: user!.email,
       },
       motivo,
       section: body.section,
@@ -697,8 +752,7 @@ export async function handleRequest(request: Request): Promise<Response> {
     return json({ ok: true, logs })
   }
 
-  const restoreMatch =
-    method === 'POST' ? matchPath(pathname, '/api/settings/restore/:id') : null
+  const restoreMatch = method === 'POST' ? matchPath(pathname, '/api/settings/restore/:id') : null
   if (restoreMatch) {
     const authError = requireAdmin()
     if (authError) return authError
@@ -708,7 +762,7 @@ export async function handleRequest(request: Request): Promise<Response> {
       {
         id: user!.id,
         name: user!.name,
-        email: (user as any).email || user!.name,
+        email: user!.email,
       },
       body.motivo || 'Restauración de versión anterior',
     )

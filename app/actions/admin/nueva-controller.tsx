@@ -28,7 +28,10 @@ export default createController(adminRoutes.participacionNueva, {
       body.set('origen', 'fisica')
       body.set('nombre', String(formData.get('nombre') ?? ''))
       body.set('correo', String(formData.get('correo') ?? ''))
-      body.set('municipio', String(formData.get('municipio') ?? formData.get('municipio_aporte') ?? ''))
+      body.set(
+        'municipio',
+        String(formData.get('municipio') ?? formData.get('municipio_aporte') ?? ''),
+      )
       body.set('colonia', String(formData.get('colonia') ?? ''))
       body.set('calle', String(formData.get('calle') ?? ''))
       body.set('numero', String(formData.get('numero') ?? ''))
@@ -46,7 +49,10 @@ export default createController(adminRoutes.participacionNueva, {
         body.set('pdf', pdf, pdf.name)
       }
 
-      const response = await backendFetch(context.request, '/api/participations', { method: 'POST', body })
+      const response = await backendFetch(context.request, '/api/participations', {
+        method: 'POST',
+        body,
+      })
       if (!response.ok) {
         const data = (await response.json().catch(() => ({}))) as { error?: string }
         return context.render(

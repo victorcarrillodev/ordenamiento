@@ -32,6 +32,7 @@ prefijo.
 
 **Quien tenga acceso SSH a ac.tlaquepaque.gob.mx** (Leo o el equipo de IT)
 es quien tiene que:
+
 1. Clonar/actualizar el repo ahí y correr `docker compose up -d --build`.
 2. Agregar el fragmento de `deploy/nginx-ordena.conf` a la config de nginx de
    ese dominio y recargarlo (`nginx -t && systemctl reload nginx`).

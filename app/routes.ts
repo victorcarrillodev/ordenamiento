@@ -34,4 +34,3 @@ export const adminRoutes = route({
   cuenta: get(`${basePath}/admin/cuenta`),
   personalizacion: form(`${basePath}/admin/personalizacion`),
 })
-

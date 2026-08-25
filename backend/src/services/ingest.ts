@@ -46,8 +46,7 @@ export async function ingestParticipation(
 
     // Solo extraer texto si el adjunto es PDF (no intentar parsear DWG, JPG, etc.)
     const isPdf =
-      fileMeta.mime === 'application/pdf' ||
-      fileMeta.nombreOriginal.toLowerCase().endsWith('.pdf')
+      fileMeta.mime === 'application/pdf' || fileMeta.nombreOriginal.toLowerCase().endsWith('.pdf')
 
     let text = ''
     if (isPdf) {

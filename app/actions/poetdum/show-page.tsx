@@ -1,7 +1,12 @@
 import { Document } from '../document.tsx'
 import { NavBar } from '../../components/NavBar.tsx'
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 import { Mapa } from '../../components/Mapa.tsx'
+import type { ThemeData } from '../../ui/civic-horizon.ts'
+
+export interface PoetdumPageProps {
+  theme?: ThemeData
+}
 
 const title = css({
   margin: '5rem',
@@ -14,36 +19,31 @@ const containerMap = css({
   flexDirection: 'row',
   width: '70%',
   height: '50%',
-  padding:"100px",
+  padding: '100px',
 })
 const infoMap = css({
-  paddingTop:"50px",
-  paddingLeft:"30px"
-
+  paddingTop: '50px',
+  paddingLeft: '30px',
 })
-const color1=css({
-  width:"20px",
-  height:"10px",
-  backgroundColor:"greenyellow"
-
+const color1 = css({
+  width: '20px',
+  height: '10px',
+  backgroundColor: 'greenyellow',
 })
-const color2=css({
-  width:"20px",
-  height:"10px",
-  backgroundColor:"darkorange"
-
+const color2 = css({
+  width: '20px',
+  height: '10px',
+  backgroundColor: 'darkorange',
 })
-const color3=css({
-  width:"20px",
-  height:"10px",
-  backgroundColor:"cornflowerblue"
-
+const color3 = css({
+  width: '20px',
+  height: '10px',
+  backgroundColor: 'cornflowerblue',
 })
-const color4=css({
-  width:"20px",
-  height:"10px",
-  backgroundColor:"red"
-
+const color4 = css({
+  width: '20px',
+  height: '10px',
+  backgroundColor: 'red',
 })
 
 const docOficial = css({
@@ -107,18 +107,16 @@ const actText = css({
   fontSize: '18px',
   color: '#444444',
 })
-const detalles =css({
-  padding:"2rem",
-  display:"flex",
-  justifyContent:"center"
+const detalles = css({
+  padding: '2rem',
+  display: 'flex',
+  justifyContent: 'center',
 })
-const button=css({
-  borderRadius:"1rem",
-    backgroundColor: "#C84067",
-height:"2.5rem",
-width:"7rem",
-
-  
+const button = css({
+  borderRadius: '1rem',
+  backgroundColor: '#C84067',
+  height: '2.5rem',
+  width: '7rem',
 })
 const futter = css({
   display: 'flex',
@@ -136,18 +134,20 @@ const logoFuter = css({
   height: '70px',
 })
 
-export function PoetdumPage(handle?: any) {
+export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
   return () => {
-    const theme = handle?.props?.theme
+    const theme = handle.props.theme
     return (
-      <Document title="poetdum">
+      <Document
+        title="poetdum"
+        head={<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />}
+      >
         <NavBar theme={theme} />
         <br />
         <br />
         <br />
 
         <main>
-          
           <h1 mix={title}>ELABORACIÓN DEL POETDUM</h1>
           <div>
             <div mix={containerMap}>
@@ -155,16 +155,13 @@ export function PoetdumPage(handle?: any) {
               <div mix={infoMap}>
                 <section>
                   <table>
-                    <tr>
-                      
-                     
-                    </tr>
+                    <tr></tr>
                   </table>
-                  <table >
+                  <table>
                     <thead>
                       <tr>
                         <th>Simbologia</th>
-                        <th > Color</th>
+                        <th> Color</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -182,8 +179,7 @@ export function PoetdumPage(handle?: any) {
                       </tr>
                       <tr>
                         <td>Aprovechamiento sustentable</td>
-                        <td mix={color4}>
-                        </td>
+                        <td mix={color4}></td>
                       </tr>
                     </tbody>
                   </table>
@@ -226,9 +222,8 @@ export function PoetdumPage(handle?: any) {
               asistencia y no perderte ningún evento.
             </p>
           </section>
-          <div mix={detalles
-          }>
-            <button mix ={button}>Detalles de la  reunion</button>
+          <div mix={detalles}>
+            <button mix={button}>Detalles de la reunion</button>
           </div>
           <br />
           <br />

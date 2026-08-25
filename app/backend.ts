@@ -6,6 +6,7 @@
 import { redirect } from 'remix/response/redirect'
 
 import { routes } from './routes.ts'
+import type { ThemeData } from './ui/civic-horizon.ts'
 
 export const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:5920'
 
@@ -74,18 +75,23 @@ export async function backendUser(request: Request): Promise<AdminUser | null> {
 }
 
 /**
- * Exige sesión de admin: devuelve el usuario, o un redirect a /login listo
+ * Exige sesión de ADMIN: devuelve el usuario, o un redirect a /login listo
  * para retornar directamente desde la action (`if (user instanceof Response) return user`).
+ *
+ * Antes solo comprobaba "hay sesión", sin importar el rol: cualquier cuenta
+ * 'user' autoregistrada en /login podía entrar a /admin/* y, de ahí, a la
+ * PII de participaciones (nombre, correo, domicilio, observaciones, adjuntos)
+ * porque las páginas admin confían en este guard como si ya filtrara por rol.
  */
 export async function requireAdminUser(request: Request): Promise<AdminUser | Response> {
   const user = await backendUser(request)
-  return user ?? redirect(routes.login.index.href())
+  return user?.role === 'admin' ? user : redirect(routes.login.index.href())
 }
 
 /**
  * Obtiene la configuración de diseño activa desde el backend
  */
-export async function getPublicTheme(request: Request): Promise<any> {
+export async function getPublicTheme(request: Request): Promise<ThemeData> {
   try {
     const res = await backendFetch(request, '/api/settings/theme')
     if (res.ok) {

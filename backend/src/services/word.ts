@@ -65,13 +65,23 @@ function fila(label: string, valor: string, alterna: boolean) {
         width: { size: 30, type: WidthType.PERCENTAGE },
         shading: { fill: alterna ? GRIS : 'FFFFFF' },
         margins: { top: 80, bottom: 80, left: 120, right: 120 },
-        children: [new Paragraph({ children: [new TextRun({ text: label, bold: true, size: 20, font: 'Calibri', color: AZUL })] })],
+        children: [
+          new Paragraph({
+            children: [
+              new TextRun({ text: label, bold: true, size: 20, font: 'Calibri', color: AZUL }),
+            ],
+          }),
+        ],
       }),
       new TableCell({
         width: { size: 70, type: WidthType.PERCENTAGE },
         shading: { fill: alterna ? GRIS : 'FFFFFF' },
         margins: { top: 80, bottom: 80, left: 120, right: 120 },
-        children: [new Paragraph({ children: [new TextRun({ text: valor || '—', size: 20, font: 'Calibri' })] })],
+        children: [
+          new Paragraph({
+            children: [new TextRun({ text: valor || '—', size: 20, font: 'Calibri' })],
+          }),
+        ],
       }),
     ],
   })
@@ -90,12 +100,22 @@ export async function participationDocx(p: Row): Promise<Buffer> {
           new Paragraph({
             alignment: AlignmentType.CENTER,
             heading: HeadingLevel.HEADING_1,
-            children: [new TextRun({ text: 'Bitácora Ambiental · Participación', bold: true, color: AZUL, size: 32, font: 'Calibri' })],
+            children: [
+              new TextRun({
+                text: 'Bitácora Ambiental · Participación',
+                bold: true,
+                color: AZUL,
+                size: 32,
+                font: 'Calibri',
+              }),
+            ],
           }),
           new Paragraph({
             alignment: AlignmentType.CENTER,
             spacing: { after: 300 },
-            children: [new TextRun({ text: `Folio ${p.folio}`, size: 24, color: '7A8699', font: 'Calibri' })],
+            children: [
+              new TextRun({ text: `Folio ${p.folio}`, size: 24, color: '7A8699', font: 'Calibri' }),
+            ],
           }),
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
@@ -108,7 +128,12 @@ export async function participationDocx(p: Row): Promise<Buffer> {
               insideVertical: { style: BorderStyle.SINGLE, size: 1, color: 'D5DCE5' },
             },
             rows: [
-              new TableRow({ children: [celda('Campo', { header: true, ancho: 30 }), celda('Dato', { header: true, ancho: 70 })] }),
+              new TableRow({
+                children: [
+                  celda('Campo', { header: true, ancho: 30 }),
+                  celda('Dato', { header: true, ancho: 70 }),
+                ],
+              }),
               fila('Nombre', p.nombre, true),
               fila('Correo', p.correo, false),
               fila('Origen', p.origen, true),
@@ -130,10 +155,24 @@ export async function participationDocx(p: Row): Promise<Buffer> {
           new Paragraph({
             spacing: { before: 300 },
             heading: HeadingLevel.HEADING_2,
-            children: [new TextRun({ text: 'Observación', bold: true, color: AZUL, size: 26, font: 'Calibri' })],
+            children: [
+              new TextRun({
+                text: 'Observación',
+                bold: true,
+                color: AZUL,
+                size: 26,
+                font: 'Calibri',
+              }),
+            ],
           }),
           new Paragraph({
-            children: [new TextRun({ text: p.observacion || '(sin observación)', size: 22, font: 'Calibri' })],
+            children: [
+              new TextRun({
+                text: p.observacion || '(sin observación)',
+                size: 22,
+                font: 'Calibri',
+              }),
+            ],
           }),
         ],
       },

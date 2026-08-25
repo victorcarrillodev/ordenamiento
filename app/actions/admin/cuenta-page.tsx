@@ -20,9 +20,16 @@ export function CuentaPage(handle: Handle<CuentaPageProps>) {
 
         <div class="panel">
           <h2 class="panel__title">Datos de la sesión</h2>
-          <p>Nombre: <strong>{user.name}</strong></p>
-          <p>Rol: <strong>{user.role === 'admin' ? 'Administrador' : 'Usuario'}</strong></p>
-          <p>Eres la cuenta Root del sistema. Puedes crear cuentas y gestionar la bitácora desde «Vista general».</p>
+          <p>
+            Nombre: <strong>{user.name}</strong>
+          </p>
+          <p>
+            Rol: <strong>{user.role === 'admin' ? 'Administrador' : 'Usuario'}</strong>
+          </p>
+          <p>
+            Eres la cuenta Root del sistema. Puedes crear cuentas y gestionar la bitácora desde
+            «Vista general».
+          </p>
         </div>
       </AdminLayout>
     )

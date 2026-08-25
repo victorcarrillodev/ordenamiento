@@ -5,9 +5,27 @@ import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 
 export interface AvisosPageProps {
   user: { name: string; role: string }
-  avisos: Array<{ id: number; titulo: string; descripcion: string; activo: boolean; fecha?: string }>
-  reuniones?: Array<{ id: number; titulo: string; fecha: string; hora_inicio?: string; hora_fin?: string }>
-  sesiones?: Array<{ id: number; categoria: string; titulo: string; fecha?: string; ubicacion?: string }>
+  avisos: Array<{
+    id: number
+    titulo: string
+    descripcion: string
+    activo: boolean
+    fecha?: string
+  }>
+  reuniones?: Array<{
+    id: number
+    titulo: string
+    fecha: string
+    hora_inicio?: string
+    hora_fin?: string
+  }>
+  sesiones?: Array<{
+    id: number
+    categoria: string
+    titulo: string
+    fecha?: string
+    ubicacion?: string
+  }>
   error?: string
 }
 
@@ -20,18 +38,31 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
     const anio = hoy.getFullYear()
     const mes = hoy.getMonth() // 0-indexed
     const nombreMeses = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
     ]
     const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
     // Primer día del mes (0 = domingo, 1 = lunes...)
     const primerDia = new Date(anio, mes, 1).getDay()
-    const offsetInicio = (primerDia === 0 ? 6 : primerDia - 1) // Lunes = 0
+    const offsetInicio = primerDia === 0 ? 6 : primerDia - 1 // Lunes = 0
     const totalDias = new Date(anio, mes + 1, 0).getDate()
 
     // Agrupar eventos por día
-    const eventosPorDia: Record<number, Array<{ tipo: 'aviso' | 'reunion' | 'poel'; titulo: string; subtitulo?: string }>> = {}
+    const eventosPorDia: Record<
+      number,
+      Array<{ tipo: 'aviso' | 'reunion' | 'poel'; titulo: string; subtitulo?: string }>
+    > = {}
 
     // 1) Avisos
     avisos.forEach((a, idx) => {
@@ -41,7 +72,7 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
       eventosPorDia[diaNum].push({
         tipo: 'aviso',
         titulo: a.titulo,
-        subtitulo: a.descripcion?.slice(0, 40) + (a.descripcion?.length > 40 ? '…' : '')
+        subtitulo: a.descripcion?.slice(0, 40) + (a.descripcion?.length > 40 ? '…' : ''),
       })
     })
 
@@ -54,7 +85,7 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
           eventosPorDia[d].push({
             tipo: 'reunion',
             titulo: r.titulo,
-            subtitulo: r.hora_inicio ? `🕒 ${r.hora_inicio}` : undefined
+            subtitulo: r.hora_inicio ? `🕒 ${r.hora_inicio}` : undefined,
           })
         }
       }
@@ -69,7 +100,7 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
           eventosPorDia[d].push({
             tipo: 'poel',
             titulo: s.titulo,
-            subtitulo: s.ubicacion ? `📍 ${s.ubicacion}` : undefined
+            subtitulo: s.ubicacion ? `📍 ${s.ubicacion}` : undefined,
           })
         }
       }
@@ -87,18 +118,36 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
         {/* Panel Nuevo Aviso */}
         <div class="panel">
           <h2 class="panel__title">Publicar nuevo aviso o comunicado</h2>
-          <form method="post" class="form-row" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+          <form
+            method="post"
+            class="form-row"
+            style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;"
+          >
             <div class="form-field" style="flex: 1; min-width: 240px;">
               <label for="titulo">Título del aviso *</label>
-              <input id="titulo" name="titulo" required placeholder="Ej. Convocatoria a consulta pública..." />
+              <input
+                id="titulo"
+                name="titulo"
+                required
+                placeholder="Ej. Convocatoria a consulta pública..."
+              />
             </div>
             <div class="form-field" style="flex: 2; min-width: 280px;">
               <label for="descripcion">Descripción o cuerpo del mensaje</label>
-              <input id="descripcion" name="descripcion" placeholder="Detalles, enlaces o indicaciones para la ciudadanía..." />
+              <input
+                id="descripcion"
+                name="descripcion"
+                placeholder="Detalles, enlaces o indicaciones para la ciudadanía..."
+              />
             </div>
             <div class="form-field" style="flex: 1; min-width: 220px;">
               <label for="correo_destino">Enviar copia por correo (opcional)</label>
-              <input id="correo_destino" name="correo_destino" type="email" placeholder="correo@ejemplo.com" />
+              <input
+                id="correo_destino"
+                name="correo_destino"
+                type="email"
+                placeholder="correo@ejemplo.com"
+              />
             </div>
             <button type="submit" class="btn btn--dark" style="height: 42px; margin-bottom: 2px;">
               ＋ Publicar y Notificar
@@ -108,11 +157,17 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
 
         {/* Panel Calendario de Bitácora */}
         <div class="panel">
-          <div class="panel__head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div
+            class="panel__head"
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"
+          >
             <div>
-              <h2 class="panel__title" style="margin: 0;">📅 Calendario de Actividades — {nombreMeses[mes]} {anio}</h2>
+              <h2 class="panel__title" style="margin: 0;">
+                📅 Calendario de Actividades — {nombreMeses[mes]} {anio}
+              </h2>
               <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748B;">
-                Agenda institucional integrada: Avisos oficiales, Reuniones de trabajo y Sesiones POEL
+                Agenda institucional integrada: Avisos oficiales, Reuniones de trabajo y Sesiones
+                POEL
               </p>
             </div>
             <div style="display: flex; gap: 8px; font-size: 12px;">
@@ -141,7 +196,10 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
             <div style="display: grid; grid-template-columns: repeat(7, 1fr); auto-rows: minmax(95px, auto);">
               {/* Días vacíos previos al 1 de mes */}
               {Array.from({ length: offsetInicio }).map((_, i) => (
-                <div key={'empty-' + i} style="border-right: 1px solid #F1F5F9; border-bottom: 1px solid #F1F5F9; background: #F8FAFC40;" />
+                <div
+                  key={'empty-' + i}
+                  style="border-right: 1px solid #F1F5F9; border-bottom: 1px solid #F1F5F9; background: #F8FAFC40;"
+                />
               ))}
 
               {/* Días del mes */}
@@ -167,7 +225,11 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
                       >
                         {dia}
                       </span>
-                      {esHoy ? <span style="font-size: 10px; font-weight: 700; color: #8B1E3F; text-transform: uppercase;">Hoy</span> : null}
+                      {esHoy ? (
+                        <span style="font-size: 10px; font-weight: 700; color: #8B1E3F; text-transform: uppercase;">
+                          Hoy
+                        </span>
+                      ) : null}
                     </div>
 
                     <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -221,16 +283,16 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
               </thead>
               <tbody>
                 {avisos.length === 0 ? (
-                  <tr><td colspan={4} class="empty">No hay avisos publicados</td></tr>
+                  <tr>
+                    <td colspan={4} class="empty">
+                      No hay avisos publicados
+                    </td>
+                  </tr>
                 ) : (
                   avisos.map((a) => (
                     <tr key={a.id}>
-                      <td style="font-weight: 700; color: #1E293B;">
-                        📢 {a.titulo}
-                      </td>
-                      <td style="color: #475569; font-size: 13.5px;">
-                        {a.descripcion || '—'}
-                      </td>
+                      <td style="font-weight: 700; color: #1E293B;">📢 {a.titulo}</td>
+                      <td style="color: #475569; font-size: 13.5px;">{a.descripcion || '—'}</td>
                       <td>
                         <span class={'badge ' + (a.activo ? 'procedente' : 'no-procedente')}>
                           {a.activo ? 'Activo' : 'Inactivo'}
@@ -249,7 +311,12 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
                               required
                               style="font-size: 12px; padding: 4px 8px; width: 140px; height: 32px; border: 1px solid #CBD5E1; border-radius: 6px;"
                             />
-                            <button type="submit" class="btn btn--dark" title="Enviar aviso por correo" style="padding: 4px 8px; font-size: 12px; height: 32px;">
+                            <button
+                              type="submit"
+                              class="btn btn--dark"
+                              title="Enviar aviso por correo"
+                              style="padding: 4px 8px; font-size: 12px; height: 32px;"
+                            >
                               ✉️ Enviar
                             </button>
                           </form>
@@ -258,7 +325,12 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
                           <form method="post" style="margin: 0;">
                             <input type="hidden" name="intent" value="eliminar" />
                             <input type="hidden" name="id" value={String(a.id)} />
-                            <button type="submit" class="btn btn--red" title="Eliminar aviso" style="padding: 4px 8px; font-size: 12px; height: 32px;">
+                            <button
+                              type="submit"
+                              class="btn btn--red"
+                              title="Eliminar aviso"
+                              style="padding: 4px 8px; font-size: 12px; height: 32px;"
+                            >
                               🗑
                             </button>
                           </form>

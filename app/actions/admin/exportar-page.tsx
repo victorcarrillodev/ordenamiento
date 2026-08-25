@@ -8,9 +8,21 @@ export interface ExportarPageProps {
 }
 
 const TABLAS = [
-  { slug: 'reuniones', nombre: 'Reuniones', desc: 'Bitácora de reuniones: título, fecha y horarios.' },
-  { slug: 'participaciones', nombre: 'Participaciones', desc: 'Todas las participaciones digitales y físicas con folio y estatus.' },
-  { slug: 'usuarios', nombre: 'Usuarios', desc: 'Cuentas registradas con rol y fecha de creación.' },
+  {
+    slug: 'reuniones',
+    nombre: 'Reuniones',
+    desc: 'Bitácora de reuniones: título, fecha y horarios.',
+  },
+  {
+    slug: 'participaciones',
+    nombre: 'Participaciones',
+    desc: 'Todas las participaciones digitales y físicas con folio y estatus.',
+  },
+  {
+    slug: 'usuarios',
+    nombre: 'Usuarios',
+    desc: 'Cuentas registradas con rol y fecha de creación.',
+  },
 ]
 
 export function ExportarPage(handle: Handle<ExportarPageProps>) {

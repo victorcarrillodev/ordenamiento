@@ -25,7 +25,11 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/ordenamiento
-      SESSION_SECRET: ${SESSION_SECRET:-cambia-esto-en-produccion}
+      # Sin valor por defecto a propósito: con NODE_ENV=production, el backend
+      # se niega a arrancar si SESSION_SECRET llega vacío (ver auth.ts). Un
+      # default aquí ocultaría ese candado y firmaría sesiones con un secreto
+      # público y predecible.
+      SESSION_SECRET: ${SESSION_SECRET:?Define SESSION_SECRET en tu .env (ver .env.example)}
       ROOT_EMAIL: ${ROOT_EMAIL:-root@ordenamiento.gob.mx}
       ROOT_PASSWORD: ${ROOT_PASSWORD}
       ROOT_NAME: ${ROOT_NAME:-Administrador Root}

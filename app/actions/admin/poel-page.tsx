@@ -58,7 +58,9 @@ export function PoelPage(handle: Handle<PoelPageProps>) {
               <label>Ubicación</label>
               <input name="ubicacion" />
             </div>
-            <button type="submit" class="btn btn--dark">＋ Añadir sesión</button>
+            <button type="submit" class="btn btn--dark">
+              ＋ Añadir sesión
+            </button>
           </form>
         </div>
 
@@ -79,7 +81,11 @@ export function PoelPage(handle: Handle<PoelPageProps>) {
               </thead>
               <tbody>
                 {sesiones.length === 0 ? (
-                  <tr><td colspan={8} class="empty">No hay sesiones</td></tr>
+                  <tr>
+                    <td colspan={8} class="empty">
+                      No hay sesiones
+                    </td>
+                  </tr>
                 ) : (
                   sesiones.map((s) => (
                     <tr key={s.id}>
@@ -89,12 +95,18 @@ export function PoelPage(handle: Handle<PoelPageProps>) {
                       <td>{s.descripcion}</td>
                       <td>{s.fecha ?? '—'}</td>
                       <td>{s.ubicacion}</td>
-                      <td><span class={'badge ' + (s.activo ? 'procedente' : 'no-procedente')}>{s.activo ? 'Sí' : 'No'}</span></td>
+                      <td>
+                        <span class={'badge ' + (s.activo ? 'procedente' : 'no-procedente')}>
+                          {s.activo ? 'Sí' : 'No'}
+                        </span>
+                      </td>
                       <td>
                         <form method="post" style="margin:0;">
                           <input type="hidden" name="intent" value="eliminar" />
                           <input type="hidden" name="id" value={String(s.id)} />
-                          <button type="submit" class="btn btn--red">🗑</button>
+                          <button type="submit" class="btn btn--red">
+                            🗑
+                          </button>
                         </form>
                       </td>
                     </tr>

@@ -7,6 +7,11 @@ tmp/
 swarmforge/
 .ai-practice/
 
+# bun.lock es el lockfile de referencia (ver Dockerfile: `bun install
+# --frozen-lockfile`). No commitear package-lock.json: dos lockfiles para
+# el mismo package.json pueden resolver versiones distintas y desincronizarse.
+package-lock.json
+
 # Variables de entorno (secretos) - nunca commiteadas
 .env
 .env.*

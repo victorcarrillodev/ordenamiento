@@ -16,7 +16,11 @@ export async function listAvisos(): Promise<Aviso[]> {
   `
 }
 
-export async function createAviso(input: { titulo: string; descripcion?: string; creadoPor?: number }): Promise<Aviso> {
+export async function createAviso(input: {
+  titulo: string
+  descripcion?: string
+  creadoPor?: number
+}): Promise<Aviso> {
   const rows = await sql<Aviso[]>`
     INSERT INTO avisos (titulo, descripcion, creado_por)
     VALUES (${input.titulo}, ${input.descripcion ?? ''}, ${input.creadoPor ?? null})

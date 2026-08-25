@@ -1,6 +1,9 @@
 import type { Handle } from 'remix/ui'
 
 declare global {
+  // Ampliar JSX.IntrinsicElements globalmente requiere `namespace`; no hay
+  // equivalente en sintaxis de módulos ES2015 para esta declaración ambient.
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
     interface IntrinsicElements {
       'iconify-icon': {

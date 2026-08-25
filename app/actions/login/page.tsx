@@ -42,8 +42,13 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
               </div>
               <div class="login__admin">
                 <details class="login__admin-details">
-                  <summary>¿Necesitas crear un administrador?</summary>
-                  <form class="login__form login__register" method="POST" action={routes.login.action.href()} noValidate>
+                  <summary>¿Necesitas una cuenta?</summary>
+                  <form
+                    class="login__form login__register"
+                    method="POST"
+                    action={routes.login.action.href()}
+                    noValidate
+                  >
                     <input type="hidden" name="intent" value="registro" />
                     <TextField
                       id="name"
@@ -73,7 +78,7 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
                       error={errors.password}
                     />
                     <button class="login__submit login__submit--accent" type="submit">
-                      Registrar administrador
+                      Crear cuenta
                     </button>
                   </form>
                 </details>

@@ -29,7 +29,9 @@ export default createController(adminRoutes.reuniones, {
     async index(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
-      return context.render(<ReunionesPage user={user} reuniones={await reunionesDe(context.request)} />)
+      return context.render(
+        <ReunionesPage user={user} reuniones={await reunionesDe(context.request)} />,
+      )
     },
 
     async action(context) {
@@ -47,7 +49,11 @@ export default createController(adminRoutes.reuniones, {
         if (!response.ok) {
           const data = (await response.json().catch(() => ({}))) as { error?: string }
           return context.render(
-            <ReunionesPage user={user} reuniones={await reunionesDe(context.request)} error={data.error ?? 'No se pudo eliminar'} />,
+            <ReunionesPage
+              user={user}
+              reuniones={await reunionesDe(context.request)}
+              error={data.error ?? 'No se pudo eliminar'}
+            />,
             { status: response.status },
           )
         }
@@ -61,7 +67,11 @@ export default createController(adminRoutes.reuniones, {
 
       if (!titulo || !fecha) {
         return context.render(
-          <ReunionesPage user={user} reuniones={await reunionesDe(context.request)} error="Título y fecha son obligatorios" />,
+          <ReunionesPage
+            user={user}
+            reuniones={await reunionesDe(context.request)}
+            error="Título y fecha son obligatorios"
+          />,
           { status: 422 },
         )
       }
@@ -75,7 +85,11 @@ export default createController(adminRoutes.reuniones, {
       if (!response.ok) {
         const data = (await response.json().catch(() => ({}))) as { error?: string }
         return context.render(
-          <ReunionesPage user={user} reuniones={await reunionesDe(context.request)} error={data.error ?? 'No se pudo agendar'} />,
+          <ReunionesPage
+            user={user}
+            reuniones={await reunionesDe(context.request)}
+            error={data.error ?? 'No se pudo agendar'}
+          />,
           { status: response.status },
         )
       }

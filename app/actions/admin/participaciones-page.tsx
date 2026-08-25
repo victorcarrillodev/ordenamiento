@@ -48,7 +48,10 @@ function fmtSize(bytes: number): string {
 export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
   return () => {
     const { user, origen, items } = handle.props
-    const titulo = origen === 'fisica' ? 'Gestión de participaciones físicas' : 'Gestión de participaciones digitales'
+    const titulo =
+      origen === 'fisica'
+        ? 'Gestión de participaciones físicas'
+        : 'Gestión de participaciones digitales'
 
     return (
       <AdminLayout user={user} active="participaciones" title={titulo}>
@@ -60,7 +63,10 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
         <div class="panel">
           {origen === 'fisica' ? (
             <div class="panel__head">
-              <a class="btn btn--green" href={`${adminRoutes.participacionNueva.index.href()}?origen=fisica`}>
+              <a
+                class="btn btn--green"
+                href={`${adminRoutes.participacionNueva.index.href()}?origen=fisica`}
+              >
                 ＋ Ingresa aquí tu participación
               </a>
             </div>
@@ -80,7 +86,9 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
               <tbody>
                 {items.length === 0 ? (
                   <tr>
-                    <td colspan={6} class="empty">No hay registros</td>
+                    <td colspan={6} class="empty">
+                      No hay registros
+                    </td>
                   </tr>
                 ) : (
                   items.map((p) => (
@@ -98,17 +106,27 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
                           <span class="breadcrumb">sin PDF</span>
                         ) : (
                           p.adjuntos.map((a) => (
-                            <span key={a.id}>{a.nombre_original} ({fmtSize(a.size)})</span>
+                            <span key={a.id}>
+                              {a.nombre_original} ({fmtSize(a.size)})
+                            </span>
                           ))
                         )}
                       </td>
                       <td>
                         <div style="display: flex; gap: 6px;">
-                          <a class="btn btn--green" href={adminRoutes.participacionDetalle.href({ id: p.id })} title="Ver detalle">
+                          <a
+                            class="btn btn--green"
+                            href={adminRoutes.participacionDetalle.href({ id: p.id })}
+                            title="Ver detalle"
+                          >
                             👁 Ver
                           </a>
                           {p.adjuntos.length > 0 ? (
-                            <a class="btn btn--excel" href={adminRoutes.word.href({ id: p.id })} title="Descargar datos (.docx)">
+                            <a
+                              class="btn btn--excel"
+                              href={adminRoutes.word.href({ id: p.id })}
+                              title="Descargar datos (.docx)"
+                            >
                               ⬇
                             </a>
                           ) : null}

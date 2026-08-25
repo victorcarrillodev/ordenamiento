@@ -11,14 +11,13 @@ import { adminRoutes } from '../../routes.ts'
 
 export default createController(adminRoutes.usuarios, {
   actions: {
-    async index(context) {
+    async index() {
       return redirect(adminRoutes.index.href())
     },
 
     async action(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
-      if (user.role !== 'admin') return redirect(adminRoutes.index.href())
 
       const formData = await context.request.formData()
       const name = String(formData.get('name') ?? '').trim()

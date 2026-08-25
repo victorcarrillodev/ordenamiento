@@ -8,7 +8,10 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ordenamiento
     ports:
-      - '5432:5432'
+      # Solo loopback: este compose es para desarrollo local del backend por
+      # separado. Sin esto, cualquiera en la misma red alcanzaría Postgres
+      # con las credenciales por defecto de arriba.
+      - '127.0.0.1:5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -26,7 +29,10 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/ordenamiento
-      SESSION_SECRET: ${SESSION_SECRET:-cambia-esto-en-produccion}
+      # Sin valor por defecto a propósito (ver nota equivalente en el
+      # docker-compose.yml de la raíz): con NODE_ENV=production, auth.ts se
+      # niega a arrancar si esto llega vacío.
+      SESSION_SECRET: ${SESSION_SECRET:?Define SESSION_SECRET en tu .env (ver .env.example)}
       # Cuenta ROOT: se define en entorno/secrets (o `.env` gitignorado),
       # nunca hardcodeada aquí. Si falta, el seed falla en producción.
       ROOT_EMAIL: ${ROOT_EMAIL:-root@ordenamiento.gob.mx}
@@ -35,7 +41,8 @@ services:
       PORT: 5920
       NODE_ENV: production
     ports:
-      - '5920:5920'
+      # Solo loopback (ver nota en el servicio `db` de este mismo archivo).
+      - '127.0.0.1:5920:5920'
     volumes:
       - uploads:/app/uploads
       # Archivo semilla opcional para crear más cuentas admin al arrancar.
