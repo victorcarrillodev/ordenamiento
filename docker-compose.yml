@@ -27,6 +27,15 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Tolerancia a picos: techo de memoria para que una ráfaga de uploads no
+    # OOM-pee al host entero (la BD y el proxy viven en la misma máquina).
+    mem_limit: 1g
+    healthcheck:
+      test: ['CMD-SHELL', 'bun -e "fetch(`http://127.0.0.1:5920/api/health`).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/ordenamiento
       # Sin valor por defecto a propósito: con NODE_ENV=production, el backend
@@ -58,7 +67,9 @@ services:
     mem_limit: 512m
     mem_reservation: 128m
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    mem_limit: 512m
     environment:
       BACKEND_URL: http://backend:5920
       BASE_PATH: /ordena
