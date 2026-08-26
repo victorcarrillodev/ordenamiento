@@ -2,8 +2,20 @@ import * as http from 'node:http'
 import { createRequestListener } from 'remix/node-fetch-server'
 
 import { router } from './app/router.ts'
+import { cargarCatalogo } from './app/data/colonias.ts'
 
 // Servidor principal de Ordenamiento Territorial – San Pedro Tlaquepaque
+
+// Precalentar catálogo SEPOMEX de Jalisco en memoria RAM en el arranque
+cargarCatalogo()
+  .then((cat) => {
+    console.log(
+      `[server] Catálogo SEPOMEX de Jalisco precalentado en memoria (${cat.length} entradas)`,
+    )
+  })
+  .catch((err) => {
+    console.warn('[server] Aviso al precalentar catálogo:', err)
+  })
 
 const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 44100
 const hmrProxyPort = process.env.HMR_PROXY_PORT

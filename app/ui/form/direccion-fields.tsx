@@ -1,7 +1,6 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { Field, type FieldAppearance } from './field.tsx'
-import { DireccionAutocomplete } from './public/direccion-autocomplete.tsx'
 
 export interface DireccionValues {
   calle?: string
@@ -52,77 +51,60 @@ export function DireccionFields(handle: Handle<DireccionFieldsProps>) {
     const p = namePrefix
 
     return (
-      <DireccionAutocomplete
-        endpoint={endpoint}
-        names={{
-          calle: `${p}calle`,
-          colonia: `${p}colonia`,
-          municipio: `${p}municipio`,
-          cp: `${p}cp`,
-          direccion_origen: `${p}direccion_origen`,
-        }}
-        initial={{
-          calle: values.calle,
-          colonia: values.colonia,
-          municipio: values.municipio,
-          cp: values.cp,
-          direccion_origen: values.direccion_origen,
-        }}
-        appearance={appearance}
+      <div
+        data-autocomplete-group="direccion"
+        data-endpoint={endpoint}
+        mix={appearance === 'civic' ? gridStyle : undefined}
+        class={appearance === 'admin' ? 'form-grid' : undefined}
       >
-        <div
-          mix={appearance === 'civic' ? gridStyle : undefined}
-          class={appearance === 'admin' ? 'form-grid' : undefined}
-        >
-          <Field
-            id={`${p}calle`}
-            name={`${p}calle`}
-            label="Calle y número"
-            placeholder="Ej. Av. Juárez 100"
-            value={values.calle}
-            error={errors.calle}
-            autoComplete="off"
-            appearance={appearance}
-          />
-          <Field
-            id={`${p}colonia`}
-            name={`${p}colonia`}
-            label="Colonia"
-            placeholder="Ej. Centro"
-            value={values.colonia}
-            error={errors.colonia}
-            required={required}
-            autoComplete="off"
-            appearance={appearance}
-          />
-          <Field
-            id={`${p}municipio`}
-            name={`${p}municipio`}
-            label="Municipio"
-            placeholder="Ej. San Pedro Tlaquepaque"
-            value={values.municipio}
-            error={errors.municipio}
-            required={required}
-            autoComplete="off"
-            appearance={appearance}
-          />
-          <Field
-            id={`${p}cp`}
-            name={`${p}cp`}
-            label="C.P."
-            placeholder="Ej. 45500"
-            value={values.cp}
-            error={errors.cp}
-            appearance={appearance}
-          />
-          <input
-            type="hidden"
-            id={`${p}direccion_origen`}
-            name={`${p}direccion_origen`}
-            value={values.direccion_origen ?? 'manual'}
-          />
-        </div>
-      </DireccionAutocomplete>
+        <Field
+          id={`${p}calle`}
+          name={`${p}calle`}
+          label="Calle y número"
+          placeholder="Ej. Av. Juárez 100"
+          value={values.calle}
+          error={errors.calle}
+          autoComplete="off"
+          appearance={appearance}
+        />
+        <Field
+          id={`${p}colonia`}
+          name={`${p}colonia`}
+          label="Colonia"
+          placeholder="Ej. Centro"
+          value={values.colonia}
+          error={errors.colonia}
+          required={required}
+          autoComplete="off"
+          appearance={appearance}
+        />
+        <Field
+          id={`${p}municipio`}
+          name={`${p}municipio`}
+          label="Municipio"
+          placeholder="Ej. San Pedro Tlaquepaque"
+          value={values.municipio}
+          error={errors.municipio}
+          required={required}
+          autoComplete="off"
+          appearance={appearance}
+        />
+        <Field
+          id={`${p}cp`}
+          name={`${p}cp`}
+          label="C.P."
+          placeholder="Ej. 45500"
+          value={values.cp}
+          error={errors.cp}
+          appearance={appearance}
+        />
+        <input
+          type="hidden"
+          id={`${p}direccion_origen`}
+          name={`${p}direccion_origen`}
+          value={values.direccion_origen ?? 'manual'}
+        />
+      </div>
     )
   }
 }

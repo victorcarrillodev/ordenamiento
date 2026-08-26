@@ -37,21 +37,25 @@ export default createController(routes, {
       const catalogo = await cargarCatalogo()
 
       if (tipo === 'municipio') {
-        const items = buscarMunicipios(catalogo, q, 10)
+        const items = buscarMunicipios(catalogo, q, 12)
         return Response.json(
           { items },
           {
-            headers: { 'cache-control': 'public, max-age=3600' },
+            headers: {
+              'cache-control': 'public, max-age=86400, stale-while-revalidate=604800',
+            },
           },
         )
       }
 
-      const items = buscarColonias(catalogo, { q, municipio, limite: 10 })
+      const items = buscarColonias(catalogo, { q, municipio, limite: 12 })
 
       return Response.json(
         { items },
         {
-          headers: { 'cache-control': 'public, max-age=3600' },
+          headers: {
+            'cache-control': 'public, max-age=86400, stale-while-revalidate=604800',
+          },
         },
       )
     },
