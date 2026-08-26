@@ -148,6 +148,7 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
         <br />
 
         <main>
+
           <h1 mix={title}>ELABORACIÓN DEL POETDUM</h1>
           <div>
             <div mix={containerMap}>
@@ -239,6 +240,12 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
               <strong>© Copyright 2026 Todos los Derechos Reservados | Aviso de privacidad</strong>
             </p>
           </section>
+          <p>contained</p>
+          <Button1 data={"mamese"} type={"contained"} />
+          <p>autlend</p>
+          <Button1 data={"mamese"} type={"outlend"} />
+          <p>text</p>
+          <Button1 data={"mamese"} type={"text"} />
         </main>
       </Document>
     )
