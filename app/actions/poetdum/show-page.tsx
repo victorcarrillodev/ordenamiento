@@ -189,10 +189,9 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
                 <Button variant="gold" size="lg">
                   POETDUM
                 </Button>
-                <Button 
+                <Button
                   variant="contained"
                   size="lg"
-                  
                 >
                   FICHAS
                 </Button>
@@ -232,7 +231,6 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
             </p>
           </section>
           <p>contained</p>
-          
         </main>
       </Document>
     )
