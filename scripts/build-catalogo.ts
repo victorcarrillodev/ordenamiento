@@ -1,26 +1,100 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { parseSepomex } from '../app/utils/catalogo-sepomex.ts'
+import { parseSepomex, type EntradaCatalogo } from '../app/utils/catalogo-sepomex.ts'
 
 const DEFAULT_ORIGEN = 'https://www.correosdemexico.gob.mx/DATOSABIERTOS/cp/CPdescarga.txt'
 const DEFAULT_ESTADO = 'Jalisco'
 const DEFAULT_DESTINO = 'app/data/colonias.json'
+const DEFAULT_CLIENT_BUNDLE = 'public/autocomplete-data.js'
 
 /**
- * Descarga y procesa el catálogo SEPOMEX para generar el artefacto de build en JSON.
+ * Genera el paquete compacto para ejecución 100% en el cliente (0ms latencia).
+ */
+export function generarBundleCliente(catalogo: EntradaCatalogo[]): string {
+  const municipiosMap = new Map<string, number>()
+  const tiposMap = new Map<string, number>()
+  const municipios: string[] = []
+  const tipos: string[] = []
+
+  // Priorizar municipios de la Zona Metropolitana de Guadalajara al inicio
+  const priorityMun = [
+    'San Pedro Tlaquepaque',
+    'Guadalajara',
+    'Zapopan',
+    'Tlajomulco de Zúñiga',
+    'Tonalá',
+    'El Salto',
+    'Ixtlahuacán de los Membrillos',
+    'Juanacatlán',
+    'Zapotlanejo',
+    'Chapala',
+    'Puerto Vallarta',
+    'Lagos de Moreno',
+    'Tepatitlán de Morelos',
+    'Ciudad Guzmán (Zapotlán el Grande)',
+    'Ocotlán',
+  ]
+
+  for (const m of priorityMun) {
+    if (!municipiosMap.has(m)) {
+      municipiosMap.set(m, municipios.length)
+      municipios.push(m)
+    }
+  }
+
+  for (const item of catalogo) {
+    if (!municipiosMap.has(item.municipio)) {
+      municipiosMap.set(item.municipio, municipios.length)
+      municipios.push(item.municipio)
+    }
+    if (!tiposMap.has(item.tipo)) {
+      tiposMap.set(item.tipo, tipos.length)
+      tipos.push(item.tipo)
+    }
+  }
+
+  const compactRows = catalogo.map((item) => [
+    item.colonia,
+    municipiosMap.get(item.municipio) ?? 0,
+    item.cp,
+    tiposMap.get(item.tipo) ?? 0,
+  ])
+
+  return `/**
+ * Catálogo Compacto de Jalisco (SEPOMEX) para Búsqueda Instantánea 0ms en Cliente
+ * Autogenerado: ${new Date().toISOString()}
+ */
+;(function(){
+  if (typeof window !== 'undefined') {
+    window.__JALISCO_DATA__ = {
+      m: ${JSON.stringify(municipios)},
+      t: ${JSON.stringify(tipos)},
+      c: ${JSON.stringify(compactRows)}
+    };
+  }
+})();
+`
+}
+
+/**
+ * Descarga y procesa el catálogo SEPOMEX para generar el artefacto de build en JSON y el bundle de cliente.
  */
 export async function construirCatalogo({
   origen = process.env.CATALOGO_ORIGEN ?? DEFAULT_ORIGEN,
   estado = process.env.CATALOGO_ESTADO ?? DEFAULT_ESTADO,
   destino = process.env.CATALOGO_DESTINO ?? DEFAULT_DESTINO,
+  clientDestino = DEFAULT_CLIENT_BUNDLE,
 }: {
   origen?: string
   estado?: string
   destino?: string
+  clientDestino?: string
 } = {}): Promise<number> {
   const rutaDestino = resolve(process.cwd(), destino)
+  const rutaClientDestino = resolve(process.cwd(), clientDestino)
   await mkdir(dirname(rutaDestino), { recursive: true })
+  await mkdir(dirname(rutaClientDestino), { recursive: true })
 
   console.log(`[build:catalogo] Procesando catálogo para estado: ${estado}...`)
 
@@ -67,6 +141,10 @@ export async function construirCatalogo({
   const catalogo = parseSepomex(textoSepomex, estado)
   await writeFile(rutaDestino, JSON.stringify(catalogo, null, 2), 'utf-8')
   console.log(`[build:catalogo] Éxito: ${catalogo.length} colonias generadas en ${destino}`)
+
+  const clientBundle = generarBundleCliente(catalogo)
+  await writeFile(rutaClientDestino, clientBundle, 'utf-8')
+  console.log(`[build:catalogo] Éxito: Bundle de cliente generado en ${clientDestino}`)
 
   return catalogo.length
 }

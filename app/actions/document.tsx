@@ -41,6 +41,7 @@ export function Document(handle: Handle<DocumentProps>) {
           />
           <script src="https://code.iconify.design/3/3.1.1/iconify-icon.min.js"></script>
           <link rel="stylesheet" href={`${basePath}/autocomplete.css`} />
+          <script src={`${basePath}/autocomplete-data.js`} defer></script>
           <script src={`${basePath}/autocomplete.js`} defer></script>
           <title>{title}</title>
           {head}
