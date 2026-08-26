@@ -260,7 +260,7 @@ export const inputProps: CSSProps = {
     boxShadow: `0 0 0 3px rgba(140,29,61,0.12)`,
   },
   '&::placeholder': {
-    color: colors.gray400,
+    color: '#64748b',
   },
 }
 

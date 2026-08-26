@@ -15,7 +15,9 @@ export default createController(adminRoutes.participacionNueva, {
     async index(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
-      return context.render(<NuevaPage user={user} />)
+      const url = new URL(context.request.url)
+      const registrado = url.searchParams.get('registrado') ?? undefined
+      return context.render(<NuevaPage user={user} folioRegistrado={registrado} />)
     },
 
     async action(context) {
@@ -28,13 +30,20 @@ export default createController(adminRoutes.participacionNueva, {
       body.set('origen', 'fisica')
       body.set('nombre', String(formData.get('nombre') ?? ''))
       body.set('correo', String(formData.get('correo') ?? ''))
+      body.set('domicilio', String(formData.get('domicilio') ?? ''))
       body.set(
         'municipio',
-        String(formData.get('municipio') ?? formData.get('municipio_aporte') ?? ''),
+        String(
+          formData.get('municipio') ??
+            formData.get('municipio_aporte') ??
+            formData.get('municipio_participante') ??
+            'San Pedro Tlaquepaque',
+        ),
       )
       body.set('colonia', String(formData.get('colonia') ?? ''))
       body.set('calle', String(formData.get('calle') ?? ''))
       body.set('numero', String(formData.get('numero') ?? ''))
+      body.set('cp', String(formData.get('cp') ?? ''))
       body.set('latitud', String(formData.get('latitud') ?? ''))
       body.set('longitud', String(formData.get('longitud') ?? ''))
       body.set('fuente', String(formData.get('fuente') ?? ''))
@@ -61,7 +70,11 @@ export default createController(adminRoutes.participacionNueva, {
         )
       }
 
-      return redirect(adminRoutes.participaciones.href() + '?origen=fisica')
+      const created = (await response.json().catch(() => ({}))) as { folio?: string }
+      return redirect(
+        adminRoutes.participacionNueva.index.href() +
+          (created.folio ? `?registrado=${encodeURIComponent(created.folio)}` : ''),
+      )
     },
   },
 })

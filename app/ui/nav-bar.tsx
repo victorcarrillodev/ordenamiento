@@ -1,7 +1,7 @@
-import type { Handle } from "remix/ui";
-import { css } from "remix/ui";
-import { colors, FONT_STACK, type ThemeData } from "../../ui/civic-horizon.ts";
-import { routes } from "../../routes.ts";
+import type { Handle } from 'remix/ui'
+import { css } from 'remix/ui'
+import { colors, FONT_STACK, type ThemeData } from './civic-horizon.ts'
+import { routes } from '../routes.ts'
 
 export interface NavBarProps {
   theme?: ThemeData

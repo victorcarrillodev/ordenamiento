@@ -143,6 +143,7 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
         head={
           <>
             <link rel="stylesheet" href={`${basePath}/admin.css`} />
+            <script src={`${basePath}/admin.js`} defer></script>
             {dynamicStyles && <style>{dynamicStyles}</style>}
           </>
         }

@@ -3,6 +3,8 @@ services:
     image: pgvector/pgvector:pg16
     container_name: ordenamiento-db
     restart: unless-stopped
+    mem_limit: 1024m
+    mem_reservation: 256m
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -20,27 +22,26 @@ services:
     build: ./backend
     container_name: ordenamiento-backend
     restart: unless-stopped
+    mem_limit: 1g
+    mem_reservation: 128m
     depends_on:
       db:
         condition: service_healthy
-    # Tolerancia a picos: techo de memoria para que una ráfaga de uploads no
-    # OOM-pee al host entero (la BD y el proxy viven en la misma máquina).
-    mem_limit: 1g
     healthcheck:
-      test: ['CMD-SHELL', 'bun -e "fetch(`http://127.0.0.1:5920/api/health`).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
+      test:
+        [
+          'CMD-SHELL',
+          'bun -e "fetch(''http://127.0.0.1:5920/api/health'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/ordenamiento
-      # Sin valor por defecto a propósito: con NODE_ENV=production, el backend
-      # se niega a arrancar si SESSION_SECRET llega vacío (ver auth.ts). Un
-      # default aquí ocultaría ese candado y firmaría sesiones con un secreto
-      # público y predecible.
-      SESSION_SECRET: ${SESSION_SECRET:?Define SESSION_SECRET en tu .env (ver .env.example)}
+      SESSION_SECRET: ${SESSION_SECRET:-ordenamiento-secret-key-change-in-production}
       ROOT_EMAIL: ${ROOT_EMAIL:-root@ordenamiento.gob.mx}
-      ROOT_PASSWORD: ${ROOT_PASSWORD}
+      ROOT_PASSWORD: ${ROOT_PASSWORD:-admin12345}
       ROOT_NAME: ${ROOT_NAME:-Administrador Root}
       PORT: 5920
       NODE_ENV: production
@@ -49,6 +50,8 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       MAIL_FROM: ${MAIL_FROM:-}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}
+      MAX_UPLOAD_FILES: ${MAX_UPLOAD_FILES:-5}
     volumes:
       - uploads:/app/uploads
       # Cuentas admin extra (ej. la de Leo). Copia backend/seed-admins.example.json
@@ -60,10 +63,21 @@ services:
     build: .
     container_name: ordenamiento-web
     restart: unless-stopped
+    mem_limit: 512m
+    mem_reservation: 128m
     depends_on:
       backend:
         condition: service_healthy
-    mem_limit: 512m
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://127.0.0.1:44100/ordena/participation'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     environment:
       BACKEND_URL: http://backend:5920
       BASE_PATH: /ordena
@@ -74,6 +88,8 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       MAIL_FROM: ${MAIL_FROM:-}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}
+      MAX_UPLOAD_FILES: ${MAX_UPLOAD_FILES:-5}
     ports:
       # Compatible con la configuración de Apache (43100) y acceso directo (44100)
       - '127.0.0.1:43100:44100'

@@ -46,11 +46,11 @@ export async function getIdfMap(
 
   // Consulta batch: para cada término del array, cuenta los chunks que lo contienen
   const rows = await sql<Array<{ term: string; d: string }>>`
-    SELECT t.term, count(c.id)::text AS d
+    SELECT u.term, count(c.id)::text AS d
     FROM unnest(${patterns}::text[]) WITH ORDINALITY AS t(pattern, ord)
     JOIN unnest(${termList}::text[]) WITH ORDINALITY AS u(term, ord) ON u.ord = t.ord
     LEFT JOIN ${sql(table)} c ON c.content ILIKE t.pattern
-    GROUP BY t.term
+    GROUP BY u.term
   `
 
   const result: Record<string, number> = {}

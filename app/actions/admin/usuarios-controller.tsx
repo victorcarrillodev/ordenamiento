@@ -11,7 +11,9 @@ import { adminRoutes } from '../../routes.ts'
 
 export default createController(adminRoutes.usuarios, {
   actions: {
-    async index() {
+    async index(context) {
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
       return redirect(adminRoutes.index.href())
     },
 

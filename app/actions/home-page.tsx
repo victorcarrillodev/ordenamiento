@@ -20,10 +20,10 @@ import {
   sectionContainerProps,
   sectionPaddingProps,
   type ThemeData,
-} from "../ui/civic-horizon.ts";
-import { Document } from "./document.tsx";
-import { NavBar } from "../components/Nav/NavBar.tsx";
-import { routes } from "../routes.ts";
+} from '../ui/civic-horizon.ts'
+import { Document } from './document.tsx'
+import { NavBar } from '../ui/nav-bar.tsx'
+import { routes } from '../routes.ts'
 
 const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 

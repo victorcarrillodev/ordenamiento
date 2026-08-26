@@ -11,6 +11,8 @@ import { adminRoutes } from '../../routes.ts'
 export default createController(adminRoutes.participacionEnviar, {
   actions: {
     async index(context) {
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
       return redirect(adminRoutes.participacionDetalle.href({ id: context.params.id }))
     },
 

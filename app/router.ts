@@ -56,6 +56,11 @@ function staticWithPrefix() {
     } else {
       const res = await publicStatic(context, noStaticFile)
       if (res) return res
+      if (basePath && !url.pathname.startsWith(basePath)) {
+        const targetUrl = new URL(context.request.url)
+        targetUrl.pathname = `${basePath}${url.pathname.startsWith('/') ? '' : '/'}${url.pathname}`
+        return Response.redirect(targetUrl, 302)
+      }
     }
     return next()
   }
@@ -69,7 +74,8 @@ router.map(routes, controller)
 router.map(routes.login, loginController)
 router.map(routes.participation, participationController)
 router.map(routes.poetdum, poetdumController)
-router.map(adminRoutes, adminController)
+
+// Rutas de administración (sub-controllers específicos primero)
 router.map(adminRoutes.reuniones, adminReunionesController)
 router.map(adminRoutes.usuarios, adminUsuariosController)
 router.map(adminRoutes.avisos, avisosController)
@@ -77,3 +83,4 @@ router.map(adminRoutes.poel, poelController)
 router.map(adminRoutes.participacionNueva, nuevaController)
 router.map(adminRoutes.participacionEnviar, enviarController)
 router.map(adminRoutes.personalizacion, personalizacionController)
+router.map(adminRoutes, adminController)
