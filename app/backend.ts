@@ -22,26 +22,30 @@ export interface LoginResponse {
  * Autentica contra el backend y devuelve el usuario + la cookie de sesión.
  */
 export async function loginBackend(email: string, password: string): Promise<LoginResponse> {
-  const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  })
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
 
-  const data = (await response.json().catch(() => ({}))) as {
-    user?: { id: number; name: string; role: string }
-    error?: string
-  }
+    const data = (await response.json().catch(() => ({}))) as {
+      user?: { id: number; name: string; role: string }
+      error?: string
+    }
 
-  if (!response.ok) {
-    return { ok: false, status: response.status, error: data.error }
-  }
+    if (!response.ok) {
+      return { ok: false, status: response.status, error: data.error }
+    }
 
-  return {
-    ok: true,
-    status: response.status,
-    user: data.user,
-    setCookie: response.headers.get('set-cookie') ?? undefined,
+    return {
+      ok: true,
+      status: response.status,
+      user: data.user,
+      setCookie: response.headers.get('set-cookie') ?? undefined,
+    }
+  } catch {
+    return { ok: false, status: 503, error: 'Servicio de autenticación no disponible' }
   }
 }
 
@@ -51,8 +55,12 @@ export async function loginBackend(email: string, password: string): Promise<Log
  * servidor solo hace de intermediario, igual que en loginBackend).
  */
 export async function logoutBackend(request: Request): Promise<string | undefined> {
-  const response = await backendFetch(request, '/api/auth/logout', { method: 'POST' })
-  return response.headers.get('set-cookie') ?? undefined
+  try {
+    const response = await backendFetch(request, '/api/auth/logout', { method: 'POST' })
+    return response.headers.get('set-cookie') ?? undefined
+  } catch {
+    return undefined
+  }
 }
 
 export interface AdminUser {
@@ -72,16 +80,28 @@ export async function backendFetch(
   const headers = new Headers(init?.headers)
   const cookie = request.headers.get('cookie')
   if (cookie) headers.set('cookie', cookie)
-  return fetch(`${BACKEND_URL}${path}`, { ...init, headers })
+  try {
+    return await fetch(`${BACKEND_URL}${path}`, { ...init, headers })
+  } catch {
+    return new Response(JSON.stringify({ error: 'Backend no disponible' }), {
+      status: 503,
+      headers: { 'content-type': 'application/json' },
+    })
+  }
 }
 
 /**
- * Usuario autenticado según el backend (o null si no hay sesión válida).
+ * Usuario autenticado según el backend (o null si no hay sesión válida o backend no responde).
  */
 export async function backendUser(request: Request): Promise<AdminUser | null> {
-  const response = await backendFetch(request, '/api/auth/me')
-  const data = (await response.json().catch(() => ({}))) as { user?: AdminUser | null }
-  return data.user ?? null
+  try {
+    const response = await backendFetch(request, '/api/auth/me')
+    if (!response.ok) return null
+    const data = (await response.json().catch(() => ({}))) as { user?: AdminUser | null }
+    return data.user ?? null
+  } catch {
+    return null
+  }
 }
 
 /**

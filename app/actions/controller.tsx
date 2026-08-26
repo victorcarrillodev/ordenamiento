@@ -7,6 +7,7 @@ import { cargarCatalogo } from '../data/colonias.ts'
 import { routes } from '../routes.ts'
 import { buscarColonias, buscarMunicipios } from '../utils/colonias-search.ts'
 import { HomePage } from './home-page.tsx'
+import { ErrorPage } from './error-page.tsx'
 
 export default createController(routes, {
   actions: {
@@ -22,6 +23,9 @@ export default createController(routes, {
     async homeSlash(context) {
       const theme = await getPublicTheme(context.request)
       return context.render(<HomePage theme={theme} />)
+    },
+    participationLogin() {
+      return redirect(routes.login.index.href())
     },
     /** Endpoint de búsqueda y sugerencias de colonias y municipios de Jalisco para autocomplete */
     async colonias(context) {
@@ -50,6 +54,16 @@ export default createController(routes, {
           headers: { 'cache-control': 'public, max-age=3600' },
         },
       )
+    },
+    /**
+     * Vistas de error institucionales (400, 401, 403, 404, 429, 500, 502, 503, 504)
+     */
+    error(context) {
+      const code = Number(context.params.code) || 404
+      return context.render(<ErrorPage code={code} />, { status: code })
+    },
+    errorDefault(context) {
+      return context.render(<ErrorPage code={404} />, { status: 404 })
     },
     /**
      * El botón "Cerrar sesión" del panel admin solo enlazaba a /login sin

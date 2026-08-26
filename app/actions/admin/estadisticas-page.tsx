@@ -19,14 +19,14 @@ export interface EstadisticasPageProps {
 
 const COLORES = ['#6cb2d6', '#1f4d6e', '#a06cd5', '#e8a54f', '#4fb286', '#d67f7f', '#9aa5b1']
 
-function totalDe(data: Array<[string, number]>): number {
-  return data.reduce((a, [, n]) => a + n, 0)
+function totalDe(data: Array<[string, number]> | undefined | null): number {
+  return (data || []).reduce((a, [, n]) => a + n, 0)
 }
 
 /** Dona SVG server-side. */
-function Donut(handle: Handle<{ data: Array<[string, number]> }>) {
+function Donut(handle: Handle<{ data?: Array<[string, number]> }>) {
   return () => {
-    const { data } = handle.props
+    const data = handle.props.data || []
     const total = totalDe(data)
     if (total === 0) return <p class="empty">Sin datos</p>
     const r = 60
@@ -76,9 +76,10 @@ function Donut(handle: Handle<{ data: Array<[string, number]> }>) {
 }
 
 /** Barras verticales SVG server-side. */
-function Bars(handle: Handle<{ data: Array<[string, number]> }>) {
+function Bars(handle: Handle<{ data?: Array<[string, number]> }>) {
   return () => {
-    const { data } = handle.props
+    const data = handle.props.data || []
+    if (data.length === 0) return <p class="empty">Sin datos</p>
     const max = Math.max(1, ...data.map(([, n]) => n))
     const w = 20,
       gap = 18,
@@ -91,38 +92,35 @@ function Bars(handle: Handle<{ data: Array<[string, number]> }>) {
         viewBox={`0 0 ${data.length * (w + gap)} ${baseH + 40}`}
       >
         {data.map(([k, n], i) => {
-          const h = Math.max(3, (n / max) * baseH)
-          const x = i * (w + gap) + gap / 2
+          const h = (n / max) * baseH
+          const x = i * (w + gap) + 6
+          const y = baseH - h + 10
           return (
             <g key={k}>
               <rect
                 x={x}
-                y={baseH - h}
+                y={y}
                 width={w}
                 height={h}
                 rx="3"
-                fill={i === 0 ? '#6cb2d6' : dark ? '#1f4d6e' : COLORES[i % COLORES.length]}
+                fill={dark ? '#2b3445' : COLORES[i % COLORES.length]}
               />
-              <text x={x + w / 2} y={baseH + 16} text-anchor="middle" font-size="8" fill="#7a8699">
-                {k.length > 14 ? k.slice(0, 13) + '…' : k}
+              <text x={x + w / 2} y={y - 4} text-anchor="middle" font-size="10" fill="#2b3445">
+                {n}
               </text>
               <text
                 x={x + w / 2}
-                y={baseH - h - 4}
+                y={baseH + 24}
                 text-anchor="middle"
-                font-size="9"
-                fill="#2b3445"
+                font-size="10"
+                fill="#7a8699"
+                transform={`rotate(-20 ${x + w / 2} ${baseH + 24})`}
               >
-                {n}
+                {k}
               </text>
             </g>
           )
         })}
-        {data.length === 0 && (
-          <text x="20" y="60" font-size="11" fill="#9aa5b1">
-            Sin datos
-          </text>
-        )}
       </svg>
     )
   }
@@ -131,9 +129,14 @@ function Bars(handle: Handle<{ data: Array<[string, number]> }>) {
 export function EstadisticasPage(handle: Handle<EstadisticasPageProps>) {
   return () => {
     const { user, origen, stats } = handle.props
-    const total = origen === 'fisica' ? stats.fisicas : stats.digitales
+    const total = origen === 'fisica' ? (stats?.fisicas ?? 0) : (stats?.digitales ?? 0)
     const titulo =
       origen === 'fisica' ? 'Gestión de estadísticas físicas' : 'Gestión de estadísticas digitales'
+
+    const resultado = (stats?.resultado ?? []).map((r) => [r.estado, r.total] as [string, number])
+    const fuente = stats?.fuente ?? []
+    const genero = stats?.genero ?? []
+    const tematica = stats?.tematica ?? []
 
     return (
       <AdminLayout user={user} active="estadisticas" title={titulo}>
@@ -148,21 +151,21 @@ export function EstadisticasPage(handle: Handle<EstadisticasPageProps>) {
               Resultado
             </h3>
             <p class="meta-label">Total: {total}</p>
-            <Donut data={stats.resultado.map((r) => [r.estado, r.total])} />
+            <Donut data={resultado} />
           </div>
           <div class="panel chart-panel">
             <h3 class="panel__title" style="text-align:center;">
               Fuente
             </h3>
-            <p class="meta-label">Total: {totalDe(stats.fuente)}</p>
-            <Bars data={stats.fuente} />
+            <p class="meta-label">Total: {totalDe(fuente)}</p>
+            <Bars data={fuente} />
           </div>
           <div class="panel chart-panel">
             <h3 class="panel__title" style="text-align:center;">
               Género
             </h3>
-            <p class="meta-label">Total: {totalDe(stats.genero)}</p>
-            <Bars data={stats.genero} />
+            <p class="meta-label">Total: {totalDe(genero)}</p>
+            <Bars data={genero} />
           </div>
         </div>
 
@@ -170,8 +173,8 @@ export function EstadisticasPage(handle: Handle<EstadisticasPageProps>) {
           <h3 class="panel__title" style="text-align:center;">
             Temática
           </h3>
-          <p class="meta-label">Total: {totalDe(stats.tematica)}</p>
-          <Donut data={stats.tematica} />
+          <p class="meta-label">Total: {totalDe(tematica)}</p>
+          <Donut data={tematica} />
         </div>
       </AdminLayout>
     )
