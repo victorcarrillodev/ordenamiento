@@ -17,7 +17,6 @@ import { seedRootAdmin, seedExtraAdmins } from './seed.ts'
 import { seedDemoData } from './seed-demo.ts'
 import { migrate } from './db/migrate.ts'
 import { handleCreateParticipation } from './routes/participations.ts'
-import { contentDisposition } from './files/nombres.ts'
 import {
   deleteParticipation,
   getParticipation,

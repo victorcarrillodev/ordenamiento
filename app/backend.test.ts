@@ -57,6 +57,8 @@ describe('logoutBackend', () => {
       })
     }) as unknown as typeof fetch
 
+    const setCookie = await logoutBackend(new Request('http://localhost/ordena/admin'))
+
     expect(calledUrl).toContain('/api/auth/logout')
     expect(calledMethod).toBe('POST')
     expect(setCookie).toContain('Max-Age=0')

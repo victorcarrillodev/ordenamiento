@@ -98,8 +98,12 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
                 <span id="live-clock-day">{ahora.dia}</span> <span>| </span>
                 <span id="live-clock-greeting">{ahora.saludo ?? 'Buenos días'}</span>
               </div>
-              <div class="card__value" id="live-clock-time">{ahora.hora}</div>
-              <div class="card__label" id="live-clock-date">{ahora.fecha}</div>
+              <div class="card__value" id="live-clock-time">
+                {ahora.hora}
+              </div>
+              <div class="card__label" id="live-clock-date">
+                {ahora.fecha}
+              </div>
             </div>
           </div>
           <a

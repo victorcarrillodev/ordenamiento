@@ -84,7 +84,8 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
         titulo: a.titulo,
         subtitulo: a.descripcion?.slice(0, 40) + (a.descripcion?.length > 40 ? '…' : ''),
         fecha: a.fecha || `${diaNum} de ${nombreMeses[mes]} de ${anio}`,
-        descripcion: a.descripcion || 'Aviso oficial emitido por el Portal de Ordenamiento Territorial.',
+        descripcion:
+          a.descripcion || 'Aviso oficial emitido por el Portal de Ordenamiento Territorial.',
         linkHref: '#tabla-avisos',
         linkTexto: 'Ver en lista de avisos',
       })
@@ -102,7 +103,9 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
             titulo: r.titulo,
             subtitulo: r.hora_inicio ? `🕒 ${r.hora_inicio}` : undefined,
             fecha: `${d} de ${nombreMeses[mes]} de ${anio}`,
-            hora: r.hora_inicio ? `${r.hora_inicio}${r.hora_fin ? ' - ' + r.hora_fin : ''}` : undefined,
+            hora: r.hora_inicio
+              ? `${r.hora_inicio}${r.hora_fin ? ' - ' + r.hora_fin : ''}`
+              : undefined,
             descripcion: `Reunión de trabajo técnico institucional para el seguimiento del ordenamiento territorial.`,
             linkHref: adminRoutes.reuniones.index.href(),
             linkTexto: 'Gestionar Reuniones →',
@@ -289,7 +292,6 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
                             data-desc={e.descripcion ?? ''}
                             data-href={e.linkHref}
                             data-linktext={e.linkTexto}
-                            onclick="window.showCalEvent(this)"
                             title={`Clic para ver información: ${e.titulo}`}
                           >
                             <div
@@ -391,12 +393,7 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
               <span id="cal-m-tag" class="cal-modal__tag">
                 📢 Aviso Oficial
               </span>
-              <button
-                id="cal-m-close"
-                type="button"
-                class="cal-modal__close"
-                aria-label="Cerrar"
-              >
+              <button id="cal-m-close" type="button" class="cal-modal__close" aria-label="Cerrar">
                 ✕
               </button>
             </div>

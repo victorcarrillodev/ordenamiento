@@ -226,7 +226,10 @@ a {
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
 }
 .card--link:hover {
   transform: translateY(-2px);
@@ -268,13 +271,19 @@ a {
   animation: calFadeIn 150ms ease-out;
 }
 @keyframes calFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .cal-modal {
   background: #ffffff;
   border-radius: 14px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   max-width: 480px;
   width: 100%;
   padding: 24px;
@@ -282,8 +291,14 @@ a {
   animation: calScaleIn 150ms ease-out;
 }
 @keyframes calScaleIn {
-  from { transform: scale(0.96); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 .cal-modal__header {
   display: flex;
@@ -315,7 +330,9 @@ a {
   font-size: 16px;
   color: #64748b;
   cursor: pointer;
-  transition: background 120ms ease, color 120ms ease;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
 }
 .cal-modal__close:hover {
   background: #e2e8f0;

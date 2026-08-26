@@ -15,22 +15,6 @@ import { EstadisticasPage } from './estadisticas-page.tsx'
 import { CuentaPage } from './cuenta-page.tsx'
 import { DetallePage } from './detalle-page.tsx'
 
-const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-const MESES = [
-  'Enero',
-  'Febrero',
-  'Marzo',
-  'Abril',
-  'Mayo',
-  'Junio',
-  'Julio',
-  'Agosto',
-  'Septiembre',
-  'Octubre',
-  'Noviembre',
-  'Diciembre',
-]
-
 interface Stats {
   usuarios: number
   digitales: number

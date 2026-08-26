@@ -1,10 +1,4 @@
-import {
-  clientEntry,
-  css,
-  type Handle,
-  type RemixNode,
-  type SerializableProps,
-} from 'remix/ui'
+import { clientEntry, css, type Handle, type RemixNode, type SerializableProps } from 'remix/ui'
 
 export interface Sugerencia {
   colonia: string
@@ -102,13 +96,11 @@ export const DireccionAutocomplete = clientEntry(
           let itemsColonias: Sugerencia[] = []
           let itemsMunicipios: MunicipioSugerencia[] = []
           let activeIndex = -1
-          let activeTarget: HTMLInputElement | null = null
           let currentAbortController: AbortController | null = null
 
           function hideDropdown() {
             if (dropdown) dropdown.style.display = 'none'
             activeIndex = -1
-            activeTarget = null
             for (const inp of inputs) {
               inp.setAttribute('aria-expanded', 'false')
             }
