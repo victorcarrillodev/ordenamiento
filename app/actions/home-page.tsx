@@ -34,7 +34,7 @@ export interface HomePageProps {
 
 export function HomePage(handle: Handle<HomePageProps>) {
   return () => {
-    const theme = handle.props.theme;
+    const theme = handle.props.theme
     return (
       <Document>
         <div
@@ -90,11 +90,11 @@ const heroContentStyle = css({
 
 function HeroSection(handle: Handle<{ theme?: ThemeData }>) {
   return () => {
-    const { theme } = handle.props;
-    const u = theme?.usuario || {};
-    const c = u.colores || {};
-    const img = u.imagenes || {};
-    const txt = u.textos || {};
+    const { theme } = handle.props
+    const u = theme?.usuario || {}
+    const c = u.colores || {}
+    const img = u.imagenes || {}
+    const txt = u.textos || {}
 
     const rawImgs =
       Array.isArray(img.heroImagenes) && img.heroImagenes.length > 0
@@ -432,11 +432,11 @@ function HeroSection(handle: Handle<{ theme?: ThemeData }>) {
 
 function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
   return () => {
-    const { theme } = handle.props;
-    const u = theme?.usuario || {};
-    const c = u.colores || {};
-    const img = u.imagenes || {};
-    const txt = u.textos || {};
+    const { theme } = handle.props
+    const u = theme?.usuario || {}
+    const c = u.colores || {}
+    const img = u.imagenes || {}
+    const txt = u.textos || {}
 
     const primary = c.primario || colors.burgundy900
     const cintillo = txt.queEsCintillo || '¿Qué es este sitio?'
@@ -592,11 +592,11 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
 
 function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
   return () => {
-    const { theme } = handle.props;
-    const u = theme?.usuario || {};
-    const c = u.colores || {};
-    const ico = u.iconos || {};
-    const txt = u.textos || {};
+    const { theme } = handle.props
+    const u = theme?.usuario || {}
+    const c = u.colores || {}
+    const ico = u.iconos || {}
+    const txt = u.textos || {}
 
     const primary = c.primario || colors.burgundy900
     const secondary = c.secundario || colors.green700
@@ -1366,11 +1366,11 @@ function ParticipationCta() {
 
 function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
   return () => {
-    const { theme } = handle.props;
-    const u = theme?.usuario || {};
-    const c = u.colores || {};
-    const img = u.imagenes || {};
-    const txt = u.textos || {};
+    const { theme } = handle.props
+    const u = theme?.usuario || {}
+    const c = u.colores || {}
+    const img = u.imagenes || {}
+    const txt = u.textos || {}
 
     const footerBg = c.footerFondo || colors.gray950
     const footerText = c.footerTexto || '#ffffff'

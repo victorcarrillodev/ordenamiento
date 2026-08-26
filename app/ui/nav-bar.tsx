@@ -9,10 +9,10 @@ export interface NavBarProps {
 
 export function NavBar(handle: Handle<NavBarProps>) {
   return () => {
-    const theme = handle.props.theme;
-    const u = theme?.usuario || {};
-    const c = u.colores || {};
-    const img = u.imagenes || {};
+    const theme = handle.props.theme
+    const u = theme?.usuario || {}
+    const c = u.colores || {}
+    const img = u.imagenes || {}
 
     const navBg = c.navbarFondo || 'rgba(255,255,255,0.98)'
     const navText = c.navbarTexto || '#1a1d26'

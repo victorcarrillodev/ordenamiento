@@ -114,7 +114,7 @@ const logoFuter = css({
   height: '70px',
 })
 
-export function PoetdumPage(handle: Handle<{ theme?: any }>) {
+export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
   return () => {
     const theme = handle.props.theme
     return (
