@@ -56,6 +56,11 @@ function staticWithPrefix() {
     } else {
       const res = await publicStatic(context, noStaticFile)
       if (res) return res
+      if (basePath && !url.pathname.startsWith(basePath)) {
+        const targetUrl = new URL(context.request.url)
+        targetUrl.pathname = `${basePath}${url.pathname.startsWith('/') ? '' : '/'}${url.pathname}`
+        return Response.redirect(targetUrl, 302)
+      }
     }
     return next()
   }

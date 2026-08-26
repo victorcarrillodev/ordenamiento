@@ -73,13 +73,16 @@ function withSecurityHeaders(response: Response): Response {
   })
 }
 
+const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
+
 const server = http.createServer(
   createRequestListener(async (request: Request) => {
     try {
       const res = await router.fetch(request)
 
-      // Si la respuesta es exitosa o ya es HTML con estado de error, servir directamente
+      // Si la respuesta es exitosa, es una redirección, o ya es HTML con estado de error, servir directamente
       if (res) {
+        const isRedirect = res.status >= 300 && res.status < 400
         const isHtml = res.headers.get('content-type')?.includes('text/html')
         const isApiOrAsset =
           request.url.includes('/api/') ||
@@ -89,7 +92,7 @@ const server = http.createServer(
           request.url.includes('.png') ||
           request.url.includes('.svg')
 
-        if (res.ok || isHtml || isApiOrAsset) {
+        if (res.ok || isRedirect || isHtml || isApiOrAsset) {
           return withSecurityHeaders(res)
         }
       }
@@ -99,7 +102,7 @@ const server = http.createServer(
       const validStatus = [400, 401, 403, 404, 429, 500, 502, 503, 504].includes(status)
         ? status
         : 404
-      const errorUrl = new URL(`/ordena/error/${validStatus}`, request.url)
+      const errorUrl = new URL(`${basePath}/error/${validStatus}`, request.url)
       const errorRes = await router.fetch(new Request(errorUrl, request))
       if (errorRes) {
         return withSecurityHeaders(errorRes)
@@ -111,7 +114,7 @@ const server = http.createServer(
         console.error(error)
       }
       try {
-        const errorUrl = new URL('/ordena/error/500', request.url)
+        const errorUrl = new URL(`${basePath}/error/500`, request.url)
         const errorRes = await router.fetch(new Request(errorUrl, request))
         if (errorRes) return withSecurityHeaders(errorRes)
       } catch {
