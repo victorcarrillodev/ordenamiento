@@ -15,7 +15,9 @@ export default createController(adminRoutes.participacionNueva, {
     async index(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
-      return context.render(<NuevaPage user={user} />)
+      const url = new URL(context.request.url)
+      const registrado = url.searchParams.get('registrado') ?? undefined
+      return context.render(<NuevaPage user={user} folioRegistrado={registrado} />)
     },
 
     async action(context) {
@@ -61,7 +63,11 @@ export default createController(adminRoutes.participacionNueva, {
         )
       }
 
-      return redirect(adminRoutes.participaciones.href() + '?origen=fisica')
+      const created = (await response.json().catch(() => ({}))) as { folio?: string }
+      return redirect(
+        adminRoutes.participacionNueva.index.href() +
+          (created.folio ? `?registrado=${encodeURIComponent(created.folio)}` : ''),
+      )
     },
   },
 })

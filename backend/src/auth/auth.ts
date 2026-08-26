@@ -50,26 +50,27 @@ export async function verifySessionToken(token: string): Promise<number | null> 
 }
 
 export function sessionCookie(token: string): string {
+  const isProd = process.env.NODE_ENV === 'production'
   const attrs = [
     `ordenamiento_session=${encodeURIComponent(token)}`,
     'HttpOnly',
-    'Secure',
     'Path=/',
     'SameSite=Lax',
     `Max-Age=${MAX_AGE_SECONDS}`,
   ]
+  if (isProd) {
+    attrs.push('Secure')
+  }
   return attrs.join('; ')
 }
 
 export function clearSessionCookie(): string {
-  return [
-    'ordenamiento_session=',
-    'HttpOnly',
-    'Secure',
-    'Path=/',
-    'SameSite=Lax',
-    'Max-Age=0',
-  ].join('; ')
+  const isProd = process.env.NODE_ENV === 'production'
+  const attrs = ['ordenamiento_session=', 'HttpOnly', 'Path=/', 'SameSite=Lax', 'Max-Age=0']
+  if (isProd) {
+    attrs.push('Secure')
+  }
+  return attrs.join('; ')
 }
 
 export interface SessionUser {

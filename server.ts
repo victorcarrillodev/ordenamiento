@@ -8,15 +8,67 @@ const hmrProxyPort = process.env.HMR_PROXY_PORT
   ? Number.parseInt(process.env.HMR_PROXY_PORT, 10)
   : null
 
+function withSecurityHeaders(response: Response): Response {
+  const headers = new Headers(response.headers)
+
+  // HSTS largo (2 años con subdominios y preload) en producción o si viene por HTTPS
+  if (process.env.NODE_ENV === 'production') {
+    headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
+  }
+
+  // Prevenir clickjacking
+  if (!headers.has('X-Frame-Options')) {
+    headers.set('X-Frame-Options', 'SAMEORIGIN')
+  }
+
+  // Prevenir MIME type sniffing
+  if (!headers.has('X-Content-Type-Options')) {
+    headers.set('X-Content-Type-Options', 'nosniff')
+  }
+
+  // Referrer Policy
+  if (!headers.has('Referrer-Policy')) {
+    headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  }
+
+  // Permissions Policy
+  if (!headers.has('Permissions-Policy')) {
+    headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)')
+  }
+
+  // Content Security Policy (CSP)
+  if (!headers.has('Content-Security-Policy')) {
+    const cspDirectives = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://unpkg.com",
+      "connect-src 'self' http://localhost:* ws://localhost:* ws: wss:",
+      "frame-ancestors 'self'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ]
+    headers.set('Content-Security-Policy', cspDirectives.join('; '))
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
+}
+
 const server = http.createServer(
-  createRequestListener(async (request) => {
+  createRequestListener(async (request: Request) => {
     try {
-      return await router.fetch(request)
+      const res = await router.fetch(request)
+      return withSecurityHeaders(res)
     } catch (error) {
       if (!(request.signal.aborted && error === request.signal.reason)) {
         console.error(error)
       }
-      return errorPage('500')
+      return withSecurityHeaders(errorPage('500'))
     }
   }),
 )

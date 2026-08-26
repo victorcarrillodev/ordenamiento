@@ -36,6 +36,7 @@ export interface FormErrors {
 export interface ParticipationPageProps {
   errors?: FormErrors
   success?: boolean
+  folio?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -119,15 +120,17 @@ const imageOverlayStyle = css({
 
 const imageCaptionStyle = css({
   position: 'absolute',
+  bottom: '40px',
   left: '40px',
   right: '40px',
-  bottom: '48px',
-  color: colors.white,
+  color: '#ffffff',
 })
 
 const formPanelStyle = css({
   flex: '1 1 60%',
   display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
   justifyContent: 'center',
   padding: `calc(${NAVBAR_HEIGHT} + 28px) 32px 32px`,
 })
@@ -142,7 +145,7 @@ const formShellStyle = css({
 
 export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
   return () => {
-    const { errors = {}, success = false } = handle.props
+    const { errors = {}, success = false, folio } = handle.props
 
     return (
       <Document
@@ -183,7 +186,7 @@ export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
 
           <div mix={formPanelStyle}>
             <div mix={formShellStyle}>
-              {success ? <SuccessMessage /> : <ParticipationForm errors={errors} />}
+              {success ? <SuccessMessage folio={folio} /> : <ParticipationForm errors={errors} />}
             </div>
           </div>
         </div>
@@ -193,64 +196,208 @@ export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
 }
 
 // ---------------------------------------------------------------------------
-// Success message
+// Success message (Acuse Oficial de Recepción Ciudadana)
 // ---------------------------------------------------------------------------
 
-function SuccessMessage() {
-  return () => (
-    <div
-      mix={css({
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        gap: '20px',
-      })}
-    >
+function SuccessMessage(handle: Handle<{ folio?: string }>) {
+  return () => {
+    const { folio } = handle.props
+
+    // Fecha y hora formateada en tiempo real de México
+    const fechaHoraMex = new Intl.DateTimeFormat('es-MX', {
+      timeZone: 'America/Mexico_City',
+      dateStyle: 'full',
+      timeStyle: 'medium',
+    }).format(new Date())
+
+    return (
       <div
-        aria-hidden="true"
         mix={css({
-          width: '64px',
-          height: '64px',
-          borderRadius: '50%',
-          background: colors.green100,
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '30px',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          gap: '18px',
         })}
       >
-        ✅
+        <div
+          mix={css({
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+          })}
+        >
+          <div
+            aria-hidden="true"
+            mix={css({
+              width: '52px',
+              height: '52px',
+              borderRadius: '50%',
+              background: colors.green100,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '24px',
+              flex: 'none',
+            })}
+          >
+            ✅
+          </div>
+          <div>
+            <span
+              mix={css({
+                fontFamily: FONT_STACK,
+                fontSize: '11px',
+                fontWeight: 700,
+                color: colors.gold500,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+              })}
+            >
+              Gobierno de San Pedro Tlaquepaque
+            </span>
+            <h1
+              mix={css({
+                fontFamily: FONT_STACK,
+                fontSize: 'clamp(20px, 2.5vw, 24px)',
+                fontWeight: 800,
+                color: colors.gray900,
+                margin: '2px 0 0',
+              })}
+            >
+              Acuse Oficial de Recepción Ciudadana
+            </h1>
+          </div>
+        </div>
+
+        {/* Tarjeta de Folio y Sello */}
+        <div
+          mix={css({
+            background: '#f8fafc',
+            border: '1px solid #cbd5e1',
+            borderRadius: '12px',
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+          })}
+        >
+          <div
+            mix={css({
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '8px',
+              paddingBottom: '12px',
+              borderBottom: '1px solid #e2e8f0',
+            })}
+          >
+            <span
+              mix={css({
+                fontFamily: FONT_STACK,
+                fontSize: '12px',
+                fontWeight: 700,
+                color: colors.gray500,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              })}
+            >
+              Folio Único de Seguimiento
+            </span>
+            <span
+              mix={css({
+                fontFamily: FONT_STACK,
+                fontSize: '18px',
+                fontWeight: 800,
+                color: colors.burgundy900,
+                background: colors.burgundy100,
+                padding: '4px 12px',
+                borderRadius: '6px',
+                letterSpacing: '0.04em',
+              })}
+            >
+              {folio || 'REG-OFICIAL'}
+            </span>
+          </div>
+
+          <div mix={css({ fontSize: '13px', color: colors.gray700, lineHeight: 1.5 })}>
+            <div>
+              <strong>Fecha y hora oficial de recepción:</strong> {fechaHoraMex}
+            </div>
+            <div mix={css({ marginTop: '4px' })}>
+              <strong>Modalidad:</strong> Participación Digital Ciudadana (POETDUM)
+            </div>
+          </div>
+        </div>
+
+        {/* Fundamentación Jurídica y Protección de Datos */}
+        <div
+          mix={css({
+            background: '#f0fdf4',
+            border: '1px solid #bbf7d0',
+            borderRadius: '10px',
+            padding: '14px 16px',
+            fontSize: '12.5px',
+            lineHeight: 1.55,
+            color: '#166534',
+          })}
+        >
+          <p mix={css({ margin: 0, fontWeight: 600 })}>
+            🔒 <strong>Protección de Datos Personales (LGPDPPSO):</strong>
+          </p>
+          <p mix={css({ margin: '4px 0 0' })}>
+            Su aportación ha sido recibida y registrada exitosamente en el sistema de la Bitácora
+            Ambiental. Conforme a la Ley General de Protección de Datos Personales en Posesión de
+            Sujetos Obligados, su información será tratada con estricta reserva y utilizada
+            únicamente para el análisis técnico del ordenamiento territorial de San Pedro
+            Tlaquepaque.
+          </p>
+        </div>
+
+        {/* Botones de Acción y Limpieza */}
+        <div
+          mix={css({
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '12px',
+            marginTop: '8px',
+          })}
+        >
+          <a
+            href={routes.participation.index.href()}
+            mix={css({
+              ...btnPrimaryProps,
+              background: colors.burgundy900,
+              textDecoration: 'none',
+              textAlign: 'center',
+            })}
+          >
+            + Registrar otra participación
+          </a>
+          <a
+            href={routes.home.href()}
+            mix={css({
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '10px 18px',
+              fontFamily: FONT_STACK,
+              fontSize: '13.5px',
+              fontWeight: 600,
+              color: colors.gray700,
+              background: '#f1f5f9',
+              borderRadius: '8px',
+              textDecoration: 'none',
+              transition: 'background 150ms ease',
+              '&:hover': { background: '#e2e8f0' },
+            })}
+          >
+            Volver al inicio
+          </a>
+        </div>
       </div>
-      <h1
-        mix={css({
-          fontFamily: FONT_STACK,
-          fontSize: 'clamp(24px, 3vw, 30px)',
-          fontWeight: 700,
-          color: colors.green700,
-          margin: 0,
-        })}
-      >
-        ¡Participación registrada con éxito!
-      </h1>
-      <p
-        mix={css({
-          fontFamily: FONT_STACK,
-          fontSize: '15px',
-          lineHeight: 1.65,
-          color: colors.gray500,
-          margin: 0,
-          maxWidth: '480px',
-        })}
-      >
-        Tu registro ha sido recibido correctamente. El equipo técnico revisará tu aportación en el
-        contexto del Programa de Ordenamiento Territorial. Gracias por contribuir al futuro de San
-        Pedro Tlaquepaque.
-      </p>
-      <a href={routes.home.href()} mix={css({ ...btnPrimaryProps, marginTop: '4px' })}>
-        Volver al portal
-      </a>
-    </div>
-  )
+    )
+  }
 }
 
 // ---------------------------------------------------------------------------

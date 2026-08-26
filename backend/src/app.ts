@@ -433,11 +433,16 @@ export async function handleRequest(request: Request): Promise<Response> {
       FROM attachments
       WHERE id = ${Number(attachMatch.aid)} AND participation_id = ${Number(attachMatch.id)}
     `
-    if (rows.length === 0) return json({ error: 'Archivo no encontrado' }, 404)
     // Resuelve rutas relativas contra UPLOAD_DIR (datos viejos la guardaron relativa)
     const ruta = isAbsolute(rows[0].ruta_local)
       ? rows[0].ruta_local
       : join(UPLOAD_DIR, rows[0].ruta_local)
+
+    // Guard de archivos: validación estricta de ruta contra path traversal
+    if (!ruta.startsWith(UPLOAD_DIR) && !ruta.startsWith(BRANDING_DIR)) {
+      return json({ error: 'Acceso a archivo no autorizado' }, 403)
+    }
+
     let file: Buffer
     try {
       file = await readFile(ruta)
@@ -447,7 +452,8 @@ export async function handleRequest(request: Request): Promise<Response> {
     const isDownload = url.searchParams.get('download') === '1'
     // Servido seguro: MIME derivado de la extensión whitelist (nunca el
     // declarado en la subida), descarga forzada salvo formatos inertes,
-    // nosniff y filename saneado contra inyección de cabeceras.
+    // nosniff y filename saneado contra inyección de cabeceras (incluye
+    // CR/LF y comillas, cubriendo el cleanFilename del guard previo).
     const ext = getExtension(rows[0].nombre_original || rows[0].ruta_local)
     const mime = canonicalMimeFor(ext) ?? 'application/octet-stream'
     const disposition = isDownload || !shouldServeInline(ext) ? 'attachment' : 'inline'
