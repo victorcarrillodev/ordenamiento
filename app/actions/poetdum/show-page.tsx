@@ -2,6 +2,7 @@ import { Document } from '../document.tsx'
 import { NavBar } from '../../components/Nav/NavBar.tsx'
 import { css, type Handle } from 'remix/ui'
 import { Mapa } from '../../components/Map/Mapa.tsx'
+import Button1 from '../../components/Button/Button.tsx';
 const title = css({
   margin: '5rem',
   textAlign: 'center',
@@ -142,6 +143,7 @@ export function PoetdumPage(handle: Handle<{ theme?: any }>) {
         <br />
 
         <main>
+      
           <h1 mix={title}>ELABORACIÓN DEL POETDUM</h1>
           <div>
             <div mix={containerMap}>
@@ -233,6 +235,12 @@ export function PoetdumPage(handle: Handle<{ theme?: any }>) {
               <strong>© Copyright 2026 Todos los Derechos Reservados | Aviso de privacidad</strong>
             </p>
           </section>
+          <p>contained</p>
+          <Button1 data={"mamese"} type={"contained"}/>
+          <p>autlend</p>
+          <Button1 data={"mamese"} type={"outlend"}/>
+          <p>text</p>
+          <Button1 data={"mamese"} type={"text"}/>
         </main>
       </Document>
     )
