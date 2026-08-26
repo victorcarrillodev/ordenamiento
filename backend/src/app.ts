@@ -31,12 +31,7 @@ import {
 import { seedRootAdmin, seedExtraAdmins } from './seed.ts'
 import { seedDemoData } from './seed-demo.ts'
 import { migrate } from './db/migrate.ts'
-<<<<<<< HEAD
 import { handleCreateParticipation } from './routes/participations.ts'
-=======
-import { ingestParticipation, type IngestFile } from './services/ingest.ts'
-import { nextFolio } from './services/folio.ts'
->>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
 import {
   deleteParticipation,
   getParticipation,
