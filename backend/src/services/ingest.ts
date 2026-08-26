@@ -1,3 +1,4 @@
+import type { Sql } from 'postgres'
 import { sql } from '../db/pool.ts'
 import { chunkText } from '../text/chunk.ts'
 import { extractPdfText, TextLayerMissingError } from '../text/pdf-extract.ts'
@@ -28,16 +29,27 @@ export interface IngestFile {
  * Cada sección se convierte en chunks con embedding TF-IDF 512D.
  */
 export async function ingestParticipation(
-  participationId: number,
-  fields: Record<string, string>,
-  files?: IngestFile[],
+  dbOrParticipationId: Sql | number,
+  participationIdOrFields: number | Record<string, string>,
+  maybeFieldsOrFiles?: Record<string, string> | IngestFile[],
+  maybeFiles?: IngestFile[],
 ): Promise<IngestResult> {
+  const isDb = typeof dbOrParticipationId === 'function' && 'unsafe' in dbOrParticipationId
+  const db: Sql = isDb ? (dbOrParticipationId as Sql) : sql
+  const participationId = isDb
+    ? (participationIdOrFields as number)
+    : (dbOrParticipationId as number)
+  const fields = isDb
+    ? (maybeFieldsOrFiles as Record<string, string>)
+    : (participationIdOrFields as Record<string, string>)
+  const files = isDb ? maybeFiles : (maybeFieldsOrFiles as IngestFile[] | undefined)
+
   let chunks = 0
   let needsOcr = false
 
   // 1) Adjuntos: guardar registro + vectorizar si es PDF
   for (const file of files ?? []) {
-    await sql`--sql
+    await db`--sql
       INSERT INTO attachments (participation_id, nombre_original, mime, size, ruta_local)
       VALUES (
         ${participationId},
@@ -68,21 +80,21 @@ export async function ingestParticipation(
 
     if (text) {
       for (const chunk of chunkText(text)) {
-        await insertChunk(participationId, chunk.position, chunk.content)
+        await insertChunk(db, participationId, chunk.position, chunk.content)
         chunks++
       }
     }
   }
 
   // 2) Campos del formulario (siempre)
-  const formText = Object.entries(fields)
+  const formText = Object.entries(fields ?? {})
     .filter(([, v]) => v && v.trim())
     .map(([k, v]) => `${k}: ${v}`)
     .join('\n')
 
   if (formText) {
     for (const chunk of chunkText(formText, 512)) {
-      await insertChunk(participationId, chunks + chunk.position, chunk.content)
+      await insertChunk(db, participationId, chunks + chunk.position, chunk.content)
       chunks++
     }
   }
@@ -90,11 +102,11 @@ export async function ingestParticipation(
   return { chunks, needsOcr }
 }
 
-async function insertChunk(participationId: number, position: number, content: string) {
+async function insertChunk(db: Sql, participationId: number, position: number, content: string) {
   const terms = [...new Set(tokenize(content))]
   const idfWeights = await getIdfMap(terms)
   const vector = featurizeWeighted(content, idfWeights)
-  await sql`--sql
+  await db`--sql
     INSERT INTO participation_chunks (participation_id, position, content, embedding)
     VALUES (${participationId}, ${position}, ${content}, ${toVectorLiteral(vector)}::vector)
   `

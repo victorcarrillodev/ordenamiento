@@ -6,6 +6,7 @@ export const routes = route({
   assets: get(`${basePath}/assets/*path`),
   home: `${basePath}`,
   homeSlash: `${basePath}/`,
+  colonias: get(`${basePath}/api/colonias`),
   login: form(`${basePath}/login`),
   logout: post(`${basePath}/logout`),
   participation: form(`${basePath}/participation`),

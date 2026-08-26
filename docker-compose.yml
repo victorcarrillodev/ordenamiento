@@ -31,7 +31,11 @@ services:
     # OOM-pee al host entero (la BD y el proxy viven en la misma máquina).
     mem_limit: 1g
     healthcheck:
-      test: ['CMD-SHELL', 'bun -e "fetch(`http://127.0.0.1:5920/api/health`).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      test:
+        [
+          'CMD-SHELL',
+          'bun -e "fetch(`http://127.0.0.1:5920/api/health`).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -53,6 +57,8 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       MAIL_FROM: ${MAIL_FROM:-}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}
+      MAX_UPLOAD_FILES: ${MAX_UPLOAD_FILES:-5}
     volumes:
       - uploads:/app/uploads
       # Cuentas admin extra (ej. la de Leo). Copia backend/seed-admins.example.json
@@ -80,6 +86,8 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       MAIL_FROM: ${MAIL_FROM:-}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}
+      MAX_UPLOAD_FILES: ${MAX_UPLOAD_FILES:-5}
     ports:
       # Compatible con la configuración de Apache (43100) y acceso directo (44100)
       - '127.0.0.1:43100:44100'

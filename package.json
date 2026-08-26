@@ -9,6 +9,7 @@
     "test": "NODE_ENV=test vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "build:catalogo": "node --import remix/node-tsx scripts/build-catalogo.ts",
     "format:check": "prettier --check .",
     "format": "prettier --write ."
   },

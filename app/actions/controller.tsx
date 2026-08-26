@@ -3,7 +3,9 @@ import { createController } from 'remix/router'
 
 import { assetServer } from '../assets.ts'
 import { getPublicTheme, logoutBackend } from '../backend.ts'
+import { cargarCatalogo } from '../data/colonias.ts'
 import { routes } from '../routes.ts'
+import { buscarColonias, buscarMunicipios } from '../utils/colonias-search.ts'
 import { HomePage } from './home-page.tsx'
 
 export default createController(routes, {
@@ -20,6 +22,34 @@ export default createController(routes, {
     async homeSlash(context) {
       const theme = await getPublicTheme(context.request)
       return context.render(<HomePage theme={theme} />)
+    },
+    /** Endpoint de búsqueda y sugerencias de colonias y municipios de Jalisco para autocomplete */
+    async colonias(context) {
+      const url = new URL(context.request.url)
+      const q = url.searchParams.get('q') ?? ''
+      const tipo = url.searchParams.get('tipo') ?? 'colonia'
+      const municipio = url.searchParams.get('municipio') ?? undefined
+
+      const catalogo = await cargarCatalogo()
+
+      if (tipo === 'municipio') {
+        const items = buscarMunicipios(catalogo, q, 10)
+        return Response.json(
+          { items },
+          {
+            headers: { 'cache-control': 'public, max-age=3600' },
+          },
+        )
+      }
+
+      const items = buscarColonias(catalogo, { q, municipio, limite: 10 })
+
+      return Response.json(
+        { items },
+        {
+          headers: { 'cache-control': 'public, max-age=3600' },
+        },
+      )
     },
     /**
      * El botón "Cerrar sesión" del panel admin solo enlazaba a /login sin

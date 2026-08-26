@@ -167,13 +167,20 @@ export default createController(adminRoutes, {
       )
       if (!response.ok) return new Response('Not Found', { status: response.status })
 
-      return new Response(response.body, {
-        headers: {
-          'content-type': response.headers.get('content-type') ?? 'application/octet-stream',
-          'content-disposition':
-            response.headers.get('content-disposition') ?? (download ? 'attachment' : 'inline'),
-        },
-      })
+      const headers = new Headers()
+      for (const h of [
+        'content-type',
+        'content-disposition',
+        'x-content-type-options',
+        'content-security-policy',
+        'cross-origin-resource-policy',
+      ]) {
+        const v = response.headers.get(h)
+        if (v) headers.set(h, v)
+      }
+      if (!headers.has('content-disposition')) headers.set('content-disposition', 'attachment')
+
+      return new Response(response.body, { headers })
     },
 
     async estadisticas(context) {

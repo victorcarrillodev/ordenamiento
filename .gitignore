@@ -16,3 +16,6 @@ package-lock.json
 .env
 .env.*
 !.env.example
+
+# Catálogo SEPOMEX generado en build (la licencia prohíbe redistribuir en repo)
+app/data/colonias.json

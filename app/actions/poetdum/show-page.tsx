@@ -1,7 +1,7 @@
 import { Document } from '../document.tsx'
-import { NavBar } from '../../components/NavBar.tsx'
+import { NavBar } from '../../ui/nav-bar.tsx'
 import { css, type Handle } from 'remix/ui'
-import { Mapa } from '../../components/Mapa.tsx'
+import { Mapa } from './public/mapa.tsx'
 import type { ThemeData } from '../../ui/civic-horizon.ts'
 
 export interface PoetdumPageProps {

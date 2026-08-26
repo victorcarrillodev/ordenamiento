@@ -6,33 +6,25 @@
  *   routes.participation.index  → GET  /participation
  *   routes.participation.action → POST /participation
  */
-import { email, minLength } from 'remix/data-schema/checks'
+import { randomBytes } from 'node:crypto'
+import {
+  parseFormData,
+  MaxFileSizeExceededError,
+  MaxFilesExceededError,
+  type FileUpload,
+} from 'remix/form-data-parser'
+import { createFsFileStorage } from 'remix/file-storage/fs'
 import * as s from 'remix/data-schema'
-import * as f from 'remix/data-schema/form-data'
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
 import { BACKEND_URL } from '../../backend.ts'
 import { routes } from '../../routes.ts'
-import { ParticipationPage, type FormErrors } from './page.tsx'
+import { MAX_FILE_BYTES, MAX_FILES, MAX_TOTAL_BYTES } from '../../utils/uploads.ts'
+import { ParticipationPage } from './page.tsx'
+import { errorMap, participationSchema, toFormErrors, type FormErrors } from './schema.ts'
 
-// ---------------------------------------------------------------------------
-// Validation schema
-// ---------------------------------------------------------------------------
-
-const participationSchema = f.object({
-  nombre: f.field(s.string().pipe(minLength(2))),
-  email: f.field(s.string().pipe(email())),
-  domicilio: f.field(s.defaulted(s.string(), '')),
-  municipio: f.field(s.string().pipe(minLength(2))),
-  institucion: f.field(s.defaulted(s.string(), '')),
-  observacion: f.field(s.string().pipe(minLength(10))),
-  consentimiento: f.field(s.defaulted(s.string(), '')),
-})
-
-// ---------------------------------------------------------------------------
-// Controller
-// ---------------------------------------------------------------------------
+const tmpStorage = createFsFileStorage('./tmp/uploads')
 
 export default createController(routes.participation, {
   actions: {
@@ -44,103 +36,125 @@ export default createController(routes.participation, {
       return context.render(<ParticipationPage success={success} folio={folio} />)
     },
 
-    /** POST /participation — validate, persist al backend, y redirige o re-renderiza con errores */
+    /** POST /participation — streaming upload a tmp, validación y persistencia atómica */
     async action(context) {
-      const formData = await context.request.formData()
+      const storedKeys: string[] = []
 
-      const parsed = s.parseSafe(participationSchema, formData, {
-        errorMap(ctx) {
-          const field = ctx.path?.[0]
-          if (ctx.code === 'string.min_length') {
-            if (field === 'nombre') return 'El nombre debe tener al menos 2 caracteres'
-            if (field === 'municipio') return 'Indica tu colonia o municipio'
-            if (field === 'observacion') return 'La observación debe tener al menos 10 caracteres'
-          }
-          if (ctx.code === 'string.email' || ctx.code === 'string.format') {
-            return 'Ingresa un correo electrónico válido'
-          }
-          if (ctx.code === 'type.string') {
-            return 'Este campo es obligatorio'
-          }
-        },
-      })
-
-      if (!parsed.success) {
-        // Build a flat errors map from schema issues
-        const errors: FormErrors = {}
-        for (const issue of parsed.issues ?? []) {
-          const key = issue.path?.[0] as keyof FormErrors | undefined
-          if (key && !errors[key]) {
-            errors[key] = issue.message
-          }
+      async function uploadHandler(fileUpload: FileUpload) {
+        if (fileUpload.fieldName === 'archivos') {
+          const key = `${Date.now()}-${randomBytes(4).toString('hex')}-${fileUpload.name}`
+          storedKeys.push(key)
+          return tmpStorage.put(key, fileUpload)
         }
-        return context.render(<ParticipationPage errors={errors} />, { status: 422 })
       }
 
-      // Enviar al backend para persistir y vectorizar (origen digital, público)
-      const body = new FormData()
-      body.set('origen', 'digital')
-      body.set('nombre', parsed.value.nombre)
-      body.set('correo', parsed.value.email)
-      body.set('municipio', parsed.value.municipio)
-      body.set('colonia', parsed.value.municipio)
-      body.set('calle', parsed.value.domicilio)
-      body.set('institucion', parsed.value.institucion)
-      body.set('observacion', parsed.value.observacion)
-
-      // Adjuntos: el input acepta varios archivos; se reenvían todos al
-      // backend con su nombre de campo original.
-      const adjuntos = formData.getAll('archivos').filter(
-        (entry): entry is File => entry instanceof File && entry.size > 0,
-      )
-      for (const adjunto of adjuntos) {
-        body.append('pdf', adjunto, adjunto.name)
-      }
-
-      let createdFolio = ''
-      let backendOk = false
-      let backendError: string | undefined
       try {
-        const response = await fetch(`${BACKEND_URL}/api/participations`, {
-          method: 'POST',
-          body,
-        })
-        backendOk = response.ok
-<<<<<<< HEAD
-        if (backendOk) {
-          const resData = (await response.json().catch(() => ({}))) as { folio?: string }
-          createdFolio = resData.folio ?? ''
-=======
-        if (!response.ok) {
-          // Propaga el motivo real (p. ej. "Archivo rechazado: ...") para que
-          // el ciudadano vea por qué falló en vez de un genérico.
-          const data = (await response.json().catch(() => ({}))) as { error?: string }
-          backendError = data.error
->>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
+        let formData: FormData
+        try {
+          formData = await parseFormData(
+            context.request,
+            {
+              maxFiles: MAX_FILES,
+              maxFileSize: MAX_FILE_BYTES,
+              maxTotalSize: MAX_TOTAL_BYTES,
+            },
+            uploadHandler,
+          )
+        } catch (error) {
+          if (error instanceof MaxFilesExceededError) {
+            return context.render(
+              <ParticipationPage
+                errors={{ archivos: `Máximo ${MAX_FILES} archivos por participación` }}
+              />,
+              { status: 413 },
+            )
+          }
+          if (error instanceof MaxFileSizeExceededError) {
+            return context.render(
+              <ParticipationPage
+                errors={{
+                  archivos: `Uno de los archivos excede el límite de ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB`,
+                }}
+              />,
+              { status: 413 },
+            )
+          }
+          throw error
         }
-      } catch {
-        // Si la red falló, backendOk queda en false
-      }
 
-      if (!backendOk) {
-        return context.render(
-          <ParticipationPage
-            errors={{
-              archivos: backendError,
-              observacion: backendError
-                ? undefined
-                : 'No se pudo registrar. Verifica que el servicio esté activo e inténtalo de nuevo.',
-            }}
-          />,
-          { status: 502 },
-        )
-      }
+        const parsed = s.parseSafe(participationSchema, formData, { errorMap })
 
-      // Redirect a GET con indicador de éxito y folio oficial
-      const successUrl = new URL(routes.participation.index.href(), 'http://localhost')
-      successUrl.searchParams.set('success', '1')
-      if (createdFolio) successUrl.searchParams.set('folio', createdFolio)
-      return redirect(successUrl.pathname + successUrl.search)
+        if (!parsed.success) {
+          const errors: FormErrors = toFormErrors(parsed.issues)
+          return context.render(<ParticipationPage errors={errors} />, { status: 422 })
+        }
+
+        // Enviar al backend para persistir y vectorizar (origen digital, público)
+        const body = new FormData()
+        body.set('origen', 'digital')
+        body.set('nombre', parsed.value.nombre)
+        body.set('correo', parsed.value.email)
+        body.set('calle', parsed.value.calle)
+        body.set('colonia', parsed.value.colonia)
+        body.set('municipio', parsed.value.municipio)
+        body.set('codigo_postal', parsed.value.cp)
+        body.set('direccion_origen', parsed.value.direccion_origen)
+        body.set('institucion', parsed.value.institucion)
+        body.set('observacion', parsed.value.observacion)
+        body.set('consentimiento', '1')
+        body.set('consentimiento_version', 'lgpdppso-2026-01')
+
+        // Adjuntos: reenviar todos los archivos procesados
+        const adjuntos = formData
+          .getAll('archivos')
+          .filter((entry): entry is File => entry instanceof File && entry.size > 0)
+        for (const adjunto of adjuntos) {
+          body.append('archivos', adjunto, adjunto.name)
+        }
+
+        let backendOk = false
+        let backendError: string | undefined
+        let createdFolio = ''
+        try {
+          const response = await fetch(`${BACKEND_URL}/api/participations`, {
+            method: 'POST',
+            body,
+          })
+          backendOk = response.ok
+          if (response.ok) {
+            const data = (await response.json().catch(() => ({}))) as { folio?: string }
+            createdFolio = data.folio ?? ''
+          } else {
+            const data = (await response.json().catch(() => ({}))) as { error?: string }
+            backendError = data.error
+          }
+        } catch {
+          // Si la red falló, backendOk queda en false
+        }
+
+        if (!backendOk) {
+          return context.render(
+            <ParticipationPage
+              errors={{
+                archivos: backendError,
+                observacion: backendError
+                  ? undefined
+                  : 'No se pudo registrar. Verifica que el servicio esté activo e inténtalo de nuevo.',
+              }}
+            />,
+            { status: 502 },
+          )
+        }
+
+        // Redirect a GET con indicador de éxito
+        const successUrl = new URL(routes.participation.index.href(), 'http://localhost')
+        successUrl.searchParams.set('success', '1')
+        if (createdFolio) successUrl.searchParams.set('folio', createdFolio)
+        return redirect(successUrl.pathname + successUrl.search)
+      } finally {
+        // Limpieza de archivos temporales en disco
+        await Promise.allSettled(storedKeys.map((k) => tmpStorage.remove(k)))
+      }
     },
   },
 })

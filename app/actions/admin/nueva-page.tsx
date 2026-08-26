@@ -2,41 +2,12 @@ import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Field, TextArea } from '../../ui/form/field.tsx'
 
 export interface NuevaPageProps {
   user: { name: string; role: string }
   error?: string
   folioRegistrado?: string
-}
-
-interface CampoProps {
-  label: string
-  name: string
-  value?: string
-  required?: boolean
-  placeholder?: string
-  wide?: boolean
-}
-
-function Campo(handle: Handle<CampoProps>) {
-  return () => {
-    const { label, name, value, required, placeholder, wide } = handle.props
-    return (
-      <div class={'form-field' + (wide ? ' form-field--wide' : '')}>
-        <label for={name}>
-          {label} {required ? <span class="req">*</span> : null}
-        </label>
-        <input
-          id={name}
-          name={name}
-          type="text"
-          value={value}
-          required={required}
-          placeholder={placeholder}
-        />
-      </div>
-    )
-  }
 }
 
 export function NuevaPage(handle: Handle<NuevaPageProps>) {
@@ -71,41 +42,63 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
             ⚠️ Llena todos los campos a continuación para registrar su participación
           </div>
 
-          <div class="form-field">
-            <label for="folio">Folio</label>
-            <input id="folio" name="folio" value="Se genera automáticamente" readonly />
-          </div>
+          <Field
+            label="Folio"
+            name="folio"
+            value="Se genera automáticamente"
+            readOnly
+            appearance="admin"
+          />
 
           <div class="form-grid">
-            <Campo
+            <Field
               label="Nombre completo"
               name="nombre"
               required
               placeholder="Ej. María González López"
+              appearance="admin"
             />
-            <Campo label="Correo" name="correo" required placeholder="correo@ejemplo.com" />
-            <Campo
+            <Field
+              label="Correo"
+              name="correo"
+              type="email"
+              required
+              placeholder="correo@ejemplo.com"
+              appearance="admin"
+            />
+            <Field
               label="Domicilio de quien participa"
               name="domicilio"
               placeholder="Calle, colonia, municipio"
+              appearance="admin"
             />
-            <Campo label="Municipio" name="municipio" value="Tlaquepaque" />
-            <Campo label="Institución o empresa" name="institucion" />
-            <Campo label="Ocupación o puesto" name="ocupacion" />
+            <Field label="Municipio" name="municipio" value="Tlaquepaque" appearance="admin" />
+            <Field label="Institución o empresa" name="institucion" appearance="admin" />
+            <Field label="Ocupación o puesto" name="ocupacion" appearance="admin" />
           </div>
 
           <h3 class="form-card__section">Domicilio del aporte:</h3>
           <div class="form-grid">
-            <Campo label="Calle" name="calle" required />
-            <Campo label="Número" name="numero" />
-            <Campo label="Colonia" name="colonia" required />
-            <Campo label="Municipio" name="municipio_aporte" value="Tlaquepaque" />
+            <Field label="Calle" name="calle" required appearance="admin" />
+            <Field label="Número" name="numero" appearance="admin" />
+            <Field label="Colonia" name="colonia" required appearance="admin" />
+            <Field
+              label="Municipio"
+              name="municipio_aporte"
+              value="Tlaquepaque"
+              appearance="admin"
+            />
           </div>
 
           <h3 class="form-card__section">¿Cómo obtener las coordenadas? ⓘ</h3>
           <div class="form-grid">
-            <Campo label="Coordenadas latitud" name="latitud" value="20.659" />
-            <Campo label="Coordenadas longitud" name="longitud" value="-103.349" />
+            <Field label="Coordenadas latitud" name="latitud" value="20.659" appearance="admin" />
+            <Field
+              label="Coordenadas longitud"
+              name="longitud"
+              value="-103.349"
+              appearance="admin"
+            />
           </div>
 
           <div class="form-field form-field--wide">
@@ -119,12 +112,14 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
             <span class="form-hint">Archivo: PDF, SHP, JPG, DWG, Word, Excel, formato abierto</span>
           </div>
 
-          <div class="form-field form-field--wide">
-            <label for="observacion">
-              Observaciones <span class="req">*</span>
-            </label>
-            <textarea id="observacion" name="observacion" rows={4} required></textarea>
-          </div>
+          <TextArea
+            label="Observaciones"
+            name="observacion"
+            rows={4}
+            required
+            wide
+            appearance="admin"
+          />
 
           <div class="form-field form-field--wide">
             <label>Clasificación</label>
@@ -161,13 +156,13 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
 
           <p class="form-hint">Los campos marcados con (*) son obligatorios</p>
 
-          <div class="btn-row-admin">
-            <a class="btn btn--ghost" href={`${adminRoutes.participaciones.href()}?origen=fisica`}>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              Guardar participación
+            </button>
+            <a href={adminRoutes.participaciones.href()} class="btn btn-secondary">
               Cancelar
             </a>
-            <button type="submit" class="btn btn--dark">
-              Registrar participación
-            </button>
           </div>
         </form>
       </AdminLayout>
