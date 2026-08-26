@@ -225,7 +225,6 @@ export const DireccionAutocomplete = clientEntry(
 
             const q = target.value.trim()
             const name = target.name
-            activeTarget = target
 
             if (inputOrigen) inputOrigen.value = 'manual'
 
