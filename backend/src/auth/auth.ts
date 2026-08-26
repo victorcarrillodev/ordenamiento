@@ -66,23 +66,12 @@ export function sessionCookie(token: string): string {
 }
 
 export function clearSessionCookie(): string {
-<<<<<<< HEAD
   const isProd = process.env.NODE_ENV === 'production'
   const attrs = ['ordenamiento_session=', 'HttpOnly', 'Path=/', 'SameSite=Lax', 'Max-Age=0']
   if (isProd) {
     attrs.push('Secure')
   }
   return attrs.join('; ')
-=======
-  return [
-    'ordenamiento_session=',
-    'HttpOnly',
-    'Secure',
-    'Path=/',
-    'SameSite=Lax',
-    'Max-Age=0',
-  ].join('; ')
->>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
 }
 
 export interface SessionUser {

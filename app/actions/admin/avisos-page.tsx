@@ -427,7 +427,6 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
             </div>
           </div>
         </div>
-
       </AdminLayout>
     )
   }

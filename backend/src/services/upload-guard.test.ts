@@ -39,13 +39,7 @@ describe('validateUpload', () => {
   })
 
   it('rechaza extensiones fuera de la whitelist', () => {
-<<<<<<< HEAD
     expect(validateUpload({ filename: 'datos.xyz', buffer: Buffer.alloc(10, 1) }).ok).toBe(false)
-=======
-    expect(
-      validateUpload({ filename: 'datos.xyz', buffer: Buffer.alloc(10, 1) }).ok,
-    ).toBe(false)
->>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
   })
 
   it('rechaza un ejecutable disfrazado de PDF (firma MZ)', () => {
@@ -74,13 +68,9 @@ describe('validateUpload', () => {
   })
 
   it('acepta CSV y TXT legítimos', () => {
-<<<<<<< HEAD
     expect(
       validateUpload({ filename: 'colonias.csv', buffer: buf('id,nombre\n1,Centro\n') }).ok,
     ).toBe(true)
-=======
-    expect(validateUpload({ filename: 'colonias.csv', buffer: buf('id,nombre\n1,Centro\n') }).ok).toBe(true)
->>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
     expect(validateUpload({ filename: 'notas.txt', buffer: buf('Hola mundo') }).ok).toBe(true)
   })
 

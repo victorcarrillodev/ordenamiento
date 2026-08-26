@@ -68,7 +68,6 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-<<<<<<< HEAD
     healthcheck:
       test:
         [
@@ -79,9 +78,6 @@ services:
       timeout: 3s
       retries: 10
       start_period: 5s
-=======
-    mem_limit: 512m
->>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
     environment:
       BACKEND_URL: http://backend:5920
       BASE_PATH: /ordena

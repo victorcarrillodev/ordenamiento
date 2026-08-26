@@ -1,19 +1,10 @@
 import { join, isAbsolute } from 'node:path'
-<<<<<<< HEAD
-=======
-import { Buffer } from 'node:buffer'
-import { randomBytes } from 'node:crypto'
-
 import {
   canonicalMimeFor,
   contentDispositionHeader,
   getExtension,
-  isImageExtension,
-  sanitizeFilename,
   shouldServeInline,
-  validateUpload,
 } from './services/upload-guard.ts'
->>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
 
 import {
   clearLoginAttempts,
@@ -65,37 +56,6 @@ import { sql } from './db/pool.ts'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
 const BRANDING_DIR = join(process.cwd(), 'uploads', 'branding')
-<<<<<<< HEAD
-=======
-const MAX_UPLOAD_BYTES = 220 * 1024 * 1024 // 220 MB (formulario)
-const MAX_UPLOAD_FILES = 5
-
-// ---------------------------------------------------------------------------
-// Tolerancia a picos: la vectorización TF-IDF + parseo de PDF del ingest es lo
-// más caro del sistema. Se procesa con concurrencia acotada (backpressure):
-// las peticiones extra esperan su turno y, si la fila de espera se llena, se
-// rechazan con 503 en vez de saturar CPU/memoria y tumbar todo el backend.
-// ---------------------------------------------------------------------------
-const MAX_CONCURRENT_INGESTS = Number(process.env.MAX_CONCURRENT_INGESTS ?? 2)
-const MAX_INGEST_QUEUE = Number(process.env.MAX_INGEST_QUEUE ?? 25)
-
-let activeIngests = 0
-const ingestQueue: Array<() => void> = []
-
-async function withIngestSlot<T>(job: () => Promise<T>): Promise<T> {
-  if (activeIngests >= MAX_CONCURRENT_INGESTS) {
-    await new Promise<void>((resolve) => ingestQueue.push(resolve))
-  }
-  activeIngests++
-  try {
-    return await job()
-  } finally {
-    activeIngests--
-    const next = ingestQueue.shift()
-    if (next) next()
-  }
-}
->>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
 
 /** Rechaza temprano cuerpos gigantes sin bufferizarlos completos en memoria. */
 function bodyTooLarge(request: Request, limitBytes: number): boolean {
@@ -283,121 +243,7 @@ export async function handleRequest(request: Request): Promise<Response> {
 
   // Crear participación: digital = público (ciudadano, sin sesión); física = admin
   if (method === 'POST' && pathname === '/api/participations') {
-<<<<<<< HEAD
     return handleCreateParticipation(request, user)
-=======
-    // Tolerancia a picos: rechazar cuerpos sobredimensionados ANTES de
-    // bufferizarlos completos en memoria (el límite duro lo refuerza el
-    // proxy con client_max_body_size).
-    if (bodyTooLarge(request, MAX_UPLOAD_BYTES + 1024 * 1024)) {
-      return json({ error: 'Archivo demasiado grande (máx 220 MB)' }, 413)
-    }
-    const form = await request.formData()
-    const origin = String(form.get('origen') ?? 'digital') as Origen
-    if (!isOrigen(origin)) return json({ error: 'origen inválido' }, 400)
-
-    // La física solo la crea un admin autenticado
-    if (origin === 'fisica' && user?.role !== 'admin') {
-      return json({ error: 'Requiere rol admin' }, 403)
-    }
-
-    const folio = await nextFolio()
-
-    const created = await createParticipation(
-      {
-        folio,
-        origen: origin,
-        nombre: String(form.get('nombre') ?? ''),
-        correo: String(form.get('correo') ?? ''),
-        calle: String(form.get('calle') ?? ''),
-        numero: String(form.get('numero') ?? ''),
-        colonia: String(form.get('colonia') ?? ''),
-        municipio: String(form.get('municipio') ?? ''),
-        institucion: String(form.get('institucion') ?? ''),
-        ocupacion: String(form.get('ocupacion') ?? ''),
-        latitud: String(form.get('latitud') ?? ''),
-        longitud: String(form.get('longitud') ?? ''),
-        observacion: String(form.get('observacion') ?? ''),
-        creadoPor: user?.id,
-      },
-      folio,
-    )
-
-    // Adjuntos: el input acepta varios archivos. El campo del formulario es
-    // 'archivo' (se mantiene compatibilidad con el nombre legacy 'pdf'). La
-    // validación (extensión + firma + contenido) la hace upload-guard; el
-    // Content-Type del cliente nunca se confía.
-    const rawFiles = [...form.getAll('archivo'), ...form.getAll('pdf')]
-    if (rawFiles.length > MAX_UPLOAD_FILES) {
-      return json({ error: `Máximo ${MAX_UPLOAD_FILES} archivos por participación` }, 400)
-    }
-    const files: IngestFile[] = []
-    for (const entry of rawFiles) {
-      if (!(entry instanceof File) || entry.size === 0) continue
-      if (entry.size > MAX_UPLOAD_BYTES) {
-        return json({ error: `Archivo demasiado grande (máx 220 MB): ${sanitizeFilename(entry.name)}` }, 413)
-      }
-      const buffer = Buffer.from(await entry.arrayBuffer())
-      const verdict = validateUpload({ filename: String(entry.name), buffer })
-      if (!verdict.ok) {
-        return json({ error: `Archivo rechazado (${sanitizeFilename(entry.name)}): ${verdict.reason}` }, 400)
-      }
-      await mkdir(UPLOAD_DIR, { recursive: true })
-      // Nombre generado por la app (OWASP): nunca se usa el del cliente en disco.
-      const safeName = `${Date.now()}-${randomBytes(8).toString('hex')}.${verdict.ext}`
-      const dest = join(UPLOAD_DIR, safeName)
-      await writeFile(dest, buffer)
-      files.push({
-        buffer,
-        meta: {
-          nombreOriginal: sanitizeFilename(String(entry.name)),
-          mime: verdict.safeMime!,
-          rutaLocal: dest,
-        },
-      })
-    }
-
-    // Tolerancia a picos: load-shedding explícito. Si la fila del ingest
-    // está llena, mejor responder 503 de inmediato (el ciudadano reintenta
-    // y su participación ya quedó guardada) que saturar el proceso.
-    if (ingestQueue.length >= MAX_INGEST_QUEUE) {
-      return json(
-        { error: 'Servidor saturado en este momento. Su participación fue recibida; el análisis se completará en breve.' },
-        {
-          status: 503,
-          headers: { 'retry-after': '60' },
-        },
-      )
-    }
-
-    const ingest = await withIngestSlot(() =>
-      ingestParticipation(
-        created.participationId,
-        {
-          nombre: String(form.get('nombre') ?? ''),
-          correo: String(form.get('correo') ?? ''),
-          colonia: String(form.get('colonia') ?? ''),
-          municipio: String(form.get('municipio') ?? ''),
-          institucion: String(form.get('institucion') ?? ''),
-          ocupacion: String(form.get('ocupacion') ?? ''),
-          observacion: String(form.get('observacion') ?? ''),
-          folio,
-        },
-        files,
-      ),
-    )
-
-    const userEmail = String(form.get('correo') ?? '').trim()
-    if (userEmail && mailConfigurado()) {
-      try {
-        await enviarAcuseReciboParticipacion(created.participationId, userEmail)
-      } catch (err) {
-        console.error('[mail] No se pudo enviar acuse automático:', err)
-      }
-    }
-
-    return json({ id: created.participationId, folio: created.folio, ...ingest }, 201)
->>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
   }
 
   // Cambiar estado
@@ -456,12 +302,6 @@ export async function handleRequest(request: Request): Promise<Response> {
       return json({ error: 'Archivo en disco no disponible' }, 404)
     }
     const isDownload = url.searchParams.get('download') === '1'
-<<<<<<< HEAD
-=======
-    // Servido seguro: MIME derivado de la extensión whitelist (nunca el
-    // declarado en la subida), descarga forzada salvo formatos inertes,
-    // nosniff y filename saneado contra inyección de cabeceras.
->>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
     const ext = getExtension(rows[0].nombre_original || rows[0].ruta_local)
     const mime = canonicalMimeFor(ext) ?? 'application/octet-stream'
     const disposition = isDownload || !shouldServeInline(ext) ? 'attachment' : 'inline'
@@ -470,11 +310,8 @@ export async function handleRequest(request: Request): Promise<Response> {
         'content-type': mime,
         'content-disposition': contentDispositionHeader(disposition, rows[0].nombre_original),
         'x-content-type-options': 'nosniff',
-<<<<<<< HEAD
         'content-security-policy': "default-src 'none'; sandbox; frame-ancestors 'none'",
         'cross-origin-resource-policy': 'same-origin',
-=======
->>>>>>> 2bca158 (fix(security+uploads): endurece subida de archivos, headers OWASP y tolerancia a picos)
       },
     })
   }
