@@ -4,7 +4,7 @@ import { mountRemix } from '../../../../.storybook/remix-root.ts'
 import { Mapa } from './mapa.tsx'
 
 const meta: Meta = {
-  title: 'Componentes/Mapa',
+  title: 'POETDUM/Mapa',
   render: mountRemix(() => <Mapa />),
   parameters: {
     // Carga Leaflet vía CDN en el propio componente (window.L); sin red no
