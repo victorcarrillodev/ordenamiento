@@ -160,9 +160,9 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 2. Modal de Carga en Envío (Loading Modal)
+  // 2. Modal de Carga con Barra de Progreso en Envío (Upload Progress Bar)
   // ─────────────────────────────────────────────────────────────────────────
-  function showLoadingModal(title, desc) {
+  function showUploadProgressModal(title, desc) {
     let overlay = document.getElementById('mui-loading-overlay')
     if (!overlay) {
       overlay = document.createElement('div')
@@ -173,50 +173,238 @@
 
     overlay.innerHTML = `
       <div class="mui-loading-modal">
-        <div class="mui-loading-spinner-box">
-          <div class="mui-loading-spinner-ring"></div>
-          <div class="mui-loading-spinner-ring mui-loading-spinner-ring--inner"></div>
+        <div class="mui-progress-header">
+          <div class="mui-progress-icon-badge" id="mui-progress-icon">
+            <span>📤</span>
+          </div>
+          <h3 class="mui-loading-title" id="mui-progress-title">${title}</h3>
+          <p class="mui-loading-desc" id="mui-progress-desc">${desc}</p>
         </div>
-        <h3 class="mui-loading-title">${title}</h3>
-        <p class="mui-loading-desc">${desc}</p>
-        <div class="mui-loading-dots">
-          <div class="mui-loading-dot"></div>
-          <div class="mui-loading-dot"></div>
-          <div class="mui-loading-dot"></div>
+
+        <div class="mui-progress-container">
+          <div class="mui-progress-info">
+            <span class="mui-progress-status-text" id="mui-progress-status-text">Iniciando transferencia...</span>
+            <span class="mui-progress-percentage" id="mui-progress-percentage">0%</span>
+          </div>
+          <div class="mui-progress-track">
+            <div class="mui-progress-bar" id="mui-progress-bar" style="width: 0%;">
+              <div class="mui-progress-shimmer"></div>
+            </div>
+          </div>
+          <div class="mui-progress-metrics">
+            <span id="mui-progress-bytes">0 KB transferidos</span>
+            <span id="mui-progress-speed">Calculando velocidad...</span>
+          </div>
+        </div>
+
+        <div class="mui-progress-steps">
+          <div class="mui-progress-step is-active" id="mui-step-1">
+            <span class="mui-step-indicator">1</span>
+            <span class="mui-step-label">Transferencia de archivos y datos</span>
+          </div>
+          <div class="mui-progress-step" id="mui-step-2">
+            <span class="mui-step-indicator">2</span>
+            <span class="mui-step-label">Validación técnica y seguridad</span>
+          </div>
+          <div class="mui-progress-step" id="mui-step-3">
+            <span class="mui-step-indicator">3</span>
+            <span class="mui-step-label">Generación de folio oficial</span>
+          </div>
+        </div>
+
+        <div class="mui-progress-footer-note">
+          🔒 <strong>Bitácora Ambiental:</strong> Por favor no recargues ni cierres esta ventana mientras concluye el registro.
         </div>
       </div>
     `
     overlay.style.display = 'flex'
   }
 
-  function initFormSubmitModals() {
-    const publicForm = document.getElementById('participation-form')
-    if (publicForm && !publicForm.dataset.loadingBound) {
-      publicForm.dataset.loadingBound = '1'
-      publicForm.addEventListener('submit', function () {
-        if (publicForm.checkValidity()) {
-          showLoadingModal(
-            'Enviando tu participación...',
-            'Estamos registrando tu información y subiendo los documentos adjuntos al expediente de la Bitácora Ambiental. Por favor no cierres esta ventana.',
-          )
-        }
-      })
+  function updateUploadProgress(percent, loadedBytes, totalBytes, speedBytesPerSec) {
+    const pBar = document.getElementById('mui-progress-bar')
+    const pText = document.getElementById('mui-progress-percentage')
+    const pBytes = document.getElementById('mui-progress-bytes')
+    const pSpeed = document.getElementById('mui-progress-speed')
+    const pStatus = document.getElementById('mui-progress-status-text')
+
+    const clampedPercent = Math.max(0, Math.min(100, Math.round(percent)))
+
+    if (pBar) pBar.style.width = clampedPercent + '%'
+    if (pText) pText.textContent = clampedPercent + '%'
+
+    if (pBytes && loadedBytes && totalBytes) {
+      pBytes.textContent = `${formatBytes(loadedBytes)} de ${formatBytes(totalBytes)}`
+    }
+    if (pSpeed && speedBytesPerSec > 0) {
+      pSpeed.textContent = `${formatBytes(speedBytesPerSec)}/s`
     }
 
-    const adminForms = Array.from(document.querySelectorAll('form.form-card, form[method="post"]'))
-    adminForms.forEach(function (form) {
-      if (form.id === 'participation-form' || form.dataset.loadingBound) return
+    if (pStatus) {
+      if (clampedPercent < 100) {
+        pStatus.textContent = `Subiendo expediente (${clampedPercent}%)...`
+      } else {
+        pStatus.textContent = 'Archivos transferidos (100%). Procesando...'
+      }
+    }
+  }
+
+  function setUploadStage(stage) {
+    const s1 = document.getElementById('mui-step-1')
+    const s2 = document.getElementById('mui-step-2')
+    const s3 = document.getElementById('mui-step-3')
+    const pBar = document.getElementById('mui-progress-bar')
+    const pIcon = document.getElementById('mui-progress-icon')
+    const pStatus = document.getElementById('mui-progress-status-text')
+
+    if (stage === 1) {
+      if (s1) {
+        s1.className = 'mui-progress-step is-active'
+      }
+      if (s2) {
+        s2.className = 'mui-progress-step'
+      }
+      if (s3) {
+        s3.className = 'mui-progress-step'
+      }
+    } else if (stage === 2) {
+      if (s1) {
+        s1.className = 'mui-progress-step is-done'
+        const ind = s1.querySelector('.mui-step-indicator')
+        if (ind) ind.textContent = '✓'
+      }
+      if (s2) {
+        s2.className = 'mui-progress-step is-active'
+      }
+      if (s3) {
+        s3.className = 'mui-progress-step'
+      }
+      if (pBar) pBar.classList.add('is-indeterminate')
+      if (pIcon) pIcon.innerHTML = '<span>⚙️</span>'
+      if (pStatus) pStatus.textContent = 'Validando expediente técnico en el servidor...'
+    } else if (stage === 3) {
+      if (s1) {
+        s1.className = 'mui-progress-step is-done'
+        const ind1 = s1.querySelector('.mui-step-indicator')
+        if (ind1) ind1.textContent = '✓'
+      }
+      if (s2) {
+        s2.className = 'mui-progress-step is-done'
+        const ind2 = s2.querySelector('.mui-step-indicator')
+        if (ind2) ind2.textContent = '✓'
+      }
+      if (s3) {
+        s3.className = 'mui-progress-step is-done'
+        const ind3 = s3.querySelector('.mui-step-indicator')
+        if (ind3) ind3.textContent = '✓'
+      }
+      if (pBar) {
+        pBar.classList.remove('is-indeterminate')
+        pBar.style.width = '100%'
+      }
+      if (pIcon) {
+        pIcon.innerHTML = '<span>✅</span>'
+        pIcon.style.background = 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)'
+      }
+      if (pStatus) pStatus.textContent = '¡Participación registrada con éxito!'
+    }
+  }
+
+  function initFormSubmitModals() {
+    const forms = Array.from(
+      document.querySelectorAll(
+        '#participation-form, form.form-card, form[action*="participation"], form[action*="participaciones"]',
+      ),
+    )
+
+    forms.forEach(function (form) {
+      if (form.dataset.loadingBound) return
       form.dataset.loadingBound = '1'
-      form.addEventListener('submit', function () {
-        if (form.checkValidity()) {
-          const isNueva = window.location.pathname.includes('/participaciones/nueva')
-          if (isNueva) {
-            showLoadingModal(
-              'Guardando participación física...',
-              'Estamos procesando los datos y vinculando los archivos adjuntos al expediente técnico.',
-            )
-          }
+
+      form.addEventListener('submit', function (e) {
+        if (!form.checkValidity()) return
+
+        const isPublic = form.id === 'participation-form' || form.action.includes('/participation')
+        const isNuevaAdmin = window.location.pathname.includes('/participaciones/nueva')
+
+        if (!isPublic && !isNuevaAdmin) return
+
+        e.preventDefault()
+
+        const title = isPublic
+          ? 'Enviando tu participación...'
+          : 'Guardando participación física...'
+        const desc = isPublic
+          ? 'Estamos registrando tu información y subiendo los documentos adjuntos al expediente de la Bitácora Ambiental.'
+          : 'Estamos procesando los datos y vinculando los archivos adjuntos al expediente técnico.'
+
+        showUploadProgressModal(title, desc)
+        setUploadStage(1)
+
+        const actionUrl = form.getAttribute('action') || window.location.href
+        const formData = new FormData(form)
+        const xhr = new XMLHttpRequest()
+        const startTime = Date.now()
+
+        xhr.open('POST', actionUrl, true)
+        xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml,application/json,*/*')
+
+        if (xhr.upload) {
+          xhr.upload.addEventListener('progress', function (ev) {
+            if (ev.lengthComputable && ev.total > 0) {
+              const percent = Math.min(99, (ev.loaded / ev.total) * 100)
+              const elapsedSec = (Date.now() - startTime) / 1000
+              const speed = elapsedSec > 0 ? ev.loaded / elapsedSec : 0
+              updateUploadProgress(percent, ev.loaded, ev.total, speed)
+            }
+          })
+
+          xhr.upload.addEventListener('load', function () {
+            updateUploadProgress(100)
+            setUploadStage(2)
+          })
         }
+
+        xhr.addEventListener('readystatechange', function () {
+          if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status >= 200 && xhr.status < 400) {
+              setUploadStage(3)
+              setTimeout(function () {
+                if (xhr.responseURL && xhr.responseURL !== window.location.href) {
+                  window.location.href = xhr.responseURL
+                } else {
+                  // Reemplazar contenido con la vista devuelta (ej. confirmación)
+                  document.open()
+                  document.write(xhr.responseText)
+                  document.close()
+                }
+              }, 450)
+            } else {
+              // Error de validación o del servidor (413, 422, 502, etc.)
+              const overlay = document.getElementById('mui-loading-overlay')
+              if (overlay) overlay.style.display = 'none'
+
+              if (xhr.responseText) {
+                document.open()
+                document.write(xhr.responseText)
+                document.close()
+              } else {
+                alert(
+                  'Ocurrió un problema al enviar la información (código ' +
+                    xhr.status +
+                    '). Por favor intenta de nuevo.',
+                )
+              }
+            }
+          }
+        })
+
+        xhr.addEventListener('error', function () {
+          const overlay = document.getElementById('mui-loading-overlay')
+          if (overlay) overlay.style.display = 'none'
+          alert('Error de conexión al enviar el formulario. Por favor verifica tu conexión.')
+        })
+
+        xhr.send(formData)
       })
     })
   }
@@ -520,7 +708,14 @@
     abortCtrl = new AbortController()
 
     try {
-      const url = new URL('/ordena/api/colonias', window.location.origin)
+      const group =
+        target.closest('[data-autocomplete-group]') ||
+        target.closest('[data-endpoint]') ||
+        target.closest('form')
+      const endpointAttr = group ? group.getAttribute('data-endpoint') : null
+      const resolvedEndpoint = endpointAttr || '/ordena/api/colonias'
+
+      const url = new URL(resolvedEndpoint, window.location.origin)
       url.searchParams.set('tipo', tipo)
       url.searchParams.set('q', q)
       if (municipio) {

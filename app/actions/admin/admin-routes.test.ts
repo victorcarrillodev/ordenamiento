@@ -198,5 +198,46 @@ describe('Admin Routes Protection & Navigation', () => {
         expect(response?.status).toBe(200)
       })
     }
+
+    it('POST /ordena/admin/participaciones/nueva guarda participación física y redirige con folio', async () => {
+      globalThis.fetch = vi.fn().mockImplementation((url: string | URL | Request) => {
+        const u = typeof url === 'string' ? url : url instanceof Request ? url.url : url.toString()
+        if (u.includes('/api/auth/me')) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ user: { id: 1, name: 'Admin Root', role: 'admin' } }), {
+              status: 200,
+              headers: { 'content-type': 'application/json' },
+            }),
+          )
+        }
+        if (u.includes('/api/participations')) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ id: 105, folio: 'FIS-2026-009' }), {
+              status: 201,
+              headers: { 'content-type': 'application/json' },
+            }),
+          )
+        }
+        return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+      })
+
+      const fd = new FormData()
+      fd.set('nombre', 'Ciudadano Físico')
+      fd.set('correo', 'fisico@ejemplo.com')
+      fd.set('calle', 'Juárez 50')
+      fd.set('colonia', 'Centro')
+      fd.set('municipio', 'San Pedro Tlaquepaque')
+      fd.set('cp', '45500')
+      fd.set('observacion', 'Aporte en módulo físico')
+
+      const response = await router.fetch(
+        new Request('http://localhost/ordena/admin/participaciones/nueva', {
+          method: 'POST',
+          body: fd,
+        }),
+      )
+      expect(response?.status).toBe(302)
+      expect(response?.headers.get('location')).toContain('registrado=FIS-2026-009')
+    })
   })
 })

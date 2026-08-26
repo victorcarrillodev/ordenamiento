@@ -195,15 +195,15 @@
 }
 
 /* ───────────────────────────────────────────────────────────────────────── */
-/* Modal de Carga en Envío (Loading Modal)                                    */
+/* Modal de Carga y Barra de Progreso en Envío (Upload Progress Modal)       */
 /* ───────────────────────────────────────────────────────────────────────── */
 .mui-loading-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999999;
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -223,16 +223,18 @@
 .mui-loading-modal {
   background: #ffffff;
   border-radius: 20px;
-  padding: 40px 32px;
-  max-width: 460px;
+  padding: 36px 32px 30px;
+  max-width: 500px;
   width: 100%;
   text-align: center;
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 25px 60px -15px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
   font-family: 'Montserrat', sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
-  animation: muiScaleUp 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: muiScaleUp 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes muiScaleUp {
@@ -246,86 +248,206 @@
   }
 }
 
-.mui-loading-spinner-box {
-  position: relative;
-  width: 64px;
-  height: 64px;
-  margin-bottom: 20px;
+.mui-progress-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
 }
 
-.mui-loading-spinner-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 3.5px solid transparent;
-  border-top-color: #8c1d3d;
-  animation: muiSpin 1s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
-}
-
-.mui-loading-spinner-ring--inner {
-  inset: 8px;
-  border-width: 3px;
-  border-top-color: #e0b84a;
-  animation: muiSpinReverse 0.75s linear infinite;
-}
-
-@keyframes muiSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes muiSpinReverse {
-  to {
-    transform: rotate(-360deg);
-  }
+.mui-progress-icon-badge {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #8c1d3d 0%, #6f1730 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin-bottom: 16px;
+  box-shadow: 0 10px 20px -5px rgba(140, 29, 61, 0.4);
+  transition: all 300ms ease;
 }
 
 .mui-loading-title {
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 800;
   color: #0f172a;
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   line-height: 1.3;
 }
 
 .mui-loading-desc {
   font-size: 13.5px;
   color: #475569;
-  line-height: 1.55;
-  margin: 0 0 16px;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 420px;
 }
 
-.mui-loading-dots {
-  display: inline-flex;
-  gap: 6px;
+/* Barra de progreso interactiva */
+.mui-progress-container {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  text-align: left;
 }
 
-.mui-loading-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #8c1d3d;
-  animation: muiPulse 1.2s ease-in-out infinite alternate;
+.mui-progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
 }
 
-.mui-loading-dot:nth-child(2) {
-  animation-delay: 0.2s;
-  background: #c9a227;
+.mui-progress-status-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
 }
 
-.mui-loading-dot:nth-child(3) {
-  animation-delay: 0.4s;
-  background: #40916c;
+.mui-progress-percentage {
+  font-size: 15px;
+  font-weight: 800;
+  color: #8c1d3d;
+  font-variant-numeric: tabular-nums;
 }
 
-@keyframes muiPulse {
+.mui-progress-track {
+  width: 100%;
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.mui-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #8c1d3d 0%, #c9a227 100%);
+  border-radius: 999px;
+  transition: width 200ms ease-out;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 12px rgba(140, 29, 61, 0.4);
+}
+
+.mui-progress-bar.is-indeterminate {
+  width: 100% !important;
+  background: linear-gradient(90deg, #8c1d3d 0%, #c9a227 30%, #16a34a 60%, #8c1d3d 100%);
+  background-size: 200% 100%;
+  animation: muiIndeterminate 1.5s linear infinite;
+}
+
+@keyframes muiIndeterminate {
   0% {
-    transform: scale(0.6);
-    opacity: 0.4;
+    background-position: 100% 0;
   }
   100% {
-    transform: scale(1.2);
-    opacity: 1;
+    background-position: -100% 0;
   }
+}
+
+.mui-progress-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 100%
+  );
+  animation: muiShimmer 1.8s infinite;
+}
+
+@keyframes muiShimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.mui-progress-metrics {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 8px;
+}
+
+/* Indicador de fases / pasos */
+.mui-progress-steps {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.mui-progress-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: all 250ms ease;
+}
+
+.mui-progress-step.is-active {
+  color: #8c1d3d;
+  font-weight: 700;
+}
+
+.mui-progress-step.is-done {
+  color: #166534;
+}
+
+.mui-step-indicator {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  flex-shrink: 0;
+  transition: all 250ms ease;
+}
+
+.mui-progress-step.is-active .mui-step-indicator {
+  background: #8c1d3d;
+  border-color: #8c1d3d;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(140, 29, 61, 0.15);
+}
+
+.mui-progress-step.is-done .mui-step-indicator {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff;
+}
+
+.mui-progress-footer-note {
+  font-size: 11.5px;
+  color: #475569;
+  line-height: 1.5;
+  background: #fdf8f9;
+  border: 1px solid rgba(140, 29, 61, 0.12);
+  border-radius: 8px;
+  padding: 8px 12px;
+  width: 100%;
 }
