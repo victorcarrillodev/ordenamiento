@@ -357,11 +357,16 @@ export async function handleRequest(request: Request): Promise<Response> {
       FROM attachments
       WHERE id = ${Number(attachMatch.aid)} AND participation_id = ${Number(attachMatch.id)}
     `
-    if (rows.length === 0) return json({ error: 'Archivo no encontrado' }, 404)
     // Resuelve rutas relativas contra UPLOAD_DIR (datos viejos la guardaron relativa)
     const ruta = isAbsolute(rows[0].ruta_local)
       ? rows[0].ruta_local
       : join(UPLOAD_DIR, rows[0].ruta_local)
+
+    // Guard de archivos: validación estricta de ruta contra path traversal
+    if (!ruta.startsWith(UPLOAD_DIR) && !ruta.startsWith(BRANDING_DIR)) {
+      return json({ error: 'Acceso a archivo no autorizado' }, 403)
+    }
+
     let file: Buffer
     try {
       file = await readFile(ruta)
@@ -369,10 +374,12 @@ export async function handleRequest(request: Request): Promise<Response> {
       return json({ error: 'Archivo en disco no disponible' }, 404)
     }
     const isDownload = url.searchParams.get('download') === '1'
+    const cleanFilename = rows[0].nombre_original.replace(/[\r\n"]/g, '_')
     return new Response(new Uint8Array(file), {
       headers: {
-        'content-type': rows[0].mime,
-        'content-disposition': `${isDownload ? 'attachment' : 'inline'}; filename="${rows[0].nombre_original}"`,
+        'content-type': rows[0].mime || 'application/octet-stream',
+        'content-disposition': `${isDownload ? 'attachment' : 'inline'}; filename="${cleanFilename}"`,
+        'x-content-type-options': 'nosniff',
       },
     })
   }
