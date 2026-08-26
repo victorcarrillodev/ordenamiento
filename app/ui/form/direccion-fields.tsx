@@ -32,10 +32,10 @@ export interface DireccionFieldsProps {
 
 const gridStyle = css({
   display: 'grid',
-  gridTemplateColumns: '1.2fr 1.2fr 1fr 0.8fr',
-  gap: '16px',
-  '@media (max-width: 768px)': { gridTemplateColumns: '1fr 1fr' },
-  '@media (max-width: 480px)': { gridTemplateColumns: '1fr' },
+  gridTemplateColumns: '1.4fr 1.3fr 1.3fr 0.85fr',
+  gap: '14px',
+  '@media (max-width: 860px)': { gridTemplateColumns: '1fr 1fr' },
+  '@media (max-width: 520px)': { gridTemplateColumns: '1fr' },
 })
 
 export function DireccionFields(handle: Handle<DireccionFieldsProps>) {

@@ -61,12 +61,15 @@ const formPanelStyle = css({
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  padding: `calc(${NAVBAR_HEIGHT} + 28px) 32px 32px`,
+  padding: `calc(${NAVBAR_HEIGHT} + 12px) 36px 28px`,
+  '@media (max-width: 768px)': {
+    padding: `calc(${NAVBAR_HEIGHT} + 12px) 20px 24px`,
+  },
 })
 
 const formShellStyle = css({
   width: '100%',
-  maxWidth: '660px',
+  maxWidth: '820px',
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',

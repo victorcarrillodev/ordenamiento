@@ -15,7 +15,7 @@ export interface ParticipationFormProps {
 const fieldRowStyle = css({
   display: 'grid',
   gridTemplateColumns: '1fr 1fr',
-  gap: '16px',
+  gap: '14px',
   '@media (max-width: 560px)': { gridTemplateColumns: '1fr' },
 })
 
@@ -32,16 +32,16 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
             alignItems: 'center',
             gap: '6px',
             fontFamily: FONT_STACK,
-            fontSize: '13px',
+            fontSize: '13.5px',
             fontWeight: 600,
-            color: colors.gray500,
+            color: '#475569',
             textDecoration: 'none',
-            marginBottom: '14px',
+            marginBottom: '12px',
             transition: 'color 150ms ease',
             '&:hover': { color: colors.burgundy900 },
           })}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
               d="M19 12H5M12 19l-7-7 7-7"
               stroke="currentColor"
@@ -57,9 +57,9 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
           mix={css({
             fontFamily: FONT_STACK,
             fontSize: 'clamp(24px, 2.6vw, 30px)',
-            fontWeight: 700,
+            fontWeight: 800,
             lineHeight: 1.2,
-            color: colors.gray900,
+            color: '#0f172a',
             margin: '0 0 6px',
           })}
         >
@@ -68,10 +68,10 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
         <p
           mix={css({
             fontFamily: FONT_STACK,
-            fontSize: '14px',
+            fontSize: '14.5px',
             lineHeight: 1.55,
-            color: colors.gray500,
-            margin: '0 0 22px',
+            color: '#334155',
+            margin: '0 0 20px',
           })}
         >
           Comparte tu observación, propuesta o documento técnico con el equipo del Programa de
@@ -137,15 +137,20 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
           <p
             mix={css({
               fontFamily: FONT_STACK,
-              fontSize: '11.5px',
-              lineHeight: 1.55,
-              color: colors.gray400,
-              margin: '4px 0 0',
+              fontSize: '12.5px',
+              lineHeight: 1.6,
+              color: '#334155',
+              fontWeight: 500,
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
+              padding: '10px 14px',
+              margin: '6px 0 2px',
             })}
           >
-            La información proporcionada será tratada conforme a la Ley General de Protección de
-            Datos Personales en Posesión de Sujetos Obligados y solo se usará en el marco de este
-            programa.
+            🔒 <strong>Aviso de Privacidad:</strong> La información proporcionada será tratada
+            conforme a la Ley General de Protección de Datos Personales en Posesión de Sujetos
+            Obligados y solo se usará en el marco de este programa.
           </p>
 
           <CheckboxField name="consentimiento" required error={errors.consentimiento}>

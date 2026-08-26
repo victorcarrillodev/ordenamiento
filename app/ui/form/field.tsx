@@ -23,12 +23,12 @@ export interface FieldProps {
 
 const labelStyle = css({
   fontFamily: FONT_STACK,
-  fontSize: '12.5px',
+  fontSize: '13px',
   fontWeight: 700,
-  color: colors.gray700,
-  letterSpacing: '0.03em',
+  color: '#1e293b',
+  letterSpacing: '0.01em',
   display: 'block',
-  marginBottom: '5px',
+  marginBottom: '6px',
 })
 
 const fieldGroupStyle = css({
@@ -41,15 +41,16 @@ const fieldGroupStyle = css({
 const errorMsgStyle = css({
   fontFamily: FONT_STACK,
   fontSize: '12.5px',
+  fontWeight: 600,
   color: '#dc2626',
   marginTop: '4px',
 })
 
 const hintStyle = css({
   fontFamily: FONT_STACK,
-  fontSize: '11.5px',
-  color: colors.gray400,
-  marginTop: '4px',
+  fontSize: '12px',
+  color: '#475569',
+  marginTop: '5px',
 })
 
 const requiredMark = (

@@ -3,7 +3,7 @@ import { createRequestListener } from 'remix/node-fetch-server'
 
 import { router } from './app/router.ts'
 
-// Servidor principal de Ordenamiento Territorial de Jalisco (Tlaquepaque)
+// Servidor principal de Ordenamiento Territorial – San Pedro Tlaquepaque
 
 const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 44100
 const hmrProxyPort = process.env.HMR_PROXY_PORT

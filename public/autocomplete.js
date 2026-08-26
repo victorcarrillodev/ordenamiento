@@ -1,45 +1,211 @@
 /**
  * Autocompletado de Domicilio, Colonias y Municipios de Jalisco
  * Estilo Material UI (MUI Autocomplete)
+ * Vista previa interactiva de archivos y Modal de Carga en envío.
  */
 ;(function () {
   'use strict'
 
+  function formatBytes(bytes) {
+    if (!bytes || bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+  }
+
+  function getFileIcon(fileName) {
+    const ext = (fileName.split('.').pop() || '').toLowerCase()
+    if (ext === 'pdf') return '📄'
+    if (ext === 'shp' || ext === 'kmz') return '🗺️'
+    if (['jpg', 'jpeg', 'png', 'webp', 'svg'].includes(ext)) return '🖼️'
+    if (ext === 'dwg') return '📐'
+    if (['xlsx', 'xls', 'csv'].includes(ext)) return '📊'
+    if (['docx', 'doc'].includes(ext)) return '📑'
+    return '📁'
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 1. Manejo de archivos adjuntos y vista previa dinámica
+  // ─────────────────────────────────────────────────────────────────────────
+  function initFileInputs() {
+    // Público (#archivos)
+    const publicInput = document.getElementById('archivos')
+    const publicLabel = document.getElementById('file-count-label')
+    const publicPreview = document.getElementById('file-list-preview')
+
+    if (publicInput && publicPreview) {
+      publicInput.addEventListener('change', function () {
+        const files = Array.from(publicInput.files || [])
+        publicPreview.innerHTML = ''
+
+        if (files.length === 0) {
+          publicPreview.style.display = 'none'
+          if (publicLabel) publicLabel.textContent = 'Ningún archivo seleccionado'
+          return
+        }
+
+        if (publicLabel) {
+          publicLabel.textContent = `${files.length} ${files.length === 1 ? 'archivo seleccionado' : 'archivos seleccionados'}`
+          publicLabel.style.color = '#8c1d3d'
+          publicLabel.style.fontWeight = '700'
+        }
+
+        publicPreview.style.display = 'flex'
+        files.forEach(function (file) {
+          const item = document.createElement('div')
+          item.className = 'file-preview-item'
+          item.innerHTML = `
+            <div class="file-preview-info">
+              <span class="file-preview-icon">${getFileIcon(file.name)}</span>
+              <div class="file-preview-details">
+                <span class="file-preview-name" title="${file.name}">${file.name}</span>
+                <span class="file-preview-size">${formatBytes(file.size)}</span>
+              </div>
+            </div>
+            <span style="font-size:11px;font-weight:700;color:#166534;background:#f0fdf4;padding:2px 8px;border-radius:10px;border:1px solid #bbf7d0;">Listo</span>
+          `
+          publicPreview.appendChild(item)
+        })
+      })
+    }
+
+    // Admin (#pdf)
+    const adminInput = document.getElementById('pdf')
+    const adminLabel = document.getElementById('admin-file-label')
+    const adminPreview = document.getElementById('admin-file-preview')
+
+    if (adminInput && adminPreview) {
+      adminInput.addEventListener('change', function () {
+        const file = adminInput.files && adminInput.files[0]
+        adminPreview.innerHTML = ''
+
+        if (!file) {
+          adminPreview.style.display = 'none'
+          if (adminLabel) adminLabel.textContent = 'Ningún archivo seleccionado'
+          return
+        }
+
+        if (adminLabel) {
+          adminLabel.textContent = 'Archivo seleccionado'
+          adminLabel.style.color = '#1e293b'
+          adminLabel.style.fontWeight = '700'
+        }
+
+        adminPreview.style.display = 'block'
+        const item = document.createElement('div')
+        item.className = 'file-preview-item'
+        item.innerHTML = `
+          <div class="file-preview-info">
+            <span class="file-preview-icon">${getFileIcon(file.name)}</span>
+            <div class="file-preview-details">
+              <span class="file-preview-name" title="${file.name}">${file.name}</span>
+              <span class="file-preview-size">${formatBytes(file.size)}</span>
+            </div>
+          </div>
+          <span style="font-size:11px;font-weight:700;color:#166534;background:#f0fdf4;padding:2px 8px;border-radius:10px;border:1px solid #bbf7d0;">Adjunto</span>
+        `
+        adminPreview.appendChild(item)
+      })
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 2. Modal de Carga durante el envío (Loading Modal)
+  // ─────────────────────────────────────────────────────────────────────────
+  function showLoadingModal(title, desc) {
+    let overlay = document.getElementById('mui-loading-overlay')
+    if (!overlay) {
+      overlay = document.createElement('div')
+      overlay.id = 'mui-loading-overlay'
+      overlay.className = 'mui-loading-overlay'
+      document.body.appendChild(overlay)
+    }
+
+    overlay.innerHTML = `
+      <div class="mui-loading-modal">
+        <div class="mui-loading-spinner-box">
+          <div class="mui-loading-spinner-ring"></div>
+          <div class="mui-loading-spinner-ring mui-loading-spinner-ring--inner"></div>
+        </div>
+        <h3 class="mui-loading-title">${title}</h3>
+        <p class="mui-loading-desc">${desc}</p>
+        <div class="mui-loading-dots">
+          <div class="mui-loading-dot"></div>
+          <div class="mui-loading-dot"></div>
+          <div class="mui-loading-dot"></div>
+        </div>
+      </div>
+    `
+    overlay.style.display = 'flex'
+  }
+
+  function initFormSubmitModals() {
+    // Formulario de participación ciudadana (Público)
+    const publicForm = document.getElementById('participation-form')
+    if (publicForm && !publicForm.dataset.loadingBound) {
+      publicForm.dataset.loadingBound = '1'
+      publicForm.addEventListener('submit', function (e) {
+        if (publicForm.checkValidity()) {
+          showLoadingModal(
+            'Enviando tu participación...',
+            'Estamos registrando tu información y subiendo los documentos adjuntos al expediente de la Bitácora Ambiental. Por favor no cierres esta ventana.',
+          )
+        }
+      })
+    }
+
+    // Formulario de participación física (Admin)
+    const adminForms = Array.from(document.querySelectorAll('form.form-card, form[method="post"]'))
+    adminForms.forEach(function (form) {
+      if (form.id === 'participation-form' || form.dataset.loadingBound) return
+      form.dataset.loadingBound = '1'
+      form.addEventListener('submit', function (e) {
+        if (form.checkValidity()) {
+          const isNueva = window.location.pathname.includes('/participaciones/nueva')
+          if (isNueva) {
+            showLoadingModal(
+              'Guardando participación física...',
+              'Estamos procesando los datos y vinculando los archivos adjuntos al expediente técnico.',
+            )
+          }
+        }
+      })
+    })
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 3. Autocompletado de Jalisco Material UI
+  // ─────────────────────────────────────────────────────────────────────────
   function initAutocomplete() {
-    // Buscar inputs en formularios públicos o admin
-    const inputCalle =
-      document.querySelector('input[name="calle"]') ||
-      document.querySelector('input[name="aporte_calle"]') ||
-      document.getElementById('calle')
-    const inputColonia =
-      document.querySelector('input[name="colonia"]') ||
-      document.querySelector('input[name="aporte_colonia"]') ||
-      document.getElementById('colonia')
-    const inputMunicipio =
-      document.querySelector('input[name="municipio"]') ||
-      document.querySelector('input[name="aporte_municipio"]') ||
-      document.getElementById('municipio')
-    const inputCp =
-      document.querySelector('input[name="cp"]') ||
-      document.querySelector('input[name="aporte_cp"]') ||
-      document.getElementById('cp')
-    const inputOrigen =
-      document.querySelector('input[name="direccion_origen"]') ||
-      document.querySelector('input[name="aporte_direccion_origen"]') ||
-      document.getElementById('direccion_origen')
+    initFileInputs()
+    initFormSubmitModals()
 
-    if (!inputColonia && !inputMunicipio && !inputCalle) return
+    const selector = [
+      'input[name*="calle"]',
+      'input[name*="domicilio"]',
+      'input[name*="colonia"]',
+      'input[name*="municipio"]',
+      'input[name*="cp"]',
+      '#calle',
+      '#colonia',
+      '#municipio',
+      '#cp',
+      '#domicilio',
+    ].join(', ')
 
-    const inputs = [inputCalle, inputColonia, inputMunicipio, inputCp].filter(Boolean)
+    const allInputs = Array.from(document.querySelectorAll(selector))
+    if (allInputs.length === 0) return
 
-    for (const inp of inputs) {
+    for (const inp of allInputs) {
+      if (inp.dataset.muiBound === '1') continue
+      inp.dataset.muiBound = '1'
       inp.setAttribute('autocomplete', 'off')
       inp.setAttribute('role', 'combobox')
       inp.setAttribute('aria-autocomplete', 'list')
       inp.setAttribute('aria-expanded', 'false')
     }
 
-    // Crear o recuperar el contenedor de Popper adjunto al body
     let popper = document.getElementById('mui-autocomplete-root')
     if (!popper) {
       popper = document.createElement('div')
@@ -61,7 +227,7 @@
       if (popper) popper.style.display = 'none'
       activeIndex = -1
       currentTarget = null
-      for (const inp of inputs) {
+      for (const inp of allInputs) {
         inp.setAttribute('aria-expanded', 'false')
       }
     }
@@ -108,7 +274,6 @@
       let left = rect.left + scrollX
       const width = Math.max(rect.width, 360)
 
-      // Evitar salir de la pantalla por la derecha
       if (left + width > window.innerWidth - 16) {
         left = Math.max(16, window.innerWidth - width - 16)
       }
@@ -116,6 +281,23 @@
       popper.style.top = top + 'px'
       popper.style.left = left + 'px'
       popper.style.width = width + 'px'
+    }
+
+    function getSiblingInputs(target) {
+      const form = target.closest('form') || target.closest('.form-card') || document.body
+      return {
+        calle:
+          form.querySelector('input[name*="calle"]') ||
+          form.querySelector('input[name*="domicilio"]') ||
+          form.querySelector('#calle'),
+        colonia: form.querySelector('input[name*="colonia"]') || form.querySelector('#colonia'),
+        municipio:
+          form.querySelector('input[name*="municipio"]') || form.querySelector('#municipio'),
+        cp: form.querySelector('input[name*="cp"]') || form.querySelector('#cp'),
+        origen:
+          form.querySelector('input[name*="direccion_origen"]') ||
+          form.querySelector('#direccion_origen'),
+      }
     }
 
     function render(target, tipo) {
@@ -133,7 +315,8 @@
       popper.style.display = 'block'
       target.setAttribute('aria-expanded', 'true')
 
-      // Header estilo Material UI
+      const siblings = getSiblingInputs(target)
+
       const header = document.createElement('div')
       header.className = 'mui-autocomplete-header'
       const title =
@@ -177,11 +360,12 @@
 
           li.addEventListener('mousedown', function (e) {
             e.preventDefault()
-            if (inputMunicipio) inputMunicipio.value = m.municipio
-            if (inputOrigen) inputOrigen.value = 'catalogo'
+            target.value = m.municipio
+            if (siblings.municipio) siblings.municipio.value = m.municipio
+            if (siblings.origen) siblings.origen.value = 'catalogo'
             hide()
-            if (inputColonia && !inputColonia.value) {
-              inputColonia.focus()
+            if (siblings.colonia && !siblings.colonia.value) {
+              siblings.colonia.focus()
             }
           })
 
@@ -220,14 +404,17 @@
           li.addEventListener('mousedown', function (e) {
             e.preventDefault()
             if (tipo === 'calle') {
-              if (inputCalle && !inputCalle.value.trim()) {
-                inputCalle.value = sug.colonia
+              if (target && !target.value.trim()) {
+                target.value = sug.colonia
+              }
+              if (siblings.calle && !siblings.calle.value.trim()) {
+                siblings.calle.value = sug.colonia
               }
             }
-            if (inputColonia) inputColonia.value = sug.colonia
-            if (inputMunicipio) inputMunicipio.value = sug.municipio
-            if (inputCp) inputCp.value = sug.cp
-            if (inputOrigen) inputOrigen.value = 'catalogo'
+            if (siblings.colonia) siblings.colonia.value = sug.colonia
+            if (siblings.municipio) siblings.municipio.value = sug.municipio
+            if (siblings.cp) siblings.cp.value = sug.cp
+            if (siblings.origen) siblings.origen.value = 'catalogo'
             hide()
           })
 
@@ -261,7 +448,7 @@
     function getFieldType(target) {
       const n = (target.name || target.id || '').toLowerCase()
       if (n.includes('municipio')) return 'municipio'
-      if (n.includes('calle')) return 'calle'
+      if (n.includes('calle') || n.includes('domicilio')) return 'calle'
       if (n.includes('cp')) return 'cp'
       return 'colonia'
     }
@@ -272,7 +459,8 @@
 
       const q = target.value.trim()
       currentQuery = q
-      if (inputOrigen) inputOrigen.value = 'manual'
+      const siblings = getSiblingInputs(target)
+      if (siblings.origen) siblings.origen.value = 'manual'
 
       const tipo = getFieldType(target)
       const minLen = tipo === 'municipio' ? 1 : 2
@@ -291,8 +479,12 @@
           const url = new URL(endpoint, window.location.origin)
           url.searchParams.set('tipo', tipo)
           url.searchParams.set('q', q)
-          if ((tipo === 'colonia' || tipo === 'calle') && inputMunicipio && inputMunicipio.value) {
-            url.searchParams.set('municipio', inputMunicipio.value.trim())
+          if (
+            (tipo === 'colonia' || tipo === 'calle') &&
+            siblings.municipio &&
+            siblings.municipio.value
+          ) {
+            url.searchParams.set('municipio', siblings.municipio.value.trim())
           }
 
           const res = await fetch(url.toString(), {
@@ -311,8 +503,8 @@
           }
           activeIndex = -1
           render(target, tipo)
-        } catch (err) {
-          // Solicitud cancelada o error de red
+        } catch {
+          // Cancelado o error de red
         }
       }, 50)
     }
@@ -325,6 +517,7 @@
       if (total === 0) return
 
       const ul = popper.querySelector('ul')
+      const siblings = getSiblingInputs(target)
 
       if (e.key === 'ArrowDown') {
         e.preventDefault()
@@ -339,19 +532,21 @@
           e.preventDefault()
           if (tipo === 'municipio' && itemsMunicipios[activeIndex]) {
             const m = itemsMunicipios[activeIndex]
-            if (inputMunicipio) inputMunicipio.value = m.municipio
-            if (inputOrigen) inputOrigen.value = 'catalogo'
+            target.value = m.municipio
+            if (siblings.municipio) siblings.municipio.value = m.municipio
+            if (siblings.origen) siblings.origen.value = 'catalogo'
             hide()
-            if (inputColonia && !inputColonia.value) inputColonia.focus()
+            if (siblings.colonia && !siblings.colonia.value) siblings.colonia.focus()
           } else if (itemsColonias[activeIndex]) {
             const s = itemsColonias[activeIndex]
-            if (tipo === 'calle' && inputCalle && !inputCalle.value.trim()) {
-              inputCalle.value = s.colonia
+            if (tipo === 'calle') {
+              if (target && !target.value.trim()) target.value = s.colonia
+              if (siblings.calle && !siblings.calle.value.trim()) siblings.calle.value = s.colonia
             }
-            if (inputColonia) inputColonia.value = s.colonia
-            if (inputMunicipio) inputMunicipio.value = s.municipio
-            if (inputCp) inputCp.value = s.cp
-            if (inputOrigen) inputOrigen.value = 'catalogo'
+            if (siblings.colonia) siblings.colonia.value = s.colonia
+            if (siblings.municipio) siblings.municipio.value = s.municipio
+            if (siblings.cp) siblings.cp.value = s.cp
+            if (siblings.origen) siblings.origen.value = 'catalogo'
             hide()
           }
         }
@@ -361,21 +556,22 @@
         if (activeIndex >= 0) {
           if (tipo === 'municipio' && itemsMunicipios[activeIndex]) {
             const m = itemsMunicipios[activeIndex]
-            if (inputMunicipio) inputMunicipio.value = m.municipio
-            if (inputOrigen) inputOrigen.value = 'catalogo'
+            target.value = m.municipio
+            if (siblings.municipio) siblings.municipio.value = m.municipio
+            if (siblings.origen) siblings.origen.value = 'catalogo'
           } else if (itemsColonias[activeIndex]) {
             const s = itemsColonias[activeIndex]
-            if (inputColonia) inputColonia.value = s.colonia
-            if (inputMunicipio) inputMunicipio.value = s.municipio
-            if (inputCp) inputCp.value = s.cp
-            if (inputOrigen) inputOrigen.value = 'catalogo'
+            if (siblings.colonia) siblings.colonia.value = s.colonia
+            if (siblings.municipio) siblings.municipio.value = s.municipio
+            if (siblings.cp) siblings.cp.value = s.cp
+            if (siblings.origen) siblings.origen.value = 'catalogo'
           }
         }
         hide()
       }
     }
 
-    for (const inp of inputs) {
+    for (const inp of allInputs) {
       inp.addEventListener('input', function () {
         search(inp)
       })
@@ -387,7 +583,7 @@
 
     document.addEventListener('click', function (e) {
       if (!popper) return
-      if (!popper.contains(e.target) && !inputs.some((inp) => inp.contains(e.target))) {
+      if (!popper.contains(e.target) && !allInputs.some((inp) => inp.contains(e.target))) {
         hide()
       }
     })

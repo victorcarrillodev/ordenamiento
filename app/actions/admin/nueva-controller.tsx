@@ -30,13 +30,20 @@ export default createController(adminRoutes.participacionNueva, {
       body.set('origen', 'fisica')
       body.set('nombre', String(formData.get('nombre') ?? ''))
       body.set('correo', String(formData.get('correo') ?? ''))
+      body.set('domicilio', String(formData.get('domicilio') ?? ''))
       body.set(
         'municipio',
-        String(formData.get('municipio') ?? formData.get('municipio_aporte') ?? ''),
+        String(
+          formData.get('municipio') ??
+            formData.get('municipio_aporte') ??
+            formData.get('municipio_participante') ??
+            'San Pedro Tlaquepaque',
+        ),
       )
       body.set('colonia', String(formData.get('colonia') ?? ''))
       body.set('calle', String(formData.get('calle') ?? ''))
       body.set('numero', String(formData.get('numero') ?? ''))
+      body.set('cp', String(formData.get('cp') ?? ''))
       body.set('latitud', String(formData.get('latitud') ?? ''))
       body.set('longitud', String(formData.get('longitud') ?? ''))
       body.set('fuente', String(formData.get('fuente') ?? ''))
