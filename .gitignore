@@ -6,6 +6,7 @@ tmp/
 .worktrees/
 swarmforge/
 .ai-practice/
+storybook-static/
 
 # bun.lock es el lockfile de referencia (ver Dockerfile: `bun install
 # --frozen-lockfile`). No commitear package-lock.json: dos lockfiles para
