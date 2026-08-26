@@ -81,6 +81,7 @@ export function DireccionFields(handle: Handle<DireccionFieldsProps>) {
             placeholder="Ej. Av. Juárez 100"
             value={values.calle}
             error={errors.calle}
+            autoComplete="off"
             appearance={appearance}
           />
           <Field
@@ -102,6 +103,7 @@ export function DireccionFields(handle: Handle<DireccionFieldsProps>) {
             value={values.municipio}
             error={errors.municipio}
             required={required}
+            autoComplete="off"
             appearance={appearance}
           />
           <Field
