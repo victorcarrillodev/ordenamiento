@@ -9,7 +9,6 @@ import { css } from 'remix/ui'
 import {
   bodyLargeProps,
   bodyProps,
-  btnGoldStyle,
   cardProps,
   colors,
   eyebrowProps,
@@ -21,6 +20,7 @@ import {
   sectionPaddingProps,
   type ThemeData,
 } from '../ui/civic-horizon.ts'
+import { Button } from '../ui/button.tsx'
 import { Document } from './document.tsx'
 import { NavBar } from '../ui/nav-bar.tsx'
 import { routes } from '../routes.ts'
@@ -1343,18 +1343,25 @@ function ParticipationCta() {
           </span>
         </div>
 
-        <a href={routes.participation.index.href()} id="participa-cta-btn" mix={btnGoldStyle}>
+        <Button
+          href={routes.participation.index.href()}
+          id="participa-cta-btn"
+          variant="gold"
+          size="lg"
+          iconRight={
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M5 12h14M12 5l7 7-7 7"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          }
+        >
           Registra tu participación
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M5 12h14M12 5l7 7-7 7"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </a>
+        </Button>
       </div>
     </section>
   )

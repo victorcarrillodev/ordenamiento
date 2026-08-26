@@ -2,6 +2,7 @@ import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Button } from '../../ui/button.tsx'
 
 export interface ReunionesPageProps {
   user: { name: string; role: string }
@@ -55,9 +56,9 @@ export function ReunionesPage(handle: Handle<ReunionesPageProps>) {
               <label for="hora_fin">Hora de conclusión</label>
               <input id="hora_fin" name="hora_fin" type="time" />
             </div>
-            <button type="submit" class="btn btn--dark">
+            <Button buttonType="submit" variant="dark">
               ＋ Agendar
-            </button>
+            </Button>
           </form>
         </div>
 
@@ -66,9 +67,13 @@ export function ReunionesPage(handle: Handle<ReunionesPageProps>) {
             <h2 class="panel__title" style="margin: 0;">
               Reuniones registradas
             </h2>
-            <a class="btn btn--excel" href={`${adminRoutes.exportar.href()}?tabla=reuniones`}>
+            <Button
+              href={`${adminRoutes.exportar.href()}?tabla=reuniones`}
+              variant="secondary"
+              size="sm"
+            >
               ⬇ Exportar a Excel
-            </a>
+            </Button>
           </div>
           <div class="table-wrap">
             <table>
@@ -99,9 +104,9 @@ export function ReunionesPage(handle: Handle<ReunionesPageProps>) {
                         <form method="post" style="margin: 0;">
                           <input type="hidden" name="intent" value="eliminar" />
                           <input type="hidden" name="id" value={String(r.id)} />
-                          <button type="submit" class="btn btn--red">
+                          <Button buttonType="submit" variant="danger" size="sm" title="Eliminar">
                             🗑
-                          </button>
+                          </Button>
                         </form>
                       </td>
                     </tr>

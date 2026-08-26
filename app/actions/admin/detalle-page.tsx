@@ -2,6 +2,7 @@ import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Button } from '../../ui/button.tsx'
 
 interface Adjunto {
   id: number
@@ -167,9 +168,9 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
                     required
                   />
                 </div>
-                <button type="submit" class="btn btn--dark">
+                <Button buttonType="submit" variant="dark">
                   ✉ Enviar datos + PDF
-                </button>
+                </Button>
               </form>
             </div>
           </>

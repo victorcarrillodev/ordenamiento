@@ -2,6 +2,7 @@ import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Button } from '../../ui/button.tsx'
 
 export interface PoelPageProps {
   user: { name: string; role: string }
@@ -58,9 +59,9 @@ export function PoelPage(handle: Handle<PoelPageProps>) {
               <label>Ubicación</label>
               <input name="ubicacion" />
             </div>
-            <button type="submit" class="btn btn--dark">
+            <Button buttonType="submit" variant="dark">
               ＋ Añadir sesión
-            </button>
+            </Button>
           </form>
         </div>
 
@@ -104,9 +105,9 @@ export function PoelPage(handle: Handle<PoelPageProps>) {
                         <form method="post" style="margin:0;">
                           <input type="hidden" name="intent" value="eliminar" />
                           <input type="hidden" name="id" value={String(s.id)} />
-                          <button type="submit" class="btn btn--red">
+                          <Button buttonType="submit" variant="danger" size="sm" title="Eliminar">
                             🗑
-                          </button>
+                          </Button>
                         </form>
                       </td>
                     </tr>

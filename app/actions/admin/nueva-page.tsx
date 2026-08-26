@@ -2,6 +2,7 @@ import type { Handle } from 'remix/ui'
 
 import { adminRoutes, routes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Button } from '../../ui/button.tsx'
 import { DireccionFields } from '../../ui/form/direccion-fields.tsx'
 import { Field, TextArea } from '../../ui/form/field.tsx'
 
@@ -216,13 +217,13 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
 
           <p class="form-hint">Los campos marcados con (*) son obligatorios</p>
 
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary">
+          <div class="form-actions" style="display: flex; gap: 12px; margin-top: 18px;">
+            <Button buttonType="submit" variant="primary">
               Guardar participación
-            </button>
-            <a href={adminRoutes.participaciones.href()} class="btn btn-secondary">
+            </Button>
+            <Button href={adminRoutes.participaciones.href()} variant="secondary">
               Cancelar
-            </a>
+            </Button>
           </div>
         </form>
       </AdminLayout>

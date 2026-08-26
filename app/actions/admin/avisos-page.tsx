@@ -2,6 +2,7 @@ import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Button } from '../../ui/button.tsx'
 
 export interface AvisosPageProps {
   user: { name: string; role: string }
@@ -178,9 +179,9 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
                 placeholder="correo@ejemplo.com"
               />
             </div>
-            <button type="submit" class="btn btn--dark" style="height: 42px; margin-bottom: 2px;">
+            <Button buttonType="submit" variant="dark">
               ＋ Publicar y Notificar
-            </button>
+            </Button>
           </form>
         </div>
 
@@ -353,28 +354,28 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
                               required
                               style="font-size: 12px; padding: 4px 8px; width: 140px; height: 32px; border: 1px solid #CBD5E1; border-radius: 6px;"
                             />
-                            <button
-                              type="submit"
-                              class="btn btn--dark"
+                            <Button
+                              buttonType="submit"
+                              variant="dark"
+                              size="sm"
                               title="Enviar aviso por correo"
-                              style="padding: 4px 8px; font-size: 12px; height: 32px;"
                             >
                               ✉️ Enviar
-                            </button>
+                            </Button>
                           </form>
 
                           {/* Botón Eliminar */}
                           <form method="post" style="margin: 0;">
                             <input type="hidden" name="intent" value="eliminar" />
                             <input type="hidden" name="id" value={String(a.id)} />
-                            <button
-                              type="submit"
-                              class="btn btn--red"
+                            <Button
+                              buttonType="submit"
+                              variant="danger"
+                              size="sm"
                               title="Eliminar aviso"
-                              style="padding: 4px 8px; font-size: 12px; height: 32px;"
                             >
                               🗑
-                            </button>
+                            </Button>
                           </form>
                         </div>
                       </td>
