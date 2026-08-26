@@ -162,6 +162,25 @@
   // ─────────────────────────────────────────────────────────────────────────
   // 2. Modal de Carga con Barra de Progreso en Envío (Upload Progress Bar)
   // ─────────────────────────────────────────────────────────────────────────
+  function hideUploadProgressModal() {
+    const overlay = document.getElementById('mui-loading-overlay')
+    if (overlay) overlay.style.display = 'none'
+  }
+
+  /**
+   * Devuelve el formulario a un estado usable tras un envío fallido.
+   *
+   * Este submit se intercepta con XHR, así que los botones que se bloquean a sí
+   * mismos al enviar (ver submit-button.tsx) nunca se enterarían de que el envío
+   * terminó. Sin este aviso el formulario queda inutilizable hasta recargar.
+   *
+   * El evento no burbujea: se despacha en el <form> y se escucha en ese mismo
+   * <form>. Mover el listener a document lo dejaría de recibir.
+   */
+  function releaseForm(form) {
+    form.dispatchEvent(new CustomEvent('participation:submit-error', { bubbles: false }))
+  }
+
   function showUploadProgressModal(title, desc) {
     let overlay = document.getElementById('mui-loading-overlay')
     if (!overlay) {
@@ -380,14 +399,16 @@
               }, 450)
             } else {
               // Error de validación o del servidor (413, 422, 502, etc.)
-              const overlay = document.getElementById('mui-loading-overlay')
-              if (overlay) overlay.style.display = 'none'
+              hideUploadProgressModal()
 
               if (xhr.responseText) {
                 document.open()
                 document.write(xhr.responseText)
                 document.close()
               } else {
+                // La página sobrevive, así que hay que devolver el formulario a un
+                // estado usable antes de pedirle al usuario que reintente.
+                releaseForm(form)
                 alert(
                   'Ocurrió un problema al enviar la información (código ' +
                     xhr.status +
@@ -399,9 +420,22 @@
         })
 
         xhr.addEventListener('error', function () {
-          const overlay = document.getElementById('mui-loading-overlay')
-          if (overlay) overlay.style.display = 'none'
+          hideUploadProgressModal()
+          releaseForm(form)
           alert('Error de conexión al enviar el formulario. Por favor verifica tu conexión.')
+        })
+
+        // Un envío también puede morir sin pasar por 'error': si expira o si algo
+        // corta la petición. Sin esto el formulario se quedaría bloqueado.
+        xhr.addEventListener('timeout', function () {
+          hideUploadProgressModal()
+          releaseForm(form)
+          alert('El envío tardó demasiado. Por favor intenta de nuevo.')
+        })
+
+        xhr.addEventListener('abort', function () {
+          hideUploadProgressModal()
+          releaseForm(form)
         })
 
         xhr.send(formData)

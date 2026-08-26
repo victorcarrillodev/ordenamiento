@@ -1,9 +1,12 @@
+import { readFile } from 'node:fs/promises'
 import { join, isAbsolute } from 'node:path'
 import {
   canonicalMimeFor,
   contentDispositionHeader,
   getExtension,
+  isImageExtension,
   shouldServeInline,
+  validateUpload,
 } from './services/upload-guard.ts'
 
 import {

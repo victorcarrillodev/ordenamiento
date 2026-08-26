@@ -141,6 +141,10 @@ export async function handleCreateParticipation(
       observacion: String(form.get('observacion') ?? ''),
       codigo_postal: String(form.get('codigo_postal') ?? ''),
       direccion_origen: String(form.get('direccion_origen') ?? ''),
+      // Domicilio de quien participa: sólo lo captura el alta física desde el
+      // panel, y es independiente del lugar del aporte.
+      domicilio: String(form.get('domicilio') ?? ''),
+      municipio_participante: String(form.get('municipio_participante') ?? ''),
       folio,
     }
 
@@ -158,6 +162,8 @@ export async function handleCreateParticipation(
           municipio: camposFormulario.municipio,
           codigo_postal: camposFormulario.codigo_postal,
           direccion_origen: camposFormulario.direccion_origen,
+          domicilio: camposFormulario.domicilio,
+          municipio_participante: camposFormulario.municipio_participante,
           consentimiento_en: origin === 'digital' ? new Date() : null,
           consentimiento_version: origin === 'digital' ? consentimientoVersion : '',
           institucion: camposFormulario.institucion,
@@ -188,7 +194,8 @@ export async function handleCreateParticipation(
       })
     }
 
-    return json({ id: resultado.participationId, folio: resultado.folio, ...resultado }, 201)
+    // El spread ya aporta folio y participationId; `id` es el alias que espera el cliente.
+    return json({ ...resultado, id: resultado.participationId }, 201)
   } catch (err) {
     // Si algo falla, limpiar todos los archivos escritos en disco
     await Promise.allSettled(escritos.map((p) => rm(p, { force: true })))

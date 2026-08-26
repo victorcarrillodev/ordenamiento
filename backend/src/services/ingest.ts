@@ -1,5 +1,4 @@
-import type { Sql } from 'postgres'
-import { sql } from '../db/pool.ts'
+import { sql, type Db } from '../db/pool.ts'
 import { chunkText } from '../text/chunk.ts'
 import { extractPdfText, TextLayerMissingError } from '../text/pdf-extract.ts'
 import { featurizeWeighted, toVectorLiteral, tokenize } from '../vector/tfidf.ts'
@@ -29,13 +28,13 @@ export interface IngestFile {
  * Cada sección se convierte en chunks con embedding TF-IDF 512D.
  */
 export async function ingestParticipation(
-  dbOrParticipationId: Sql | number,
+  dbOrParticipationId: Db | number,
   participationIdOrFields: number | Record<string, string>,
   maybeFieldsOrFiles?: Record<string, string> | IngestFile[],
   maybeFiles?: IngestFile[],
 ): Promise<IngestResult> {
   const isDb = typeof dbOrParticipationId === 'function' && 'unsafe' in dbOrParticipationId
-  const db: Sql = isDb ? (dbOrParticipationId as Sql) : sql
+  const db: Db = isDb ? (dbOrParticipationId as Db) : sql
   const participationId = isDb
     ? (participationIdOrFields as number)
     : (dbOrParticipationId as number)
@@ -102,7 +101,7 @@ export async function ingestParticipation(
   return { chunks, needsOcr }
 }
 
-async function insertChunk(db: Sql, participationId: number, position: number, content: string) {
+async function insertChunk(db: Db, participationId: number, position: number, content: string) {
   const terms = [...new Set(tokenize(content))]
   const idfWeights = await getIdfMap(terms)
   const vector = featurizeWeighted(content, idfWeights)
