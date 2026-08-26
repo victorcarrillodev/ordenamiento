@@ -1,10 +1,5 @@
 import { Document } from '../document.tsx'
-<<<<<<< HEAD
-  import { NavBar } from '../../components/Nav/NavBar.tsx'
-import { css, type Handle } from 'remix/ui'
-import { Mapa } from '../../components/Map/Mapa.tsx'
-import Button1 from '../../components/Button/Button.tsx';
-=======
+
 import { Button } from '../../ui/button.tsx'
 import { NavBar } from '../../ui/nav-bar.tsx'
 import { css, type Handle } from 'remix/ui'
@@ -15,7 +10,7 @@ export interface PoetdumPageProps {
   theme?: ThemeData
 }
 
->>>>>>> origin/test
+
 const title = css({
   margin: '5rem',
   textAlign: 'center',
@@ -198,7 +193,7 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
                 <Button
                   variant="secondary"
                   size="lg"
-                  mix={css({ borderColor: '#B5AB78', color: '#fff' })}
+  
                 >
                   FICHAS
                 </Button>
@@ -238,11 +233,7 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
             </p>
           </section>
           <p>contained</p>
-          <Button1 data={"mamese"} type={"contained"}/>
-          <p>autlend</p>
-          <Button1 data={"mamese"} type={"outlend"}/>
-          <p>text</p>
-          <Button1 data={"mamese"} type={"text"}/>
+  
         </main>
       </Document>
     )
