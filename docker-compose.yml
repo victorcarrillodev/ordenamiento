@@ -22,14 +22,11 @@ services:
     build: ./backend
     container_name: ordenamiento-backend
     restart: unless-stopped
-    mem_limit: 512m
+    mem_limit: 1g
     mem_reservation: 128m
     depends_on:
       db:
         condition: service_healthy
-    # Tolerancia a picos: techo de memoria para que una ráfaga de uploads no
-    # OOM-pee al host entero (la BD y el proxy viven en la misma máquina).
-    mem_limit: 1g
     healthcheck:
       test:
         [
@@ -75,7 +72,6 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    mem_limit: 512m
     environment:
       BACKEND_URL: http://backend:5920
       BASE_PATH: /ordena

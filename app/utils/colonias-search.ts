@@ -5,6 +5,7 @@ export interface Sugerencia {
   municipio: string
   cp: string
   tipo: string
+  calleSugerida?: string
 }
 
 export interface MunicipioSugerencia {
@@ -20,9 +21,35 @@ export interface OpcionesBusqueda {
 
 const STOPWORDS = new Set(['el', 'la', 'los', 'las', 'de', 'del', 'y', 'en', 'un', 'una'])
 
+const STREET_PREFIXES = new Set([
+  'calle',
+  'av',
+  'ave',
+  'avenida',
+  'andador',
+  'and',
+  'privada',
+  'priv',
+  'prolongacion',
+  'prol',
+  'carretera',
+  'carr',
+  'calzada',
+  'blvd',
+  'boulevard',
+  'cerrada',
+  'cda',
+  'c',
+  'no',
+  'num',
+  'numero',
+])
+
 function tokenize(query: string): string[] {
   const norm = normalizar(query)
-  return norm.split(/\s+/).filter((t) => t.length > 0 && !STOPWORDS.has(t))
+  return norm
+    .split(/[\s,.-]+/)
+    .filter((t) => t.length > 0 && !STOPWORDS.has(t) && !STREET_PREFIXES.has(t) && !/^\d+$/.test(t))
 }
 
 function normalizePhonetic(term: string): string {
@@ -54,6 +81,13 @@ export function buscarColonias(
 
   const esCp = /^\d{5}$/.test(query)
 
+  // Extraer número de calle si se ingresó (ej: "Loma Alta 200" o "Av. Juárez #45")
+  const numeroMatch = query.match(/(?:#|no\.?|num\.?|núm\.?)?\s*(\d{1,5}(?:\s*-[A-Za-z0-9]+)?)/i)
+  const numeroCalle = numeroMatch ? numeroMatch[1] : undefined
+
+  // Consulta limpia sin prefijos ni números para matching directo
+  const qLimpia = qTokens.join(' ')
+
   interface Coincidencia {
     entrada: EntradaCatalogo
     score: number // menor score = mayor relevancia
@@ -80,27 +114,30 @@ export function buscarColonias(
     const busquedaNorm = entrada.busqueda
 
     // 1. Coincidencia exacta de prefijo en colonia (máxima prioridad)
-    if (colNorm.startsWith(qNorm)) {
+    if (colNorm.startsWith(qNorm) || (qLimpia.length >= 2 && colNorm.startsWith(qLimpia))) {
       matches.push({ entrada, score: 1 })
       continue
     }
 
     // 2. Coincidencia de prefijo sin artículos (ej: "Loma Alta" vs "La Loma Alta")
     const colSinArticulos = colNorm.replace(/^(el|la|los|las|de|del|san|santa|sta)\s+/, '')
-    const qSinArticulos = qNorm.replace(/^(el|la|los|las|de|del|san|santa|sta)\s+/, '')
+    const qSinArticulos = (qLimpia || qNorm).replace(/^(el|la|los|las|de|del|san|santa|sta)\s+/, '')
     if (qSinArticulos.length >= 2 && colSinArticulos.startsWith(qSinArticulos)) {
       matches.push({ entrada, score: 2 })
       continue
     }
 
     // 3. Substring directo en colonia
-    if (colNorm.includes(qNorm)) {
+    if (colNorm.includes(qNorm) || (qLimpia.length >= 2 && colNorm.includes(qLimpia))) {
       matches.push({ entrada, score: 3 })
       continue
     }
 
     // 4. Coincidencia de prefijo en municipio
-    if (munEntradaNorm.startsWith(qNorm)) {
+    if (
+      munEntradaNorm.startsWith(qNorm) ||
+      (qLimpia.length >= 2 && munEntradaNorm.startsWith(qLimpia))
+    ) {
       matches.push({ entrada, score: 4 })
       continue
     }
@@ -115,7 +152,7 @@ export function buscarColonias(
     }
 
     // 6. Substring general en texto indexado de búsqueda (colonia + municipio + cp)
-    if (busquedaNorm.includes(qNorm)) {
+    if (busquedaNorm.includes(qNorm) || (qLimpia.length >= 2 && busquedaNorm.includes(qLimpia))) {
       matches.push({ entrada, score: 6 })
       continue
     }
@@ -144,12 +181,19 @@ export function buscarColonias(
     return a.entrada.cp.localeCompare(b.entrada.cp)
   })
 
-  return matches.slice(0, limite).map((m) => ({
-    colonia: m.entrada.colonia,
-    municipio: m.entrada.municipio,
-    cp: m.entrada.cp,
-    tipo: m.entrada.tipo,
-  }))
+  return matches.slice(0, limite).map((m) => {
+    let calleSugerida: string | undefined
+    if (numeroCalle) {
+      calleSugerida = `${m.entrada.colonia} ${numeroCalle}`
+    }
+    return {
+      colonia: m.entrada.colonia,
+      municipio: m.entrada.municipio,
+      cp: m.entrada.cp,
+      tipo: m.entrada.tipo,
+      calleSugerida,
+    }
+  })
 }
 
 /**

@@ -82,4 +82,61 @@ describe('participation controller action', () => {
       expect(cb.get('consentimiento_version')).toBe('lgpdppso-2026-01')
     }
   })
+
+  it('búsqueda de colonias con coincidencias fonéticas (ej. el betel -> Bethel)', async () => {
+    const request = new Request('http://localhost/ordena/api/colonias?q=el+betel')
+    const response = await router.fetch(request)
+    expect(response?.status).toBe(200)
+
+    const data = (await response?.json()) as {
+      items: Array<{ colonia: string; cp: string; municipio: string }>
+    }
+    expect(data.items.length).toBeGreaterThan(0)
+    expect(data.items[0].colonia).toBe('Bethel')
+    expect(data.items[0].municipio).toBe('Guadalajara')
+    expect(data.items[0].cp).toBe('44720')
+  })
+
+  it('reenvía múltiples archivos adjuntos al backend', async () => {
+    let capturedBody: FormData | null = null
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        capturedBody = init?.body as FormData
+        return new Response(JSON.stringify({ id: 100, folio: 'PP-2026-002' }), { status: 201 })
+      }),
+    )
+
+    const formData = new FormData()
+    formData.set('nombre', 'Ciudadano MultiArchivos')
+    formData.set('email', 'multi@ejemplo.com')
+    formData.set('calle', 'Av. México 123')
+    formData.set('colonia', 'Ladrón de Guevara')
+    formData.set('municipio', 'Guadalajara')
+    formData.set('cp', '44600')
+    formData.set('observacion', 'Propuesta con varios documentos técnicos adjuntos')
+    formData.set('consentimiento', '1')
+    formData.append(
+      'archivos',
+      new File(['plano-cad'], 'plano.dwg', { type: 'application/octet-stream' }),
+    )
+    formData.append(
+      'archivos',
+      new File(['estudio-pdf'], 'estudio.pdf', { type: 'application/pdf' }),
+    )
+
+    const request = new Request('http://localhost/ordena/participation', {
+      method: 'POST',
+      body: formData,
+    })
+
+    const response = await router.fetch(request)
+    expect(response?.status).toBe(302)
+    expect(capturedBody).not.toBeNull()
+    if (capturedBody) {
+      const cb = capturedBody as FormData
+      const sentFiles = [...cb.getAll('archivos'), ...cb.getAll('pdf')]
+      expect(sentFiles.length).toBe(2)
+    }
+  })
 })

@@ -39,7 +39,7 @@ export const SubmitButton = clientEntry(
                 pendiente = true
                 handle.update()
               },
-              { signal },
+              signal instanceof AbortSignal ? { signal } : undefined,
             )
           }
         })

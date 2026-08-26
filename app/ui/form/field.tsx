@@ -14,6 +14,7 @@ export interface FieldProps {
   required?: boolean
   readOnly?: boolean
   autoComplete?: string
+  list?: string
   error?: string
   hint?: string
   appearance?: FieldAppearance
@@ -70,6 +71,7 @@ export function Field(handle: Handle<FieldProps>) {
       required = false,
       readOnly = false,
       autoComplete,
+      list,
       error,
       hint,
       appearance = 'civic',
@@ -95,6 +97,7 @@ export function Field(handle: Handle<FieldProps>) {
             readOnly={readOnly}
             placeholder={placeholder}
             autocomplete={autoComplete}
+            list={list}
             aria-required={required ? 'true' : undefined}
             aria-invalid={error ? 'true' : undefined}
             aria-describedby={describedBy}
@@ -128,6 +131,7 @@ export function Field(handle: Handle<FieldProps>) {
           required={required}
           readOnly={readOnly}
           autocomplete={autoComplete}
+          list={list}
           aria-required={required ? 'true' : undefined}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={describedBy}

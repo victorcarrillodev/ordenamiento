@@ -44,7 +44,8 @@ export default createController(routes.participation, {
         if (fileUpload.fieldName === 'archivos') {
           const key = `${Date.now()}-${randomBytes(4).toString('hex')}-${fileUpload.name}`
           storedKeys.push(key)
-          return tmpStorage.put(key, fileUpload)
+          const storageFile = await tmpStorage.put(key, fileUpload)
+          return storageFile ? await storageFile.toFile() : undefined
         }
       }
 
@@ -109,7 +110,11 @@ export default createController(routes.participation, {
           .getAll('archivos')
           .filter((entry): entry is File => entry instanceof File && entry.size > 0)
         for (const adjunto of adjuntos) {
-          body.append('archivos', adjunto, adjunto.name)
+          const fileToSend =
+            typeof (adjunto as unknown as { toFile?: () => Promise<File> }).toFile === 'function'
+              ? await (adjunto as unknown as { toFile: () => Promise<File> }).toFile()
+              : adjunto
+          body.append('archivos', fileToSend, fileToSend.name || adjunto.name)
         }
 
         let backendOk = false
