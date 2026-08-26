@@ -2,7 +2,7 @@ import type { Handle } from "remix/ui";
 import { css } from "remix/ui";
 import { colors, FONT_STACK, type ThemeData } from "../../ui/civic-horizon.ts";
 import { routes } from "../../routes.ts";
-
+import {shadows} from "../../styles/shadows.tsx"
 export interface NavBarProps {
   theme?: ThemeData
 }
@@ -29,9 +29,8 @@ export function NavBar(handle: Handle<NavBarProps>) {
       zIndex: 100,
       background: navBg,
       backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
       borderBottom: `1px solid rgba(0,0,0,0.08)`,
-      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+      boxShadow:shadows.xl,
     })
 
     const navInnerStyle = css({
