@@ -39,9 +39,7 @@ describe('validateUpload', () => {
   })
 
   it('rechaza extensiones fuera de la whitelist', () => {
-    expect(
-      validateUpload({ filename: 'datos.xyz', buffer: Buffer.alloc(10, 1) }).ok,
-    ).toBe(false)
+    expect(validateUpload({ filename: 'datos.xyz', buffer: Buffer.alloc(10, 1) }).ok).toBe(false)
   })
 
   it('rechaza un ejecutable disfrazado de PDF (firma MZ)', () => {
@@ -70,7 +68,9 @@ describe('validateUpload', () => {
   })
 
   it('acepta CSV y TXT legítimos', () => {
-    expect(validateUpload({ filename: 'colonias.csv', buffer: buf('id,nombre\n1,Centro\n') }).ok).toBe(true)
+    expect(
+      validateUpload({ filename: 'colonias.csv', buffer: buf('id,nombre\n1,Centro\n') }).ok,
+    ).toBe(true)
     expect(validateUpload({ filename: 'notas.txt', buffer: buf('Hola mundo') }).ok).toBe(true)
   })
 

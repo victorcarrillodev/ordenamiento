@@ -1,8 +1,21 @@
 import { Document } from '../document.tsx'
+<<<<<<< HEAD
   import { NavBar } from '../../components/Nav/NavBar.tsx'
 import { css, type Handle } from 'remix/ui'
 import { Mapa } from '../../components/Map/Mapa.tsx'
 import Button1 from '../../components/Button/Button.tsx';
+=======
+import { Button } from '../../ui/button.tsx'
+import { NavBar } from '../../ui/nav-bar.tsx'
+import { css, type Handle } from 'remix/ui'
+import { Mapa } from './public/mapa.tsx'
+import type { ThemeData } from '../../ui/civic-horizon.ts'
+
+export interface PoetdumPageProps {
+  theme?: ThemeData
+}
+
+>>>>>>> origin/test
 const title = css({
   margin: '5rem',
   textAlign: 'center',
@@ -69,22 +82,7 @@ const pOficioal = css({
 })
 const buttonsContainer = css({
   display: 'flex',
-  gap: '73px',
-})
-const sbutton = css({
-  border: 'none',
-  cursor: 'pointer',
-  borderRadius: '1rem',
-  width: '23rem',
-  height: '70px',
-  color: 'white',
-  backgroundColor: '#B5AB78',
-  transition: 'background-color 300ms ease, transform 300ms ease',
-
-  '&:hover': {
-    backgroundColor: '#B5AB89',
-    transform: 'translateY(-4px)',
-  },
+  gap: '32px',
 })
 
 const act = css({
@@ -107,12 +105,6 @@ const detalles = css({
   display: 'flex',
   justifyContent: 'center',
 })
-const button = css({
-  borderRadius: '1rem',
-  backgroundColor: '#C84067',
-  height: '2.5rem',
-  width: '7rem',
-})
 const futter = css({
   display: 'flex',
   flexDirection: 'row',
@@ -129,7 +121,7 @@ const logoFuter = css({
   height: '70px',
 })
 
-export function PoetdumPage(handle: Handle<{ theme?: any }>) {
+export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
   return () => {
     const theme = handle.props.theme
     return (
@@ -200,8 +192,16 @@ export function PoetdumPage(handle: Handle<{ theme?: any }>) {
               <br />
               <br />
               <div mix={buttonsContainer}>
-                <button mix={sbutton}>POETDUM</button>
-                <button mix={sbutton}>FICHAS</button>
+                <Button variant="gold" size="lg">
+                  POETDUM
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  mix={css({ borderColor: '#B5AB78', color: '#fff' })}
+                >
+                  FICHAS
+                </Button>
               </div>
             </div>
           </section>
@@ -219,7 +219,9 @@ export function PoetdumPage(handle: Handle<{ theme?: any }>) {
             </p>
           </section>
           <div mix={detalles}>
-            <button mix={button}>Detalles de la reunion</button>
+            <Button variant="primary" size="md">
+              Detalles de la reunión
+            </Button>
           </div>
           <br />
           <br />

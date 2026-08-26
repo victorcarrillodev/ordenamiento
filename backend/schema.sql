@@ -39,6 +39,10 @@ CREATE TABLE IF NOT EXISTS participations (
   fuente       TEXT NOT NULL DEFAULT '',           -- Empresa | Dependencia | Organización | Persona ciudadana | Otra
   genero       TEXT NOT NULL DEFAULT '',           -- Hombre | Mujer | Otro
   tematica     TEXT NOT NULL DEFAULT '',           -- Servicios Ambientales | Gestión del Agua | ...
+  consentimiento_en      TIMESTAMPTZ,
+  consentimiento_version TEXT NOT NULL DEFAULT '',
+  codigo_postal          TEXT NOT NULL DEFAULT '',
+  direccion_origen       TEXT NOT NULL DEFAULT '',
   creado_por   BIGINT REFERENCES users(id) ON DELETE SET NULL,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -50,10 +54,14 @@ CREATE INDEX IF NOT EXISTS idx_participations_fecha   ON participations (created
 CREATE INDEX IF NOT EXISTS idx_participations_folio   ON participations (folio);
 CREATE INDEX IF NOT EXISTS idx_participaciones_nombre ON participations (nombre);
 
--- Columnas de métricas (por si la tabla ya existía sin ellas)
+-- Columnas de métricas y auditoría (por si la tabla ya existía sin ellas)
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS fuente   TEXT NOT NULL DEFAULT '';
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS genero   TEXT NOT NULL DEFAULT '';
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS tematica TEXT NOT NULL DEFAULT '';
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS consentimiento_en      TIMESTAMPTZ;
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS consentimiento_version TEXT NOT NULL DEFAULT '';
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS codigo_postal          TEXT NOT NULL DEFAULT '';
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS direccion_origen       TEXT NOT NULL DEFAULT '';
 
 -- ---------------------------------------------------------------------------
 -- Adjuntos (archivos subidos: PDF, DWG, JPG, SHX, ...) – relacional

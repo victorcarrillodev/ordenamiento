@@ -1,18 +1,18 @@
-import type { Handle } from "remix/ui";
-import { css } from "remix/ui";
-import { colors, FONT_STACK, type ThemeData } from "../../ui/civic-horizon.ts";
-import { routes } from "../../routes.ts";
-import {shadows} from "../../styles/shadows.tsx"
+import type { Handle } from 'remix/ui'
+import { css } from 'remix/ui'
+import { colors, FONT_STACK, type ThemeData } from './civic-horizon.ts'
+import { routes } from '../routes.ts'
+
 export interface NavBarProps {
   theme?: ThemeData
 }
 
 export function NavBar(handle: Handle<NavBarProps>) {
   return () => {
-    const theme = handle.props.theme;
-    const u = theme?.usuario || {};
-    const c = u.colores || {};
-    const img = u.imagenes || {};
+    const theme = handle.props.theme
+    const u = theme?.usuario || {}
+    const c = u.colores || {}
+    const img = u.imagenes || {}
 
     const navBg = c.navbarFondo || 'rgba(255,255,255,0.98)'
     const navText = c.navbarTexto || '#1a1d26'
@@ -30,7 +30,6 @@ export function NavBar(handle: Handle<NavBarProps>) {
       background: navBg,
       backdropFilter: 'blur(12px)',
       borderBottom: `1px solid rgba(0,0,0,0.08)`,
-      boxShadow:shadows.xl,
     })
 
     const navInnerStyle = css({

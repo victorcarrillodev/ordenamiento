@@ -3,6 +3,8 @@ services:
     image: pgvector/pgvector:pg16
     container_name: ordenamiento-db
     restart: unless-stopped
+    mem_limit: 1024m
+    mem_reservation: 256m
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -24,6 +26,8 @@ services:
     build: .
     container_name: ordenamiento-api
     restart: unless-stopped
+    mem_limit: 512m
+    mem_reservation: 128m
     depends_on:
       db:
         condition: service_healthy

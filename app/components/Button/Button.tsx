@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { css, type Handle } from "remix/ui";
 import { shadows } from "../../styles/shadows.tsx";
 
@@ -99,3 +100,9 @@ export default function Button1(handle: Handle<ButtonProps>) {
   }
 
 }
+=======
+import { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from '../../ui/button.tsx'
+
+export { Button, type ButtonProps, type ButtonVariant, type ButtonSize }
+export default Button
+>>>>>>> origin/test

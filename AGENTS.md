@@ -41,3 +41,16 @@ Refer to ./.agents/skills/remix/SKILL.md
 - This starter intentionally begins small; add directories like `app/data/` and `test/` only when you need them.
 - Prefer putting code in the narrowest owner before introducing shared modules.
 - Avoid generic dumping-ground directories like `app/lib/` or `app/components/`.
+
+## Phase Agent Workflow
+
+Todo cambio de código no trivial en este repo (feature, fix o refactor) pasa por un pipeline de cuatro agentes antes de darse por terminado. El agente principal actúa como **Developer-agent**; los otros tres son subagentes definidos en `.claude/agents/` e invocables por nombre.
+
+1. **Developer** (agente principal) — implementa la tarea: código limpio, bien estructurado, DRY, siguiendo las convenciones de este archivo.
+2. **Architect** (`.claude/agents/architect.md`) — reubica y modulariza el código, aplica un análisis de riesgo tipo CRAP, decide qué se centraliza en `app/ui/` vs. qué se queda en su owner más estrecho.
+3. **QA** (`.claude/agents/qa.md`) — corre typecheck/lint/format/tests y revisa el diff contra los estándares de calidad de este archivo. Si **RECHAZA**, el ciclo vuelve al paso 1 (Developer corrige, Architect reconfirma si aplica) antes de continuar.
+4. **Testing** (`.claude/agents/testing.md`) — intenta romper el resultado con casos límite y pruebas de seguridad, y entrega un reporte. Si hay hallazgos, el ciclo vuelve al paso 1.
+
+El ciclo se repite hasta que QA aprueba y Testing no reporta hallazgos (o el usuario acepta explícitamente dejar algo pendiente). Si después de 3 vueltas completas el ciclo no cierra, el agente principal se detiene y explica al usuario qué sigue fallando en vez de seguir iterando solo.
+
+**Cuándo aplica el pipeline completo:** cambios de código reales. Preguntas, exploración o respuestas puramente informativas no lo requieren.

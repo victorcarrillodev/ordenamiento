@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html-vite'
 
-import { mountRemix } from '../../../.storybook/remix-root.ts'
-import { Mapa } from './Mapa.tsx'
+import { mountRemix } from '../../../../.storybook/remix-root.ts'
+import { Mapa } from './mapa.tsx'
 
 const meta: Meta = {
   title: 'Componentes/Mapa',

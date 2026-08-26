@@ -9,6 +9,7 @@
     "test": "NODE_ENV=test vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "build:catalogo": "node --import remix/node-tsx scripts/build-catalogo.ts",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
     "storybook": "storybook dev -p 6006",
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@eslint/js": "latest",
+    "@storybook/addon-docs": "^10.5.10",
     "@storybook/html": "^10.5.10",
     "@storybook/html-vite": "^10.5.10",
     "@types/leaflet": "^1.9.22",
@@ -32,8 +34,7 @@
     "eslint": "latest",
     "eslint-config-prettier": "latest",
     "prettier": "latest",
-    "storybook": "^10.5.10",
-    "typescript": "~5.7.0",
+    "typescript": "latest",
     "typescript-eslint": "latest",
     "vite": "^8.2.2",
     "vitest": "latest"

@@ -12,6 +12,10 @@ export interface ParticipationInput {
   numero?: string
   colonia?: string
   municipio?: string
+  codigo_postal?: string
+  direccion_origen?: string
+  consentimiento_en?: Date | string | null
+  consentimiento_version?: string
   institucion?: string
   ocupacion?: string
   latitud?: string
@@ -30,12 +34,19 @@ export interface CreateResult {
 }
 
 export async function createParticipation(
-  input: ParticipationInput,
-  folio: string,
+  dbOrInput: Sql | ParticipationInput,
+  inputOrFolio: ParticipationInput | string,
+  maybeFolio?: string,
 ): Promise<CreateResult> {
-  const rows = await sql<{ id: number }[]>`--sql
+  const isDb = typeof dbOrInput === 'function' && 'unsafe' in dbOrInput
+  const db: Sql = isDb ? (dbOrInput as Sql) : sql
+  const input = isDb ? (inputOrFolio as ParticipationInput) : (dbOrInput as ParticipationInput)
+  const folio = isDb ? (maybeFolio as string) : (inputOrFolio as string)
+
+  const rows = await db<{ id: number }[]>`--sql
     INSERT INTO participations (
       folio, origen, nombre, correo, calle, numero, colonia, municipio,
+      codigo_postal, direccion_origen, consentimiento_en, consentimiento_version,
       institucion, ocupacion, latitud, longitud, observacion, estado,
       fuente, genero, tematica, creado_por
     )
@@ -48,6 +59,10 @@ export async function createParticipation(
       ${input.numero ?? ''},
       ${input.colonia ?? ''},
       ${input.municipio ?? ''},
+      ${input.codigo_postal ?? ''},
+      ${input.direccion_origen ?? ''},
+      ${input.consentimiento_en ?? null},
+      ${input.consentimiento_version ?? ''},
       ${input.institucion ?? ''},
       ${input.ocupacion ?? ''},
       ${input.latitud ?? ''},

@@ -9,6 +9,9 @@ RUN bun install --frozen-lockfile --production
 COPY schema.sql ./
 COPY src ./src
 
+# Directorio de uploads con permisos para bun
+RUN mkdir -p /app/uploads && chown -R bun:bun /app/uploads
+
 # Usuario no-root
 USER bun
 
