@@ -74,12 +74,10 @@ function withSecurityHeaders(response: Response): Response {
 }
 
 const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
-
 const server = http.createServer(
   createRequestListener(async (request: Request) => {
     try {
       const res = await router.fetch(request)
-
       // Si la respuesta es exitosa, es una redirección, o ya es HTML con estado de error, servir directamente
       if (res) {
         const isRedirect = res.status >= 300 && res.status < 400
