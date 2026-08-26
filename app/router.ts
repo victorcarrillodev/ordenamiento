@@ -14,7 +14,6 @@ import enviarController from './actions/admin/enviar-controller.tsx'
 import personalizacionController from './actions/admin/personalizacion-controller.tsx'
 import { render } from './middleware/render.tsx'
 import { adminRoutes, routes } from './routes.ts'
-
 type AppContext = MiddlewareContext<[ReturnType<typeof render>]>
 
 declare module 'remix/router' {

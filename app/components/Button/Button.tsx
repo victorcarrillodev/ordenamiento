@@ -1,4 +1,6 @@
 import { css, type Handle } from "remix/ui";
+import { shadows } from "../../styles/shadows.tsx";
+
 
  export interface  ButtonProps{
 data: string;
@@ -6,29 +8,33 @@ type: "contained"|"outlend"|"text";
  }
 
 
-const contained=css({
-    width:"auto",
-       backgroundColor: "#03020B",
-    color: "#fff",
-    borderRadius: "10px",
-    padding: "10px 24px",
-    fontSize: "16px",
-    fontWeight: 600,
-    boxShadow: "0 4px 12px rgba(105, 86, 243, 0.3)",
+const contained = css({
+  width: "auto",
 
-    "&:hover": {
-      backgroundColor: "#5845E5",
-      boxShadow: "0 6px 16px rgba(105, 86, 243, 0.4)",
-    },
+  backgroundColor: "#6956F3",
+  color: "#fff",
 
-    "&:disabled": {
-      backgroundColor: "#ccc",
-      color: "#888",
-    },
+  borderRadius: "10px",
+  padding: "10px 24px",
 
-})
+  fontSize: "16px",
+  fontWeight: 600,
+
+  boxShadow: shadows.lg,
+
+  "&:hover": {
+    backgroundColor: "#5845E5",
+    boxShadow: shadows.lg,
+  },
+
+ 
+});
 const outlend=css({
     width:"auto",
+    boxShadow: shadows.lg,
+
+
+
 
       color: "#6956F3",
     borderColor: "#6956F3",
@@ -45,6 +51,9 @@ const outlend=css({
 })
 const text = css({
   width: "auto",
+    boxShadow: shadows.md,
+
+
 
   border: "none",
   background: "transparent",

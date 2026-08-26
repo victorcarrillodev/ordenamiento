@@ -1,5 +1,5 @@
 import { Document } from '../document.tsx'
-import { NavBar } from '../../components/Nav/NavBar.tsx'
+  import { NavBar } from '../../components/Nav/NavBar.tsx'
 import { css, type Handle } from 'remix/ui'
 import { Mapa } from '../../components/Map/Mapa.tsx'
 import Button1 from '../../components/Button/Button.tsx';

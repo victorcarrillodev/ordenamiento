@@ -12,6 +12,9 @@ export const routes = route({
   poetdum: {
     show: get(`${basePath}/poetdum`),
   },
+  test:{
+    show:get(`${basePath}/poetdum`)
+  }
 })
 
 /**
