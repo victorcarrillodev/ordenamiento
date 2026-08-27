@@ -69,18 +69,19 @@ export async function ingestParticipation(
       try {
         text = await extractPdfText(file.buffer)
       } catch (err) {
-        if (err instanceof TextLayerMissingError) {
-          needsOcr = true
-        } else {
-          throw err
-        }
+        // Si el PDF es un escaneo, solo imágenes o no tiene capa de texto,
+        // no fallamos la transacción: el archivo se preserva y se marca para OCR.
+        needsOcr = true
       }
     }
 
     if (text) {
       for (const chunk of chunkText(text)) {
-        await insertChunk(db, participationId, chunk.position, chunk.content)
-        chunks++
+        const cleanContent = chunk.content.replace(/\0/g, '').trim()
+        if (cleanContent) {
+          await insertChunk(db, participationId, chunk.position, cleanContent)
+          chunks++
+        }
       }
     }
   }
@@ -93,8 +94,11 @@ export async function ingestParticipation(
 
   if (formText) {
     for (const chunk of chunkText(formText, 512)) {
-      await insertChunk(db, participationId, chunks + chunk.position, chunk.content)
-      chunks++
+      const cleanFormContent = chunk.content.replace(/\0/g, '').trim()
+      if (cleanFormContent) {
+        await insertChunk(db, participationId, chunks + chunk.position, cleanFormContent)
+        chunks++
+      }
     }
   }
 
@@ -102,11 +106,13 @@ export async function ingestParticipation(
 }
 
 async function insertChunk(db: Db, participationId: number, position: number, content: string) {
-  const terms = [...new Set(tokenize(content))]
+  const sanitized = content.replace(/\0/g, '').trim()
+  if (!sanitized) return
+  const terms = [...new Set(tokenize(sanitized))]
   const idfWeights = await getIdfMap(terms)
-  const vector = featurizeWeighted(content, idfWeights)
+  const vector = featurizeWeighted(sanitized, idfWeights)
   await db`--sql
     INSERT INTO participation_chunks (participation_id, position, content, embedding)
-    VALUES (${participationId}, ${position}, ${content}, ${toVectorLiteral(vector)}::vector)
+    VALUES (${participationId}, ${position}, ${sanitized}, ${toVectorLiteral(vector)}::vector)
   `
 }
