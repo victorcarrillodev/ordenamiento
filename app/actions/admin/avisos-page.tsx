@@ -17,8 +17,8 @@ export interface AvisosPageProps {
     id: number
     titulo: string
     fecha: string
-    hora_inicio?: string
-    hora_fin?: string
+    hora_inicio: string | null
+    hora_fin: string | null
   }>
   sesiones?: Array<{
     id: number

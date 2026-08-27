@@ -6,24 +6,10 @@
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { backendFetch, fetchJsonOr, requireAdminUser } from '../../backend.ts'
+import { backendFetch, requireAdminUser } from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
 import { ReunionesPage } from './reuniones-page.tsx'
-
-interface Reunion {
-  id: number
-  titulo: string
-  fecha: string
-  hora_inicio: string
-  hora_fin: string
-}
-
-async function reunionesDe(request: Request): Promise<Reunion[]> {
-  const data = await fetchJsonOr<{ reuniones: Reunion[] }>(request, '/api/reuniones', {
-    reuniones: [],
-  })
-  return data.reuniones
-}
+import { reunionesDe } from './_shared.ts'
 
 export default createController(adminRoutes.reuniones, {
   actions: {

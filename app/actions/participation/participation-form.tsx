@@ -132,6 +132,7 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
             placeholder="Opcional (ej. Colectivo Ambiental, ITESO)"
             value={values.institucion}
             error={errors.institucion}
+            wide
           />
 
           <TextArea
@@ -139,10 +140,11 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
             label="Observación o propuesta"
             placeholder="Describe tu observación, comentario técnico o propuesta sobre el ordenamiento territorial..."
             required
-            rows={3}
-            minHeight="80px"
+            rows={5}
+            minHeight="120px"
             value={values.observacion}
             error={errors.observacion}
+            wide
           />
 
           <UploadField error={errors.archivos} />

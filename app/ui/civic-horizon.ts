@@ -280,7 +280,7 @@ export const inputProps: CSSProps = {
   background: colors.white,
   border: `1.5px solid ${colors.gray300}`,
   borderRadius: '8px',
-  padding: '12px 16px',
+  padding: '14px 18px',
   width: '100%',
   outline: 'none',
   transition: 'border-color 180ms ease, box-shadow 180ms ease',

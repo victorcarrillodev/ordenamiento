@@ -16,29 +16,12 @@ import { nextFolio } from '../services/folio.ts'
 import { ingestParticipation, type IngestFile } from '../services/ingest.ts'
 import { enviarAcuseReciboParticipacion, mailConfigurado } from '../services/mail.ts'
 import { createParticipation, type Origen } from '../services/participations.ts'
+import { json, bodyTooLarge } from '../utils.ts'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
 
 function isOrigen(value: string): value is Origen {
   return value === 'digital' || value === 'fisica'
-}
-
-function json(data: unknown, init?: number | ResponseInit): Response {
-  if (typeof init === 'number') {
-    return new Response(JSON.stringify(data), {
-      status: init,
-      headers: { 'content-type': 'application/json' },
-    })
-  }
-  return new Response(JSON.stringify(data), {
-    headers: { 'content-type': 'application/json' },
-    ...init,
-  })
-}
-
-function bodyTooLarge(request: Request, limitBytes: number): boolean {
-  const declared = Number(request.headers.get('content-length') ?? '0')
-  return Number.isFinite(declared) && declared > limitBytes
 }
 
 /**

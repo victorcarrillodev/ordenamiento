@@ -8,14 +8,7 @@ import { backendFetch, fetchJsonOr, requireAdminUser } from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
 import { AvisosPage } from './avisos-page.tsx'
 import { PoelPage } from './poel-page.tsx'
-
-interface Reunion {
-  id: number
-  titulo: string
-  fecha: string
-  hora_inicio?: string
-  hora_fin?: string
-}
+import { reunionesDe } from './_shared.ts'
 
 interface SesionAvisos {
   id: number
@@ -42,11 +35,6 @@ async function avisosDe(request: Request) {
       avisos: { id: number; titulo: string; descripcion: string; activo: boolean; fecha?: string }[]
     }>(request, '/api/avisos', { avisos: [] })
   ).avisos
-}
-
-async function reunionesDe(request: Request) {
-  return (await fetchJsonOr<{ reuniones: Reunion[] }>(request, '/api/reuniones', { reuniones: [] }))
-    .reuniones
 }
 
 async function poelDeAvisos(request: Request): Promise<SesionAvisos[]> {
