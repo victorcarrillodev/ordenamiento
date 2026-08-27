@@ -6,7 +6,7 @@
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { backendFetch, requireAdminUser } from '../../backend.ts'
+import { backendFetch, fetchJsonOr, requireAdminUser } from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
 import { ReunionesPage } from './reuniones-page.tsx'
 
@@ -19,8 +19,9 @@ interface Reunion {
 }
 
 async function reunionesDe(request: Request): Promise<Reunion[]> {
-  const response = await backendFetch(request, '/api/reuniones')
-  const data = response.ok ? await response.json() : { reuniones: [] as Reunion[] }
+  const data = await fetchJsonOr<{ reuniones: Reunion[] }>(request, '/api/reuniones', {
+    reuniones: [],
+  })
   return data.reuniones
 }
 

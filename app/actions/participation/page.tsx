@@ -11,13 +11,15 @@ import { colors, FONT_STACK } from '../../ui/civic-horizon.ts'
 import { NavBar } from '../../ui/nav-bar.tsx'
 import { Document } from '../document.tsx'
 import { ParticipationForm } from './participation-form.tsx'
-import type { FormErrors } from './schema.ts'
+import type { FormErrors, FormValues } from './schema.ts'
 import { SuccessDialog } from './success-dialog.tsx'
 
 export type { FormErrors }
 
 export interface ParticipationPageProps {
   errors?: FormErrors
+  /** Lo ya escrito, para no perderlo cuando la validación rechaza el envío. */
+  values?: FormValues
   success?: boolean
   folio?: string
 }
@@ -77,7 +79,7 @@ const formShellStyle = css({
 
 export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
   return () => {
-    const { errors = {}, success = false, folio } = handle.props
+    const { errors = {}, values, success = false, folio } = handle.props
 
     return (
       <Document
@@ -121,7 +123,7 @@ export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
               {success ? (
                 <SuccessDialog folio={folio} homeHref={routes.home.href()} />
               ) : (
-                <ParticipationForm errors={errors} />
+                <ParticipationForm errors={errors} values={values} />
               )}
             </div>
           </div>

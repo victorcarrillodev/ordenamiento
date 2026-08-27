@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isSafeCssColor } from './civic-horizon.ts'
+import { isSafeCssColor, isSafeImageUrl } from './civic-horizon.ts'
 
 describe('isSafeCssColor', () => {
   it('accepts hex colors of valid lengths', () => {
@@ -43,5 +43,49 @@ describe('isSafeCssColor', () => {
     // like "red" is safe on its own, but widening the pattern is a place
     // future edits could accidentally reintroduce an injection vector.
     expect(isSafeCssColor('red')).toBe(false)
+  })
+})
+
+describe('isSafeImageUrl', () => {
+  it('acepta rutas del propio sitio y URLs http(s)', () => {
+    expect(isSafeImageUrl('/ordena/uploads/hero.jpg')).toBe(true)
+    expect(isSafeImageUrl('https://cdn.ejemplo.mx/hero.webp')).toBe(true)
+    expect(isSafeImageUrl('  /ordena/hero.jpg  ')).toBe(true)
+  })
+
+  it('rechaza valores que no son cadenas o están vacíos', () => {
+    expect(isSafeImageUrl(undefined)).toBe(false)
+    expect(isSafeImageUrl(null)).toBe(false)
+    expect(isSafeImageUrl(42)).toBe(false)
+    expect(isSafeImageUrl('')).toBe(false)
+    expect(isSafeImageUrl('   ')).toBe(false)
+  })
+
+  it('rechaza URLs que romperían el url(...) para inyectar CSS', () => {
+    // El valor se interpola dentro de `background-image: url(${src})`.
+    expect(isSafeImageUrl('/a.jpg); background: red; x:url(/b.jpg')).toBe(false)
+    expect(isSafeImageUrl('/a.jpg"); } body { display:none } .x{')).toBe(false)
+    expect(isSafeImageUrl("/a.jpg'")).toBe(false)
+    expect(isSafeImageUrl('/mi foto.jpg')).toBe(false)
+    expect(isSafeImageUrl('/a\\.jpg')).toBe(false)
+  })
+
+  it('rechaza esquemas que no son http(s) ni rutas del sitio', () => {
+    expect(isSafeImageUrl('javascript:alert(1)')).toBe(false)
+    expect(isSafeImageUrl('data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=')).toBe(false)
+    expect(isSafeImageUrl('hero.jpg')).toBe(false)
+  })
+
+  it('permite dominios externos: lo que acota es la inyección, no el origen', () => {
+    // La imagen del hero por defecto ya es externa, y el panel admite pegar la
+    // URL de un CDN. Restringir el origen sería otra decisión, de producto.
+    expect(isSafeImageUrl('https://cdn.tercero.com/foto.jpg')).toBe(true)
+    expect(isSafeImageUrl('//cdn.tercero.com/foto.jpg')).toBe(true)
+  })
+
+  it('descarta http explícito, que el navegador bloquearía por contenido mixto', () => {
+    expect(isSafeImageUrl('http://ejemplo.mx/foto.png')).toBe(false)
+    // La ruta relativa y `//host` heredan el esquema de la página.
+    expect(isSafeImageUrl('/ordena/uploads/foto.png')).toBe(true)
   })
 })

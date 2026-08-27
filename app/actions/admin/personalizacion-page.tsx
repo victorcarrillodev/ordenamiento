@@ -2,7 +2,7 @@ import type { Handle } from 'remix/ui'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { adminRoutes, routes } from '../../routes.ts'
 import { Button } from '../../ui/button.tsx'
-import type { ThemeData } from '../../ui/civic-horizon.ts'
+import { HERO_IMAGEN_POR_DEFECTO, type ThemeData } from '../../ui/civic-horizon.ts'
 
 export interface AuditLogEntry {
   id: number
@@ -53,9 +53,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
     const heroImgs: string[] =
       Array.isArray(img.heroImagenes) && img.heroImagenes.length > 0
         ? img.heroImagenes
-        : [
-            'https://imgs.search.brave.com/8f1SgJygGgIrQH2BcZXess4TRcaOtm3FXVfawE9VxRE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTEy/NTUyNzc3Mi9lcy9m/b3RvL3RsYXF1ZXBh/cXVlLmpwZz9zPTYx/Mng2MTImdz0wJms9/MjAmYz1VU3FwdjNw/OEJxbG9LY0JaY01q/YUdPNkpQWW1Va0xl/N1FYUGx5YVREM1Zz/PQ',
-          ]
+        : [HERO_IMAGEN_POR_DEFECTO]
 
     return (
       <AdminLayout

@@ -15,7 +15,9 @@ import {
   FONT_STACK,
   headingLProps,
   headingXLProps,
+  HERO_IMAGEN_POR_DEFECTO,
   isSafeCssColor,
+  isSafeImageUrl,
   sectionContainerProps,
   sectionPaddingProps,
   type ThemeData,
@@ -96,22 +98,29 @@ function HeroSection(handle: Handle<{ theme?: ThemeData }>) {
     const img = u.imagenes || {}
     const txt = u.textos || {}
 
-    const rawImgs =
-      Array.isArray(img.heroImagenes) && img.heroImagenes.length > 0
-        ? img.heroImagenes
-        : [
-            'https://imgs.search.brave.com/8f1SgJygGgIrQH2BcZXess4TRcaOtm3FXVfawE9VxRE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTEy/NTUyNzc3Mi9lcy9m/b3RvL3RsYXF1ZXBh/cXVlLmpwZz9zPTYx/Mng2MTImdz0wJms9/MjAmYz1VU3FwdjNw/OEJxbG9LY0JaY01q/YUdPNkpQWW1Va0xl/N1FYUGx5YVREM1Zz/PQ',
-          ]
+    // Las imágenes acaban dentro de `url(...)` en un atributo `style`: una URL
+    // con `)` o comillas cierra la función CSS y deja inyectar reglas nuevas.
+    const imagenesDelTema = Array.isArray(img.heroImagenes)
+      ? img.heroImagenes.filter(isSafeImageUrl)
+      : []
+    const rawImgs = imagenesDelTema.length > 0 ? imagenesDelTema : [HERO_IMAGEN_POR_DEFECTO]
 
     const hasCarousel = rawImgs.length > 1
     // Validado: este valor se interpola sin escapar dentro de un <script> más
     // abajo (ver innerHTML), así que no puede tomarse tal cual del tema.
     const accentColor = isSafeCssColor(c.acento) ? c.acento : colors.gold400
+
+    // Los gradientes salen del mismo panel de Personalización que el acento y
+    // acaban dentro de un atributo `style`, donde un `;` basta para inyectar
+    // reglas CSS arbitrarias en la portada pública.
+    const colorDelTema = (valor: unknown, respaldo: string) =>
+      isSafeCssColor(valor) ? valor : respaldo
+
     const heroOverlay = `linear-gradient(
       160deg,
-      ${c.heroGradienteInicio || 'rgba(15,17,23,0.82)'} 0%,
-      ${c.heroGradienteCentro || 'rgba(140,29,61,0.70)'} 50%,
-      ${c.heroGradienteFin || 'rgba(15,17,23,0.75)'} 100%
+      ${colorDelTema(c.heroGradienteInicio, 'rgba(15,17,23,0.82)')} 0%,
+      ${colorDelTema(c.heroGradienteCentro, 'rgba(140,29,61,0.70)')} 50%,
+      ${colorDelTema(c.heroGradienteFin, 'rgba(15,17,23,0.75)')} 100%
     )`
 
     const cintillo = txt.heroCintillo || 'Bitácora Ambiental · San Pedro Tlaquepaque'

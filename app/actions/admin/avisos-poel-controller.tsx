@@ -4,24 +4,59 @@
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { backendFetch, requireAdminUser } from '../../backend.ts'
+import { backendFetch, fetchJsonOr, requireAdminUser } from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
 import { AvisosPage } from './avisos-page.tsx'
 import { PoelPage } from './poel-page.tsx'
 
+interface Reunion {
+  id: number
+  titulo: string
+  fecha: string
+  hora_inicio?: string
+  hora_fin?: string
+}
+
+interface SesionAvisos {
+  id: number
+  categoria: string
+  titulo: string
+  fecha?: string
+  ubicacion?: string
+}
+
+interface SesionPoel {
+  id: number
+  categoria: string
+  orden: number
+  titulo: string
+  descripcion: string
+  fecha: string | null
+  ubicacion: string
+  activo: boolean
+}
+
 async function avisosDe(request: Request) {
-  const response = await backendFetch(request, '/api/avisos')
-  return response.ok ? (await response.json()).avisos : []
+  return (
+    await fetchJsonOr<{
+      avisos: { id: number; titulo: string; descripcion: string; activo: boolean; fecha?: string }[]
+    }>(request, '/api/avisos', { avisos: [] })
+  ).avisos
 }
 
 async function reunionesDe(request: Request) {
-  const response = await backendFetch(request, '/api/reuniones')
-  return response.ok ? (await response.json()).reuniones : []
+  return (await fetchJsonOr<{ reuniones: Reunion[] }>(request, '/api/reuniones', { reuniones: [] }))
+    .reuniones
 }
 
-async function poelDe(request: Request) {
-  const response = await backendFetch(request, '/api/poel')
-  return response.ok ? (await response.json()).sesiones : []
+async function poelDeAvisos(request: Request): Promise<SesionAvisos[]> {
+  const raw = await fetchJsonOr<{ sesiones: SesionPoel[] }>(request, '/api/poel', { sesiones: [] })
+  return raw.sesiones.map((s) => ({ ...s, fecha: s.fecha ?? undefined }))
+}
+
+async function poelDe(request: Request): Promise<SesionPoel[]> {
+  return (await fetchJsonOr<{ sesiones: SesionPoel[] }>(request, '/api/poel', { sesiones: [] }))
+    .sesiones
 }
 
 export const avisosController = createController(adminRoutes.avisos, {
@@ -33,7 +68,7 @@ export const avisosController = createController(adminRoutes.avisos, {
       const [avisos, reuniones, sesiones] = await Promise.all([
         avisosDe(context.request),
         reunionesDe(context.request),
-        poelDe(context.request),
+        poelDeAvisos(context.request),
       ])
 
       return context.render(

@@ -6,7 +6,7 @@
  */
 import { createController } from 'remix/router'
 
-import { backendFetch, requireAdminUser } from '../../backend.ts'
+import { backendFetch, fetchJsonOr, requireAdminUser } from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
 import { AdminPage } from './page.tsx'
 import { ExportarPage } from './exportar-page.tsx'
@@ -20,6 +20,9 @@ interface Stats {
   digitales: number
   fisicas: number
   resultado: Array<{ estado: string; total: number }>
+  fuente: Array<[string, number]>
+  genero: Array<[string, number]>
+  tematica: Array<[string, number]>
 }
 
 interface AdminUserRow {
@@ -36,17 +39,23 @@ export default createController(adminRoutes, {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
 
-      const response = await backendFetch(context.request, '/api/stats')
-      const stats: Stats = response.ok
-        ? await response.json()
-        : { usuarios: 0, digitales: 0, fisicas: 0, resultado: [] }
+      const stats = await fetchJsonOr<Stats>(context.request, '/api/stats', {
+        usuarios: 0,
+        digitales: 0,
+        fisicas: 0,
+        resultado: [],
+        fuente: [],
+        genero: [],
+        tematica: [],
+      })
 
       let users: AdminUserRow[] = []
       if (user.role === 'admin') {
-        const usersResponse = await backendFetch(context.request, '/api/users')
-        const usersData = usersResponse.ok
-          ? await usersResponse.json()
-          : { users: [] as AdminUserRow[] }
+        const usersData = await fetchJsonOr<{ users: AdminUserRow[] }>(
+          context.request,
+          '/api/users',
+          { users: [] },
+        )
         users = usersData.users
       }
 
@@ -128,11 +137,17 @@ export default createController(adminRoutes, {
 
       const origenParam = new URL(context.request.url).searchParams.get('origen')
       const origen = origenParam === 'fisica' ? 'fisica' : 'digital'
-      const response = await backendFetch(
-        context.request,
-        `/api/participations?origen=${origen}&limit=100&page=1`,
-      )
-      const data = response.ok ? await response.json() : { items: [] }
+      const data = await fetchJsonOr<{
+        items: Array<{
+          id: number
+          folio: string
+          origen: string
+          nombre: string
+          estado: string
+          fecha: string
+          adjuntos: Array<{ id: number; nombre_original: string; mime: string; size: number }>
+        }>
+      }>(context.request, `/api/participations?origen=${origen}&limit=100&page=1`, { items: [] })
 
       return context.render(
         <ParticipacionesPage user={user} origen={origen} items={data.items ?? []} />,
@@ -172,9 +187,15 @@ export default createController(adminRoutes, {
       if (user instanceof Response) return user
       const origen =
         new URL(context.request.url).searchParams.get('origen') === 'fisica' ? 'fisica' : 'digital'
-      const response = await backendFetch(context.request, '/api/stats')
-      const stats = response.ok ? await response.json() : null
-      if (!stats) return new Response('Error', { status: 502 })
+      const stats = await fetchJsonOr(context.request, '/api/stats', {
+        usuarios: 0,
+        digitales: 0,
+        fisicas: 0,
+        resultado: [],
+        fuente: [],
+        genero: [],
+        tematica: [],
+      })
       return context.render(<EstadisticasPage user={user} origen={origen} stats={stats} />)
     },
 
@@ -188,24 +209,43 @@ export default createController(adminRoutes, {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
 
-      const response = await backendFetch(
+      const raw = await fetchJsonOr<Record<string, unknown> | null>(
         context.request,
         `/api/participations/${context.params.id}`,
+        null,
       )
-      const raw = response.ok ? await response.json() : null
       const p = raw
         ? {
-            ...raw,
+            id: raw.id as number,
+            folio: raw.folio as string,
+            origen: raw.origen as string,
+            nombre: raw.nombre as string,
+            correo: raw.correo as string,
+            colonia: raw.colonia as string,
+            municipio: raw.municipio as string,
+            domicilio: raw.domicilio as string,
+            municipio_participante: raw.municipio_participante as string,
+            institucion: raw.institucion as string,
+            ocupacion: raw.ocupacion as string,
+            observacion: raw.observacion as string,
+            estado: raw.estado as string,
+            fuente: raw.fuente as string,
+            genero: raw.genero as string,
+            tematica: raw.tematica as string,
             fecha: raw.created_at as string,
-            // getParticipation devuelve `attachments`; la página espera `adjuntos`
-            adjuntos: (raw.attachments ?? []).map(
-              (a: { id: number; nombre_original: string; mime: string; size: number }) => ({
-                id: a.id,
-                nombre_original: a.nombre_original,
-                mime: a.mime,
-                size: a.size,
-              }),
-            ),
+            adjuntos: (
+              (raw.attachments ?? []) as Array<{
+                id: number
+                nombre_original: string
+                mime: string
+                size: number
+              }>
+            ).map((a) => ({
+              id: a.id,
+              nombre_original: a.nombre_original,
+              mime: a.mime,
+              size: a.size,
+            })),
           }
         : null
       const mailParam = new URL(context.request.url).searchParams.get('mail')

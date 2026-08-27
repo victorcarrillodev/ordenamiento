@@ -15,6 +15,48 @@ export interface FormErrors {
   archivos?: string
 }
 
+/**
+ * Lo que el ciudadano escribió, para repintarlo cuando el envío no prospera.
+ *
+ * No incluye los adjuntos: el navegador no permite repoblar un input de tipo
+ * file, así que esos hay que volver a seleccionarlos.
+ */
+export interface FormValues {
+  nombre?: string
+  email?: string
+  calle?: string
+  colonia?: string
+  municipio?: string
+  cp?: string
+  direccion_origen?: string
+  institucion?: string
+  observacion?: string
+  consentimiento?: boolean
+}
+
+const CAMPOS_DE_TEXTO = [
+  'nombre',
+  'email',
+  'calle',
+  'colonia',
+  'municipio',
+  'cp',
+  'direccion_origen',
+  'institucion',
+  'observacion',
+] as const
+
+/** Rescata del envío fallido lo que se pueda volver a pintar en el formulario. */
+export function toFormValues(formData: FormData): FormValues {
+  const values: FormValues = {}
+  for (const campo of CAMPOS_DE_TEXTO) {
+    const valor = formData.get(campo)
+    if (typeof valor === 'string' && valor !== '') values[campo] = valor
+  }
+  values.consentimiento = formData.get('consentimiento') === '1'
+  return values
+}
+
 export const participationSchema = f.object({
   nombre: f.field(s.string().pipe(minLength(2))),
   email: f.field(s.string().pipe(email())),

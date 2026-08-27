@@ -36,6 +36,25 @@
   // Caché en memoria RAM para respuestas de autocompletado (0ms latencia)
   const memoryCache = new Map()
 
+  /**
+   * Ruta del endpoint de colonias, derivada del propio despliegue.
+   *
+   * BASE_PATH es configurable por entorno (ver app/router.ts), así que escribirla
+   * a mano aquí rompería la precarga en silencio en cualquier despliegue que no
+   * use el prefijo por defecto. Se toma del `data-endpoint` que el servidor ya
+   * resuelve con routes.colonias.href(); si todavía no hay ningún formulario en
+   * el DOM, se deduce del <script> que cargó este archivo.
+   */
+  function coloniasEndpoint() {
+    const grupo = document.querySelector('[data-autocomplete-group][data-endpoint]')
+    const declarado = grupo && grupo.getAttribute('data-endpoint')
+    if (declarado) return declarado
+
+    const script = document.querySelector('script[src*="autocomplete.js"]')
+    const base = script ? new URL(script.src, window.location.origin).pathname : ''
+    return base.replace(/\/autocomplete\.js.*$/, '') + '/api/colonias'
+  }
+
   // Guardar municipios base en caché inmediatamente
   memoryCache.set('municipio:', JALISCO_MUNICIPIOS_BASE)
   memoryCache.set('municipio:tlaquepaque', [
@@ -722,6 +741,13 @@
   async function executeSearch(target, q, tipo, municipio) {
     const cacheKey = `${tipo}:${q.toLowerCase()}:${(municipio || '').toLowerCase()}`
 
+    // Cualquier búsqueda nueva invalida la anterior, también cuando la resuelve
+    // la caché: si no, una respuesta en vuelo llega después y pisa el resultado
+    // recién pintado con datos de una consulta que el usuario ya abandonó.
+    if (abortCtrl) abortCtrl.abort()
+    abortCtrl = new AbortController()
+    const peticion = abortCtrl
+
     // 1. Revisar caché en memoria RAM (0ms)
     if (memoryCache.has(cacheKey)) {
       const cached = memoryCache.get(cacheKey)
@@ -737,17 +763,13 @@
       return
     }
 
-    // 2. Si no está en caché, consultar API
-    if (abortCtrl) abortCtrl.abort()
-    abortCtrl = new AbortController()
-
     try {
       const group =
         target.closest('[data-autocomplete-group]') ||
         target.closest('[data-endpoint]') ||
         target.closest('form')
       const endpointAttr = group ? group.getAttribute('data-endpoint') : null
-      const resolvedEndpoint = endpointAttr || '/ordena/api/colonias'
+      const resolvedEndpoint = endpointAttr || coloniasEndpoint()
 
       const url = new URL(resolvedEndpoint, window.location.origin)
       url.searchParams.set('tipo', tipo)
@@ -757,7 +779,7 @@
       }
 
       const res = await fetch(url.toString(), {
-        signal: abortCtrl.signal,
+        signal: peticion.signal,
         headers: { Accept: 'application/json' },
       })
 
@@ -767,6 +789,10 @@
 
       // Guardar en caché
       memoryCache.set(cacheKey, items)
+
+      // Descartar la respuesta si el usuario ya lanzó otra búsqueda mientras
+      // ésta viajaba: sin esto, la lenta pisa a la rápida.
+      if (peticion !== abortCtrl) return
 
       if (currentTarget === target) {
         if (tipo === 'municipio') {
@@ -935,27 +961,21 @@
   // 5. Precarga de Datos en Background al Iniciar
   // ─────────────────────────────────────────────────────────────────────────
   function preloadBackgroundData() {
-    try {
-      fetch('/ordena/api/colonias?tipo=municipio&q=')
+    const endpoint = coloniasEndpoint()
+
+    const precargar = (query, cacheKey) => {
+      fetch(`${endpoint}?${query}`)
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
           if (data && data.items && data.items.length > 0) {
-            memoryCache.set('municipio:', data.items)
+            memoryCache.set(cacheKey, data.items)
           }
         })
         .catch(() => {})
-
-      fetch('/ordena/api/colonias?tipo=colonia&q=tlaquepaque')
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => {
-          if (data && data.items) {
-            memoryCache.set('colonia:tlaquepaque:', data.items)
-          }
-        })
-        .catch(() => {})
-    } catch {
-      // Ignorar errores de red en precarga
     }
+
+    precargar('tipo=municipio&q=', 'municipio:')
+    precargar('tipo=colonia&q=tlaquepaque', 'colonia:tlaquepaque:')
   }
 
   // ─────────────────────────────────────────────────────────────────────────

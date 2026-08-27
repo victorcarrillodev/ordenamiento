@@ -33,6 +33,7 @@
     "@types/node": "latest",
     "eslint": "latest",
     "eslint-config-prettier": "latest",
+    "jsdom": "^30.0.1",
     "prettier": "latest",
     "typescript": "latest",
     "typescript-eslint": "latest",

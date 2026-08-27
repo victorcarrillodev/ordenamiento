@@ -3,11 +3,13 @@ import { createController } from 'remix/router'
 
 import { assetServer } from '../assets.ts'
 import { getPublicTheme, logoutBackend } from '../backend.ts'
-import { cargarCatalogo } from '../data/colonias.ts'
+import { sugerirColonias, sugerirMunicipios } from '../data/colonias.ts'
 import { routes } from '../routes.ts'
-import { buscarColonias, buscarMunicipios } from '../utils/colonias-search.ts'
 import { HomePage } from './home-page.tsx'
 import { ErrorPage } from './error-page.tsx'
+
+/** Cuántas sugerencias devuelve el autocompletado por consulta. */
+const SUGERENCIAS_POR_CONSULTA = 12
 
 export default createController(routes, {
   actions: {
@@ -34,21 +36,10 @@ export default createController(routes, {
       const tipo = url.searchParams.get('tipo') ?? 'colonia'
       const municipio = url.searchParams.get('municipio') ?? undefined
 
-      const catalogo = await cargarCatalogo()
-
-      if (tipo === 'municipio') {
-        const items = buscarMunicipios(catalogo, q, 12)
-        return Response.json(
-          { items },
-          {
-            headers: {
-              'cache-control': 'public, max-age=86400, stale-while-revalidate=604800',
-            },
-          },
-        )
-      }
-
-      const items = buscarColonias(catalogo, { q, municipio, limite: 12 })
+      const items =
+        tipo === 'municipio'
+          ? await sugerirMunicipios(q, SUGERENCIAS_POR_CONSULTA)
+          : await sugerirColonias(q, municipio, SUGERENCIAS_POR_CONSULTA)
 
       return Response.json(
         { items },

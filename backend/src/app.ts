@@ -342,6 +342,8 @@ export async function handleRequest(request: Request): Promise<Response> {
         longitud: string
         observacion: string
         estado: string
+        domicilio: string
+        municipio_participante: string
         fuente: string
         genero: string
         tematica: string
@@ -349,6 +351,7 @@ export async function handleRequest(request: Request): Promise<Response> {
       }>
     >`
       SELECT id, folio, origen, nombre, correo, calle, numero, colonia, municipio,
+             domicilio, municipio_participante,
              institucion, ocupacion, latitud, longitud, observacion, estado,
              fuente, genero, tematica, created_at
       FROM participations WHERE id = ${Number(wordMatch.id)}
