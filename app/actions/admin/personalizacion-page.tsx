@@ -22,24 +22,9 @@ export interface PersonalizacionPageProps {
   tabActiva?: 'usuario' | 'panel' | 'historial'
 }
 
-/**
- * Este framework tipa los elementos host de forma estricta y no modela
- * atributos de evento inline (onclick/onchange/onerror) — la vía tipada
- * para interactividad es el mixin `on()` sobre un componente hidratado con
- * `clientEntry` (ver .agents/skills/remix/references/mixins-styling-events.md
- * y hydration-frames-navigation.md). Esta página se sirve como HTML
- * estático (no hidrata), así que usa esos atributos tal cual: el renderer
- * SSR los escribe igual que cualquier atributo no reconocido, escapados
- * con `escapeHtml()` (ver
- * node_modules/@remix-run/ui/dist/server/stream.js, función
- * `renderAttributes`), por lo que funcionan en el navegador exactamente
- * igual que en HTML plano. Este helper documenta esa única excepción en un
- * solo lugar en vez de repetir `as any` en cada botón/input.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function domEvents(attrs: Partial<Record<'onclick' | 'onchange' | 'onerror', string>>): any {
-  return attrs
-}
+// Interactividad de esta página vive en public/admin.js (CSP-compliant).
+// No se usan atributos inline onclick/onchange/onerror para respetar
+// la CSP estricta (script-src 'self' sin 'unsafe-inline').
 
 export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
   return () => {
@@ -93,9 +78,6 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                 id="btn-open-preview"
                 variant="primary"
                 icon={<span>👁️</span>}
-                {...domEvents({
-                  onclick: "document.getElementById('mini-preview-modal').style.display='flex';",
-                })}
               >
                 Previsualizar (Mini Página)
               </Button>
@@ -116,30 +98,27 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
 
           {/* Tabs Navigation */}
           <div style="display: flex; gap: 8px; border-bottom: 2px solid #e2e8f0; margin-bottom: 24px; overflow-x: auto;">
-            <button
-              type="button"
+            <a
+              href="?tab=usuario"
               class="tab-btn"
-              style={`padding: 12px 20px; font-size: 14px; font-weight: 700; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid ${tabActiva === 'usuario' ? '#2563eb' : 'transparent'}; color: ${tabActiva === 'usuario' ? '#2563eb' : '#64748b'}; display: flex; align-items: center; gap: 8px;`}
-              {...domEvents({ onclick: "window.location.search = '?tab=usuario'" })}
+              style={`padding: 12px 20px; font-size: 14px; font-weight: 700; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid ${tabActiva === 'usuario' ? '#2563eb' : 'transparent'}; color: ${tabActiva === 'usuario' ? '#2563eb' : '#64748b'}; display: flex; align-items: center; gap: 8px; text-decoration: none;`}
             >
               <span>👤</span> Vista de Usuario (Portal Ciudadano)
-            </button>
-            <button
-              type="button"
+            </a>
+            <a
+              href="?tab=panel"
               class="tab-btn"
-              style={`padding: 12px 20px; font-size: 14px; font-weight: 700; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid ${tabActiva === 'panel' ? '#2563eb' : 'transparent'}; color: ${tabActiva === 'panel' ? '#2563eb' : '#64748b'}; display: flex; align-items: center; gap: 8px;`}
-              {...domEvents({ onclick: "window.location.search = '?tab=panel'" })}
+              style={`padding: 12px 20px; font-size: 14px; font-weight: 700; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid ${tabActiva === 'panel' ? '#2563eb' : 'transparent'}; color: ${tabActiva === 'panel' ? '#2563eb' : '#64748b'}; display: flex; align-items: center; gap: 8px; text-decoration: none;`}
             >
               <span>⚙️</span> Vista de Panel (Admin)
-            </button>
-            <button
-              type="button"
+            </a>
+            <a
+              href="?tab=historial"
               class="tab-btn"
-              style={`padding: 12px 20px; font-size: 14px; font-weight: 700; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid ${tabActiva === 'historial' ? '#2563eb' : 'transparent'}; color: ${tabActiva === 'historial' ? '#2563eb' : '#64748b'}; display: flex; align-items: center; gap: 8px;`}
-              {...domEvents({ onclick: "window.location.search = '?tab=historial'" })}
+              style={`padding: 12px 20px; font-size: 14px; font-weight: 700; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid ${tabActiva === 'historial' ? '#2563eb' : 'transparent'}; color: ${tabActiva === 'historial' ? '#2563eb' : '#64748b'}; display: flex; align-items: center; gap: 8px; text-decoration: none;`}
             >
               <span>📜</span> Historial y Auditoría ({auditLogs.length})
-            </button>
+            </a>
           </div>
 
           {/* TAB 1: VISTA DE USUARIO */}
@@ -173,18 +152,15 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
                   <button
                     type="button"
+                    class="palette-btn"
+                    data-primario="#8c1d3d"
+                    data-acento="#e0b84a"
+                    data-secundario="#2d6a4f"
+                    data-nav-bg="#ffffff"
+                    data-nav-text="#1a1d26"
+                    data-footer-bg="#0f1117"
+                    data-footer-text="#ffffff"
                     style="padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; background: #ffffff; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 8px; transition: transform 150ms ease;"
-                    {...domEvents({
-                      onclick: `
-                      document.getElementById('c-primario').value = '#8c1d3d';
-                      document.getElementById('c-acento').value = '#e0b84a';
-                      document.getElementById('c-secundario').value = '#2d6a4f';
-                      document.getElementById('c-nav-bg').value = '#ffffff';
-                      document.getElementById('c-nav-text').value = '#1a1d26';
-                      document.getElementById('c-footer-bg').value = '#0f1117';
-                      document.getElementById('c-footer-text').value = '#ffffff';
-                    `,
-                    })}
                   >
                     <div style="display: flex; gap: 6px;">
                       <span style="width: 24px; height: 24px; border-radius: 6px; background: #8c1d3d;"></span>
@@ -202,18 +178,15 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
 
                   <button
                     type="button"
+                    class="palette-btn"
+                    data-primario="#1b4332"
+                    data-acento="#52b788"
+                    data-secundario="#2d6a4f"
+                    data-nav-bg="#ffffff"
+                    data-nav-text="#081c15"
+                    data-footer-bg="#081c15"
+                    data-footer-text="#d8f3dc"
                     style="padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; background: #ffffff; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 8px; transition: transform 150ms ease;"
-                    {...domEvents({
-                      onclick: `
-                      document.getElementById('c-primario').value = '#1b4332';
-                      document.getElementById('c-acento').value = '#52b788';
-                      document.getElementById('c-secundario').value = '#2d6a4f';
-                      document.getElementById('c-nav-bg').value = '#ffffff';
-                      document.getElementById('c-nav-text').value = '#081c15';
-                      document.getElementById('c-footer-bg').value = '#081c15';
-                      document.getElementById('c-footer-text').value = '#d8f3dc';
-                    `,
-                    })}
                   >
                     <div style="display: flex; gap: 6px;">
                       <span style="width: 24px; height: 24px; border-radius: 6px; background: #1b4332;"></span>
@@ -231,18 +204,15 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
 
                   <button
                     type="button"
+                    class="palette-btn"
+                    data-primario="#1e3a8a"
+                    data-acento="#38bdf8"
+                    data-secundario="#0d9488"
+                    data-nav-bg="#ffffff"
+                    data-nav-text="#0f172a"
+                    data-footer-bg="#0f172a"
+                    data-footer-text="#e2e8f0"
                     style="padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; background: #ffffff; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 8px; transition: transform 150ms ease;"
-                    {...domEvents({
-                      onclick: `
-                      document.getElementById('c-primario').value = '#1e3a8a';
-                      document.getElementById('c-acento').value = '#38bdf8';
-                      document.getElementById('c-secundario').value = '#0d9488';
-                      document.getElementById('c-nav-bg').value = '#ffffff';
-                      document.getElementById('c-nav-text').value = '#0f172a';
-                      document.getElementById('c-footer-bg').value = '#0f172a';
-                      document.getElementById('c-footer-text').value = '#e2e8f0';
-                    `,
-                    })}
                   >
                     <div style="display: flex; gap: 6px;">
                       <span style="width: 24px; height: 24px; border-radius: 6px; background: #1e3a8a;"></span>
@@ -260,18 +230,15 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
 
                   <button
                     type="button"
+                    class="palette-btn"
+                    data-primario="#4c0519"
+                    data-acento="#fbbf24"
+                    data-secundario="#b45309"
+                    data-nav-bg="#18181b"
+                    data-nav-text="#ffffff"
+                    data-footer-bg="#09090b"
+                    data-footer-text="#fafafa"
                     style="padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; background: #ffffff; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 8px; transition: transform 150ms ease;"
-                    {...domEvents({
-                      onclick: `
-                      document.getElementById('c-primario').value = '#4c0519';
-                      document.getElementById('c-acento').value = '#fbbf24';
-                      document.getElementById('c-secundario').value = '#b45309';
-                      document.getElementById('c-nav-bg').value = '#18181b';
-                      document.getElementById('c-nav-text').value = '#ffffff';
-                      document.getElementById('c-footer-bg').value = '#09090b';
-                      document.getElementById('c-footer-text').value = '#fafafa';
-                    `,
-                    })}
                   >
                     <div style="display: flex; gap: 6px;">
                       <span style="width: 24px; height: 24px; border-radius: 6px; background: #4c0519;"></span>
@@ -312,10 +279,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={c.primario || '#8c1d3d'}
-                        {...domEvents({
-                          onchange: "document.getElementById('c-primario').value = this.value;",
-                        })}
+                        value={c.primario || '#8c1d3d'} class="sync-color-text" data-target="c-primario"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -335,10 +299,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={c.acento || '#e0b84a'}
-                        {...domEvents({
-                          onchange: "document.getElementById('c-acento').value = this.value;",
-                        })}
+                        value={c.acento || '#e0b84a'} class="sync-color-text" data-target="c-acento"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -358,10 +319,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={c.secundario || '#2d6a4f'}
-                        {...domEvents({
-                          onchange: "document.getElementById('c-secundario').value = this.value;",
-                        })}
+                        value={c.secundario || '#2d6a4f'} class="sync-color-text" data-target="c-secundario"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -381,10 +339,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={c.navbarFondo || '#ffffff'}
-                        {...domEvents({
-                          onchange: "document.getElementById('c-nav-bg').value = this.value;",
-                        })}
+                        value={c.navbarFondo || '#ffffff'} class="sync-color-text" data-target="c-nav-bg"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -404,10 +359,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={c.navbarTexto || '#1a1d26'}
-                        {...domEvents({
-                          onchange: "document.getElementById('c-nav-text').value = this.value;",
-                        })}
+                        value={c.navbarTexto || '#1a1d26'} class="sync-color-text" data-target="c-nav-text"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -427,10 +379,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={c.footerFondo || '#0f1117'}
-                        {...domEvents({
-                          onchange: "document.getElementById('c-footer-bg').value = this.value;",
-                        })}
+                        value={c.footerFondo || '#0f1117'} class="sync-color-text" data-target="c-footer-bg"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -450,10 +399,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={c.footerTexto || '#ffffff'}
-                        {...domEvents({
-                          onchange: "document.getElementById('c-footer-text').value = this.value;",
-                        })}
+                        value={c.footerTexto || '#ffffff'} class="sync-color-text" data-target="c-footer-text"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -479,8 +425,8 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                   </div>
                   <button
                     type="button"
+                    id="btn-add-hero"
                     style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;"
-                    {...domEvents({ onclick: 'addHeroImageInput()' })}
                   >
                     ➕ Agregar otra foto al carrusel
                   </button>
@@ -501,8 +447,8 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       <img
                         src={imgUrl}
                         alt={`Foto ${idx + 1}`}
+                        class="hero-img-preview"
                         style="width: 50px; height: 35px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1;"
-                        {...domEvents({ onerror: "this.style.display='none'" })}
                       />
                       <input
                         type="text"
@@ -514,8 +460,8 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       {idx > 0 && (
                         <button
                           type="button"
+                          class="hero-remove"
                           style="background: #fee2e2; color: #b91c1c; border: none; border-radius: 6px; padding: 8px 12px; font-size: 12px; font-weight: 700; cursor: pointer;"
-                          {...domEvents({ onclick: 'this.parentElement.remove();' })}
                         >
                           ✕ Quitar
                         </button>
@@ -922,35 +868,23 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                     </span>
                     <button
                       type="button"
-                      class="btn"
-                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;"
-                      {...domEvents({
-                        onclick:
-                          "document.getElementById('motivo-input-usuario').value = 'Actualización de colores y diseño'",
-                      })}
-                    >
+                      class="btn motivo-suggest"
+                      data-motivo="Actualización de colores y diseño"
+                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;">
                       Colores y diseño
                     </button>
                     <button
                       type="button"
-                      class="btn"
-                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;"
-                      {...domEvents({
-                        onclick:
-                          "document.getElementById('motivo-input-usuario').value = 'Actualización de fotos del carrusel'",
-                      })}
-                    >
+                      class="btn motivo-suggest"
+                      data-motivo="Actualización de fotos del carrusel"
+                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;">
                       Fotos del carrusel
                     </button>
                     <button
                       type="button"
-                      class="btn"
-                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;"
-                      {...domEvents({
-                        onclick:
-                          "document.getElementById('motivo-input-usuario').value = 'Cambio de logotipos oficiales'",
-                      })}
-                    >
+                      class="btn motivo-suggest"
+                      data-motivo="Cambio de logotipos oficiales"
+                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;">
                       Logotipos
                     </button>
                   </div>
@@ -998,10 +932,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={p.sidebarFondo || '#ffffff'}
-                        {...domEvents({
-                          onchange: "document.getElementById('p-side-bg').value = this.value;",
-                        })}
+                        value={p.sidebarFondo || '#ffffff'} class="sync-color-text" data-target="p-side-bg"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -1021,10 +952,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={p.sidebarTexto || '#475066'}
-                        {...domEvents({
-                          onchange: "document.getElementById('p-side-text').value = this.value;",
-                        })}
+                        value={p.sidebarTexto || '#475066'} class="sync-color-text" data-target="p-side-text"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -1044,10 +972,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={p.topbarFondo || '#2e3440'}
-                        {...domEvents({
-                          onchange: "document.getElementById('p-top-bg').value = this.value;",
-                        })}
+                        value={p.topbarFondo || '#2e3440'} class="sync-color-text" data-target="p-top-bg"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -1067,10 +992,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={p.colorAcento || '#2563eb'}
-                        {...domEvents({
-                          onchange: "document.getElementById('p-acento').value = this.value;",
-                        })}
+                        value={p.colorAcento || '#2563eb'} class="sync-color-text" data-target="p-acento"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -1090,10 +1012,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={p.adminBg || '#f4f6fb'}
-                        {...domEvents({
-                          onchange: "document.getElementById('p-admin-bg').value = this.value;",
-                        })}
+                        value={p.adminBg || '#f4f6fb'} class="sync-color-text" data-target="p-admin-bg"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -1170,6 +1089,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                     </label>
                     <input
                       type="text"
+                      id="motivo-input-panel"
                       name="motivo"
                       required
                       placeholder="Ej. Cambio de colores del panel de administración"
@@ -1198,10 +1118,22 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                   <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 4px;">
                     📋 Registro de Auditoría de Personalización
                   </h3>
-                  <p style="font-size: 13px; color: #64748b; margin: 0;">
+                  <p style="font-size: 13px; color: #64748b; margin: 0 0 12px;">
                     Historial inmutable con cada cambio realizado, el autor responsable, fecha
                     exacta y motivo.
                   </p>
+                                  <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;">
+                  <div style="flex: 1; min-width: 240px; position: relative;">
+                    <input
+                      type="text"
+                      id="historial-search"
+                      placeholder="🔍 Buscar en historial por usuario, motivo o sección..."
+                      style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 14px 10px 36px; font-size: 13px;"
+                    />
+                    <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8;">🔍</span>
+                  </div>
+                  <span id="historial-count" style="font-size: 12px; color: #64748b; font-weight: 600;">{auditLogs.length} registros</span>
+                </div>
                 </div>
               </div>
 
@@ -1229,9 +1161,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody id="historial-tbody">
                     {auditLogs.length === 0 ? (
-                      <tr>
+                      <tr id="historial-empty">
                         <td colspan={6} style="padding: 24px; text-align: center; color: #94a3b8;">
                           Aún no hay registros de cambios en el historial.
                         </td>
@@ -1241,8 +1173,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                         const d = new Date(log.created_at)
                         const fechaStr = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
 
+                        const haystack = `${log.user_name} ${log.user_email} ${log.motivo} ${log.section}`.toLowerCase()
                         return (
-                          <tr style="border-bottom: 1px solid #f1f5f9;">
+                          <tr data-search={haystack} style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 12px; font-weight: 700; color: #64748b;">
                               #{log.id}
                             </td>
@@ -1264,7 +1197,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                               "{log.motivo}"
                             </td>
                             <td style="padding: 12px; text-align: center;">
-                              <form method="post" action={adminRoutes.personalizacion.index.href()}>
+                              <form method="post" action={adminRoutes.personalizacion.index.href()} class="restore-form">
                                 <input type="hidden" name="_action" value="restore" />
                                 <input type="hidden" name="log_id" value={log.id} />
                                 <input type="hidden" name="tab" value="historial" />
@@ -1272,10 +1205,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                                   type="submit"
                                   class="btn"
                                   style="background: #0284c7; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; border: none;"
-                                  {...domEvents({
-                                    onclick:
-                                      "return confirm('¿Seguro que deseas restaurar la configuración exacta de este registro?')",
-                                  })}
+                                  
                                 >
                                   ⏪ Restaurar esta versión
                                 </button>
@@ -1303,10 +1233,8 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                 </div>
                 <button
                   type="button"
+                  id="btn-close-preview"
                   style="background: transparent; border: none; color: #ffffff; font-size: 20px; cursor: pointer;"
-                  {...domEvents({
-                    onclick: "document.getElementById('mini-preview-modal').style.display='none';",
-                  })}
                 >
                   ✕
                 </button>
@@ -1319,24 +1247,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
             </div>
           </div>
         </div>
-
-        {/* Dynamic script for adding hero carousel photos */}
-        <script
-          innerHTML={`
-              function addHeroImageInput() {
-                var container = document.getElementById('hero-images-container');
-                var count = container.querySelectorAll('.hero-image-row').length + 1;
-                var row = document.createElement('div');
-                row.className = 'hero-image-row';
-                row.style = 'display: flex; gap: 10px; align-items: center; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;';
-                row.innerHTML = '<span style="font-size: 12px; font-weight: 800; color: #64748b; width: 60px;">Foto #' + count + '</span>' +
-                  '<input type="text" name="hero_imagenes[]" placeholder="https://ejemplo.com/foto.jpg" style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;" />' +
-                  '<button type="button" style="background: #fee2e2; color: #b91c1c; border: none; border-radius: 6px; padding: 8px 12px; font-size: 12px; font-weight: 700; cursor: pointer;" onclick="this.parentElement.remove();">✕ Quitar</button>';
-                container.appendChild(row);
-              }
-            `}
-        />
-      </AdminLayout>
+</AdminLayout>
     )
   }
 }

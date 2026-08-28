@@ -140,8 +140,182 @@
       if (m && m.style.display !== 'none') {
         m.style.display = 'none'
       }
+      var mp = document.getElementById('mini-preview-modal')
+      if (mp && mp.style.display !== 'none') {
+        mp.style.display = 'none'
+      }
     }
   })
+
+  // ── Personalización y Marca (CSP-compliant, sin onclick inline) ──────────
+  function initPersonalizacion() {
+    // Mini preview modal
+    var btnOpenPreview = document.getElementById('btn-open-preview')
+    var btnClosePreview = document.getElementById('btn-close-preview')
+    var miniModal = document.getElementById('mini-preview-modal')
+    if (btnOpenPreview && miniModal) {
+      btnOpenPreview.addEventListener('click', function () {
+        miniModal.style.display = 'flex'
+      })
+    }
+    if (btnClosePreview && miniModal) {
+      btnClosePreview.addEventListener('click', function () {
+        miniModal.style.display = 'none'
+      })
+    }
+    if (miniModal) {
+      miniModal.addEventListener('click', function (e) {
+        if (e.target === miniModal) miniModal.style.display = 'none'
+      })
+    }
+
+    // Paletas rápidas en 1 clic
+    document.addEventListener('click', function (e) {
+      var palette = e.target.closest('.palette-btn')
+      if (palette) {
+        var map = {
+          'c-primario': palette.getAttribute('data-primario'),
+          'c-acento': palette.getAttribute('data-acento'),
+          'c-secundario': palette.getAttribute('data-secundario'),
+          'c-nav-bg': palette.getAttribute('data-nav-bg'),
+          'c-nav-text': palette.getAttribute('data-nav-text'),
+          'c-footer-bg': palette.getAttribute('data-footer-bg'),
+          'c-footer-text': palette.getAttribute('data-footer-text'),
+        }
+        Object.keys(map).forEach(function (id) {
+          var val = map[id]
+          var el = document.getElementById(id)
+          if (el && val) {
+            el.value = val
+            el.dispatchEvent(new Event('input', { bubbles: true }))
+            el.dispatchEvent(new Event('change', { bubbles: true }))
+          }
+        })
+        // también actualizar los inputs de texto sincronizados
+        document.querySelectorAll('.sync-color-text').forEach(function (inp) {
+          var target = inp.getAttribute('data-target')
+          var src = document.getElementById(target)
+          if (src) inp.value = src.value
+        })
+      }
+
+      // Agregar foto al carrusel
+      var addHero = e.target.closest('#btn-add-hero')
+      if (addHero) {
+        addHeroImageInput()
+      }
+
+      // Quitar fila de hero
+      var rm = e.target.closest('.hero-remove')
+      if (rm) {
+        var row = rm.closest('.hero-image-row')
+        if (row) row.remove()
+      }
+
+      // Sugerencias rápidas de motivo
+      var sug = e.target.closest('.motivo-suggest')
+      if (sug) {
+        var motivo = sug.getAttribute('data-motivo') || ''
+        var input =
+          document.getElementById('motivo-input-usuario') ||
+          document.getElementById('motivo-input-panel') ||
+          document.querySelector('input[name="motivo"]')
+        if (input) {
+          input.value = motivo
+          input.focus()
+        }
+      }
+    })
+
+    // Sincronización color texto -> color picker (input/change delegada)
+    document.addEventListener('input', function (e) {
+      var t = e.target
+      if (t && t.classList && t.classList.contains('sync-color-text')) {
+        var targetId = t.getAttribute('data-target')
+        var picker = document.getElementById(targetId)
+        if (picker) {
+          // validar que parezca hex
+          var v = t.value.trim()
+          if (/^#[0-9A-Fa-f]{3,8}$/.test(v)) {
+            picker.value = v
+          }
+        }
+      }
+    })
+
+    // Historial: búsqueda / filtrado en vivo
+    var searchInput = document.getElementById('historial-search')
+    if (searchInput) {
+      searchInput.addEventListener('input', function () {
+        var q = searchInput.value.toLowerCase().trim()
+        var rows = document.querySelectorAll('#historial-tbody tr[data-search]')
+        rows.forEach(function (row) {
+          var haystack = (row.getAttribute('data-search') || '').toLowerCase()
+          row.style.display = !q || haystack.indexOf(q) !== -1 ? '' : 'none'
+        })
+        var visible = 0
+        rows.forEach(function (r) {
+          if (r.style.display !== 'none') visible++
+        })
+        var emptyRow = document.getElementById('historial-empty')
+        if (emptyRow) emptyRow.style.display = visible === 0 ? '' : 'none'
+        var countEl = document.getElementById('historial-count')
+        if (countEl) countEl.textContent = visible + ' registros'
+      })
+    }
+
+    // Confirmar restaurar versión
+    document.addEventListener('submit', function (e) {
+      var form = e.target
+      if (form && form.classList && form.classList.contains('restore-form')) {
+        if (!confirm('¿Seguro que deseas restaurar la configuración exacta de este registro?')) {
+          e.preventDefault()
+        }
+      }
+    })
+
+    // Ocultar imágenes rotas del hero
+    document.querySelectorAll('.hero-img-preview').forEach(function (img) {
+      img.addEventListener('error', function () {
+        img.style.display = 'none'
+      })
+    })
+  }
+
+  function addHeroImageInput() {
+    var container = document.getElementById('hero-images-container')
+    if (!container) return
+    var count = container.querySelectorAll('.hero-image-row').length + 1
+    var row = document.createElement('div')
+    row.className = 'hero-image-row'
+    row.style.cssText =
+      'display: flex; gap: 10px; align-items: center; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;'
+    var label = document.createElement('span')
+    label.style.cssText = 'font-size: 12px; font-weight: 800; color: #64748b; width: 60px;'
+    label.textContent = 'Foto #' + count
+    var input = document.createElement('input')
+    input.type = 'text'
+    input.name = 'hero_imagenes[]'
+    input.placeholder = 'https://ejemplo.com/foto.jpg'
+    input.style.cssText =
+      'flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;'
+    var btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'hero-remove'
+    btn.style.cssText =
+      'background: #fee2e2; color: #b91c1c; border: none; border-radius: 6px; padding: 8px 12px; font-size: 12px; font-weight: 700; cursor: pointer;'
+    btn.textContent = '✕ Quitar'
+    row.appendChild(label)
+    row.appendChild(input)
+    row.appendChild(btn)
+    container.appendChild(row)
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPersonalizacion)
+  } else {
+    initPersonalizacion()
+  }
 
   // Inicializar reloj
   setInterval(updateLiveClock, 1000)
