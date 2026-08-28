@@ -30,3 +30,12 @@ npm run start
 npm test
 npm run typecheck
 ```
+
+Los scripts no llevan prefijos `NODE_ENV=…` (salvo `start`): esa es sintaxis
+de shell POSIX y en Windows `npm run` lanza los scripts con `cmd.exe`, que
+falla con «NODE_ENV no se reconoce como un comando interno o externo».
+No hacen falta: `app/assets.ts` ya asume `development` cuando la variable no
+está, y el resto del código solo pregunta `=== 'production'`. `start` sí la
+conserva, porque ahí un valor ausente sí cambiaría el comportamiento (HSTS,
+cookie `Secure`, exigir `SESSION_SECRET`). En Docker la fija el `ENV` de la
+imagen, así que el contenedor no depende de estos scripts.
