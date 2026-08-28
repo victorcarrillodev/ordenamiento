@@ -114,6 +114,7 @@ const logoFuter = css({
   height: '70px',
 })
 
+
 export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
   return () => {
     const theme = handle.props.theme
@@ -128,6 +129,7 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
         <br />
 
         <main>
+      
           <h1 mix={title}>ELABORACIÓN DEL POETDUM</h1>
           <div>
             <div mix={containerMap}>
@@ -187,10 +189,10 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
                 <Button variant="gold" size="lg">
                   POETDUM
                 </Button>
-                <Button
-                  variant="secondary"
+                <Button 
+                  variant="contained"
                   size="lg"
-                  mix={css({ borderColor: '#B5AB78', color: '#fff' })}
+                  
                 >
                   FICHAS
                 </Button>
@@ -212,7 +214,7 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
           </section>
           <div mix={detalles}>
             <Button variant="primary" size="md">
-              Detalles de la reunión
+              Detalles de la reunión 
             </Button>
           </div>
           <br />
@@ -229,6 +231,8 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
               <strong>© Copyright 2026 Todos los Derechos Reservados | Aviso de privacidad</strong>
             </p>
           </section>
+          <p>contained</p>
+          
         </main>
       </Document>
     )

@@ -3,6 +3,7 @@ import { css } from 'remix/ui'
 import { colors, FONT_STACK } from './civic-horizon.ts'
 
 export type ButtonVariant =
+
   | 'primary'
   | 'contained'
   | 'secondary'
@@ -19,6 +20,8 @@ export type ButtonVariant =
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
 export interface ButtonProps {
+
+  
   /** Visual button variant */
   variant?: ButtonVariant
   /** Legacy alias for variant */
@@ -57,6 +60,7 @@ export interface ButtonProps {
   ariaLabel?: string
   /** Tooltip title */
   title?: string
+  
 }
 
 // ---------------------------------------------------------------------------
@@ -200,6 +204,7 @@ const fullWidthStyle = css({
   width: '100%',
   display: 'flex',
 })
+
 
 function getVariantStyle(variant: ButtonVariant = 'primary') {
   switch (variant) {
