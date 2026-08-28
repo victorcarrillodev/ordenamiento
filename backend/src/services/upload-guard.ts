@@ -150,7 +150,7 @@ const ALLOWED_MIMES: Record<string, string> = {
   dwg: 'image/vnd.dwg',
   shp: 'application/octet-stream',
   shx: 'application/octet-stream',
-    // Archivos comprimidos
+  // Archivos comprimidos
   zip: 'application/zip',
   kmz: 'application/vnd.google-earth.kmz',
   rar: 'application/vnd.rar',
@@ -189,6 +189,9 @@ type SignatureFamily =
   | '7z'
   | 'rar'
   | 'rtf'
+  | 'avi'
+  | 'mkv'
+  | 'ico'
   | 'text'
   | 'unknown'
 
@@ -211,6 +214,9 @@ const FAMILY_EXTENSIONS: Record<SignatureFamily, string[]> = {
   '7z': ['7z'],
   rar: ['rar'],
   rtf: ['rtf'],
+  avi: ['avi'],
+  mkv: ['mkv'],
+  ico: ['ico'],
   text: ['txt', 'csv', 'md'],
   unknown: [],
 }
@@ -226,6 +232,10 @@ function asciiAt(buffer: Buffer, offset: number, text: string): boolean {
 
 /** Detecta la familia real del archivo leyendo sus primeros bytes. */
 export function detectFileFamily(buffer: Buffer): SignatureFamily {
+  // ICO: 00 00 01 00 (debe ir antes de shapefile 00 00 27 0A para no colisionar)
+  if (startsWith(buffer, [0x00, 0x00, 0x01, 0x00])) return 'ico'
+  // MKV/WebM: EBML 1A 45 DF A3
+  if (startsWith(buffer, [0x1a, 0x45, 0xdf, 0xa3])) return 'mkv'
   // PDF: la especificación permite basura binaria ANTES de %PDF- (hasta 1024
   // bytes); los escáneres lo hacen habitualmente.
   const head = buffer.subarray(0, 1024).toString('latin1')
@@ -236,6 +246,7 @@ export function detectFileFamily(buffer: Buffer): SignatureFamily {
   if (asciiAt(buffer, 0, 'RIFF')) {
     if (asciiAt(buffer, 8, 'WEBP')) return 'webp'
     if (asciiAt(buffer, 8, 'WAVE')) return 'wav'
+    if (asciiAt(buffer, 8, 'AVI ')) return 'avi'
   }
   if (startsWith(buffer, [0x42, 0x4d])) return 'bmp'
   if (asciiAt(buffer, 0, 'II*\u0000') || asciiAt(buffer, 0, 'MM\u0000*')) return 'tiff'
@@ -251,10 +262,7 @@ export function detectFileFamily(buffer: Buffer): SignatureFamily {
   // Shapefile ESRI (.shp/.shx): código de archivo 9994 big-endian.
   if (startsWith(buffer, [0x00, 0x00, 0x27, 0x0a])) return 'shapefile'
   // DBF (dBASE): primer byte 0x03/0x05/0x30 y cabecera mínima de 32 bytes.
-  if (
-    buffer.length >= 32 &&
-    (buffer[0] === 0x03 || buffer[0] === 0x05 || buffer[0] === 0x30)
-  ) {
+  if (buffer.length >= 32 && (buffer[0] === 0x03 || buffer[0] === 0x05 || buffer[0] === 0x30)) {
     return 'dbf'
   }
   if (asciiAt(buffer, 4, 'ftyp')) return 'ftyp'
