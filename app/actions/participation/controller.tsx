@@ -51,42 +51,37 @@ export default createController(routes.participation, {
       }
 
       try {
-        let formData: FormData
-        try {
-          const parseResult = await parseParticipationForm(
-            context.request,
-            {
-              maxFiles: MAX_FILES,
-              maxFileSize: MAX_FILE_BYTES,
-              maxTotalSize: MAX_TOTAL_BYTES,
-            },
-            uploadHandler,
-          )
-          formData = parseResult.formData
+        const parseResult = await parseParticipationForm(
+          context.request,
+          {
+            maxFiles: MAX_FILES,
+            maxFileSize: MAX_FILE_BYTES,
+            maxTotalSize: MAX_TOTAL_BYTES,
+          },
+          uploadHandler,
+        )
+        const formData = parseResult.formData
 
-          // Fix 1: 413 con repintado de campos de texto ya leídos
-          if (parseResult.limitError === 'maxfiles') {
-            return context.render(
-              <ParticipationPage
-                errors={{ archivos: `Máximo ${MAX_FILES} archivos por participación` }}
-                values={toFormValues(formData)}
-              />,
-              { status: 413 },
-            )
-          }
-          if (parseResult.limitError === 'maxfilesize') {
-            return context.render(
-              <ParticipationPage
-                errors={{
-                  archivos: `Uno de los archivos excede el límite de ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB`,
-                }}
-                values={toFormValues(formData)}
-              />,
-              { status: 413 },
-            )
-          }
-        } catch (error) {
-          throw error
+        // Fix 1: 413 con repintado de campos de texto ya leídos
+        if (parseResult.limitError === 'maxfiles') {
+          return context.render(
+            <ParticipationPage
+              errors={{ archivos: `Máximo ${MAX_FILES} archivos por participación` }}
+              values={toFormValues(formData)}
+            />,
+            { status: 413 },
+          )
+        }
+        if (parseResult.limitError === 'maxfilesize') {
+          return context.render(
+            <ParticipationPage
+              errors={{
+                archivos: `Uno de los archivos excede el límite de ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB`,
+              }}
+              values={toFormValues(formData)}
+            />,
+            { status: 413 },
+          )
         }
 
         const parsed = s.parseSafe(participationSchema, formData, { errorMap })

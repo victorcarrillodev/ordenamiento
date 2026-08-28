@@ -140,6 +140,11 @@ export default createController(adminRoutes, {
       const origen = params.get('origen') === 'fisica' ? 'fisica' : 'digital'
       const etapaParam = params.get('etapa')
       const etapa = ETAPAS.find((e) => e === etapaParam)
+      const rawPage = params.get('page')
+      const rawLimit = params.get('limit')
+      const page = Number.isInteger(Number(rawPage)) && Number(rawPage) > 0 ? Number(rawPage) : 1
+      const limit =
+        Number.isInteger(Number(rawLimit)) && Number(rawLimit) > 0 ? Number(rawLimit) : 10
       const data = await fetchJsonOr<{
         items: Array<{
           id: number
@@ -151,15 +156,26 @@ export default createController(adminRoutes, {
           notificado_en: string | null
           adjuntos: Array<{ id: number; nombre_original: string; mime: string; size: number }>
         }>
+        total: number
+        page: number
+        limit: number
       }>(
         context.request,
-        `/api/participations?origen=${origen}&limit=100&page=1` +
+        `/api/participations?origen=${origen}&limit=${limit}&page=${page}` +
           (etapa ? `&etapa=${encodeURIComponent(etapa)}` : ''),
-        { items: [] },
+        { items: [], total: 0, page, limit },
       )
 
       return context.render(
-        <ParticipacionesPage user={user} origen={origen} items={data.items ?? []} etapa={etapa} />,
+        <ParticipacionesPage
+          user={user}
+          origen={origen}
+          items={data.items ?? []}
+          etapa={etapa}
+          page={data.page ?? page}
+          limit={data.limit ?? limit}
+          total={typeof data.total === 'number' ? data.total : (data.items?.length ?? 0)}
+        />,
       )
     },
 

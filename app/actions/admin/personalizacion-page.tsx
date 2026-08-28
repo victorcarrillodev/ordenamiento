@@ -1221,6 +1221,48 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
             </div>
           )}
 
+          {/* HERRAMIENTA: PRUEBA SMTP (cablea POST /api/mail/test — antes huérfano) */}
+          <div
+            class="panel"
+            style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-top: 24px;"
+          >
+            <h3 style="font-size: 15px; font-weight: 800; color: #1e293b; margin: 0 0 8px; display: flex; align-items: center; gap: 8px;">
+              <span>✉</span> Prueba de correo SMTP
+            </h3>
+            <p style="font-size: 13px; color: #64748b; margin: 0 0 16px;">
+              Verifica que el servidor de correo esté configurado (SMTP_HOST/SMTP_USER/SMTP_PASS).
+              Envía un correo de prueba al destinatario indicado usando la plantilla institucional.
+            </p>
+            <form
+              method="post"
+              action={adminRoutes.personalizacion.index.href()}
+              style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;"
+            >
+              <input type="hidden" name="_action" value="testMail" />
+              <input type="hidden" name="tab" value={tabActiva} />
+              <div class="form-field" style="flex: 1; min-width: 240px;">
+                <label for="smtp-test-para" style="font-weight: 700; font-size: 12px; color: #475569;">
+                  Correo destino para la prueba
+                </label>
+                <input
+                  id="smtp-test-para"
+                  name="para"
+                  type="email"
+                  required
+                  placeholder="tu.correo@ejemplo.com"
+                  style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px; width: 100%;"
+                />
+              </div>
+              <Button buttonType="submit" variant="primary">
+                📨 Enviar correo de prueba
+              </Button>
+            </form>
+            <p style="font-size: 11px; color: #94a3b8; margin: 10px 0 0;">
+              Solo admin. El backend responde 503 si SMTP no está configurado y 502 si el envío falla; el
+              resultado se muestra arriba como mensaje de éxito o error.
+            </p>
+          </div>
+
           {/* MINI PREVIEW MODAL */}
           <div
             id="mini-preview-modal"

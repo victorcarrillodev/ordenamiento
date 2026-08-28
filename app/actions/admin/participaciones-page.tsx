@@ -28,6 +28,9 @@ export interface ParticipacionesPageProps {
   items: ParticipationRow[]
   /** Filtro de etapa activo, si el admin eligió uno. */
   etapa?: Etapa
+  page: number
+  limit: number
+  total: number
 }
 
 const ESTADO_BADGE: Record<string, string> = {

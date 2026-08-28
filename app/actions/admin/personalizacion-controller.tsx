@@ -82,6 +82,35 @@ export default createController(adminRoutes.personalizacion, {
         )
       }
 
+      // ── Acción: Probar SMTP (usa POST /api/mail/test, expone útil de diagnóstico sin PII) ──
+      if (actionType === 'testMail') {
+        const para = String(formData.get('para') ?? '').trim()
+        const tabRet = String(formData.get('tab') ?? 'usuario')
+        // Validación estricta anti-CRLF/XSS: bloquea \r\n y rechaza formato email inválido.
+        // No basta con contains('@'): un payload con CRLF o <script> pasa ese filtro.
+        const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(para) && !/[\r\n<>]/.test(para)
+        if (!para || !emailValido) {
+          return redirect(
+            `${adminRoutes.personalizacion.index.href()}?tab=${tabRet}&err=${encodeURIComponent('Correo destino inválido')}`,
+          )
+        }
+        const res = await backendFetch(context.request, '/api/mail/test', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ para }),
+        })
+        if (!res.ok) {
+          const errData = (await res.json().catch(() => ({}))) as { error?: string }
+          const msg = errData.error || `Error SMTP (${res.status})`
+          return redirect(
+            `${adminRoutes.personalizacion.index.href()}?tab=${tabRet}&err=${encodeURIComponent(msg)}`,
+          )
+        }
+        return redirect(
+          `${adminRoutes.personalizacion.index.href()}?tab=${tabRet}&msg=${encodeURIComponent(`Correo de prueba enviado a ${para}`)}`,
+        )
+      }
+
       // ── Acción: Guardar configuración ──
       const section = String(formData.get('section') ?? 'usuario') as 'usuario' | 'panel'
       const motivo = String(formData.get('motivo') ?? '').trim()

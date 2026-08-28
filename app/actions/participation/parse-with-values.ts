@@ -9,6 +9,7 @@
  * a reescribirlo todo. Este helper recorre los parts con `parseMultipartRequest`
  * para quedarse con ese FormData parcial y devolverlo junto al motivo del 413.
  */
+export type { FileUpload } from 'remix/form-data-parser'
 import {
   FileUpload,
   MaxFilesExceededError,

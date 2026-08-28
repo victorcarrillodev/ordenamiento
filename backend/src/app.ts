@@ -32,12 +32,10 @@ import {
   listParticipations,
   marcarNotificada,
   registrarResolucion,
-  updateEstado,
   type Estado,
   type Etapa,
   type Origen,
 } from './services/participations.ts'
-import { searchParticipations } from './services/search.ts'
 import { createReunion, deleteReunion, listReuniones } from './services/reuniones.ts'
 import { listAvisos, createAviso, deleteAviso } from './services/avisos.ts'
 import { listPoel, createPoelSesion, deletePoelSesion } from './services/poel.ts'
@@ -59,7 +57,7 @@ import {
   DEFAULT_THEME_CONFIG,
 } from './services/customizations.ts'
 import { sql } from './db/pool.ts'
-import { json, bodyTooLarge, clientIp, rateLimit } from './utils.ts'
+import { json, bodyTooLarge, rateLimit } from './utils.ts'
 
 /** Rate limiter para participaciones. Admins están exentos, otros tienen 10 POSTs por minuto */
 export function participationRateLimited(
@@ -113,6 +111,30 @@ function safePositiveInt(v: string | null, fallback: number): number {
   return Number.isInteger(n) && n > 0 ? n : fallback
 }
 
+/**
+ * Router manual del backend — DECISIÓN A2 (2026-08-28, Arquitecto)
+ *
+ * Se evaluó migrar `handleRequest` (hoy ~800 líneas, 24 ramas `if (method+pathname)`)
+ * hacia un router tipado al estilo `remix/router` sin nuevas dependencias.
+ *
+ * Decisión: (a) MANTENER el router manual y documentarlo como aceptable.
+ * Razones:
+ *  - Backend sin framework: usa el `fetch` nativo de Bun/Node. `matchPath` (15 líneas)
+ *    + `handleRequest` son zero-deps, predecibles, fáciles de auditar y sin DSL que aprender.
+ *  - El frontend sí necesita `remix/router` por `href` tipados, navegación y data-loading
+ *    en React; el backend solo despacha (auth guards + validación + servicio), no navega.
+ *  - Extraer a `backend/src/router.ts` con tabla `Array<{method, pattern, handler}>`
+ *    no reduce complejidad ciclomática, solo la mueve; el hot-spot CRAP (alta complejidad +
+ *    22 commits en `app.ts`) se mitiga mejor podando rutas huérfanas (A1) que añadiendo
+ *    indirección ahora.
+ *  - Umbral de refactor: si el número de rutas supera ~40 o aparecen middlewares
+ *    componibles (rate-limit por ruta, validación por esquema), entonces migrar a una
+ *    tabla tipada mínima sin deps: `type Route = {method, pattern, auth: 'admin'|'auth'|null,
+ *    handler}`. Hasta entonces, se deja como está y se monitoriza.
+ *
+ * Si se reintroduce búsqueda, usar el flujo canónico `GET /api/participations?q=...`
+ * con ranking en vez de resucitar `GET /api/search` aislado.
+ */
 function matchPath(pathname: string, pattern: string): Record<string, string> | null {
   const pathParts = pathname.split('/').filter(Boolean)
   const patternParts = pattern.split('/').filter(Boolean)
@@ -255,20 +277,6 @@ export async function handleRequest(request: Request): Promise<Response> {
     return handleCreateParticipation(request, user)
   }
 
-  // Cambiar estado
-  const estadoMatch =
-    method === 'PATCH' ? matchPath(pathname, '/api/participations/:id/estado') : null
-  if (estadoMatch) {
-    const authError = requireAdmin()
-    if (authError) return authError
-    const body = (await request.json()) as { estado?: string }
-    if (!body.estado || !isEstado(body.estado)) return json({ error: 'estado inválido' }, 400)
-    if (!(await updateEstado(Number(estadoMatch.id), body.estado))) {
-      return json({ error: 'No encontrado' }, 404)
-    }
-    return json({ ok: true })
-  }
-
   // Dictaminar una participación y, opcionalmente, notificar al ciudadano.
   const resolucionMatch =
     method === 'POST' ? matchPath(pathname, '/api/participations/:id/resolucion') : null
@@ -313,7 +321,7 @@ export async function handleRequest(request: Request): Promise<Response> {
     const destino =
       (body.para ?? '').trim() ||
       String(((await getParticipation(id)) as { correo?: string } | null)?.correo ?? '').trim()
-    if (!destino.includes('@')) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(destino) || /[\r\n<>]/.test(destino)) {
       return json({ ok: true, notificado: false, motivo: 'SIN_CORREO' })
     }
 
@@ -444,6 +452,9 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (authError) return authError
     const body = (await request.json()) as { id?: number; para?: string }
     if (!body.id || !body.para) return json({ error: 'Faltan datos: id, para' }, 400)
+    if (/[\r\n]/.test(String(body.para)) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.para).trim()) || /[<>]/.test(String(body.para))) {
+      return json({ error: 'Correo destino inválido' }, 400)
+    }
     if (!mailConfigurado()) {
       return json({ error: 'Correo no configurado: define SMTP_HOST, SMTP_USER y SMTP_PASS' }, 503)
     }
@@ -463,6 +474,9 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (authError) return authError
     const body = (await request.json()) as { id?: number; para?: string }
     if (!body.id || !body.para) return json({ error: 'Faltan datos: id, para' }, 400)
+    if (/[\r\n]/.test(String(body.para)) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.para).trim()) || /[<>]/.test(String(body.para))) {
+      return json({ error: 'Correo destino inválido' }, 400)
+    }
     if (!mailConfigurado()) {
       return json({ error: 'Correo no configurado: define SMTP_HOST, SMTP_USER y SMTP_PASS' }, 503)
     }
@@ -483,6 +497,12 @@ export async function handleRequest(request: Request): Promise<Response> {
     const body = (await request.json()) as { para?: string }
     const destino = (body.para ?? '').trim()
     if (!destino) return json({ error: 'Falta datos: para' }, 400)
+    // Anti-CRLF/XSS: el destino es header `To:` de SMTP y se refleja en JSON (`para`).
+    // Rechaza \r\n y valida formato email básico; complementa el filtro del frontend
+    // porque el backend es el guarda definitivo (bypass directo vía curl).
+    if (/[\r\n]/.test(destino) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(destino) || /[<>]/.test(destino)) {
+      return json({ error: 'Correo destino inválido' }, 400)
+    }
     if (!mailConfigurado()) {
       return json({ error: 'Correo no configurado: define SMTP_HOST, SMTP_USER y SMTP_PASS' }, 503)
     }
@@ -493,19 +513,6 @@ export async function handleRequest(request: Request): Promise<Response> {
       const msg = err instanceof Error ? err.message : String(err)
       return json({ error: `No se pudo enviar prueba: ${msg}` }, 502)
     }
-  }
-
-  // Búsqueda híbrida — busca dentro del contenido (PII) de participaciones: solo admin.
-  if (method === 'GET' && pathname === '/api/search') {
-    const authError = requireAdmin()
-    if (authError) return authError
-    const q = url.searchParams.get('q') ?? ''
-    if (!q) return json({ error: 'Faltan datos: q' }, 400)
-    const results = await searchParticipations(q, 10, {
-      origen: url.searchParams.get('origen') ?? undefined,
-      estado: url.searchParams.get('estado') ?? undefined,
-    })
-    return json({ query: q, results })
   }
 
   // ── Reuniones (bitácora) ─────────────────────────────────────────────
