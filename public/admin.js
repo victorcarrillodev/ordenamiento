@@ -59,13 +59,20 @@
       var lugarEl = document.getElementById('cal-m-lugar')
       var descEl = document.getElementById('cal-m-desc')
       var linkEl = document.getElementById('cal-m-link')
+      // El icono vive en su propio elemento; el texto se escribe en el span
+      // interior para no borrarlo. Si no existe, se cae al contenedor.
+      var tagIcon = document.getElementById('cal-m-tag-icon')
+      var tagTxt = document.getElementById('cal-m-tag-txt') || tagEl
+      var fechaTxt = document.getElementById('cal-m-fecha-txt') || fechaEl
+      var horaTxt = document.getElementById('cal-m-hora-txt') || horaEl
+      var lugarTxt = document.getElementById('cal-m-lugar-txt') || lugarEl
 
       if (titleEl) titleEl.textContent = titulo
-      if (fechaEl) fechaEl.textContent = '📅 Fecha: ' + fecha
+      if (fechaTxt) fechaTxt.textContent = 'Fecha: ' + fecha
 
       if (horaEl) {
         if (hora) {
-          horaEl.textContent = '🕒 Horario: ' + hora
+          if (horaTxt) horaTxt.textContent = 'Horario: ' + hora
           horaEl.style.display = 'block'
         } else {
           horaEl.style.display = 'none'
@@ -74,7 +81,7 @@
 
       if (lugarEl) {
         if (ubicacion) {
-          lugarEl.textContent = '📍 Ubicación: ' + ubicacion
+          if (lugarTxt) lugarTxt.textContent = 'Ubicación: ' + ubicacion
           lugarEl.style.display = 'block'
         } else {
           lugarEl.style.display = 'none'
@@ -88,19 +95,25 @@
       }
 
       if (tagEl) {
+        var icono = 'mdi:bullhorn-outline'
+        var etiqueta = 'Aviso Oficial'
+        var fondo = '#FAF5FF'
+        var tinta = '#7E22CE'
         if (tipo === 'reunion') {
-          tagEl.textContent = '👥 Reunión de Trabajo'
-          tagEl.style.background = '#F0FDF4'
-          tagEl.style.color = '#166534'
+          icono = 'mdi:account-group-outline'
+          etiqueta = 'Reunión de Trabajo'
+          fondo = '#F0FDF4'
+          tinta = '#166534'
         } else if (tipo === 'poel') {
-          tagEl.textContent = '🏛️ Sesión POEL'
-          tagEl.style.background = '#FEFCE8'
-          tagEl.style.color = '#854D0E'
-        } else {
-          tagEl.textContent = '📢 Aviso Oficial'
-          tagEl.style.background = '#FAF5FF'
-          tagEl.style.color = '#7E22CE'
+          icono = 'mdi:bank-outline'
+          etiqueta = 'Sesión POEL'
+          fondo = '#FEFCE8'
+          tinta = '#854D0E'
         }
+        if (tagIcon) tagIcon.setAttribute('icon', icono)
+        if (tagTxt) tagTxt.textContent = etiqueta
+        tagEl.style.background = fondo
+        tagEl.style.color = tinta
       }
 
       if (modal) {

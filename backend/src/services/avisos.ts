@@ -8,11 +8,18 @@ export interface Aviso {
   titulo: string
   descripcion: string
   activo: boolean
+  /** Fecha de publicación (ISO). El calendario la usa para ubicar el aviso. */
+  fecha?: string
 }
 
 export async function listAvisos(): Promise<Aviso[]> {
+  // `created_at` se expone como `fecha`: sin ella el calendario no sabía en qué
+  // día poner cada aviso y los repartía por su posición en la lista, es decir,
+  // en días inventados que cambiaban al publicar cualquier otro aviso.
   return sql<Aviso[]>`
-    SELECT id, titulo, descripcion, activo FROM avisos ORDER BY id DESC
+    SELECT id, titulo, descripcion, activo, created_at AS fecha
+    FROM avisos
+    ORDER BY created_at DESC, id DESC
   `
 }
 

@@ -12,6 +12,9 @@ declare global {
         height?: string | number
         'aria-label'?: string
         role?: string
+        /** Necesario cuando un script tiene que cambiar el icono en caliente. */
+        id?: string
+        class?: string
       }
     }
   }
@@ -24,18 +27,20 @@ declare global {
 export interface IconProps {
   name: string
   label?: string
+  /** Lado en píxeles. Por defecto 16, que es el tamaño del menú lateral. */
+  size?: number
 }
 
 export function Icon(handle: Handle<IconProps>) {
   return () => {
-    const { name, label } = handle.props
+    const { name, label, size = 16 } = handle.props
     return (
       <iconify-icon
         icon={name}
         aria-label={label}
         role={label ? 'img' : 'presentation'}
-        width="16"
-        height="16"
+        width={size}
+        height={size}
       />
     )
   }
