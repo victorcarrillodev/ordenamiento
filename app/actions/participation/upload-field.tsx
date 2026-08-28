@@ -89,7 +89,7 @@ export function UploadField(handle: Handle<UploadFieldProps>) {
             name="archivos"
             type="file"
             multiple
-            accept=".pdf,.shp,.jpg,.jpeg,.dwg,.png,.docx,.xlsx,.kmz"
+            accept=".pdf,.doc,.docx,.odt,.rtf,.txt,.csv,.md,.xls,.xlsx,.ods,.ppt,.pptx,.odp,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.ico,.dwg,.shp,.shx,.zip,.kmz,.rar,.7z,.dbf,.mp3,.wav,.mp4,.mov,.avi,.mkv"
             aria-describedby={error ? 'archivos-error' : 'archivos-hint'}
             aria-invalid={error ? 'true' : undefined}
             style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;"

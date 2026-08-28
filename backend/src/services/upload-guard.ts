@@ -150,10 +150,13 @@ const ALLOWED_MIMES: Record<string, string> = {
   dwg: 'image/vnd.dwg',
   shp: 'application/octet-stream',
   shx: 'application/octet-stream',
-  // Archivos comprimidos
+    // Archivos comprimidos
   zip: 'application/zip',
+  kmz: 'application/vnd.google-earth.kmz',
   rar: 'application/vnd.rar',
   '7z': 'application/x-7z-compressed',
+  // SIG auxiliares (shapefile)
+  dbf: 'application/octet-stream',
   // Multimedia común
   mp3: 'audio/mpeg',
   wav: 'audio/wav',
@@ -180,6 +183,7 @@ type SignatureFamily =
   | 'ole'
   | 'dwg'
   | 'shapefile'
+  | 'dbf'
   | 'ftyp'
   | 'mp3'
   | '7z'
@@ -197,10 +201,11 @@ const FAMILY_EXTENSIONS: Record<SignatureFamily, string[]> = {
   bmp: ['bmp'],
   tiff: ['tif', 'tiff'],
   wav: ['wav'],
-  zip: ['docx', 'xlsx', 'pptx', 'odt', 'ods', 'odp', 'zip'],
+  zip: ['docx', 'xlsx', 'pptx', 'odt', 'ods', 'odp', 'zip', 'kmz'],
   ole: ['doc', 'xls', 'ppt'],
   dwg: ['dwg'],
   shapefile: ['shp', 'shx'],
+  dbf: ['dbf'],
   ftyp: ['mp4', 'mov', 'heic', 'heif'],
   mp3: ['mp3'],
   '7z': ['7z'],
@@ -245,6 +250,13 @@ export function detectFileFamily(buffer: Buffer): SignatureFamily {
   if (asciiAt(buffer, 0, 'AC1')) return 'dwg'
   // Shapefile ESRI (.shp/.shx): código de archivo 9994 big-endian.
   if (startsWith(buffer, [0x00, 0x00, 0x27, 0x0a])) return 'shapefile'
+  // DBF (dBASE): primer byte 0x03/0x05/0x30 y cabecera mínima de 32 bytes.
+  if (
+    buffer.length >= 32 &&
+    (buffer[0] === 0x03 || buffer[0] === 0x05 || buffer[0] === 0x30)
+  ) {
+    return 'dbf'
+  }
   if (asciiAt(buffer, 4, 'ftyp')) return 'ftyp'
   if (
     asciiAt(buffer, 0, 'ID3') ||

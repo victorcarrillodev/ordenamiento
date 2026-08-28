@@ -1,3 +1,4 @@
+import { isSafeCssColor, isSafeImageUrl, sanitizeText } from '../utils.ts'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { sql } from '../db/pool.ts'
@@ -304,4 +305,78 @@ export async function saveUploadedBrandingImage(
     url: `/api/settings/assets/${uniqueName}`,
     filename: uniqueName,
   }
+}
+
+/**
+ * Valida y sanitiza la configuración de tema.
+ * Devuelve un string con el error si hay problemas, o null si es válido.
+ * Modifica el objeto config in-place para sanitizar textos libres.
+ */
+export function validarYSanitizarThemeConfig(config: Partial<ThemeConfig>): string | null {
+  // Procesar usuario.colores si existen
+  if (config.usuario?.colores) {
+    for (const [key, color] of Object.entries(config.usuario.colores)) {
+      if (color && color !== '') {
+        if (!isSafeCssColor(color)) {
+          return `Color inválido en ${key}: ${color}`
+        }
+      }
+    }
+  }
+
+  // Procesar usuario.imagenes si existen
+  if (config.usuario?.imagenes) {
+    const images = config.usuario.imagenes
+
+    // Validar URLs individuales
+    for (const [key, value] of Object.entries(images)) {
+      if (key === 'heroImagenes') {
+        // heroImagenes debe ser un array
+        if (value && !Array.isArray(value)) {
+          return 'heroImagenes debe ser un array'
+        }
+        // Validar cada URL en el array
+        if (Array.isArray(value)) {
+          for (const url of value) {
+            if (url && url !== '' && !isSafeImageUrl(url)) {
+              return `URL de imagen inválida en ${key}`
+            }
+          }
+        }
+      } else {
+        // Para las demás imágenes (logoNavbar, logoFooter, imagenEcologia)
+        if (value && value !== '' && !isSafeImageUrl(value)) {
+          return `URL de imagen inválida en ${key}`
+        }
+      }
+    }
+  }
+
+  // Procesar usuario.textos si existen - sanitizar in-place
+  if (config.usuario?.textos) {
+    for (const [key, text] of Object.entries(config.usuario.textos)) {
+      if (text && typeof text === 'string') {
+        config.usuario.textos[key as keyof typeof config.usuario.textos] = sanitizeText(
+          text,
+          500,
+        )
+      }
+    }
+  }
+
+  // panel.colores si existen
+  if (config.panel?.colorAcento) {
+    if (!isSafeCssColor(config.panel.colorAcento)) {
+      return `Color inválido en panel.colorAcento`
+    }
+  }
+
+  // panel.adminLogo si existe
+  if (config.panel?.adminLogo && config.panel.adminLogo !== '') {
+    if (!isSafeImageUrl(config.panel.adminLogo)) {
+      return 'URL de imagen inválida en panel.adminLogo'
+    }
+  }
+
+  return null
 }
