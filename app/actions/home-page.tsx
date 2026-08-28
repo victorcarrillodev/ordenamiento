@@ -820,202 +820,202 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
     const accent = c.acento || colors.gold400
 
     return (
-    <section
-      id="que-es-el-programa"
-      aria-labelledby="programa-heading"
-      mix={css({
-        ...sectionPaddingProps,
-        background: `linear-gradient(135deg, ${colors.gray900} 0%, ${primary} 100%)`,
-        position: 'relative',
-        overflow: 'hidden',
-      })}
-    >
-      {/* Decorative circles */}
-      <div
-        aria-hidden="true"
+      <section
+        id="que-es-el-programa"
+        aria-labelledby="programa-heading"
         mix={css({
-          position: 'absolute',
-          top: '-120px',
-          right: '-120px',
-          width: '400px',
-          height: '400px',
-          borderRadius: '50%',
-          background: `radial-gradient(circle, rgba(201,162,39,0.15) 0%, transparent 70%)`,
-          pointerEvents: 'none',
+          ...sectionPaddingProps,
+          background: `linear-gradient(135deg, ${colors.gray900} 0%, ${primary} 100%)`,
+          position: 'relative',
+          overflow: 'hidden',
         })}
-      />
-      <div
-        aria-hidden="true"
-        mix={css({
-          position: 'absolute',
-          bottom: '-80px',
-          left: '-80px',
-          width: '300px',
-          height: '300px',
-          borderRadius: '50%',
-          background: `radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)`,
-          pointerEvents: 'none',
-        })}
-      />
-
-      <div mix={css({ ...sectionContainerProps, position: 'relative', zIndex: 1 })}>
+      >
+        {/* Decorative circles */}
         <div
+          aria-hidden="true"
           mix={css({
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '80px',
-            alignItems: 'start',
-            '@media (max-width: 900px)': {
-              gridTemplateColumns: '1fr',
-              gap: '48px',
-            },
+            position: 'absolute',
+            top: '-120px',
+            right: '-120px',
+            width: '400px',
+            height: '400px',
+            borderRadius: '50%',
+            background: `radial-gradient(circle, rgba(201,162,39,0.15) 0%, transparent 70%)`,
+            pointerEvents: 'none',
           })}
-        >
-          {/* Left: headline + stats */}
-          <div mix={css({ display: 'flex', flexDirection: 'column', gap: '24px' })}>
-            <span mix={css({ ...eyebrowProps, color: accent })}>¿Qué es el Programa?</span>
-            <h2
-              id="programa-heading"
-              mix={css({ ...headingLProps, color: colors.white, margin: 0 })}
-            >
-              Un instrumento de planeación para el territorio y el ambiente
-            </h2>
-            <p
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '18px',
-                lineHeight: 1.7,
-                color: 'rgba(255,255,255,0.75)',
-                margin: 0,
-              })}
-            >
-              El Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano es el
-              principal instrumento de política ambiental y urbana del Municipio de San Pedro
-              Tlaquepaque.
-            </p>
+        />
+        <div
+          aria-hidden="true"
+          mix={css({
+            position: 'absolute',
+            bottom: '-80px',
+            left: '-80px',
+            width: '300px',
+            height: '300px',
+            borderRadius: '50%',
+            background: `radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)`,
+            pointerEvents: 'none',
+          })}
+        />
 
-            <div
-              mix={css({
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '16px',
-                marginTop: '8px',
-              })}
-            >
-              {[
-                { value: '5', label: 'Fases del proceso' },
-                { value: '2026', label: 'Año de inicio' },
-                { value: '600k+', label: 'Habitantes beneficiados' },
-                { value: '100%', label: 'Participación abierta' },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  mix={css({
-                    background: 'rgba(255,255,255,0.07)',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    borderRadius: '12px',
-                    padding: '20px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                  })}
-                >
-                  <span
-                    mix={css({
-                      fontFamily: FONT_STACK,
-                      fontSize: '28px',
-                      fontWeight: 800,
-                      color: accent,
-                      lineHeight: 1,
-                    })}
-                  >
-                    {stat.value}
-                  </span>
-                  <span
-                    mix={css({
-                      fontFamily: FONT_STACK,
-                      fontSize: '12px',
-                      color: 'rgba(255,255,255,0.6)',
-                      lineHeight: 1.4,
-                    })}
-                  >
-                    {stat.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right: body text + legal basis */}
-          <div mix={css({ display: 'flex', flexDirection: 'column', gap: '24px' })}>
-            <p
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '16px',
-                lineHeight: 1.8,
-                color: 'rgba(255,255,255,0.72)',
-                margin: 0,
-              })}
-            >
-              Establece los lineamientos para el uso del suelo, la protección de áreas naturales, la
-              distribución de actividades humanas y la gestión sustentable de los recursos naturales
-              en el territorio municipal.
-            </p>
-            <p
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '16px',
-                lineHeight: 1.8,
-                color: 'rgba(255,255,255,0.72)',
-                margin: 0,
-              })}
-            >
-              Su elaboración es participativa: integra las voces de ciudadanos, organizaciones
-              civiles, academia y sector productivo, garantizando que el resultado refleje las
-              necesidades y aspiraciones colectivas del municipio.
-            </p>
-
-            <div
-              mix={css({
-                background: 'rgba(201,162,39,0.12)',
-                border: `1px solid rgba(201,162,39,0.3)`,
-                borderRadius: '12px',
-                padding: '24px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-              })}
-            >
-              <span
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  color: accent,
-                })}
+        <div mix={css({ ...sectionContainerProps, position: 'relative', zIndex: 1 })}>
+          <div
+            mix={css({
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '80px',
+              alignItems: 'start',
+              '@media (max-width: 900px)': {
+                gridTemplateColumns: '1fr',
+                gap: '48px',
+              },
+            })}
+          >
+            {/* Left: headline + stats */}
+            <div mix={css({ display: 'flex', flexDirection: 'column', gap: '24px' })}>
+              <span mix={css({ ...eyebrowProps, color: accent })}>¿Qué es el Programa?</span>
+              <h2
+                id="programa-heading"
+                mix={css({ ...headingLProps, color: colors.white, margin: 0 })}
               >
-                Fundamento legal
-              </span>
+                Un instrumento de planeación para el territorio y el ambiente
+              </h2>
               <p
                 mix={css({
                   fontFamily: FONT_STACK,
-                  fontSize: '14px',
-                  lineHeight: 1.65,
-                  color: 'rgba(255,255,255,0.65)',
+                  fontSize: '18px',
+                  lineHeight: 1.7,
+                  color: 'rgba(255,255,255,0.75)',
                   margin: 0,
                 })}
               >
-                Ley General del Equilibrio Ecológico y la Protección al Ambiente · Ley de
-                Ordenamiento Territorial y Desarrollo Urbano del Estado de Jalisco · Código Urbano
-                para el Estado de Jalisco
+                El Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano es el
+                principal instrumento de política ambiental y urbana del Municipio de San Pedro
+                Tlaquepaque.
               </p>
+
+              <div
+                mix={css({
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '16px',
+                  marginTop: '8px',
+                })}
+              >
+                {[
+                  { value: '5', label: 'Fases del proceso' },
+                  { value: '2026', label: 'Año de inicio' },
+                  { value: '600k+', label: 'Habitantes beneficiados' },
+                  { value: '100%', label: 'Participación abierta' },
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    mix={css({
+                      background: 'rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: '12px',
+                      padding: '20px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    })}
+                  >
+                    <span
+                      mix={css({
+                        fontFamily: FONT_STACK,
+                        fontSize: '28px',
+                        fontWeight: 800,
+                        color: accent,
+                        lineHeight: 1,
+                      })}
+                    >
+                      {stat.value}
+                    </span>
+                    <span
+                      mix={css({
+                        fontFamily: FONT_STACK,
+                        fontSize: '12px',
+                        color: 'rgba(255,255,255,0.6)',
+                        lineHeight: 1.4,
+                      })}
+                    >
+                      {stat.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: body text + legal basis */}
+            <div mix={css({ display: 'flex', flexDirection: 'column', gap: '24px' })}>
+              <p
+                mix={css({
+                  fontFamily: FONT_STACK,
+                  fontSize: '16px',
+                  lineHeight: 1.8,
+                  color: 'rgba(255,255,255,0.72)',
+                  margin: 0,
+                })}
+              >
+                Establece los lineamientos para el uso del suelo, la protección de áreas naturales,
+                la distribución de actividades humanas y la gestión sustentable de los recursos
+                naturales en el territorio municipal.
+              </p>
+              <p
+                mix={css({
+                  fontFamily: FONT_STACK,
+                  fontSize: '16px',
+                  lineHeight: 1.8,
+                  color: 'rgba(255,255,255,0.72)',
+                  margin: 0,
+                })}
+              >
+                Su elaboración es participativa: integra las voces de ciudadanos, organizaciones
+                civiles, academia y sector productivo, garantizando que el resultado refleje las
+                necesidades y aspiraciones colectivas del municipio.
+              </p>
+
+              <div
+                mix={css({
+                  background: 'rgba(201,162,39,0.12)',
+                  border: `1px solid rgba(201,162,39,0.3)`,
+                  borderRadius: '12px',
+                  padding: '24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                })}
+              >
+                <span
+                  mix={css({
+                    fontFamily: FONT_STACK,
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    color: accent,
+                  })}
+                >
+                  Fundamento legal
+                </span>
+                <p
+                  mix={css({
+                    fontFamily: FONT_STACK,
+                    fontSize: '14px',
+                    lineHeight: 1.65,
+                    color: 'rgba(255,255,255,0.65)',
+                    margin: 0,
+                  })}
+                >
+                  Ley General del Equilibrio Ecológico y la Protección al Ambiente · Ley de
+                  Ordenamiento Territorial y Desarrollo Urbano del Estado de Jalisco · Código Urbano
+                  para el Estado de Jalisco
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
     )
   }
 }
@@ -1082,61 +1082,57 @@ function ProcessTimeline(handle: Handle<{ theme?: ThemeData }>) {
     const steps = getTimelineSteps(primary, accent, secondary)
 
     return (
-    <section
-      id="proceso"
-      aria-labelledby="proceso-heading"
-      mix={css({ ...sectionPaddingProps, background: c.secundario || colors.gray50 })}
-    >
-      <div mix={css(sectionContainerProps)}>
-        <div
-          mix={css({
-            textAlign: 'center',
-            marginBottom: '72px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '16px',
-          })}
-        >
-          <span mix={css({ ...eyebrowProps, color: primary })}>Fases del proceso</span>
-          <h2 id="proceso-heading" mix={css({ ...headingLProps, margin: 0, maxWidth: '560px' })}>
-            Cinco etapas hacia un territorio ordenado y sustentable
-          </h2>
-        </div>
-
-        <div
-          mix={css({
-            position: 'relative',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(5, 1fr)',
-            '@media (max-width: 900px)': { gridTemplateColumns: '1fr' },
-          })}
-        >
-          {/* Connector line (desktop only) */}
+      <section
+        id="proceso"
+        aria-labelledby="proceso-heading"
+        mix={css({ ...sectionPaddingProps, background: c.secundario || colors.gray50 })}
+      >
+        <div mix={css(sectionContainerProps)}>
           <div
-            aria-hidden="true"
             mix={css({
-              position: 'absolute',
-              top: '28px',
-              left: 'calc(10% + 28px)',
-              right: 'calc(10% + 28px)',
-              height: '2px',
-              background: `linear-gradient(to right, ${primary}, ${accent}, ${secondary}, ${colors.gray300}, ${primary})`,
-              zIndex: 0,
-              '@media (max-width: 900px)': { display: 'none' },
+              textAlign: 'center',
+              marginBottom: '72px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '16px',
             })}
-          />
+          >
+            <span mix={css({ ...eyebrowProps, color: primary })}>Fases del proceso</span>
+            <h2 id="proceso-heading" mix={css({ ...headingLProps, margin: 0, maxWidth: '560px' })}>
+              Cinco etapas hacia un territorio ordenado y sustentable
+            </h2>
+          </div>
 
-          {steps.map((step, i) => (
-            <TimelineStepCard
-              key={step.number}
-              step={step}
-              isLast={i === steps.length - 1}
+          <div
+            mix={css({
+              position: 'relative',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(5, 1fr)',
+              '@media (max-width: 900px)': { gridTemplateColumns: '1fr' },
+            })}
+          >
+            {/* Connector line (desktop only) */}
+            <div
+              aria-hidden="true"
+              mix={css({
+                position: 'absolute',
+                top: '28px',
+                left: 'calc(10% + 28px)',
+                right: 'calc(10% + 28px)',
+                height: '2px',
+                background: `linear-gradient(to right, ${primary}, ${accent}, ${secondary}, ${colors.gray300}, ${primary})`,
+                zIndex: 0,
+                '@media (max-width: 900px)': { display: 'none' },
+              })}
             />
-          ))}
+
+            {steps.map((step, i) => (
+              <TimelineStepCard key={step.number} step={step} isLast={i === steps.length - 1} />
+            ))}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
     )
   }
 }
@@ -1268,148 +1264,148 @@ function ParticipationCta(handle: Handle<{ theme?: ThemeData }>) {
     )`
 
     return (
-    <section
-      aria-labelledby="participa-heading"
-      mix={css({
-        background: ctaGradient,
-        padding: '96px 24px',
-        position: 'relative',
-        overflow: 'hidden',
-      })}
-    >
-      <div
-        aria-hidden="true"
+      <section
+        aria-labelledby="participa-heading"
         mix={css({
-          position: 'absolute',
-          inset: 0,
-          backgroundImage: `radial-gradient(circle at 20% 50%, rgba(201,162,39,0.12) 0%, transparent 50%),
-                            radial-gradient(circle at 80% 50%, rgba(255,255,255,0.05) 0%, transparent 40%)`,
-          pointerEvents: 'none',
-        })}
-      />
-
-      <div
-        mix={css({
-          ...sectionContainerProps,
+          background: ctaGradient,
+          padding: '96px 24px',
           position: 'relative',
-          zIndex: 1,
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '32px',
+          overflow: 'hidden',
         })}
       >
         <div
           aria-hidden="true"
           mix={css({
-            width: '72px',
-            height: '72px',
-            borderRadius: '20px',
-            background: `rgba(201,162,39,0.15)`,
-            border: `1px solid rgba(201,162,39,0.3)`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '32px',
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `radial-gradient(circle at 20% 50%, rgba(201,162,39,0.12) 0%, transparent 50%),
+                            radial-gradient(circle at 80% 50%, rgba(255,255,255,0.05) 0%, transparent 40%)`,
+            pointerEvents: 'none',
           })}
-        >
-          ✍️
-        </div>
-
-        <span mix={css({ ...eyebrowProps, color: accent })}>Participación ciudadana</span>
-
-        <h2
-          id="participa-heading"
-          mix={css({
-            ...headingLProps,
-            color: colors.white,
-            margin: 0,
-            maxWidth: '640px',
-          })}
-        >
-          Tu voz transforma el territorio de Tlaquepaque
-        </h2>
-
-        <p
-          mix={css({
-            fontFamily: FONT_STACK,
-            fontSize: '18px',
-            lineHeight: 1.7,
-            color: 'rgba(255,255,255,0.75)',
-            maxWidth: '560px',
-            margin: 0,
-          })}
-        >
-          Registra tus observaciones, propuestas y documentos técnicos. Tu participación es
-          fundamental para construir el Programa de Ordenamiento que refleje las necesidades reales
-          del municipio.
-        </p>
+        />
 
         <div
           mix={css({
+            ...sectionContainerProps,
+            position: 'relative',
+            zIndex: 1,
+            textAlign: 'center',
             display: 'flex',
-            flexWrap: 'wrap',
-            gap: '8px',
-            justifyContent: 'center',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '32px',
           })}
         >
-          {['.PDF', '.SHP', '.JPG', '.DWG'].map((fmt) => (
+          <div
+            aria-hidden="true"
+            mix={css({
+              width: '72px',
+              height: '72px',
+              borderRadius: '20px',
+              background: `rgba(201,162,39,0.15)`,
+              border: `1px solid rgba(201,162,39,0.3)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '32px',
+            })}
+          >
+            ✍️
+          </div>
+
+          <span mix={css({ ...eyebrowProps, color: accent })}>Participación ciudadana</span>
+
+          <h2
+            id="participa-heading"
+            mix={css({
+              ...headingLProps,
+              color: colors.white,
+              margin: 0,
+              maxWidth: '640px',
+            })}
+          >
+            Tu voz transforma el territorio de Tlaquepaque
+          </h2>
+
+          <p
+            mix={css({
+              fontFamily: FONT_STACK,
+              fontSize: '18px',
+              lineHeight: 1.7,
+              color: 'rgba(255,255,255,0.75)',
+              maxWidth: '560px',
+              margin: 0,
+            })}
+          >
+            Registra tus observaciones, propuestas y documentos técnicos. Tu participación es
+            fundamental para construir el Programa de Ordenamiento que refleje las necesidades
+            reales del municipio.
+          </p>
+
+          <div
+            mix={css({
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '8px',
+              justifyContent: 'center',
+            })}
+          >
+            {['.PDF', '.SHP', '.JPG', '.DWG'].map((fmt) => (
+              <span
+                key={fmt}
+                mix={css({
+                  padding: '4px 12px',
+                  borderRadius: '4px',
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  fontFamily: FONT_STACK,
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  color: 'rgba(255,255,255,0.7)',
+                })}
+              >
+                {fmt}
+              </span>
+            ))}
             <span
-              key={fmt}
               mix={css({
                 padding: '4px 12px',
                 borderRadius: '4px',
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.15)',
+                background: 'rgba(201,162,39,0.15)',
+                border: `1px solid rgba(201,162,39,0.3)`,
                 fontFamily: FONT_STACK,
                 fontSize: '12px',
                 fontWeight: 700,
                 letterSpacing: '0.1em',
-                color: 'rgba(255,255,255,0.7)',
+                color: accent,
               })}
             >
-              {fmt}
+              Hasta 220 MB
             </span>
-          ))}
-          <span
-            mix={css({
-              padding: '4px 12px',
-              borderRadius: '4px',
-              background: 'rgba(201,162,39,0.15)',
-              border: `1px solid rgba(201,162,39,0.3)`,
-              fontFamily: FONT_STACK,
-              fontSize: '12px',
-              fontWeight: 700,
-              letterSpacing: '0.1em',
-              color: accent,
-            })}
-          >
-            Hasta 220 MB
-          </span>
-        </div>
+          </div>
 
-        <Button
-          href={routes.participation.index.href()}
-          id="participa-cta-btn"
-          variant="gold"
-          size="lg"
-          iconRight={
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M5 12h14M12 5l7 7-7 7"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          }
-        >
-          Registra tu participación
-        </Button>
-      </div>
-    </section>
+          <Button
+            href={routes.participation.index.href()}
+            id="participa-cta-btn"
+            variant="gold"
+            size="lg"
+            iconRight={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M5 12h14M12 5l7 7-7 7"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            }
+          >
+            Registra tu participación
+          </Button>
+        </div>
+      </section>
     )
   }
 }
