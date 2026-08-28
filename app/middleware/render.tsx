@@ -68,6 +68,15 @@ async function resolveFrame(router: Router, request: Request, src: string) {
     return `<pre>Frame error: ${response.status} ${response.statusText}</pre>`
   }
 
+  // El cuerpo se inserta TAL CUAL dentro del documento. Si la respuesta no es
+  // HTML (un PDF, una imagen, un .docx…) volcarla aquí corrompe la página y el
+  // recurso nunca se ve. Para esos casos usar <object>/<embed>, no <iframe>.
+  const contentType = response.headers.get('content-type') ?? ''
+  if (!contentType.includes('text/html')) {
+    await response.body?.cancel()
+    return `<pre>Frame error: contenido no HTML (${contentType || 'desconocido'}); use &lt;object&gt; para incrustarlo</pre>`
+  }
+
   if (response.body) return response.body
   return await response.text()
 }

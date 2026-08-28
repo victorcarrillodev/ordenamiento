@@ -171,13 +171,20 @@ export default createController(adminRoutes, {
         'content-type',
         'content-disposition',
         'x-content-type-options',
-        'content-security-policy',
         'cross-origin-resource-policy',
+        // El visor de PDF del navegador necesita el tamaño para paginar.
+        'content-length',
       ]) {
         const v = response.headers.get(h)
         if (v) headers.set(h, v)
       }
       if (!headers.has('content-disposition')) headers.set('content-disposition', 'attachment')
+
+      // NO se reenvía la CSP del backend (`sandbox; frame-ancestors 'none'`):
+      // esa cabecera impide que el propio panel incruste el PDF en el detalle.
+      // Se sustituye por una equivalente que sí permite incrustarlo en el mismo
+      // origen, manteniendo el recurso sin permiso para cargar nada más.
+      headers.set('content-security-policy', "default-src 'none'; frame-ancestors 'self'")
 
       return new Response(response.body, { headers })
     },

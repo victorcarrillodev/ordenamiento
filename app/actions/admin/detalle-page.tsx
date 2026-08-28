@@ -67,6 +67,52 @@ function fmtSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+function extensionDe(nombre: string): string {
+  const base = nombre.split(/[\\/]/).pop() ?? ''
+  const parts = base.split('.')
+  return parts.length < 2 ? '' : (parts.pop() ?? '').toLowerCase()
+}
+
+/**
+ * Visor del adjunto. Se usa `<object>` (y `<img>` para imágenes) a propósito:
+ * `<iframe>` lo resuelve el servidor en render.tsx (resolveFrame), que inserta
+ * el cuerpo de la respuesta dentro del HTML. Con un PDF eso vuelca bytes
+ * binarios en el documento y el visor nunca aparece.
+ */
+function VistaAdjunto(handle: Handle<{ participacionId: number; adjunto: Adjunto }>) {
+  return () => {
+    const { participacionId, adjunto } = handle.props
+    const href = adminRoutes.adjunto.href({ id: participacionId, aid: adjunto.id })
+    const ext = extensionDe(adjunto.nombre_original)
+    const esPdf = ext === 'pdf' || adjunto.mime === 'application/pdf'
+    const esImagen = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(ext)
+
+    if (esImagen) {
+      return (
+        <img class="pdf-frame" src={href} alt={adjunto.nombre_original} style="object-fit:contain;" />
+      )
+    }
+
+    if (!esPdf) {
+      return (
+        <p class="empty">
+          Este adjunto ({adjunto.nombre_original}) no se puede previsualizar en el navegador.
+          Descárgalo para abrirlo.
+        </p>
+      )
+    }
+
+    return (
+      <object class="pdf-frame" type="application/pdf" data={href}>
+        <p class="empty">
+          Tu navegador no puede mostrar el PDF aquí.{' '}
+          <a href={`${href}?download=1`}>Descárgalo</a> para verlo.
+        </p>
+      </object>
+    )
+  }
+}
+
 export function DetallePage(handle: Handle<DetallePageProps>) {
   return () => {
     const { user, p, mail } = handle.props
@@ -135,8 +181,16 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
                     <a
                       class="btn btn--green"
                       href={adminRoutes.adjunto.href({ id: p.id, aid: a.id })}
+                      target="_blank"
+                      rel="noopener"
                     >
                       👁 Ver
+                    </a>
+                    <a
+                      class="btn btn--excel"
+                      href={`${adminRoutes.adjunto.href({ id: p.id, aid: a.id })}?download=1`}
+                    >
+                      ⬇ Descargar
                     </a>
                   </span>
                 ))}
@@ -147,11 +201,7 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
               {p.adjuntos.length === 0 ? (
                 <p class="empty">Esta participación no tiene documento adjunto.</p>
               ) : (
-                <iframe
-                  class="pdf-frame"
-                  src={adminRoutes.adjunto.href({ id: p.id, aid: p.adjuntos[0].id })}
-                  title="Vista del documento"
-                />
+                <VistaAdjunto participacionId={p.id} adjunto={p.adjuntos[0]} />
               )}
             </div>
 
