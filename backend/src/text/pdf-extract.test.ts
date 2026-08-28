@@ -10,6 +10,7 @@ describe('text/pdf-extract', () => {
   it('sanitiza texto eliminando bytes nulos (0x00) incompatibles con PostgreSQL', async () => {
     // Si data.text devuelve texto con \x00, debe removerse
     const textWithNulls = 'Propuesta de Ordenamiento Territorial\x00 para la Zona Metropolitana\x00'
+    // eslint-disable-next-line no-control-regex -- se limpian a proposito: rompen el TEXT de Postgres
     const cleaned = textWithNulls.replace(/\0/g, '').replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim()
     expect(cleaned).toBe('Propuesta de Ordenamiento Territorial para la Zona Metropolitana')
     expect(cleaned.includes('\0')).toBe(false)

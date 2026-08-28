@@ -1,11 +1,10 @@
 import { sql, type Db } from '../db/pool.ts'
-import { chunkText } from '../text/chunk.ts'
-import { extractPdfText, TextLayerMissingError } from '../text/pdf-extract.ts'
-import { featurizeWeighted, toVectorLiteral, tokenize } from '../vector/tfidf.ts'
-import { getIdfMap } from './knowledge.ts'
+import { extractPdfText } from '../text/pdf-extract.ts'
 
 export interface IngestResult {
-  chunks: number
+  /** Adjuntos de los que sí se pudo extraer capa de texto. */
+  indexados: number
+  /** Hubo al menos un PDF sin capa de texto (escaneo): solo se podrá ver/descargar. */
   needsOcr: boolean
 }
 
@@ -21,11 +20,15 @@ export interface IngestFile {
 }
 
 /**
- * Vectoriza el contenido de una participación:
- *  - El texto de sus adjuntos PDF (si el archivo es PDF con capa de texto).
- *  - Sus campos de formulario (observación, nombre, colonia, institución...).
- * Acepta cualquier tipo de archivo permitido; solo intenta parsear texto en PDFs.
- * Cada sección se convierte en chunks con embedding TF-IDF 512D.
+ * Registra los adjuntos de una participación y, si son PDF con capa de texto,
+ * guarda ese texto en `attachments.texto_extraido` para poder buscarlo.
+ *
+ * No hay embeddings ni base vectorial: la columna generada `texto_tsv` (y la
+ * `busqueda_tsv` de participations) indexan el contenido con full-text nativo
+ * de Postgres, que es lo que consume `services/search.ts`.
+ *
+ * El archivo se preserva siempre, sea cual sea su tipo: un PDF escaneado o un
+ * DWG simplemente no aporta texto buscable, pero se ve y se descarga igual.
  */
 export async function ingestParticipation(
   dbOrParticipationId: Db | number,
@@ -38,81 +41,44 @@ export async function ingestParticipation(
   const participationId = isDb
     ? (participationIdOrFields as number)
     : (dbOrParticipationId as number)
-  const fields = isDb
-    ? (maybeFieldsOrFiles as Record<string, string>)
-    : (participationIdOrFields as Record<string, string>)
   const files = isDb ? maybeFiles : (maybeFieldsOrFiles as IngestFile[] | undefined)
 
-  let chunks = 0
+  let indexados = 0
   let needsOcr = false
 
-  // 1) Adjuntos: guardar registro + vectorizar si es PDF
   for (const file of files ?? []) {
+    const esPdf =
+      file.meta.mime === 'application/pdf' ||
+      file.meta.nombreOriginal.toLowerCase().endsWith('.pdf')
+
+    let texto = ''
+    if (esPdf) {
+      try {
+        texto = await extractPdfText(file.buffer)
+      } catch {
+        // PDF escaneado o sin capa de texto: no se falla la transacción, el
+        // archivo se conserva y queda marcado como pendiente de OCR.
+        needsOcr = true
+      }
+    }
+
+    // Postgres rechaza el byte nulo dentro de TEXT: hay PDFs que lo emiten.
+    const limpio = texto.replace(/\0/g, '').trim()
+    if (esPdf && !limpio) needsOcr = true
+    if (limpio) indexados++
+
     await db`--sql
-      INSERT INTO attachments (participation_id, nombre_original, mime, size, ruta_local)
+      INSERT INTO attachments (participation_id, nombre_original, mime, size, ruta_local, texto_extraido)
       VALUES (
         ${participationId},
         ${file.meta.nombreOriginal},
         ${file.meta.mime},
         ${file.buffer.length},
-        ${file.meta.rutaLocal}
+        ${file.meta.rutaLocal},
+        ${limpio}
       )
     `
-
-    // Solo extraer texto si el adjunto es PDF (no intentar parsear DWG, JPG, etc.)
-    const isPdf =
-      file.meta.mime === 'application/pdf' ||
-      file.meta.nombreOriginal.toLowerCase().endsWith('.pdf')
-
-    let text = ''
-    if (isPdf) {
-      try {
-        text = await extractPdfText(file.buffer)
-      } catch (err) {
-        // Si el PDF es un escaneo, solo imágenes o no tiene capa de texto,
-        // no fallamos la transacción: el archivo se preserva y se marca para OCR.
-        needsOcr = true
-      }
-    }
-
-    if (text) {
-      for (const chunk of chunkText(text)) {
-        const cleanContent = chunk.content.replace(/\0/g, '').trim()
-        if (cleanContent) {
-          await insertChunk(db, participationId, chunk.position, cleanContent)
-          chunks++
-        }
-      }
-    }
   }
 
-  // 2) Campos del formulario (siempre)
-  const formText = Object.entries(fields ?? {})
-    .filter(([, v]) => v && v.trim())
-    .map(([k, v]) => `${k}: ${v}`)
-    .join('\n')
-
-  if (formText) {
-    for (const chunk of chunkText(formText, 512)) {
-      const cleanFormContent = chunk.content.replace(/\0/g, '').trim()
-      if (cleanFormContent) {
-        await insertChunk(db, participationId, chunks + chunk.position, cleanFormContent)
-        chunks++
-      }
-    }
-  }
-
-  return { chunks, needsOcr }
-}
-
-async function insertChunk(db: Db, participationId: number, position: number, content: string) {
-  const sanitized = content.replace(/\0/g, '').trim()
-  if (!sanitized) return
-  const terms = [...new Set(tokenize(sanitized))]
-  const idfWeights = await getIdfMap(terms)
-  const vector = featurizeWeighted(sanitized, idfWeights)
-  await db`--sql
-    INSERT INTO participation_chunks (participation_id, position, content, embedding)
-    VALUES (${participationId}, ${position}, ${sanitized}, ${toVectorLiteral(vector)}::vector)
-  `
+  return { indexados, needsOcr }
 }

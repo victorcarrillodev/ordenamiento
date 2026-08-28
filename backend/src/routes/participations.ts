@@ -70,6 +70,11 @@ export async function handleCreateParticipation(
 
   const filesParaIngest: IngestFile[] = []
   const escritos: string[] = []
+  // Los archivos se escriben a disco antes de saber si la participación va a
+  // cuajar. Si el handler sale por cualquier vía que no sea el commit —una
+  // excepción, o un `return` temprano al rechazar el 2.º adjunto cuando el 1.º
+  // ya estaba escrito— hay que borrarlos o quedan huérfanos en `uploads/`.
+  let persistido = false
 
   try {
     for (const file of validFiles) {
@@ -168,6 +173,7 @@ export async function handleCreateParticipation(
 
       return { ...creada, ...ingest }
     })
+    persistido = true
 
     // El acuse se envía DESPUÉS del commit exitoso (fire-and-forget con catch)
     const userEmail = camposFormulario.correo.trim()
@@ -179,9 +185,10 @@ export async function handleCreateParticipation(
 
     // El spread ya aporta folio y participationId; `id` es el alias que espera el cliente.
     return json({ ...resultado, id: resultado.participationId }, 201)
-  } catch (err) {
-    // Si algo falla, limpiar todos los archivos escritos en disco
-    await Promise.allSettled(escritos.map((p) => rm(p, { force: true })))
-    throw err
+  } finally {
+    // Cubre tanto la excepción como los `return` de rechazo (400/415).
+    if (!persistido) {
+      await Promise.allSettled(escritos.map((p) => rm(p, { force: true })))
+    }
   }
 }

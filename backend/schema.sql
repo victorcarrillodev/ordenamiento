@@ -1,7 +1,7 @@
--- Ordenamiento Backend – esquema relacional + vectorial
--- Postgres 16 con extensión pgvector
-
-CREATE EXTENSION IF NOT EXISTS vector;
+-- Ordenamiento Backend – esquema relacional
+-- Postgres 16, sin extensiones. La búsqueda por contenido usa full-text
+-- nativo (tsvector/tsquery en español): basta para localizar una
+-- participación por lo que dice su PDF, sin embeddings ni pgvector.
 
 -- ---------------------------------------------------------------------------
 -- Usuarios (admin crea físicas; usuario crea digitales) – relacional
@@ -69,6 +69,18 @@ ALTER TABLE participations ADD COLUMN IF NOT EXISTS direccion_origen       TEXT 
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS domicilio              TEXT NOT NULL DEFAULT '';
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS municipio_participante TEXT NOT NULL DEFAULT '';
 
+-- Índice full-text de los campos del formulario. Columna generada: se
+-- mantiene sola en cada INSERT/UPDATE, sin triggers ni código de app.
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS busqueda_tsv tsvector
+  GENERATED ALWAYS AS (to_tsvector('spanish',
+    coalesce(folio, '') || ' ' || coalesce(nombre, '') || ' ' ||
+    coalesce(observacion, '') || ' ' || coalesce(colonia, '') || ' ' ||
+    coalesce(municipio, '') || ' ' || coalesce(institucion, '') || ' ' ||
+    coalesce(ocupacion, '') || ' ' || coalesce(tematica, '')
+  )) STORED;
+
+CREATE INDEX IF NOT EXISTS idx_participations_tsv ON participations USING gin (busqueda_tsv);
+
 -- ---------------------------------------------------------------------------
 -- Adjuntos (archivos subidos: PDF, DWG, JPG, SHX, ...) – relacional
 -- ---------------------------------------------------------------------------
@@ -85,26 +97,27 @@ CREATE TABLE IF NOT EXISTS attachments (
 
 CREATE INDEX IF NOT EXISTS idx_attachments_participation ON attachments (participation_id);
 
+-- Texto extraído del PDF (capa de texto). Vacío si el archivo no es PDF o
+-- es un escaneo sin capa de texto; en ese caso solo se puede ver/descargar.
+ALTER TABLE attachments ADD COLUMN IF NOT EXISTS texto_extraido TEXT NOT NULL DEFAULT '';
+ALTER TABLE attachments ADD COLUMN IF NOT EXISTS texto_tsv tsvector
+  GENERATED ALWAYS AS (to_tsvector('spanish', texto_extraido)) STORED;
+
+CREATE INDEX IF NOT EXISTS idx_attachments_tsv ON attachments USING gin (texto_tsv);
+
 -- ---------------------------------------------------------------------------
--- Chunks vectoriales (contenido de PDF + campos del formulario)
+-- Migración: retirada de la base vectorial
 -- ---------------------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS participation_chunks (
-  id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  participation_id BIGINT NOT NULL REFERENCES participations(id) ON DELETE CASCADE,
-  position         INT NOT NULL,
-  content          TEXT NOT NULL,
-  embedding        vector(512) NOT NULL,          -- 512 features TF-IDF
-  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_chunks_participation ON participation_chunks (participation_id);
-
--- Índice HNSW opcional para acelerar cuando crezca (usa más RAM al construir).
--- Por defecto: búsqueda exacta (mínimo absoluto). Descomentar si crece:
-
--- CREATE INDEX IF NOT EXISTS idx_chunks_embedding ON participation_chunks
---   USING hnsw (embedding vector_cosine_ops);
+-- `participation_chunks` y `skill_knowledge` guardaban embeddings TF-IDF de
+-- 512 dimensiones sobre pgvector. Se retiran: el texto del PDF vive ahora en
+-- attachments.texto_extraido y se busca con full-text nativo.
+--
+-- IMPORTANTE al desplegar sobre un volumen existente: estas sentencias deben
+-- correr con la imagen pgvector todavía activa. Solo después de que hayan
+-- corrido una vez se puede cambiar la imagen a `postgres:16`.
+DROP TABLE IF EXISTS participation_chunks;
+DROP TABLE IF EXISTS skill_knowledge;
+DROP EXTENSION IF EXISTS vector;
 
 -- ---------------------------------------------------------------------------
 -- Historial de búsquedas (auditoría) – relacional
@@ -116,21 +129,6 @@ CREATE TABLE IF NOT EXISTS search_history (
   query      TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
--- ---------------------------------------------------------------------------
--- Skill knowledge (RAG: conocimiento reutilizable) — relacional + vectorial
--- ---------------------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS skill_knowledge (
-  id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  title      TEXT NOT NULL,
-  kind       TEXT NOT NULL DEFAULT 'general',  -- 'patron' | 'decision' | 'dominio' | 'general'
-  content    TEXT NOT NULL,
-  embedding  vector(512) NOT NULL,             -- 512 features TF-IDF
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_skill_knowledge_kind ON skill_knowledge (kind);
 
 -- ---------------------------------------------------------------------------
 -- Reuniones (bitácora administrativa) — relacional

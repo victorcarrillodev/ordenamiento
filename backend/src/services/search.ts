@@ -1,6 +1,4 @@
 import { sql } from '../db/pool.ts'
-import { featurizeWeighted, toVectorLiteral, tokenize } from '../vector/tfidf.ts'
-import { getIdfMap } from './knowledge.ts'
 
 export interface SearchHit {
   participationId: number
@@ -18,88 +16,130 @@ export interface SearchOptions {
 }
 
 /**
- * Búsqueda híbrida:
- *  1) Vectorial: coseno (<=>) contra los chunks de la consulta.
- *  2) Textual:   ILIKE sobre folio/nombre/observación.
- * Se unen, fusionan por participación y ordenan por score.
+ * ts_rank devuelve valores pequeños y sin cota superior fija. Se comprime a
+ * 0..1 para que el cliente pueda pintarlo como porcentaje de relevancia.
+ */
+function normalizar(rank: number): number {
+  return Number((rank / (rank + 1)).toFixed(4))
+}
+
+/**
+ * Búsqueda de participaciones sobre full-text nativo de Postgres:
+ *
+ *  1) Campos del formulario  → `participations.busqueda_tsv` (columna generada).
+ *  2) Contenido de los PDF   → `attachments.texto_tsv` (columna generada).
+ *  3) Coincidencia literal   → ILIKE sobre folio y nombre, porque el folio
+ *     (SPAGU-DGTPU-E-0007) no se tokeniza de forma útil como texto natural.
+ *
+ * Los resultados se fusionan por participación quedándose con la mejor
+ * puntuación, y se premia que la coincidencia venga de varias fuentes.
  */
 export async function searchParticipations(
   query: string,
   limit = 10,
   options: SearchOptions = {},
 ): Promise<SearchHit[]> {
-  const terms = [...new Set(tokenize(query))]
-  const idfWeights = await getIdfMap(terms)
-  const queryVector = toVectorLiteral(featurizeWeighted(query, idfWeights))
+  const termino = query.trim()
+  if (!termino) return []
 
-  const vectorRows = await sql<
+  const like = `%${termino}%`
+
+  // Los filtros se aplican como AND sobre TODO el grupo de coincidencia: el
+  // OR va entre paréntesis a propósito, para que `origen`/`estado` no queden
+  // colgando de la última rama por precedencia de operadores.
+  const filtroOrigen = options.origen ? sql`AND p.origen = ${options.origen}` : sql``
+  const filtroEstado = options.estado ? sql`AND p.estado = ${options.estado}` : sql``
+
+  const porParticipacion = await sql<
     Array<{
-      participation_id: number
+      id: number
       folio: string
       nombre: string
       estado: string
       origen: string
-      content: string
-      distance: number
+      observacion: string
+      rank: number
     }>
   >`--sql
-    SELECT
-      p.id            AS participation_id,
-      p.folio         AS folio,
-      p.nombre        AS nombre,
-      p.estado        AS estado,
-      p.origen        AS origen,
-      c.content       AS content,
-      (c.embedding <=> ${queryVector}::vector) AS distance
-    FROM participation_chunks c
-    JOIN participations p ON p.id = c.participation_id
-    ${options.origen ? sql`WHERE p.origen = ${options.origen}` : sql``}
-    ORDER BY c.embedding <=> ${queryVector}::vector
+    SELECT p.id, p.folio, p.nombre, p.estado, p.origen, p.observacion,
+           ts_rank(p.busqueda_tsv, q.tsq) AS rank
+    FROM participations p,
+         websearch_to_tsquery('spanish', ${termino}) AS q(tsq)
+    WHERE (
+            p.busqueda_tsv @@ q.tsq
+            OR p.folio ILIKE ${like}
+            OR p.nombre ILIKE ${like}
+          )
+      ${filtroOrigen}
+      ${filtroEstado}
+    ORDER BY
+      CASE WHEN p.folio ILIKE ${like} THEN 0 ELSE 1 END,
+      rank DESC,
+      p.created_at DESC
     LIMIT ${limit * 2}
   `
 
-  // distancia coseno 0..2 → score 0..1
-  const hits: SearchHit[] = vectorRows.map((r) => ({
-    participationId: r.participation_id,
-    folio: r.folio,
-    nombre: r.nombre,
-    estado: r.estado,
-    origen: r.origen,
-    content: r.content,
-    score: Number((1 - r.distance).toFixed(4)),
-  }))
-
-  const textualRows = await sql<
-    Array<{ id: number; folio: string; nombre: string; estado: string; origen: string }>
+  const porAdjunto = await sql<
+    Array<{
+      id: number
+      folio: string
+      nombre: string
+      estado: string
+      origen: string
+      extracto: string
+      rank: number
+    }>
   >`--sql
-    SELECT id, folio, nombre, estado, origen FROM participations
-    WHERE folio ILIKE ${`%${query}%`}
-       OR nombre ILIKE ${`%${query}%`}
-       OR observacion ILIKE ${`%${query}%`}
-       ${options.origen ? sql`AND origen = ${options.origen}` : sql``}
-    ORDER BY
-      CASE WHEN folio ILIKE ${`%${query}%`} THEN 0 ELSE 1 END,
-      nombre
-    LIMIT ${limit}
+    SELECT p.id, p.folio, p.nombre, p.estado, p.origen,
+           ts_headline(
+             'spanish', a.texto_extraido, q.tsq,
+             'MaxFragments=1, MaxWords=40, MinWords=15, StartSel=«, StopSel=»'
+           ) AS extracto,
+           ts_rank(a.texto_tsv, q.tsq) AS rank
+    FROM attachments a
+    JOIN participations p ON p.id = a.participation_id,
+         websearch_to_tsquery('spanish', ${termino}) AS q(tsq)
+    WHERE a.texto_tsv @@ q.tsq
+      ${filtroOrigen}
+      ${filtroEstado}
+    ORDER BY rank DESC
+    LIMIT ${limit * 2}
   `
 
-  const merged: SearchHit[] = []
-  const seen = new Set<number>()
+  const hits = new Map<number, SearchHit>()
 
-  for (const t of textualRows) {
-    const match = hits.find((h) => h.participationId === t.id)
-    if (match && !seen.has(t.id)) {
-      seen.add(t.id)
-      merged.push({ ...match, score: Math.min(1, match.score + 0.25) })
-    }
+  for (const r of porParticipacion) {
+    hits.set(r.id, {
+      participationId: r.id,
+      folio: r.folio,
+      nombre: r.nombre,
+      estado: r.estado,
+      origen: r.origen,
+      content: r.observacion.slice(0, 240),
+      score: normalizar(Number(r.rank)),
+    })
   }
 
-  for (const h of hits) {
-    if (!seen.has(h.participationId)) {
-      seen.add(h.participationId)
-      merged.push(h)
+  for (const r of porAdjunto) {
+    const previo = hits.get(r.id)
+    const score = normalizar(Number(r.rank))
+    if (previo) {
+      // Coincide por formulario y por PDF: la coincidencia es más fuerte.
+      previo.score = Math.min(1, Math.max(previo.score, score) + 0.25)
+      // El extracto del PDF dice más que la observación recortada.
+      previo.content = r.extracto || previo.content
+      continue
     }
+    hits.set(r.id, {
+      participationId: r.id,
+      folio: r.folio,
+      nombre: r.nombre,
+      estado: r.estado,
+      origen: r.origen,
+      content: r.extracto,
+      score,
+    })
   }
 
-  return merged.slice(0, limit)
+  return [...hits.values()].sort((a, b) => b.score - a.score).slice(0, limit)
 }

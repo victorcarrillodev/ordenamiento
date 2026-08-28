@@ -4,15 +4,18 @@
 > `docker compose up`, usa el `docker-compose.yml` de la raíz del repo, no
 > este. El de aquí sirve para desarrollar/probar solo el backend.
 
-API de participaciones de ordenamiento ecológico. **Relacional** (usuarios,
-participaciones, estados) + **vectorial** (contenido de PDFs y campos de
-formularios) sobre **Postgres + pgvector**, con la "fórmula única" **TF-IDF**
-(matemática pura, sin IA).
+API de participaciones de ordenamiento ecológico. **Relacional puro** sobre
+**Postgres 16**, sin extensiones. El contenido de los PDF y los campos del
+formulario se buscan con el **full-text nativo** de Postgres
+(`tsvector`/`tsquery` en español).
 
-## Regla de oro (hibrido)
+## Regla de oro
 
-Solo los `chunks` de contenido van a vectores. Usuarios, folios, estados,
-metadatos → relacional. Búsqueda **híbrida**: SQL exacta + coseno vectorial.
+Todo es relacional. La búsqueda combina tres fuentes: full-text sobre los
+campos del formulario (`participations.busqueda_tsv`), full-text sobre el
+texto extraído de los PDF (`attachments.texto_tsv`) y coincidencia literal
+por folio/nombre. No hay embeddings ni base vectorial: se retiraron porque
+lo que se necesita del PDF es verlo, descargarlo y encontrarlo por su texto.
 
 ## Física vs digital
 
@@ -26,8 +29,8 @@ marca `needsOcr`.
 - `users` – admin / user
 - `participations` – folio autogenerado `SPAGU-DGTPU-E-000X`, origen, datos
   del formulario, estado
-- `attachments` – archivos subidos (PDF, DWG, JPG, SHX...)
-- `participation_chunks` – contenido vectorizado `vector(512)` TF-IDF
+- `attachments` – archivos subidos (PDF, DWG, JPG, SHX...) y, para los PDF
+  con capa de texto, ese texto en `texto_extraido` + índice `texto_tsv`
 - `search_history` – auditoría
 
 ## Arranque
@@ -45,7 +48,7 @@ Crea la BD y la API. Al arrancar, la API siembra sola la cuenta ROOT (ver
 ### En local (Bun + Postgres nativo)
 
 ```sh
-# 1. Postgres + pgvector (Docker) o nativo Windows
+# 1. Postgres 16 (Docker) o nativo Windows
 docker compose up -d db
 
 # 2. Instalar dependencias
