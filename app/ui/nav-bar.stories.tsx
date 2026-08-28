@@ -4,7 +4,7 @@ import { mountRemix } from '../../.storybook/remix-root.ts'
 import { NavBar } from './nav-bar.tsx'
 
 const meta: Meta = {
-  title: 'Componentes/NavBar',
+  title: 'UI/NavBar',
   render: mountRemix(() => <NavBar />),
 }
 

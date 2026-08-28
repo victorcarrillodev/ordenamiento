@@ -43,6 +43,10 @@ CREATE TABLE IF NOT EXISTS participations (
   consentimiento_version TEXT NOT NULL DEFAULT '',
   codigo_postal          TEXT NOT NULL DEFAULT '',
   direccion_origen       TEXT NOT NULL DEFAULT '',
+  -- Domicilio de quien participa. Es distinto de calle/colonia/municipio, que
+  -- describen el lugar del aporte; la captura física registra ambos.
+  domicilio              TEXT NOT NULL DEFAULT '',
+  municipio_participante TEXT NOT NULL DEFAULT '',
   creado_por   BIGINT REFERENCES users(id) ON DELETE SET NULL,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -62,6 +66,8 @@ ALTER TABLE participations ADD COLUMN IF NOT EXISTS consentimiento_en      TIMES
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS consentimiento_version TEXT NOT NULL DEFAULT '';
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS codigo_postal          TEXT NOT NULL DEFAULT '';
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS direccion_origen       TEXT NOT NULL DEFAULT '';
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS domicilio              TEXT NOT NULL DEFAULT '';
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS municipio_participante TEXT NOT NULL DEFAULT '';
 
 -- ---------------------------------------------------------------------------
 -- Adjuntos (archivos subidos: PDF, DWG, JPG, SHX, ...) – relacional

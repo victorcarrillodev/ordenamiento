@@ -41,7 +41,7 @@ services:
       DATABASE_URL: postgres://postgres:postgres@db:5432/ordenamiento
       SESSION_SECRET: ${SESSION_SECRET:-ordenamiento-secret-key-change-in-production}
       ROOT_EMAIL: ${ROOT_EMAIL:-root@ordenamiento.gob.mx}
-      ROOT_PASSWORD: ${ROOT_PASSWORD:-admin12345}
+      ROOT_PASSWORD: ${ROOT_PASSWORD:-}
       ROOT_NAME: ${ROOT_NAME:-Administrador Root}
       PORT: 5920
       NODE_ENV: production

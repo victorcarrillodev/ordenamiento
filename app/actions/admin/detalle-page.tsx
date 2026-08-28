@@ -2,6 +2,7 @@ import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Button } from '../../ui/button.tsx'
 
 interface Adjunto {
   id: number
@@ -17,6 +18,8 @@ interface Detalle {
   correo: string
   colonia: string
   municipio: string
+  domicilio: string
+  municipio_participante: string
   institucion: string
   ocupacion: string
   observacion: string
@@ -104,6 +107,8 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
                 <Campo label="Correo" value={p.correo} />
                 <Campo label="Municipio" value={p.municipio} />
                 <Campo label="Colonia" value={p.colonia} />
+                <Campo label="Domicilio" value={p.domicilio} />
+                <Campo label="Municipio de participante" value={p.municipio_participante} />
                 <Campo label="Fuente" value={p.fuente} />
                 <Campo label="Género" value={p.genero} />
                 <Campo label="Temática" value={p.tematica} />
@@ -167,9 +172,9 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
                     required
                   />
                 </div>
-                <button type="submit" class="btn btn--dark">
+                <Button buttonType="submit" variant="dark">
                   ✉ Enviar datos + PDF
-                </button>
+                </Button>
               </form>
             </div>
           </>

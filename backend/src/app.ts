@@ -1,9 +1,12 @@
+import { readFile } from 'node:fs/promises'
 import { join, isAbsolute } from 'node:path'
 import {
   canonicalMimeFor,
   contentDispositionHeader,
   getExtension,
+  isImageExtension,
   shouldServeInline,
+  validateUpload,
 } from './services/upload-guard.ts'
 
 import {
@@ -53,29 +56,10 @@ import {
   DEFAULT_THEME_CONFIG,
 } from './services/customizations.ts'
 import { sql } from './db/pool.ts'
+import { json, bodyTooLarge } from './utils.ts'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
 const BRANDING_DIR = join(process.cwd(), 'uploads', 'branding')
-
-/** Rechaza temprano cuerpos gigantes sin bufferizarlos completos en memoria. */
-function bodyTooLarge(request: Request, limitBytes: number): boolean {
-  const declared = Number(request.headers.get('content-length') ?? '0')
-  return Number.isFinite(declared) && declared > limitBytes
-}
-
-function json(data: unknown, init?: number | ResponseInit): Response {
-  if (typeof init === 'number') {
-    return new Response(JSON.stringify(data), {
-      status: init,
-      headers: { 'content-type': 'application/json' },
-    })
-  }
-  const headers: Record<string, string> = {
-    'content-type': 'application/json',
-    ...(init?.headers as Record<string, string> | undefined),
-  }
-  return new Response(JSON.stringify(data), { status: init?.status ?? 200, headers })
-}
 
 function readCookie(cookieHeader: string | null, name: string): string | null {
   if (!cookieHeader) return null
@@ -285,6 +269,9 @@ export async function handleRequest(request: Request): Promise<Response> {
       FROM attachments
       WHERE id = ${Number(attachMatch.aid)} AND participation_id = ${Number(attachMatch.id)}
     `
+    if (rows.length === 0) {
+      return json({ error: 'Adjunto no encontrado' }, 404)
+    }
     // Resuelve rutas relativas contra UPLOAD_DIR (datos viejos la guardaron relativa)
     const ruta = isAbsolute(rows[0].ruta_local)
       ? rows[0].ruta_local
@@ -339,6 +326,8 @@ export async function handleRequest(request: Request): Promise<Response> {
         longitud: string
         observacion: string
         estado: string
+        domicilio: string
+        municipio_participante: string
         fuente: string
         genero: string
         tematica: string
@@ -346,6 +335,7 @@ export async function handleRequest(request: Request): Promise<Response> {
       }>
     >`
       SELECT id, folio, origen, nombre, correo, calle, numero, colonia, municipio,
+             domicilio, municipio_participante,
              institucion, ocupacion, latitud, longitud, observacion, estado,
              fuente, genero, tematica, created_at
       FROM participations WHERE id = ${Number(wordMatch.id)}

@@ -1,4 +1,4 @@
-import { sql } from '../db/pool.ts'
+import { sql, type Db } from '../db/pool.ts'
 
 export type Origen = 'digital' | 'fisica'
 export type Estado = 'En proceso' | 'Procedente' | 'No procedente'
@@ -14,6 +14,9 @@ export interface ParticipationInput {
   municipio?: string
   codigo_postal?: string
   direccion_origen?: string
+  /** Domicilio de quien participa, distinto del lugar del aporte que describen calle/colonia/municipio. */
+  domicilio?: string
+  municipio_participante?: string
   consentimiento_en?: Date | string | null
   consentimiento_version?: string
   institucion?: string
@@ -34,19 +37,20 @@ export interface CreateResult {
 }
 
 export async function createParticipation(
-  dbOrInput: Sql | ParticipationInput,
+  dbOrInput: Db | ParticipationInput,
   inputOrFolio: ParticipationInput | string,
   maybeFolio?: string,
 ): Promise<CreateResult> {
   const isDb = typeof dbOrInput === 'function' && 'unsafe' in dbOrInput
-  const db: Sql = isDb ? (dbOrInput as Sql) : sql
+  const db: Db = isDb ? (dbOrInput as Db) : sql
   const input = isDb ? (inputOrFolio as ParticipationInput) : (dbOrInput as ParticipationInput)
   const folio = isDb ? (maybeFolio as string) : (inputOrFolio as string)
 
   const rows = await db<{ id: number }[]>`--sql
     INSERT INTO participations (
       folio, origen, nombre, correo, calle, numero, colonia, municipio,
-      codigo_postal, direccion_origen, consentimiento_en, consentimiento_version,
+      codigo_postal, direccion_origen, domicilio, municipio_participante,
+      consentimiento_en, consentimiento_version,
       institucion, ocupacion, latitud, longitud, observacion, estado,
       fuente, genero, tematica, creado_por
     )
@@ -61,6 +65,8 @@ export async function createParticipation(
       ${input.municipio ?? ''},
       ${input.codigo_postal ?? ''},
       ${input.direccion_origen ?? ''},
+      ${input.domicilio ?? ''},
+      ${input.municipio_participante ?? ''},
       ${input.consentimiento_en ?? null},
       ${input.consentimiento_version ?? ''},
       ${input.institucion ?? ''},

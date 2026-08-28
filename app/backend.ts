@@ -91,6 +91,36 @@ export async function backendFetch(
 }
 
 /**
+ * Fetch al backend que devuelve JSON parseado o un fallback, sin nunca lanzar.
+ *
+ * Cubre tres caminos de fallo que `backendFetch` + `response.json()` no cubren:
+ * 1. `response.ok === false` → devuelve `fallback`
+ * 2. `response.json()` lanza (body no es JSON) → devuelve `fallback`
+ * 3. `response.ok === true` pero el body no tiene la forma esperada → devuelve `fallback`
+ *
+ * El tercer caso es el que el patron inline `response.ok ? await response.json() : fallback`
+ * no cubre: un proxy, un cache intermedio o una version desalineada del backend pueden
+ * devolver 200 con un body que no coincide con lo que la pagina espera.
+ */
+export async function fetchJsonOr<T>(
+  request: Request,
+  path: string,
+  fallback: T,
+  init?: RequestInit,
+): Promise<T> {
+  const response = await backendFetch(request, path, init)
+  if (!response.ok) return fallback
+  try {
+    const data = (await response.json()) as T
+    // Si el backend devuelve `{}` o un shape incompleto, devolvemos el fallback
+    // en vez de dejar un `undefined` que revienta el render.
+    return data ?? fallback
+  } catch {
+    return fallback
+  }
+}
+
+/**
  * Usuario autenticado según el backend (o null si no hay sesión válida o backend no responde).
  */
 export async function backendUser(request: Request): Promise<AdminUser | null> {

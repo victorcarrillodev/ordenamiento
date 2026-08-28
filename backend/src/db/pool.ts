@@ -1,4 +1,12 @@
-import postgres from 'postgres'
+import postgres, { type Sql, type TransactionSql } from 'postgres'
+
+/**
+ * Handle de base de datos que aceptan los servicios.
+ *
+ * Cubre tanto el pool como una transacción abierta con `sql.begin()`, para que
+ * el mismo servicio sirva dentro y fuera de una transacción.
+ */
+export type Db = Sql | TransactionSql
 
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/ordenamiento'

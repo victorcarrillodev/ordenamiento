@@ -16,29 +16,12 @@ import { nextFolio } from '../services/folio.ts'
 import { ingestParticipation, type IngestFile } from '../services/ingest.ts'
 import { enviarAcuseReciboParticipacion, mailConfigurado } from '../services/mail.ts'
 import { createParticipation, type Origen } from '../services/participations.ts'
+import { json, bodyTooLarge } from '../utils.ts'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
 
 function isOrigen(value: string): value is Origen {
   return value === 'digital' || value === 'fisica'
-}
-
-function json(data: unknown, init?: number | ResponseInit): Response {
-  if (typeof init === 'number') {
-    return new Response(JSON.stringify(data), {
-      status: init,
-      headers: { 'content-type': 'application/json' },
-    })
-  }
-  return new Response(JSON.stringify(data), {
-    headers: { 'content-type': 'application/json' },
-    ...init,
-  })
-}
-
-function bodyTooLarge(request: Request, limitBytes: number): boolean {
-  const declared = Number(request.headers.get('content-length') ?? '0')
-  return Number.isFinite(declared) && declared > limitBytes
 }
 
 /**
@@ -141,6 +124,10 @@ export async function handleCreateParticipation(
       observacion: String(form.get('observacion') ?? ''),
       codigo_postal: String(form.get('codigo_postal') ?? ''),
       direccion_origen: String(form.get('direccion_origen') ?? ''),
+      // Domicilio de quien participa: sólo lo captura el alta física desde el
+      // panel, y es independiente del lugar del aporte.
+      domicilio: String(form.get('domicilio') ?? ''),
+      municipio_participante: String(form.get('municipio_participante') ?? ''),
       folio,
     }
 
@@ -158,6 +145,8 @@ export async function handleCreateParticipation(
           municipio: camposFormulario.municipio,
           codigo_postal: camposFormulario.codigo_postal,
           direccion_origen: camposFormulario.direccion_origen,
+          domicilio: camposFormulario.domicilio,
+          municipio_participante: camposFormulario.municipio_participante,
           consentimiento_en: origin === 'digital' ? new Date() : null,
           consentimiento_version: origin === 'digital' ? consentimientoVersion : '',
           institucion: camposFormulario.institucion,
@@ -188,7 +177,8 @@ export async function handleCreateParticipation(
       })
     }
 
-    return json({ id: resultado.participationId, folio: resultado.folio, ...resultado }, 201)
+    // El spread ya aporta folio y participationId; `id` es el alias que espera el cliente.
+    return json({ ...resultado, id: resultado.participationId }, 201)
   } catch (err) {
     // Si algo falla, limpiar todos los archivos escritos en disco
     await Promise.allSettled(escritos.map((p) => rm(p, { force: true })))

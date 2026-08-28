@@ -2,6 +2,7 @@ import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Button } from '../../ui/button.tsx'
 
 export interface AdminPageProps {
   user: { name: string; role: string }
@@ -250,9 +251,9 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
                 <option value="admin">Admin</option>
               </select>
             </div>
-            <button type="submit" class="btn btn--dark">
+            <Button buttonType="submit" variant="dark">
               ＋ Crear usuario
-            </button>
+            </Button>
           </form>
           <div class="table-wrap">
             <table>

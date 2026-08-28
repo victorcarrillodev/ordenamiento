@@ -5,6 +5,9 @@ export interface SubmitButtonProps extends SerializableProps {
   pendingLabel: string
 }
 
+/** Lo emite releaseForm() en public/autocomplete.js cuando el envío por XHR falla. */
+const SUBMIT_ERROR_EVENT = 'participation:submit-error'
+
 const spinnerStyle = css({
   width: '14px',
   height: '14px',
@@ -31,17 +34,36 @@ export const SubmitButton = clientEntry(
         handle.queueTask((signal) => {
           const btn = document.getElementById(handle.id)
           const form = btn?.closest('form')
-          if (form) {
-            form.addEventListener(
-              'submit',
-              () => {
-                if (pendiente) return
-                pendiente = true
-                handle.update()
-              },
-              signal instanceof AbortSignal ? { signal } : undefined,
-            )
-          }
+          if (!form) return
+
+          const options = signal instanceof AbortSignal ? { signal } : undefined
+
+          form.addEventListener(
+            'submit',
+            () => {
+              if (pendiente) return
+              pendiente = true
+              handle.update()
+            },
+            options,
+          )
+
+          // El envío real lo intercepta autocomplete.js con XHR para poder mostrar
+          // el progreso de subida. Cuando ese envío falla sin reemplazar la página,
+          // lo anuncia con este evento; sin él el botón se quedaría inutilizable y
+          // la única salida sería recargar.
+          //
+          // El nombre viaja como literal a ambos lados del límite public/ ↔ Remix:
+          // si cambia aquí, hay que cambiarlo en releaseForm() de autocomplete.js.
+          form.addEventListener(
+            SUBMIT_ERROR_EVENT,
+            () => {
+              if (!pendiente) return
+              pendiente = false
+              handle.update()
+            },
+            options,
+          )
         })
       }
 

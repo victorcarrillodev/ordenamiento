@@ -5,11 +5,13 @@ import { colors, FONT_STACK } from '../../ui/civic-horizon.ts'
 import { DireccionFields } from '../../ui/form/direccion-fields.tsx'
 import { CheckboxField, Field, TextArea } from '../../ui/form/field.tsx'
 import { SubmitButton } from './public/submit-button.tsx'
-import type { FormErrors } from './schema.ts'
+import type { FormErrors, FormValues } from './schema.ts'
 import { UploadField } from './upload-field.tsx'
 
 export interface ParticipationFormProps {
   errors?: FormErrors
+  /** Lo ya escrito, para no perderlo cuando la validación rechaza el envío. */
+  values?: FormValues
 }
 
 const fieldRowStyle = css({
@@ -21,7 +23,7 @@ const fieldRowStyle = css({
 
 export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
   return () => {
-    const { errors = {} } = handle.props
+    const { errors = {}, values = {} } = handle.props
 
     return (
       <>
@@ -92,6 +94,7 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
               label="Nombre completo"
               placeholder="Ej. María González López"
               required
+              value={values.nombre}
               error={errors.nombre}
             />
             <Field
@@ -100,12 +103,20 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
               label="Correo electrónico"
               placeholder="correo@ejemplo.com"
               required
+              value={values.email}
               error={errors.email}
             />
           </div>
 
           <DireccionFields
             endpoint={routes.colonias.href()}
+            values={{
+              calle: values.calle,
+              colonia: values.colonia,
+              municipio: values.municipio,
+              cp: values.cp,
+              direccion_origen: values.direccion_origen,
+            }}
             errors={{
               calle: errors.calle,
               colonia: errors.colonia,
@@ -119,7 +130,9 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
             name="institucion"
             label="Institución u organización"
             placeholder="Opcional (ej. Colectivo Ambiental, ITESO)"
+            value={values.institucion}
             error={errors.institucion}
+            wide
           />
 
           <TextArea
@@ -127,9 +140,11 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
             label="Observación o propuesta"
             placeholder="Describe tu observación, comentario técnico o propuesta sobre el ordenamiento territorial..."
             required
-            rows={3}
-            minHeight="80px"
+            rows={5}
+            minHeight="120px"
+            value={values.observacion}
             error={errors.observacion}
+            wide
           />
 
           <UploadField error={errors.archivos} />
@@ -153,7 +168,12 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
             Obligados y solo se usará en el marco de este programa.
           </p>
 
-          <CheckboxField name="consentimiento" required error={errors.consentimiento}>
+          <CheckboxField
+            name="consentimiento"
+            required
+            checked={values.consentimiento}
+            error={errors.consentimiento}
+          >
             Doy mi consentimiento para el uso de esta información en el proceso de ordenamiento
             territorial. <span mix={css({ color: '#dc2626' })}>*</span>
           </CheckboxField>

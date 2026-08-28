@@ -22,7 +22,13 @@ import { BACKEND_URL } from '../../backend.ts'
 import { routes } from '../../routes.ts'
 import { MAX_FILE_BYTES, MAX_FILES, MAX_TOTAL_BYTES } from '../../utils/uploads.ts'
 import { ParticipationPage } from './page.tsx'
-import { errorMap, participationSchema, toFormErrors, type FormErrors } from './schema.ts'
+import {
+  errorMap,
+  participationSchema,
+  toFormErrors,
+  toFormValues,
+  type FormErrors,
+} from './schema.ts'
 
 const tmpStorage = createFsFileStorage('./tmp/uploads')
 
@@ -62,6 +68,9 @@ export default createController(routes.participation, {
             uploadHandler,
           )
         } catch (error) {
+          // Estos dos abortan el parseo, así que no hay FormData del que rescatar
+          // lo escrito: son los únicos errores en los que el formulario se repinta
+          // vacío.
           if (error instanceof MaxFilesExceededError) {
             return context.render(
               <ParticipationPage
@@ -87,7 +96,10 @@ export default createController(routes.participation, {
 
         if (!parsed.success) {
           const errors: FormErrors = toFormErrors(parsed.issues)
-          return context.render(<ParticipationPage errors={errors} />, { status: 422 })
+          return context.render(
+            <ParticipationPage errors={errors} values={toFormValues(formData)} />,
+            { status: 422 },
+          )
         }
 
         // Enviar al backend para persistir y vectorizar (origen digital, público)
@@ -146,6 +158,7 @@ export default createController(routes.participation, {
                   ? undefined
                   : 'No se pudo registrar. Verifica que el servicio esté activo e inténtalo de nuevo.',
               }}
+              values={toFormValues(formData)}
             />,
             { status: 502 },
           )

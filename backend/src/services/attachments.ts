@@ -1,5 +1,4 @@
-import type { Sql } from 'postgres'
-import { sql } from '../db/pool.ts'
+import { sql, type Db } from '../db/pool.ts'
 
 export interface AttachmentMeta {
   nombreOriginal: string
@@ -12,12 +11,12 @@ export interface AttachmentMeta {
  * Registra metadatos de archivos adjuntos en la base de datos dentro de una transacción o con el pool por defecto.
  */
 export async function registrarAdjuntos(
-  dbOrParticipationId: Sql | number,
+  dbOrParticipationId: Db | number,
   participationIdOrAdjuntos: number | AttachmentMeta[],
   maybeAdjuntos?: AttachmentMeta[],
 ): Promise<void> {
   const isDb = typeof dbOrParticipationId === 'function' && 'unsafe' in dbOrParticipationId
-  const db: Sql = isDb ? (dbOrParticipationId as Sql) : sql
+  const db: Db = isDb ? (dbOrParticipationId as Db) : sql
   const participationId = isDb
     ? (participationIdOrAdjuntos as number)
     : (dbOrParticipationId as number)

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "bun --watch src/server.ts",
     "start": "bun src/server.ts",
+    "seed:victor": "bun src/seed-victor.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   },

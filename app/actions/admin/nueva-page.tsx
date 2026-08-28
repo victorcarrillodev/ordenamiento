@@ -2,18 +2,85 @@ import type { Handle } from 'remix/ui'
 
 import { adminRoutes, routes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Button } from '../../ui/button.tsx'
 import { DireccionFields } from '../../ui/form/direccion-fields.tsx'
 import { Field, TextArea } from '../../ui/form/field.tsx'
+
+/**
+ * Lo que el capturista escribió, para repintarlo cuando el alta no prospera.
+ *
+ * No incluye el adjunto: el navegador no permite repoblar un input de tipo file.
+ */
+export type NuevaValues = Partial<
+  Record<
+    | 'nombre'
+    | 'correo'
+    | 'domicilio'
+    | 'municipio_participante'
+    | 'institucion'
+    | 'ocupacion'
+    | 'calle'
+    | 'colonia'
+    | 'municipio'
+    | 'cp'
+    | 'direccion_origen'
+    | 'latitud'
+    | 'longitud'
+    | 'observacion'
+    | 'fuente'
+    | 'genero'
+    | 'tematica',
+    string
+  >
+>
+
+/** Los tres desplegables de clasificación, como datos: `[valor, etiqueta?]`. */
+const CLASIFICACIONES = [
+  {
+    name: 'fuente',
+    opciones: [
+      ['Empresa'],
+      ['Dependencia', 'Organismo público'],
+      ['Organización', 'Organización civil'],
+      ['Persona ciudadana'],
+      ['Otra'],
+    ],
+  },
+  {
+    name: 'genero',
+    opciones: [['Hombre'], ['Mujer'], ['Otro']],
+  },
+  {
+    name: 'tematica',
+    opciones: [
+      ['Servicios Ambientales'],
+      ['Gestión del Agua'],
+      ['Gestión de Riesgo'],
+      ['Desarrollo urbano y gestión de suelo'],
+      ['Vivienda'],
+      ['Movilidad'],
+      ['Equipamiento'],
+      ['Infraestructura'],
+      ['Gestión de Residuos'],
+      ['Patrimonio'],
+      ['Otra'],
+    ],
+  },
+] as const satisfies ReadonlyArray<{
+  name: keyof NuevaValues
+  opciones: ReadonlyArray<readonly [string, string?]>
+}>
 
 export interface NuevaPageProps {
   user: { name: string; role: string }
   error?: string
   folioRegistrado?: string
+  values?: NuevaValues
 }
 
 export function NuevaPage(handle: Handle<NuevaPageProps>) {
   return () => {
-    const { user, error, folioRegistrado } = handle.props
+    const { user, error, folioRegistrado, values = {} } = handle.props
 
     return (
       <AdminLayout user={user} active="participaciones" title="Nueva participación física">
@@ -94,6 +161,7 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
               label="Nombre completo"
               name="nombre"
               required
+              value={values.nombre}
               placeholder="Ej. María González López"
               appearance="admin"
             />
@@ -102,36 +170,64 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
               name="correo"
               type="email"
               required
+              value={values.correo}
               placeholder="correo@ejemplo.com"
               appearance="admin"
             />
             <Field
               label="Domicilio de quien participa"
               name="domicilio"
+              value={values.domicilio}
               placeholder="Calle, colonia, municipio"
               appearance="admin"
             />
             <Field
               label="Municipio"
               name="municipio_participante"
-              value="San Pedro Tlaquepaque"
+              value={values.municipio_participante ?? 'San Pedro Tlaquepaque'}
               placeholder="Ej. San Pedro Tlaquepaque"
               appearance="admin"
             />
-            <Field label="Institución o empresa" name="institucion" appearance="admin" />
-            <Field label="Ocupación o puesto" name="ocupacion" appearance="admin" />
+            <Field
+              label="Institución o empresa"
+              name="institucion"
+              value={values.institucion}
+              appearance="admin"
+            />
+            <Field
+              label="Ocupación o puesto"
+              name="ocupacion"
+              value={values.ocupacion}
+              appearance="admin"
+            />
           </div>
 
           <h3 class="form-card__section">Domicilio del aporte:</h3>
-          <DireccionFields endpoint={routes.colonias.href()} appearance="admin" required />
+          <DireccionFields
+            endpoint={routes.colonias.href()}
+            values={{
+              calle: values.calle,
+              colonia: values.colonia,
+              municipio: values.municipio,
+              cp: values.cp,
+              direccion_origen: values.direccion_origen,
+            }}
+            appearance="admin"
+            required
+          />
 
           <h3 class="form-card__section">¿Cómo obtener las coordenadas? ⓘ</h3>
           <div class="form-grid">
-            <Field label="Coordenadas latitud" name="latitud" value="20.659" appearance="admin" />
+            <Field
+              label="Coordenadas latitud"
+              name="latitud"
+              value={values.latitud ?? '20.659'}
+              appearance="admin"
+            />
             <Field
               label="Coordenadas longitud"
               name="longitud"
-              value="-103.349"
+              value={values.longitud ?? '-103.349'}
               appearance="admin"
             />
           </div>
@@ -178,51 +274,38 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
             rows={4}
             required
             wide
+            value={values.observacion}
             appearance="admin"
           />
 
           <div class="form-field form-field--wide">
             <label>Clasificación</label>
             <div class="form-grid">
-              <select name="fuente">
-                <option value="Empresa">Empresa</option>
-                <option value="Dependencia">Organismo público</option>
-                <option value="Organización">Organización civil</option>
-                <option value="Persona ciudadana">Persona ciudadana</option>
-                <option value="Otra">Otra</option>
-              </select>
-              <select name="genero">
-                <option value="Hombre">Hombre</option>
-                <option value="Mujer">Mujer</option>
-                <option value="Otro">Otro</option>
-              </select>
-              <select name="tematica">
-                <option value="Servicios Ambientales">Servicios Ambientales</option>
-                <option value="Gestión del Agua">Gestión del Agua</option>
-                <option value="Gestión de Riesgo">Gestión de Riesgo</option>
-                <option value="Desarrollo urbano y gestión de suelo">
-                  Desarrollo urbano y gestión de suelo
-                </option>
-                <option value="Vivienda">Vivienda</option>
-                <option value="Movilidad">Movilidad</option>
-                <option value="Equipamiento">Equipamiento</option>
-                <option value="Infraestructura">Infraestructura</option>
-                <option value="Gestión de Residuos">Gestión de Residuos</option>
-                <option value="Patrimonio">Patrimonio</option>
-                <option value="Otra">Otra</option>
-              </select>
+              {CLASIFICACIONES.map((clasificacion) => (
+                <select key={clasificacion.name} name={clasificacion.name}>
+                  {clasificacion.opciones.map(([valor, etiqueta]) => (
+                    <option
+                      key={valor}
+                      value={valor}
+                      selected={values[clasificacion.name] === valor}
+                    >
+                      {etiqueta ?? valor}
+                    </option>
+                  ))}
+                </select>
+              ))}
             </div>
           </div>
 
           <p class="form-hint">Los campos marcados con (*) son obligatorios</p>
 
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary">
+          <div class="form-actions" style="display: flex; gap: 12px; margin-top: 18px;">
+            <Button buttonType="submit" variant="primary">
               Guardar participación
-            </button>
-            <a href={adminRoutes.participaciones.href()} class="btn btn-secondary">
+            </Button>
+            <Button href={adminRoutes.participaciones.href()} variant="secondary">
               Cancelar
-            </a>
+            </Button>
           </div>
         </form>
       </AdminLayout>
