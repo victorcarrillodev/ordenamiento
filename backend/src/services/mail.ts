@@ -300,7 +300,7 @@ function renderPlantillaBase({
                   : ''
               }
               ${contenidoHtml}
-              ${pieExtra ? `<div style="margin-top:20px;">${pieExtra}</div>` : ''}
+              ${pieExtra ? `<div style="margin-top:20px;">${escapeHtml(pieExtra)}</div>` : ''}
             </div>
 
             <!-- Footer -->

@@ -973,7 +973,12 @@
             memoryCache.set(cacheKey, data.items)
           }
         })
-        .catch(() => {})
+        .catch((err) => {
+          // Silencioso en precarga: fallos de cache no afectan funcionamiento
+          if (globalThis.DEBUG_AUTOCOMPLETE) {
+            console.debug('[autocomplete] Precarga falló:', err)
+          }
+        })
     }
 
     precargar('tipo=municipio&q=', 'municipio:')
