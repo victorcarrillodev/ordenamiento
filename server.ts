@@ -22,6 +22,32 @@ const hmrProxyPort = process.env.HMR_PROXY_PORT
   ? Number.parseInt(process.env.HMR_PROXY_PORT, 10)
   : null
 
+function withCacheHeaders(response: Response, request: Request): Response {
+  const headers = new Headers(response.headers)
+  const url = request.url
+
+  // Assets con hash: cache de 1 año (versionado automático)
+  if (url.includes('/assets/') || /\.[a-f0-9]{8}\.(js|css|jpg|png|webp|woff|woff2)$/.test(url)) {
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable')
+  }
+  // Documentos estáticos: cache de 1 semana
+  else if (/\.(pdf|xlsx|docx|txt)$/.test(url)) {
+    headers.set('Cache-Control', 'public, max-age=604800')
+  }
+  // HTML: no cachear (siempre fresh)
+  else if (response.headers.get('content-type')?.includes('text/html')) {
+    headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    headers.set('Pragma', 'no-cache')
+    headers.set('Expires', '0')
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
+}
+
 function withSecurityHeaders(response: Response): Response {
   const headers = new Headers(response.headers)
 
@@ -54,7 +80,7 @@ function withSecurityHeaders(response: Response): Response {
   if (!headers.has('Content-Security-Policy')) {
     const cspDirectives = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://code.iconify.design",
+      "script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://code.iconify.design",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://unpkg.com https:",
@@ -91,7 +117,7 @@ const server = http.createServer(
           request.url.includes('.svg')
 
         if (res.ok || isRedirect || isHtml || isApiOrAsset) {
-          return withSecurityHeaders(res)
+          return withSecurityHeaders(withCacheHeaders(res, request))
         }
       }
 
@@ -103,10 +129,10 @@ const server = http.createServer(
       const errorUrl = new URL(`${basePath}/error/${validStatus}`, request.url)
       const errorRes = await router.fetch(new Request(errorUrl, request))
       if (errorRes) {
-        return withSecurityHeaders(errorRes)
+        return withSecurityHeaders(withCacheHeaders(errorRes, request))
       }
 
-      return withSecurityHeaders(res || new Response('Not Found', { status: 404 }))
+      return withSecurityHeaders(withCacheHeaders(res || new Response('Not Found', { status: 404 }), request))
     } catch (error) {
       if (!(request.signal.aborted && error === request.signal.reason)) {
         console.error(error)
