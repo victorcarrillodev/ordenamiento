@@ -97,9 +97,14 @@ export default createController(routes.login, {
       const result = await loginBackend(parsed.value.email, parsed.value.password)
 
       if (!result.ok) {
+        // El status se propaga tal cual (503 backend caído, 429 demasiados
+        // intentos, 409 conflicto). Aplanarlo todo a 401 hacía que "el backend
+        // no responde" fuera indistinguible de "la contraseña está mal", que es
+        // justo el caso en el que uno pierde media hora probando contraseñas.
+        const status = [401, 409, 429, 503].includes(result.status) ? result.status : 401
         return context.render(
           <LoginPage errors={{ email: result.error ?? 'Credenciales inválidas' }} />,
-          { status: result.status === 409 ? 409 : 401 },
+          { status },
         )
       }
 

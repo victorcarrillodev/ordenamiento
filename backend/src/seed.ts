@@ -40,11 +40,15 @@ export async function seedRootAdmin(): Promise<void> {
     SELECT id FROM users WHERE email = ${ROOT_EMAIL}
   `
   if (existing.length > 0) {
-    if (!process.env.ROOT_PASSWORD) {
-      console.log(
-        `[seed] ROOT ya existe (${ROOT_EMAIL}); para cambiarlo define ROOT_PASSWORD y borra el usuario.`,
-      )
-    }
+    // El seed es insert-only a propósito: no pisa la contraseña de una cuenta
+    // viva en cada arranque. Pero eso hace que cambiar ROOT_PASSWORD en el .env
+    // no tenga ningún efecto, y desde fuera se ve como "el login no funciona".
+    // Se dice en voz alta para que no haya que adivinarlo.
+    console.log(
+      process.env.ROOT_PASSWORD
+        ? `[seed] ROOT ya existe (${ROOT_EMAIL}). OJO: se conserva la contraseña con la que se creó; ROOT_PASSWORD del entorno NO se aplica a una cuenta existente.`
+        : `[seed] ROOT ya existe (${ROOT_EMAIL}); para cambiarlo define ROOT_PASSWORD y borra el usuario.`,
+    )
     return
   }
 
