@@ -54,7 +54,6 @@ export function sessionCookie(token: string): string {
   const attrs = [
     `ordenamiento_session=${encodeURIComponent(token)}`,
     'HttpOnly',
-    'Secure',
     'Path=/',
     'SameSite=Lax',
     `Max-Age=${MAX_AGE_SECONDS}`,

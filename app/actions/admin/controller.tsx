@@ -1,7 +1,7 @@
 /**
- * Admin Controller · rutas GET de la Bitácora Ambiental
- *   adminRoutes.index     → GET /admin            (vista general)
- *   adminRoutes.exportar  → GET /admin/exportar   (página o descarga .xlsx)
+ * Admin Controller Â· rutas GET de la BitÃ¡cora Ambiental
+ *   adminRoutes.index     â†’ GET /admin            (vista general)
+ *   adminRoutes.exportar  â†’ GET /admin/exportar   (pÃ¡gina o descarga .xlsx)
  * La ruta form() de reuniones se mapea por separado (reuniones-controller.tsx).
  */
 import { createController } from 'remix/router'
@@ -60,7 +60,7 @@ export default createController(adminRoutes, {
         users = usersData.users
       }
 
-      // Obtener hora y fecha real de México (America/Mexico_City)
+      // Obtener hora y fecha real de MÃ©xico (America/Mexico_City)
       const parts = new Intl.DateTimeFormat('es-MX', {
         timeZone: 'America/Mexico_City',
         weekday: 'long',
@@ -80,7 +80,7 @@ export default createController(adminRoutes, {
       const displayHour12 = rawHour % 12 === 0 ? 12 : rawHour % 12
       const formattedHour = `${String(displayHour12).padStart(2, '0')}:${rawMin} ${ampm}`
 
-      let saludo = 'Buenos días'
+      let saludo = 'Buenos dÃ­as'
       if (rawHour >= 12 && rawHour < 19) {
         saludo = 'Buenas tardes'
       } else if (rawHour >= 19 || rawHour < 5) {

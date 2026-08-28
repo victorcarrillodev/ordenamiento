@@ -357,6 +357,10 @@ export async function handleRequest(request: Request): Promise<Response> {
       return json({ error: 'Archivo en disco no disponible' }, 404)
     }
     const isDownload = url.searchParams.get('download') === '1'
+    // Servido seguro: MIME derivado de la extensión whitelist (nunca el
+    // declarado en la subida), descarga forzada salvo formatos inertes,
+    // nosniff y filename saneado contra inyección de cabeceras (incluye
+    // CR/LF y comillas, cubriendo el cleanFilename del guard previo).
     const ext = getExtension(rows[0].nombre_original || rows[0].ruta_local)
     const mime = canonicalMimeFor(ext) ?? 'application/octet-stream'
     const disposition = isDownload || !shouldServeInline(ext) ? 'attachment' : 'inline'
