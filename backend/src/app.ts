@@ -35,7 +35,6 @@ import {
   type Origen,
 } from './services/participations.ts'
 import { searchParticipations } from './services/search.ts'
-import { ingestSkillKnowledge, searchSkillKnowledge } from './services/skill-knowledge.ts'
 import { createReunion, deleteReunion, listReuniones } from './services/reuniones.ts'
 import { listAvisos, createAviso, deleteAviso } from './services/avisos.ts'
 import { listPoel, createPoelSesion, deletePoelSesion } from './services/poel.ts'
@@ -417,31 +416,6 @@ export async function handleRequest(request: Request): Promise<Response> {
     const results = await searchParticipations(q, 10, {
       origen: url.searchParams.get('origen') ?? undefined,
       estado: url.searchParams.get('estado') ?? undefined,
-    })
-    return json({ query: q, results })
-  }
-
-  // Ingesta de conocimiento (RAG skill_knowledge) — solo admin
-  if (method === 'POST' && pathname === '/api/knowledge') {
-    const authError = requireAdmin()
-    if (authError) return authError
-    const body = (await request.json()) as { title?: string; kind?: string; content?: string }
-    if (!body.title || !body.content) {
-      return json({ error: 'Faltan datos: title, content' }, 400)
-    }
-    const chunks = await ingestSkillKnowledge(body.title, body.kind ?? 'general', body.content)
-    return json({ ok: true, chunks }, 201)
-  }
-
-  // Búsqueda semántica de conocimiento — herramienta interna: solo admin.
-  if (method === 'GET' && pathname === '/api/knowledge/search') {
-    const authError = requireAdmin()
-    if (authError) return authError
-    const q = url.searchParams.get('q') ?? ''
-    if (!q) return json({ error: 'Faltan datos: q' }, 400)
-    const results = await searchSkillKnowledge(q, {
-      kind: url.searchParams.get('kind') ?? undefined,
-      limit: safePositiveInt(url.searchParams.get('limit'), 10),
     })
     return json({ query: q, results })
   }

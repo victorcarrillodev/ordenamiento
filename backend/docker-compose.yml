@@ -1,6 +1,13 @@
 services:
   db:
-    image: pgvector/pgvector:pg16
+    # Postgres a secas: ya no hace falta pgvector. La búsqueda por contenido
+    # usa full-text nativo (ver backend/schema.sql).
+    #
+    # AL ACTUALIZAR UN VOLUMEN QUE YA EXISTÍA: arranca una última vez con
+    # `pgvector/pgvector:pg16` para que schema.sql ejecute los DROP de
+    # participation_chunks, skill_knowledge y la extensión; después cambia a
+    # esta imagen. En un volumen nuevo no hay nada que migrar.
+    image: postgres:16
     container_name: ordenamiento-db
     restart: unless-stopped
     mem_limit: 1024m

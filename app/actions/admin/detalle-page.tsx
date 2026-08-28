@@ -89,7 +89,12 @@ function VistaAdjunto(handle: Handle<{ participacionId: number; adjunto: Adjunto
 
     if (esImagen) {
       return (
-        <img class="pdf-frame" src={href} alt={adjunto.nombre_original} style="object-fit:contain;" />
+        <img
+          class="pdf-frame"
+          src={href}
+          alt={adjunto.nombre_original}
+          style="object-fit:contain;"
+        />
       )
     }
 
@@ -105,8 +110,8 @@ function VistaAdjunto(handle: Handle<{ participacionId: number; adjunto: Adjunto
     return (
       <object class="pdf-frame" type="application/pdf" data={href}>
         <p class="empty">
-          Tu navegador no puede mostrar el PDF aquí.{' '}
-          <a href={`${href}?download=1`}>Descárgalo</a> para verlo.
+          Tu navegador no puede mostrar el PDF aquí. <a href={`${href}?download=1`}>Descárgalo</a>{' '}
+          para verlo.
         </p>
       </object>
     )

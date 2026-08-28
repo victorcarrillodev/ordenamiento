@@ -12,6 +12,7 @@ export async function extractPdfText(buffer: Buffer): Promise<string> {
       // Elimina bytes nulos 0x00 que provocan error 22021 en PostgreSQL
       .replace(/\0/g, '')
       // Elimina caracteres de control no imprimibles excepto tabuladores y saltos de línea
+      // eslint-disable-next-line no-control-regex -- se limpian a proposito: rompen el TEXT de Postgres
       .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, '')
       .trim()
 
