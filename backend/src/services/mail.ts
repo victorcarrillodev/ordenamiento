@@ -32,6 +32,7 @@ function getTransporter() {
     host: SMTP_HOST,
     port: SMTP_PORT,
     secure: SMTP_PORT === 465,
+    requireTLS: true,
   }
   if (SMTP_USER && SMTP_PASS) {
     options.auth = { user: SMTP_USER, pass: SMTP_PASS }

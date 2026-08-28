@@ -119,11 +119,12 @@
         files.forEach(function (file) {
           const item = document.createElement('div')
           item.className = 'file-preview-item'
+          const escapedName = escapeHtml(file.name)
           item.innerHTML = `
             <div class="file-preview-info">
               <span class="file-preview-icon">${getFileIcon(file.name)}</span>
               <div class="file-preview-details">
-                <span class="file-preview-name" title="${file.name}">${file.name}</span>
+                <span class="file-preview-name" title="${escapedName}">${escapedName}</span>
                 <span class="file-preview-size">${formatBytes(file.size)}</span>
               </div>
             </div>
@@ -163,11 +164,12 @@
         adminPreview.style.display = 'block'
         const item = document.createElement('div')
         item.className = 'file-preview-item'
+        const escapedName = escapeHtml(file.name)
         item.innerHTML = `
           <div class="file-preview-info">
             <span class="file-preview-icon">${getFileIcon(file.name)}</span>
             <div class="file-preview-details">
-              <span class="file-preview-name" title="${file.name}">${file.name}</span>
+              <span class="file-preview-name" title="${escapedName}">${escapedName}</span>
               <span class="file-preview-size">${formatBytes(file.size)}</span>
             </div>
           </div>
