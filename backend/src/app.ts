@@ -59,7 +59,22 @@ import {
   DEFAULT_THEME_CONFIG,
 } from './services/customizations.ts'
 import { sql } from './db/pool.ts'
-import { json, bodyTooLarge } from './utils.ts'
+import { json, bodyTooLarge, clientIp, rateLimit } from './utils.ts'
+
+/** Rate limiter para participaciones. Admins están exentos, otros tienen 10 POSTs por minuto */
+export function participationRateLimited(
+  role: string | undefined,
+  clientIpAddr: string,
+  nowMs?: number,
+): boolean {
+  // Los admins están exentos
+  if (role === 'admin') {
+    return false
+  }
+
+  // Usuarios públicos o con rol 'user' están limitados a 10 POSTs por minuto
+  return rateLimit(clientIpAddr, 10, 60_000, nowMs)
+}
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
 const BRANDING_DIR = join(process.cwd(), 'uploads', 'branding')
