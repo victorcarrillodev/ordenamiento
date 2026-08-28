@@ -242,15 +242,6 @@ export async function marcarNotificada(id: number, para: string): Promise<void> 
   `
 }
 
-export async function updateEstado(id: number, estado: Estado): Promise<boolean> {
-  const rows = await sql<{ id: number }[]>`--sql
-    UPDATE participations SET estado = ${estado}, updated_at = now()
-    WHERE id = ${id}
-    RETURNING id
-  `
-  return rows.length > 0
-}
-
 export async function deleteParticipation(id: number): Promise<boolean> {
   const rows = await sql<{ id: number }[]>`--sql
     DELETE FROM participations WHERE id = ${id} RETURNING id
