@@ -52,9 +52,9 @@ export function HomePage(handle: Handle<HomePageProps>) {
             <HeroSection theme={theme} />
             <WhatIsThisSite theme={theme} />
             <ActionCardsGrid theme={theme} />
-            <WhatIsTheProgram />
-            <ProcessTimeline />
-            <ParticipationCta />
+            <WhatIsTheProgram theme={theme} />
+            <ProcessTimeline theme={theme} />
+            <ParticipationCta theme={theme} />
           </main>
           <SiteFooter theme={theme} />
         </div>
@@ -811,14 +811,21 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
 // What Is The Program
 // ---------------------------------------------------------------------------
 
-function WhatIsTheProgram() {
-  return () => (
+function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
+  return () => {
+    const { theme } = handle.props
+    const u = theme?.usuario || {}
+    const c = u.colores || {}
+    const primary = c.primario || colors.burgundy900
+    const accent = c.acento || colors.gold400
+
+    return (
     <section
       id="que-es-el-programa"
       aria-labelledby="programa-heading"
       mix={css({
         ...sectionPaddingProps,
-        background: `linear-gradient(135deg, ${colors.gray900} 0%, ${colors.burgundy900} 100%)`,
+        background: `linear-gradient(135deg, ${colors.gray900} 0%, ${primary} 100%)`,
         position: 'relative',
         overflow: 'hidden',
       })}
@@ -866,7 +873,7 @@ function WhatIsTheProgram() {
         >
           {/* Left: headline + stats */}
           <div mix={css({ display: 'flex', flexDirection: 'column', gap: '24px' })}>
-            <span mix={css({ ...eyebrowProps, color: colors.gold400 })}>¿Qué es el Programa?</span>
+            <span mix={css({ ...eyebrowProps, color: accent })}>¿Qué es el Programa?</span>
             <h2
               id="programa-heading"
               mix={css({ ...headingLProps, color: colors.white, margin: 0 })}
@@ -918,7 +925,7 @@ function WhatIsTheProgram() {
                       fontFamily: FONT_STACK,
                       fontSize: '28px',
                       fontWeight: 800,
-                      color: colors.gold400,
+                      color: accent,
                       lineHeight: 1,
                     })}
                   >
@@ -986,7 +993,7 @@ function WhatIsTheProgram() {
                   fontWeight: 700,
                   letterSpacing: '0.15em',
                   textTransform: 'uppercase',
-                  color: colors.gold400,
+                  color: accent,
                 })}
               >
                 Fundamento legal
@@ -1009,7 +1016,8 @@ function WhatIsTheProgram() {
         </div>
       </div>
     </section>
-  )
+    )
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1023,50 +1031,61 @@ interface TimelineStep {
   color: string
 }
 
-const TIMELINE_STEPS: TimelineStep[] = [
-  {
-    number: '01',
-    title: 'Formulación',
-    description:
-      'Diagnóstico territorial, caracterización del área y elaboración de la propuesta inicial del programa con participación ciudadana.',
-    color: colors.burgundy900,
-  },
-  {
-    number: '02',
-    title: 'Expedición',
-    description:
-      'Consulta pública, revisión técnica, aprobación por el Ayuntamiento y publicación oficial del programa en el Periódico Oficial.',
-    color: colors.gold500,
-  },
-  {
-    number: '03',
-    title: 'Ejecución',
-    description:
-      'Implementación de acciones, programas e instrumentos para materializar los lineamientos del ordenamiento territorial.',
-    color: colors.green700,
-  },
-  {
-    number: '04',
-    title: 'Evaluación',
-    description:
-      'Monitoreo de indicadores, revisión periódica de avances y verificación del cumplimiento de metas establecidas.',
-    color: colors.gray700,
-  },
-  {
-    number: '05',
-    title: 'Modificación',
-    description:
-      'Actualización del programa con base en nuevas condiciones territoriales, ambientales o socioeconómicas del municipio.',
-    color: colors.burgundy800,
-  },
-]
+function getTimelineSteps(primary: string, accent: string, secondary: string): TimelineStep[] {
+  return [
+    {
+      number: '01',
+      title: 'Formulación',
+      description:
+        'Diagnóstico territorial, caracterización del área y elaboración de la propuesta inicial del programa con participación ciudadana.',
+      color: primary,
+    },
+    {
+      number: '02',
+      title: 'Expedición',
+      description:
+        'Consulta pública, revisión técnica, aprobación por el Ayuntamiento y publicación oficial del programa en el Periódico Oficial.',
+      color: accent,
+    },
+    {
+      number: '03',
+      title: 'Ejecución',
+      description:
+        'Implementación de acciones, programas e instrumentos para materializar los lineamientos del ordenamiento territorial.',
+      color: secondary,
+    },
+    {
+      number: '04',
+      title: 'Evaluación',
+      description:
+        'Monitoreo de indicadores, revisión periódica de avances y verificación del cumplimiento de metas establecidas.',
+      color: colors.gray700,
+    },
+    {
+      number: '05',
+      title: 'Modificación',
+      description:
+        'Actualización del programa con base en nuevas condiciones territoriales, ambientales o socioeconómicas del municipio.',
+      color: primary,
+    },
+  ]
+}
 
-function ProcessTimeline() {
-  return () => (
+function ProcessTimeline(handle: Handle<{ theme?: ThemeData }>) {
+  return () => {
+    const { theme } = handle.props
+    const u = theme?.usuario || {}
+    const c = u.colores || {}
+    const primary = c.primario || colors.burgundy900
+    const accent = c.acento || colors.gold500
+    const secondary = c.secundario || colors.green700
+    const steps = getTimelineSteps(primary, accent, secondary)
+
+    return (
     <section
       id="proceso"
       aria-labelledby="proceso-heading"
-      mix={css({ ...sectionPaddingProps, background: colors.gray50 })}
+      mix={css({ ...sectionPaddingProps, background: c.secundario || colors.gray50 })}
     >
       <div mix={css(sectionContainerProps)}>
         <div
@@ -1079,7 +1098,7 @@ function ProcessTimeline() {
             gap: '16px',
           })}
         >
-          <span mix={css({ ...eyebrowProps, color: colors.burgundy900 })}>Fases del proceso</span>
+          <span mix={css({ ...eyebrowProps, color: primary })}>Fases del proceso</span>
           <h2 id="proceso-heading" mix={css({ ...headingLProps, margin: 0, maxWidth: '560px' })}>
             Cinco etapas hacia un territorio ordenado y sustentable
           </h2>
@@ -1102,23 +1121,24 @@ function ProcessTimeline() {
               left: 'calc(10% + 28px)',
               right: 'calc(10% + 28px)',
               height: '2px',
-              background: `linear-gradient(to right, ${colors.burgundy900}, ${colors.gold500}, ${colors.green700}, ${colors.gray300}, ${colors.burgundy900})`,
+              background: `linear-gradient(to right, ${primary}, ${accent}, ${secondary}, ${colors.gray300}, ${primary})`,
               zIndex: 0,
               '@media (max-width: 900px)': { display: 'none' },
             })}
           />
 
-          {TIMELINE_STEPS.map((step, i) => (
+          {steps.map((step, i) => (
             <TimelineStepCard
               key={step.number}
               step={step}
-              isLast={i === TIMELINE_STEPS.length - 1}
+              isLast={i === steps.length - 1}
             />
           ))}
         </div>
       </div>
     </section>
-  )
+    )
+  }
 }
 
 function TimelineStepCard(handle: Handle<{ step: TimelineStep; isLast: boolean }>) {
@@ -1229,12 +1249,29 @@ function TimelineStepCard(handle: Handle<{ step: TimelineStep; isLast: boolean }
 // Participation CTA Banner
 // ---------------------------------------------------------------------------
 
-function ParticipationCta() {
-  return () => (
+function ParticipationCta(handle: Handle<{ theme?: ThemeData }>) {
+  return () => {
+    const { theme } = handle.props
+    const u = theme?.usuario || {}
+    const c = u.colores || {}
+    const primary = c.primario || colors.burgundy900
+    const accent = c.acento || colors.gold400
+
+    const colorDelTema = (valor: unknown, respaldo: string) =>
+      isSafeCssColor(valor) ? valor : respaldo
+
+    const ctaGradient = `linear-gradient(
+      135deg,
+      ${colorDelTema(c.heroGradienteInicio, primary)} 0%,
+      ${colorDelTema(c.heroGradienteCentro, colors.gray900)} 50%,
+      ${colorDelTema(c.heroGradienteFin, colors.gray900)} 100%
+    )`
+
+    return (
     <section
       aria-labelledby="participa-heading"
       mix={css({
-        background: `linear-gradient(135deg, ${colors.burgundy900} 0%, ${colors.gray900} 100%)`,
+        background: ctaGradient,
         padding: '96px 24px',
         position: 'relative',
         overflow: 'hidden',
@@ -1280,7 +1317,7 @@ function ParticipationCta() {
           ✍️
         </div>
 
-        <span mix={css({ ...eyebrowProps, color: colors.gold400 })}>Participación ciudadana</span>
+        <span mix={css({ ...eyebrowProps, color: accent })}>Participación ciudadana</span>
 
         <h2
           id="participa-heading"
@@ -1345,7 +1382,7 @@ function ParticipationCta() {
               fontSize: '12px',
               fontWeight: 700,
               letterSpacing: '0.1em',
-              color: colors.gold300,
+              color: accent,
             })}
           >
             Hasta 220 MB
@@ -1373,7 +1410,8 @@ function ParticipationCta() {
         </Button>
       </div>
     </section>
-  )
+    )
+  }
 }
 
 // ---------------------------------------------------------------------------
