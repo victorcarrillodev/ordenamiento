@@ -3,16 +3,19 @@ import type { Handle } from 'remix/ui'
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
+import { Icon } from '../../ui/admin/icon.tsx'
+
+interface Aviso {
+  id: number
+  titulo: string
+  descripcion: string
+  activo: boolean
+  fecha?: string
+}
 
 export interface AvisosPageProps {
   user: { name: string; role: string }
-  avisos: Array<{
-    id: number
-    titulo: string
-    descripcion: string
-    activo: boolean
-    fecha?: string
-  }>
+  avisos: Aviso[]
   reuniones?: Array<{
     id: number
     titulo: string
@@ -27,114 +30,164 @@ export interface AvisosPageProps {
     fecha?: string
     ubicacion?: string
   }>
+  /** Mes que se está viendo, en formato YYYY-MM. Por defecto, el actual. */
+  mes?: string
+  /** Día seleccionado dentro del mes visible (1-31), si el admin eligió uno. */
+  dia?: string
   error?: string
+}
+
+const MESES = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+]
+
+const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+
+type TipoEvento = 'aviso' | 'reunion' | 'poel'
+
+const TIPO: Record<TipoEvento, { icono: string; etiqueta: string; clase: string }> = {
+  aviso: { icono: 'mdi:bullhorn-outline', etiqueta: 'Aviso oficial', clase: 'ev--aviso' },
+  reunion: {
+    icono: 'mdi:account-group-outline',
+    etiqueta: 'Reunión de trabajo',
+    clase: 'ev--reunion',
+  },
+  poel: { icono: 'mdi:bank-outline', etiqueta: 'Sesión POEL', clase: 'ev--poel' },
+}
+
+interface EventoDetallado {
+  tipo: TipoEvento
+  id: number
+  titulo: string
+  fecha?: string
+  hora?: string
+  ubicacion?: string
+  descripcion?: string
+  linkHref: string
+  linkTexto: string
+}
+
+/** Día del mes de una fecha ISO, o null si cae fuera del mes que se muestra. */
+function diaDelMes(iso: string | undefined, anio: number, mes: number): number | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return null
+  return d.getFullYear() === anio && d.getMonth() === mes ? d.getDate() : null
+}
+
+function fmtFechaLarga(dia: number, anio: number, mes: number): string {
+  return `${dia} de ${MESES[mes]} de ${anio}`
 }
 
 export function AvisosPage(handle: Handle<AvisosPageProps>) {
   return () => {
-    const { user, avisos, reuniones = [], sesiones = [], error } = handle.props
+    const {
+      user,
+      avisos,
+      reuniones = [],
+      sesiones = [],
+      mes: mesParam,
+      dia: diaParam,
+      error,
+    } = handle.props
 
-    // Generar datos para el calendario del mes actual
     const hoy = new Date()
-    const anio = hoy.getFullYear()
-    const mes = hoy.getMonth() // 0-indexed
-    const nombreMeses = [
-      'Enero',
-      'Febrero',
-      'Marzo',
-      'Abril',
-      'Mayo',
-      'Junio',
-      'Julio',
-      'Agosto',
-      'Septiembre',
-      'Octubre',
-      'Noviembre',
-      'Diciembre',
-    ]
-    const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+    // `mes` llega como YYYY-MM desde los botones de navegación. Si no es válido,
+    // se cae al mes actual en vez de renderizar un calendario con NaN.
+    const partes = /^(\d{4})-(\d{2})$/.exec(mesParam ?? '')
+    const anio = partes ? Number(partes[1]) : hoy.getFullYear()
+    const mes = partes ? Number(partes[2]) - 1 : hoy.getMonth()
+    const mesValido = mes >= 0 && mes <= 11
+    const anioVista = mesValido ? anio : hoy.getFullYear()
+    const mesVista = mesValido ? mes : hoy.getMonth()
 
-    // Primer día del mes (0 = domingo, 1 = lunes...)
-    const primerDia = new Date(anio, mes, 1).getDay()
-    const offsetInicio = primerDia === 0 ? 6 : primerDia - 1 // Lunes = 0
-    const totalDias = new Date(anio, mes + 1, 0).getDate()
+    const esMesActual = anioVista === hoy.getFullYear() && mesVista === hoy.getMonth()
+    const totalDias = new Date(anioVista, mesVista + 1, 0).getDate()
+    const primerDia = new Date(anioVista, mesVista, 1).getDay()
+    const offsetInicio = primerDia === 0 ? 6 : primerDia - 1 // la semana arranca en lunes
 
-    // Agrupar eventos por día con detalle completo
-    interface EventoDetallado {
-      tipo: 'aviso' | 'reunion' | 'poel'
-      id: number
-      titulo: string
-      subtitulo?: string
-      fecha?: string
-      hora?: string
-      ubicacion?: string
-      descripcion?: string
-      linkHref: string
-      linkTexto: string
+    const hrefMes = (delta: number) => {
+      const d = new Date(anioVista, mesVista + delta, 1)
+      const yyyymm = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      return `${adminRoutes.avisos.index.href()}?mes=${yyyymm}`
     }
 
-    const eventosPorDia: Record<number, Array<EventoDetallado>> = {}
+    // Día seleccionado: se descarta si no cae dentro del mes que se ve, para
+    // que un ?dia= manipulado no marque una celda inexistente.
+    const diaSel = Number(diaParam)
+    const diaSeleccionado =
+      Number.isInteger(diaSel) && diaSel >= 1 && diaSel <= totalDias ? diaSel : null
 
-    // 1) Avisos
-    avisos.forEach((a, idx) => {
-      const diaNum = Math.min(totalDias, Math.max(1, hoy.getDate() - idx * 2))
-      if (!eventosPorDia[diaNum]) eventosPorDia[diaNum] = []
-      eventosPorDia[diaNum].push({
+    const yyyymmVista = `${anioVista}-${String(mesVista + 1).padStart(2, '0')}`
+    const hrefDia = (d: number | null) =>
+      d === null
+        ? `${adminRoutes.avisos.index.href()}?mes=${yyyymmVista}`
+        : `${adminRoutes.avisos.index.href()}?mes=${yyyymmVista}&dia=${d}`
+
+    const eventosPorDia: Record<number, EventoDetallado[]> = {}
+    const agregar = (dia: number, evento: EventoDetallado) => {
+      if (!eventosPorDia[dia]) eventosPorDia[dia] = []
+      eventosPorDia[dia].push(evento)
+    }
+
+    for (const a of avisos) {
+      const dia = diaDelMes(a.fecha, anioVista, mesVista)
+      if (dia === null) continue
+      agregar(dia, {
         tipo: 'aviso',
         id: a.id,
         titulo: a.titulo,
-        subtitulo: a.descripcion?.slice(0, 40) + (a.descripcion?.length > 40 ? '…' : ''),
-        fecha: a.fecha || `${diaNum} de ${nombreMeses[mes]} de ${anio}`,
+        fecha: fmtFechaLarga(dia, anioVista, mesVista),
         descripcion:
           a.descripcion || 'Aviso oficial emitido por el Portal de Ordenamiento Territorial.',
-        linkHref: '#tabla-avisos',
-        linkTexto: 'Ver en lista de avisos',
+        linkHref: '#lista-avisos',
+        linkTexto: 'Ver en la lista de avisos',
       })
-    })
+    }
 
-    // 2) Reuniones
-    reuniones.forEach((r) => {
-      if (r.fecha) {
-        const [, m, d] = r.fecha.split('-').map(Number)
-        if (m === mes + 1 && d >= 1 && d <= totalDias) {
-          if (!eventosPorDia[d]) eventosPorDia[d] = []
-          eventosPorDia[d].push({
-            tipo: 'reunion',
-            id: r.id,
-            titulo: r.titulo,
-            subtitulo: r.hora_inicio ? `🕒 ${r.hora_inicio}` : undefined,
-            fecha: `${d} de ${nombreMeses[mes]} de ${anio}`,
-            hora: r.hora_inicio
-              ? `${r.hora_inicio}${r.hora_fin ? ' - ' + r.hora_fin : ''}`
-              : undefined,
-            descripcion: `Reunión de trabajo técnico institucional para el seguimiento del ordenamiento territorial.`,
-            linkHref: adminRoutes.reuniones.index.href(),
-            linkTexto: 'Gestionar Reuniones →',
-          })
-        }
-      }
-    })
+    for (const r of reuniones) {
+      const dia = diaDelMes(r.fecha, anioVista, mesVista)
+      if (dia === null) continue
+      agregar(dia, {
+        tipo: 'reunion',
+        id: r.id,
+        titulo: r.titulo,
+        fecha: fmtFechaLarga(dia, anioVista, mesVista),
+        hora: r.hora_inicio ? `${r.hora_inicio}${r.hora_fin ? ' - ' + r.hora_fin : ''}` : undefined,
+        descripcion:
+          'Reunión de trabajo técnico institucional para el seguimiento del ordenamiento territorial.',
+        linkHref: adminRoutes.reuniones.index.href(),
+        linkTexto: 'Gestionar reuniones →',
+      })
+    }
 
-    // 3) Sesiones POEL
-    sesiones.forEach((s) => {
-      if (s.fecha) {
-        const [, m, d] = s.fecha.split('-').map(Number)
-        if (m === mes + 1 && d >= 1 && d <= totalDias) {
-          if (!eventosPorDia[d]) eventosPorDia[d] = []
-          eventosPorDia[d].push({
-            tipo: 'poel',
-            id: s.id,
-            titulo: s.titulo,
-            subtitulo: s.ubicacion ? `📍 ${s.ubicacion}` : undefined,
-            fecha: `${d} de ${nombreMeses[mes]} de ${anio}`,
-            ubicacion: s.ubicacion || 'San Pedro Tlaquepaque',
-            descripcion: `Sesión del Comité del Programa de Ordenamiento Ecológico Local (Categoría: ${s.categoria}).`,
-            linkHref: adminRoutes.poel.index.href(),
-            linkTexto: 'Gestionar Sesiones POEL →',
-          })
-        }
-      }
-    })
+    for (const s of sesiones) {
+      const dia = diaDelMes(s.fecha, anioVista, mesVista)
+      if (dia === null) continue
+      agregar(dia, {
+        tipo: 'poel',
+        id: s.id,
+        titulo: s.titulo,
+        fecha: fmtFechaLarga(dia, anioVista, mesVista),
+        ubicacion: s.ubicacion || 'San Pedro Tlaquepaque',
+        descripcion: `Sesión del Comité del Programa de Ordenamiento Ecológico Local (categoría: ${s.categoria}).`,
+        linkHref: adminRoutes.poel.index.href(),
+        linkTexto: 'Gestionar sesiones POEL →',
+      })
+    }
+
+    const totalEventosMes = Object.values(eventosPorDia).reduce((n, e) => n + e.length, 0)
 
     return (
       <AdminLayout user={user} active="avisos" title="Gestión de Avisos y Calendario">
@@ -145,33 +198,31 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
 
         {error ? <p class="form-error">{error}</p> : null}
 
-        {/* Panel Nuevo Aviso */}
-        <div class="panel">
-          <h2 class="panel__title">Publicar nuevo aviso o comunicado</h2>
-          <form
-            method="post"
-            class="form-row"
-            style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;"
-          >
-            <div class="form-field" style="flex: 1; min-width: 240px;">
+        {/* ── Publicar ────────────────────────────────────────────────── */}
+        <section class="panel panel--suave">
+          <h2 class="panel__title panel__title--icono">
+            <Icon name="mdi:playlist-plus" /> Publicar nuevo aviso
+          </h2>
+          <form method="post" class="aviso-form">
+            <div class="form-field">
               <label for="titulo">Título del aviso *</label>
               <input
                 id="titulo"
                 name="titulo"
                 required
-                placeholder="Ej. Convocatoria a consulta pública..."
+                placeholder="Ej. Convocatoria a consulta pública…"
               />
             </div>
-            <div class="form-field" style="flex: 2; min-width: 280px;">
-              <label for="descripcion">Descripción o cuerpo del mensaje</label>
+            <div class="form-field aviso-form__ancho">
+              <label for="descripcion">Descripción o enlaces</label>
               <input
                 id="descripcion"
                 name="descripcion"
-                placeholder="Detalles, enlaces o indicaciones para la ciudadanía..."
+                placeholder="Detalles o indicaciones para la ciudadanía…"
               />
             </div>
-            <div class="form-field" style="flex: 1; min-width: 220px;">
-              <label for="correo_destino">Enviar copia por correo (opcional)</label>
+            <div class="form-field">
+              <label for="correo_destino">Correo destino (opcional)</label>
               <input
                 id="correo_destino"
                 name="correo_destino"
@@ -180,111 +231,110 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
               />
             </div>
             <Button buttonType="submit" variant="dark">
-              ＋ Publicar y Notificar
+              ＋ Publicar y notificar
             </Button>
           </form>
-        </div>
+        </section>
 
-        {/* Panel Calendario de Bitácora */}
-        <div class="panel">
-          <div
-            class="panel__head"
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"
-          >
-            <div>
-              <h2 class="panel__title" style="margin: 0;">
-                📅 Calendario de Actividades — {nombreMeses[mes]} {anio}
+        {/* ── Calendario + lista, lado a lado ─────────────────────────── */}
+        <div class="bento">
+          <section class="panel panel--suave bento__principal">
+            <div class="panel__head">
+              <h2 class="panel__title panel__title--icono" style="margin:0;">
+                <Icon name="mdi:calendar-month-outline" /> Calendario de actividades
               </h2>
-              <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748B;">
-                Agenda institucional integrada: Avisos oficiales, Reuniones de trabajo y Sesiones
-                POEL
-              </p>
-            </div>
-            <div style="display: flex; gap: 8px; font-size: 12px;">
-              <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: #FAF5FF; color: #7E22CE; border-radius: 6px; border: 1px solid #E9D5FF; font-weight: 600;">
-                📢 Aviso
-              </span>
-              <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: #F0FDF4; color: #166534; border-radius: 6px; border: 1px solid #BBF7D0; font-weight: 600;">
-                👥 Reunión
-              </span>
-              <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: #FEFCE8; color: #854D0E; border-radius: 6px; border: 1px solid #FEF08A; font-weight: 600;">
-                🏛️ POEL
-              </span>
-            </div>
-          </div>
-
-          {/* Cuadrícula del Calendario */}
-          <div style="border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; background: #FFFFFF;">
-            {/* Días de la semana */}
-            <div style="display: grid; grid-template-columns: repeat(7, 1fr); background: #F8FAFC; border-bottom: 1px solid #E2E8F0; text-align: center; font-weight: 700; font-size: 13px; color: #475569; padding: 10px 0;">
-              {diasSemana.map((d) => (
-                <div key={d}>{d}</div>
-              ))}
+              <div class="cal-leyenda">
+                {(Object.keys(TIPO) as TipoEvento[]).map((t) => (
+                  <span key={t} class={`cal-leyenda__item ${TIPO[t].clase}`}>
+                    <span class="cal-leyenda__punto" aria-hidden="true" />
+                    {TIPO[t].etiqueta}
+                  </span>
+                ))}
+              </div>
             </div>
 
-            {/* Días del mes */}
-            <div style="display: grid; grid-template-columns: repeat(7, 1fr); auto-rows: minmax(95px, auto);">
-              {/* Días vacíos previos al 1 de mes */}
-              {Array.from({ length: offsetInicio }).map((_, i) => (
-                <div
-                  key={'empty-' + i}
-                  style="border-right: 1px solid #F1F5F9; border-bottom: 1px solid #F1F5F9; background: #F8FAFC40;"
-                />
-              ))}
+            <div class="cal-nav">
+              <a class="cal-nav__btn" href={hrefMes(-1)} title="Mes anterior" rel="nofollow">
+                <Icon name="mdi:chevron-left" size={20} label="Mes anterior" />
+              </a>
+              <div class="cal-nav__mes">
+                <strong>
+                  {MESES[mesVista]} {anioVista}
+                </strong>
+                <small>
+                  {totalEventosMes === 0
+                    ? 'Sin actividades este mes'
+                    : `${totalEventosMes} actividad${totalEventosMes === 1 ? '' : 'es'}`}
+                </small>
+              </div>
+              <div class="cal-nav__derecha">
+                {esMesActual ? null : (
+                  <a class="cal-nav__hoy" href={adminRoutes.avisos.index.href()}>
+                    Ir a hoy
+                  </a>
+                )}
+                <a class="cal-nav__btn" href={hrefMes(1)} title="Mes siguiente" rel="nofollow">
+                  <Icon name="mdi:chevron-right" size={20} label="Mes siguiente" />
+                </a>
+              </div>
+            </div>
 
-              {/* Días del mes */}
-              {Array.from({ length: totalDias }).map((_, i) => {
-                const dia = i + 1
-                const esHoy = dia === hoy.getDate()
-                const evts = eventosPorDia[dia] || []
+            <div class="cal">
+              <div class="cal__semana">
+                {DIAS_SEMANA.map((d) => (
+                  <div key={d} class="cal__dia-nombre">
+                    {d}
+                  </div>
+                ))}
+              </div>
 
-                return (
-                  <div
-                    key={'dia-' + dia}
-                    style={`border-right: 1px solid #F1F5F9; border-bottom: 1px solid #F1F5F9; padding: 8px; position: relative; background: ${
-                      esHoy ? '#FDF8F6' : '#FFFFFF'
-                    };`}
-                  >
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                      <span
-                        style={`font-size: 12.5px; font-weight: 800; ${
-                          esHoy
-                            ? 'background: #8B1E3F; color: #FFFFFF; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;'
-                            : 'color: #334155;'
-                        }`}
-                      >
-                        {dia}
-                      </span>
-                      {esHoy ? (
-                        <span style="font-size: 10px; font-weight: 700; color: #8B1E3F; text-transform: uppercase;">
-                          Hoy
-                        </span>
-                      ) : null}
-                    </div>
+              <div class="cal__rejilla">
+                {Array.from({ length: offsetInicio }).map((_, i) => (
+                  <div key={'vacio-' + i} class="cal__celda cal__celda--vacia" />
+                ))}
 
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                      {evts.map((e, eIdx) => {
-                        let bg = '#FAF5FF'
-                        let color = '#7E22CE'
-                        let border = '#E9D5FF'
-                        let icon = '📢'
-                        if (e.tipo === 'reunion') {
-                          bg = '#F0FDF4'
-                          color = '#166534'
-                          border = '#BBF7D0'
-                          icon = '👥'
-                        } else if (e.tipo === 'poel') {
-                          bg = '#FEFCE8'
-                          color = '#854D0E'
-                          border = '#FEF08A'
-                          icon = '🏛️'
-                        }
+                {Array.from({ length: totalDias }).map((_, i) => {
+                  const dia = i + 1
+                  const esHoy = esMesActual && dia === hoy.getDate()
+                  const evts = eventosPorDia[dia] ?? []
+                  const visibles = evts.slice(0, 3)
+                  const ocultos = evts.length - visibles.length
 
-                        return (
+                  const seleccionado = diaSeleccionado === dia
+
+                  return (
+                    <div
+                      key={'dia-' + dia}
+                      class={
+                        'cal__celda' +
+                        (esHoy ? ' cal__celda--hoy' : '') +
+                        (seleccionado ? ' cal__celda--sel' : '')
+                      }
+                    >
+                      <div class="cal__celda-cabecera">
+                        {/* El número es el que selecciona el día: un enlace, no
+                            un botón de JS, para que funcione igual sin scripts
+                            y se pueda compartir la URL de un día concreto. */}
+                        <a
+                          class="cal__numero"
+                          href={hrefDia(seleccionado ? null : dia)}
+                          title={
+                            seleccionado
+                              ? 'Quitar la selección de este día'
+                              : `Ver la agenda del ${dia} de ${MESES[mesVista]}`
+                          }
+                        >
+                          {dia}
+                        </a>
+                        {esHoy ? <span class="cal__hoy">Hoy</span> : null}
+                      </div>
+
+                      <div class="cal__eventos">
+                        {visibles.map((e) => (
                           <button
-                            key={eIdx}
+                            key={e.tipo + '-' + e.id}
                             type="button"
-                            class="cal-event-btn"
+                            class={`cal-event-btn cal__evento ${TIPO[e.tipo].clase}`}
                             data-tipo={e.tipo}
                             data-titulo={e.titulo}
                             data-fecha={e.fecha ?? ''}
@@ -293,121 +343,172 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
                             data-desc={e.descripcion ?? ''}
                             data-href={e.linkHref}
                             data-linktext={e.linkTexto}
-                            title={`Clic para ver información: ${e.titulo}`}
+                            title={`Ver información: ${e.titulo}`}
                           >
-                            <div
-                              style={`font-size: 11px; padding: 3px 6px; border-radius: 4px; background: ${bg}; color: ${color}; border: 1px solid ${border}; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left;`}
-                            >
-                              {icon} {e.titulo}
-                            </div>
+                            <Icon name={TIPO[e.tipo].icono} size={12} /> {e.titulo}
                           </button>
-                        )
-                      })}
+                        ))}
+                        {ocultos > 0 ? (
+                          <a class="cal__mas" href={hrefDia(dia)}>
+                            +{ocultos} más
+                          </a>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Panel Lista de Avisos */}
-        <div class="panel" id="tabla-avisos">
-          <h2 class="panel__title">Avisos registrados en el sistema</h2>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width: 25%;">Título</th>
-                  <th style="width: 40%;">Descripción</th>
-                  <th style="width: 12%;">Estado</th>
-                  <th style="width: 23%;">Acciones y Notificación</th>
-                </tr>
-              </thead>
-              <tbody>
-                {avisos.length === 0 ? (
-                  <tr>
-                    <td colspan={4} class="empty">
-                      No hay avisos publicados
-                    </td>
-                  </tr>
+            {/* Agenda del día seleccionado: la celda no cabe más de 3 eventos,
+                aquí se ven todos y completos. */}
+            {diaSeleccionado !== null ? (
+              <div class="cal-agenda">
+                <div class="cal-agenda__cabecera">
+                  <h3 class="cal-agenda__titulo">
+                    <Icon name="mdi:calendar-check-outline" /> Agenda del{' '}
+                    {fmtFechaLarga(diaSeleccionado, anioVista, mesVista)}
+                  </h3>
+                  <a class="cal-agenda__cerrar" href={hrefDia(null)} title="Quitar la selección">
+                    <Icon name="mdi:close" label="Quitar la selección" />
+                  </a>
+                </div>
+
+                {(eventosPorDia[diaSeleccionado] ?? []).length === 0 ? (
+                  <p class="empty">No hay actividades registradas este día.</p>
                 ) : (
-                  avisos.map((a) => (
-                    <tr key={a.id}>
-                      <td style="font-weight: 700; color: #1E293B;">📢 {a.titulo}</td>
-                      <td style="color: #475569; font-size: 13.5px;">{a.descripcion || '—'}</td>
-                      <td>
-                        <span class={'badge ' + (a.activo ? 'procedente' : 'no-procedente')}>
-                          {a.activo ? 'Activo' : 'Inactivo'}
+                  <ul class="cal-agenda__lista">
+                    {(eventosPorDia[diaSeleccionado] ?? []).map((e) => (
+                      <li
+                        key={e.tipo + '-' + e.id}
+                        class={`cal-agenda__item ${TIPO[e.tipo].clase}`}
+                      >
+                        <span class="cal-agenda__icono">
+                          <Icon name={TIPO[e.tipo].icono} size={18} />
                         </span>
-                      </td>
-                      <td>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                          {/* Botón Reenviar por Correo */}
-                          <form method="post" style="margin: 0; display: flex; gap: 4px;">
-                            <input type="hidden" name="intent" value="enviar_correo" />
-                            <input type="hidden" name="id" value={String(a.id)} />
-                            <input
-                              type="email"
-                              name="para"
-                              placeholder="Enviar a correo..."
-                              required
-                              style="font-size: 12px; padding: 4px 8px; width: 140px; height: 32px; border: 1px solid #CBD5E1; border-radius: 6px;"
-                            />
-                            <Button
-                              buttonType="submit"
-                              variant="dark"
-                              size="sm"
-                              title="Enviar aviso por correo"
-                            >
-                              ✉️ Enviar
-                            </Button>
-                          </form>
-
-                          {/* Botón Eliminar */}
-                          <form method="post" style="margin: 0;">
-                            <input type="hidden" name="intent" value="eliminar" />
-                            <input type="hidden" name="id" value={String(a.id)} />
-                            <Button
-                              buttonType="submit"
-                              variant="danger"
-                              size="sm"
-                              title="Eliminar aviso"
-                            >
-                              🗑
-                            </Button>
-                          </form>
+                        <div class="cal-agenda__cuerpo">
+                          <strong>{e.titulo}</strong>
+                          <small>
+                            {TIPO[e.tipo].etiqueta}
+                            {e.hora ? ` · ${e.hora}` : ''}
+                            {e.ubicacion ? ` · ${e.ubicacion}` : ''}
+                          </small>
+                          <p>{e.descripcion}</p>
                         </div>
-                      </td>
-                    </tr>
-                  ))
+                        <a class="cal-agenda__ir" href={e.linkHref}>
+                          {e.linkTexto}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            ) : null}
+          </section>
+
+          {/* ── Lista de avisos ───────────────────────────────────────── */}
+          <section class="panel panel--suave bento__lateral" id="lista-avisos">
+            <div class="panel__head">
+              <h2 class="panel__title panel__title--icono" style="margin:0;">
+                <Icon name="mdi:format-list-bulleted" /> Lista de avisos
+              </h2>
+              <span class="conteo">{avisos.length}</span>
+            </div>
+
+            {avisos.length === 0 ? (
+              <p class="empty">Todavía no hay avisos publicados.</p>
+            ) : (
+              <div class="aviso-lista">
+                {avisos.map((a) => (
+                  <article key={a.id} class="aviso-card">
+                    <div class="aviso-card__cabecera">
+                      <h3 class="aviso-card__titulo">
+                        <Icon name="mdi:bullhorn-outline" /> {a.titulo}
+                      </h3>
+                      <span class={'badge ' + (a.activo ? 'procedente' : 'no-procedente')}>
+                        {a.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
+
+                    <p class="aviso-card__desc">{a.descripcion || 'Sin descripción.'}</p>
+
+                    <div class="aviso-card__pie">
+                      <form method="post" class="aviso-card__envio">
+                        <input type="hidden" name="intent" value="enviar_correo" />
+                        <input type="hidden" name="id" value={String(a.id)} />
+                        <input
+                          type="email"
+                          name="para"
+                          required
+                          placeholder="Reenviar a…"
+                          aria-label={`Reenviar el aviso "${a.titulo}" por correo`}
+                        />
+                        <Button
+                          buttonType="submit"
+                          variant="dark"
+                          size="sm"
+                          title="Enviar este aviso por correo"
+                        >
+                          <Icon name="mdi:send-outline" />
+                        </Button>
+                      </form>
+
+                      <form method="post" class="aviso-card__borrar">
+                        <input type="hidden" name="intent" value="eliminar" />
+                        <input type="hidden" name="id" value={String(a.id)} />
+                        <Button
+                          buttonType="submit"
+                          variant="danger"
+                          size="sm"
+                          title={`Eliminar el aviso "${a.titulo}"`}
+                        >
+                          <Icon name="mdi:trash-can-outline" />
+                        </Button>
+                      </form>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
 
-        {/* Modal interactivo de detalle de evento */}
+        {/* Modal de detalle. Los ids y los data-* los consume public/admin.js. */}
         <div id="cal-detail-modal" class="cal-modal-backdrop" style="display: none;">
           <div class="cal-modal">
+            {/* El icono va en su propio elemento y el texto en un <span> aparte:
+                admin.js escribe con textContent sobre el span (los títulos los
+                teclea el admin, así que nunca se interpretan como HTML) y solo
+                cambia el atributo `icon`, que sale de una lista fija del script. */}
             <div class="cal-modal__header">
               <span id="cal-m-tag" class="cal-modal__tag">
-                📢 Aviso Oficial
+                <iconify-icon
+                  id="cal-m-tag-icon"
+                  icon="mdi:bullhorn-outline"
+                  width="16"
+                  height="16"
+                />
+                <span id="cal-m-tag-txt">Aviso Oficial</span>
               </span>
               <button id="cal-m-close" type="button" class="cal-modal__close" aria-label="Cerrar">
-                ✕
+                <iconify-icon icon="mdi:close" width="18" height="18" />
               </button>
             </div>
             <h3 id="cal-m-title" class="cal-modal__title">
               Título del Evento
             </h3>
             <div class="cal-modal__info">
-              <div id="cal-m-fecha">📅 Fecha: —</div>
+              <div id="cal-m-fecha">
+                <iconify-icon icon="mdi:calendar-outline" width="15" height="15" />
+                <span id="cal-m-fecha-txt">Fecha: —</span>
+              </div>
               <div id="cal-m-hora" style="display: none;">
-                🕒 Hora: —
+                <iconify-icon icon="mdi:clock-outline" width="15" height="15" />
+                <span id="cal-m-hora-txt">Horario: —</span>
               </div>
               <div id="cal-m-lugar" style="display: none;">
-                📍 Ubicación: —
+                <iconify-icon icon="mdi:map-marker-outline" width="15" height="15" />
+                <span id="cal-m-lugar-txt">Ubicación: —</span>
               </div>
             </div>
             <div id="cal-m-desc" class="cal-modal__desc">

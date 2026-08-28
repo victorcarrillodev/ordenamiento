@@ -59,8 +59,21 @@ export const avisosController = createController(adminRoutes.avisos, {
         poelDeAvisos(context.request),
       ])
 
+      // Mes visible del calendario (YYYY-MM). La página valida el formato y cae
+      // al mes actual si no cuadra, así que aquí solo se transporta.
+      const params = new URL(context.request.url).searchParams
+      const mes = params.get('mes') ?? undefined
+      const dia = params.get('dia') ?? undefined
+
       return context.render(
-        <AvisosPage user={user} avisos={avisos} reuniones={reuniones} sesiones={sesiones} />,
+        <AvisosPage
+          user={user}
+          avisos={avisos}
+          reuniones={reuniones}
+          sesiones={sesiones}
+          mes={mes}
+          dia={dia}
+        />,
       )
     },
 
