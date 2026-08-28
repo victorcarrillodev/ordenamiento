@@ -11,6 +11,7 @@ import adminUsuariosController from './actions/admin/usuarios-controller.tsx'
 import { avisosController, poelController } from './actions/admin/avisos-poel-controller.tsx'
 import nuevaController from './actions/admin/nueva-controller.tsx'
 import enviarController from './actions/admin/enviar-controller.tsx'
+import resolverController from './actions/admin/resolver-controller.tsx'
 import personalizacionController from './actions/admin/personalizacion-controller.tsx'
 import { render } from './middleware/render.tsx'
 import { adminRoutes, routes } from './routes.ts'
@@ -82,5 +83,6 @@ router.map(adminRoutes.avisos, avisosController)
 router.map(adminRoutes.poel, poelController)
 router.map(adminRoutes.participacionNueva, nuevaController)
 router.map(adminRoutes.participacionEnviar, enviarController)
+router.map(adminRoutes.participacionResolver, resolverController)
 router.map(adminRoutes.personalizacion, personalizacionController)
 router.map(adminRoutes, adminController)

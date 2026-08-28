@@ -30,8 +30,11 @@ import {
   deleteParticipation,
   getParticipation,
   listParticipations,
+  marcarNotificada,
+  registrarResolucion,
   updateEstado,
   type Estado,
+  type Etapa,
   type Origen,
 } from './services/participations.ts'
 import { searchParticipations } from './services/search.ts'
@@ -42,6 +45,7 @@ import { exportTableToXlsx, isExportable } from './services/export.ts'
 import { participationDocx } from './services/word.ts'
 import {
   enviarParticipacion,
+  enviarResolucionParticipacion,
   enviarAviso,
   enviarCorreoPrueba,
   mailConfigurado,
@@ -83,6 +87,10 @@ function isEstado(v: string): v is Estado {
 
 function isOrigen(v: string): v is Origen {
   return v === 'digital' || v === 'fisica'
+}
+
+function isEtapa(v: string): v is Etapa {
+  return v === 'En proceso' || v === 'Dictaminada' || v === 'Notificada'
 }
 
 function safePositiveInt(v: string | null, fallback: number): number {
@@ -195,12 +203,15 @@ export async function handleRequest(request: Request): Promise<Response> {
 
     const origen = url.searchParams.get('origen')
     const estado = url.searchParams.get('estado')
+    const etapa = url.searchParams.get('etapa')
     if (origen && !isOrigen(origen)) return json({ error: 'origen inválido' }, 400)
     if (estado && !isEstado(estado)) return json({ error: 'estado inválido' }, 400)
+    if (etapa && !isEtapa(etapa)) return json({ error: 'etapa inválida' }, 400)
 
     const result = await listParticipations({
       origen: (origen as Origen | undefined) ?? undefined,
       estado: (estado as Estado | undefined) ?? undefined,
+      etapa: (etapa as Etapa | undefined) ?? undefined,
       folio: url.searchParams.get('folio') ?? undefined,
       nombre: url.searchParams.get('nombre') ?? undefined,
       colonia: url.searchParams.get('colonia') ?? undefined,
@@ -241,6 +252,64 @@ export async function handleRequest(request: Request): Promise<Response> {
       return json({ error: 'No encontrado' }, 404)
     }
     return json({ ok: true })
+  }
+
+  // Dictaminar una participación y, opcionalmente, notificar al ciudadano.
+  const resolucionMatch =
+    method === 'POST' ? matchPath(pathname, '/api/participations/:id/resolucion') : null
+  if (resolucionMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+
+    const id = Number(resolucionMatch.id)
+    if (!Number.isInteger(id) || id <= 0) return json({ error: 'id inválido' }, 400)
+
+    const body = (await request.json()) as {
+      estado?: string
+      motivo?: string
+      direccion?: string
+      cita?: string
+      notificar?: boolean
+      para?: string
+    }
+
+    if (!body.estado || !isEstado(body.estado)) return json({ error: 'estado inválido' }, 400)
+    if (body.estado === 'En proceso') {
+      return json({ error: 'Para dictaminar elige Procedente o No procedente' }, 400)
+    }
+
+    const guardada = await registrarResolucion(id, {
+      estado: body.estado,
+      motivo: (body.motivo ?? '').trim(),
+      direccion: (body.direccion ?? '').trim(),
+      cita: (body.cita ?? '').trim(),
+      resueltoPor: user?.id,
+    })
+    if (!guardada) return json({ error: 'No encontrado' }, 404)
+
+    if (!body.notificar) return json({ ok: true, notificado: false })
+
+    // El dictamen ya está guardado. Si el correo falla se responde 200 con
+    // `notificado: false` y el motivo: el panel deja reintentar el envío sin
+    // volver a capturar nada.
+    if (!mailConfigurado())
+      return json({ ok: true, notificado: false, motivo: 'SMTP_NO_CONFIGURADO' })
+
+    const destino =
+      (body.para ?? '').trim() ||
+      String(((await getParticipation(id)) as { correo?: string } | null)?.correo ?? '').trim()
+    if (!destino.includes('@')) {
+      return json({ ok: true, notificado: false, motivo: 'SIN_CORREO' })
+    }
+
+    try {
+      await enviarResolucionParticipacion(id, destino)
+      await marcarNotificada(id, destino)
+      return json({ ok: true, notificado: true, para: destino })
+    } catch (err) {
+      console.error('[mail] No se pudo enviar la resolución:', err)
+      return json({ ok: true, notificado: false, motivo: 'ENVIO_FALLIDO' })
+    }
   }
 
   // Eliminar

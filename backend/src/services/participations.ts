@@ -88,6 +88,7 @@ export async function createParticipation(
 export interface ListFilters {
   origen?: Origen
   estado?: Estado
+  etapa?: Etapa
   folio?: string
   nombre?: string
   colonia?: string
@@ -116,6 +117,15 @@ export async function listParticipations(filters: ListFilters): Promise<ListResu
 
   if (filters.origen) push('p.origen = ?', filters.origen)
   if (filters.estado) push('p.estado = ?', filters.estado)
+  // La etapa es derivada, así que se traduce a condiciones. El valor NUNCA se
+  // interpola: solo se elige un literal fijo de este switch.
+  if (filters.etapa === 'En proceso') {
+    where.push("p.estado = 'En proceso' AND p.notificado_en IS NULL")
+  } else if (filters.etapa === 'Dictaminada') {
+    where.push("p.estado <> 'En proceso' AND p.notificado_en IS NULL")
+  } else if (filters.etapa === 'Notificada') {
+    where.push('p.notificado_en IS NOT NULL')
+  }
   if (filters.folio) push('p.folio ILIKE ?', `%${filters.folio}%`)
   if (filters.nombre) push('p.nombre ILIKE ?', `%${filters.nombre}%`)
   if (filters.colonia) push('p.colonia ILIKE ?', `%${filters.colonia}%`)
@@ -139,6 +149,7 @@ export async function listParticipations(filters: ListFilters): Promise<ListResu
         p.id, p.folio, p.origen, p.nombre, p.correo, p.calle, p.numero,
         p.colonia, p.municipio, p.institucion, p.ocupacion, p.latitud, p.longitud,
         p.observacion, p.estado, p.created_at AS fecha,
+        p.resolucion_en, p.notificado_en, p.notificado_a,
         COALESCE(
           json_agg(
             json_build_object(
@@ -178,6 +189,57 @@ export async function getParticipation(id: number): Promise<Record<string, unkno
     [id],
   )
   return { ...rows[0], attachments }
+}
+
+/**
+ * Etapa del trámite tal como la ve el ciudadano y el panel. Es DERIVADA, no
+ * una columna: `estado` dice el sentido del dictamen y `notificado_en` dice si
+ * ya se le avisó. Se deriva en vez de guardarse para que no puedan quedar en
+ * desacuerdo (una participación "Notificada" sin correo enviado, por ejemplo).
+ */
+export type Etapa = 'En proceso' | 'Dictaminada' | 'Notificada'
+
+export function etapaDe(p: { estado?: unknown; notificado_en?: unknown }): Etapa {
+  if (p.notificado_en) return 'Notificada'
+  if (p.estado === 'Procedente' || p.estado === 'No procedente') return 'Dictaminada'
+  return 'En proceso'
+}
+
+export interface ResolucionInput {
+  estado: Estado
+  motivo: string
+  direccion: string
+  cita: string
+  resueltoPor?: number
+}
+
+/**
+ * Registra el dictamen del admin. No envía nada: notificar es un paso aparte
+ * (`marcarNotificada`) para que un fallo de SMTP no deje el dictamen perdido.
+ */
+export async function registrarResolucion(id: number, input: ResolucionInput): Promise<boolean> {
+  const rows = await sql<{ id: number }[]>`--sql
+    UPDATE participations SET
+      estado               = ${input.estado},
+      resolucion_motivo    = ${input.motivo},
+      resolucion_direccion = ${input.direccion},
+      resolucion_cita      = ${input.cita},
+      resolucion_en        = now(),
+      resuelto_por         = ${input.resueltoPor ?? null},
+      updated_at           = now()
+    WHERE id = ${id}
+    RETURNING id
+  `
+  return rows.length > 0
+}
+
+/** Sella la participación como notificada al ciudadano. */
+export async function marcarNotificada(id: number, para: string): Promise<void> {
+  await sql`--sql
+    UPDATE participations
+    SET notificado_en = now(), notificado_a = ${para}, updated_at = now()
+    WHERE id = ${id}
+  `
 }
 
 export async function updateEstado(id: number, estado: Estado): Promise<boolean> {

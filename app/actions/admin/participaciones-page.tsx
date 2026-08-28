@@ -2,6 +2,7 @@ import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { ETAPAS, infoEtapa, INFO_ETAPA, type Etapa } from './etapa.ts'
 
 interface Adjunto {
   id: number
@@ -17,6 +18,7 @@ interface ParticipationRow {
   nombre: string
   estado: string
   fecha: string
+  notificado_en?: string | null
   adjuntos: Adjunto[]
 }
 
@@ -24,6 +26,8 @@ export interface ParticipacionesPageProps {
   user: { name: string; role: string }
   origen: 'digital' | 'fisica'
   items: ParticipationRow[]
+  /** Filtro de etapa activo, si el admin eligió uno. */
+  etapa?: Etapa
 }
 
 const ESTADO_BADGE: Record<string, string> = {
@@ -47,7 +51,7 @@ function fmtSize(bytes: number): string {
 
 export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
   return () => {
-    const { user, origen, items } = handle.props
+    const { user, origen, items, etapa } = handle.props
     const titulo =
       origen === 'fisica'
         ? 'Gestión de participaciones físicas'
@@ -71,6 +75,29 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
               </a>
             </div>
           ) : null}
+          <div class="etapa-filtros">
+            <span class="meta-label">Seguimiento</span>
+            <a
+              class={'etapa-filtro' + (etapa ? '' : ' etapa-filtro--activo')}
+              href={`${adminRoutes.participaciones.href()}?origen=${origen}`}
+            >
+              Todas
+            </a>
+            {ETAPAS.map((e) => {
+              const info = INFO_ETAPA[e]
+              return (
+                <a
+                  key={e}
+                  class={
+                    `etapa-filtro ${info.clase}` + (etapa === e ? ' etapa-filtro--activo' : '')
+                  }
+                  href={`${adminRoutes.participaciones.href()}?origen=${origen}&etapa=${encodeURIComponent(e)}`}
+                >
+                  {info.icono} {info.titulo}
+                </a>
+              )
+            })}
+          </div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -78,6 +105,7 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
                   <th>Folio</th>
                   <th>Nombre</th>
                   <th>Estatus</th>
+                  <th>Seguimiento</th>
                   <th>Registro</th>
                   <th>Adjuntos</th>
                   <th>Acciones</th>
@@ -86,7 +114,7 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
               <tbody>
                 {items.length === 0 ? (
                   <tr>
-                    <td colspan={6} class="empty">
+                    <td colspan={7} class="empty">
                       No hay registros
                     </td>
                   </tr>
@@ -99,6 +127,17 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
                         <span class={'badge ' + (ESTADO_BADGE[p.estado] ?? 'en-proceso')}>
                           {p.estado}
                         </span>
+                      </td>
+                      <td>
+                        {(() => {
+                          const info = infoEtapa(p)
+                          return (
+                            <span class={`etapa-badge ${info.clase}`} title={info.pendiente}>
+                              <span aria-hidden="true">{info.icono}</span> {info.titulo}
+                              {info.pendiente ? <small>{info.pendiente}</small> : null}
+                            </span>
+                          )
+                        })()}
                       </td>
                       <td>{fmtFecha(p.fecha)}</td>
                       <td>
