@@ -14,6 +14,7 @@ import { ParticipacionesPage } from './participaciones-page.tsx'
 import { EstadisticasPage } from './estadisticas-page.tsx'
 import { CuentaPage } from './cuenta-page.tsx'
 import { DetallePage } from './detalle-page.tsx'
+import { ETAPAS } from './etapa.ts'
 
 interface Stats {
   usuarios: number
@@ -135,8 +136,10 @@ export default createController(adminRoutes, {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
 
-      const origenParam = new URL(context.request.url).searchParams.get('origen')
-      const origen = origenParam === 'fisica' ? 'fisica' : 'digital'
+      const params = new URL(context.request.url).searchParams
+      const origen = params.get('origen') === 'fisica' ? 'fisica' : 'digital'
+      const etapaParam = params.get('etapa')
+      const etapa = ETAPAS.find((e) => e === etapaParam)
       const data = await fetchJsonOr<{
         items: Array<{
           id: number
@@ -145,12 +148,18 @@ export default createController(adminRoutes, {
           nombre: string
           estado: string
           fecha: string
+          notificado_en: string | null
           adjuntos: Array<{ id: number; nombre_original: string; mime: string; size: number }>
         }>
-      }>(context.request, `/api/participations?origen=${origen}&limit=100&page=1`, { items: [] })
+      }>(
+        context.request,
+        `/api/participations?origen=${origen}&limit=100&page=1` +
+          (etapa ? `&etapa=${encodeURIComponent(etapa)}` : ''),
+        { items: [] },
+      )
 
       return context.render(
-        <ParticipacionesPage user={user} origen={origen} items={data.items ?? []} />,
+        <ParticipacionesPage user={user} origen={origen} items={data.items ?? []} etapa={etapa} />,
       )
     },
 
@@ -240,6 +249,12 @@ export default createController(adminRoutes, {
             genero: raw.genero as string,
             tematica: raw.tematica as string,
             fecha: raw.created_at as string,
+            resolucion_motivo: (raw.resolucion_motivo as string) ?? '',
+            resolucion_direccion: (raw.resolucion_direccion as string) ?? '',
+            resolucion_cita: (raw.resolucion_cita as string) ?? '',
+            resolucion_en: (raw.resolucion_en as string) ?? null,
+            notificado_en: (raw.notificado_en as string) ?? null,
+            notificado_a: (raw.notificado_a as string) ?? '',
             adjuntos: (
               (raw.attachments ?? []) as Array<{
                 id: number
@@ -255,9 +270,16 @@ export default createController(adminRoutes, {
             })),
           }
         : null
-      const mailParam = new URL(context.request.url).searchParams.get('mail')
+      const params = new URL(context.request.url).searchParams
+      const mailParam = params.get('mail')
       const mail = mailParam === 'ok' ? 'ok' : mailParam === 'error' ? 'error' : null
-      return context.render(<DetallePage user={user} p={p} mail={mail} />)
+
+      const dictamenParam = params.get('dictamen')
+      const dictamen = (['notificado', 'guardado', 'error', 'estado'] as const).find(
+        (v) => v === dictamenParam,
+      )
+
+      return context.render(<DetallePage user={user} p={p} mail={mail} dictamen={dictamen} />)
     },
 
     async word(context) {

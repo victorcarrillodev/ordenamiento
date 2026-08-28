@@ -69,6 +69,20 @@ ALTER TABLE participations ADD COLUMN IF NOT EXISTS direccion_origen       TEXT 
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS domicilio              TEXT NOT NULL DEFAULT '';
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS municipio_participante TEXT NOT NULL DEFAULT '';
 
+-- Dictamen y notificacion al ciudadano. `estado` dice QUE se resolvio;
+-- estas columnas dicen POR QUE, A DONDE debe acudir y SI ya se le aviso.
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS resolucion_motivo    TEXT NOT NULL DEFAULT '';
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS resolucion_direccion TEXT NOT NULL DEFAULT '';
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS resolucion_cita      TEXT NOT NULL DEFAULT '';
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS resolucion_en        TIMESTAMPTZ;
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS resuelto_por         BIGINT REFERENCES users(id) ON DELETE SET NULL;
+-- Sello del correo de dictamen: mientras sea NULL, la participacion esta
+-- resuelta pero el ciudadano todavia no lo sabe.
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS notificado_en        TIMESTAMPTZ;
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS notificado_a         TEXT NOT NULL DEFAULT '';
+
+CREATE INDEX IF NOT EXISTS idx_participations_notificado ON participations (notificado_en);
+
 -- Índice full-text de los campos del formulario. Columna generada: se
 -- mantiene sola en cada INSERT/UPDATE, sin triggers ni código de app.
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS busqueda_tsv tsvector

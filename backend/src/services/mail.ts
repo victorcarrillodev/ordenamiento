@@ -439,6 +439,124 @@ export async function enviarAcuseReciboParticipacion(
   return { enviado: true, adjuntos: attachments.length, folio: p.folio }
 }
 
+interface ResolucionCorreo extends ParticipacionCorreo {
+  resolucion_motivo: string
+  resolucion_direccion: string
+  resolucion_cita: string
+}
+
+/**
+ * Envía al ciudadano el DICTAMEN de su participación: si procede o no, por qué,
+ * y —cuando procede— a qué oficina debe acudir y en qué horario.
+ *
+ * Es distinto del acuse: el acuse confirma que llegó, esto le dice en qué acabó.
+ */
+export async function enviarResolucionParticipacion(
+  participationId: number,
+  para: string,
+): Promise<{ enviado: true; folio: string; estado: string }> {
+  if (!mailConfigurado()) {
+    throw new Error('SMTP_NO_CONFIGURADO')
+  }
+
+  const rows = await sql<ResolucionCorreo[]>`
+    SELECT folio, origen, nombre, correo, municipio, colonia, institucion, ocupacion,
+           estado, fuente, genero, tematica, observacion, created_at,
+           resolucion_motivo, resolucion_direccion, resolucion_cita
+    FROM participations WHERE id = ${participationId}
+  `
+  if (rows.length === 0) throw new Error('NO_ENCONTRADA')
+  const p = rows[0]
+
+  if (p.estado !== 'Procedente' && p.estado !== 'No procedente') {
+    throw new Error('SIN_DICTAMEN')
+  }
+
+  const procede = p.estado === 'Procedente'
+  const color = procede ? '#16A34A' : '#B91C1C'
+
+  const bloqueCita =
+    procede && (p.resolucion_direccion || p.resolucion_cita)
+      ? `
+    <div class="section-heading">3. Dónde y cuándo debe presentarse</div>
+    <div class="protocol-box">
+      ${
+        p.resolucion_direccion
+          ? `<div class="protocol-step">📍 <strong>Domicilio:</strong> ${escapeHtml(p.resolucion_direccion)}</div>`
+          : ''
+      }
+      ${
+        p.resolucion_cita
+          ? `<div class="protocol-step">🕒 <strong>Día y horario de atención:</strong> ${escapeHtml(p.resolucion_cita)}</div>`
+          : ''
+      }
+      <div class="protocol-step">🪪 <strong>Presente este correo</strong> junto con una identificación oficial vigente. El folio <strong>${escapeHtml(p.folio)}</strong> es su referencia para cualquier trámite o aclaración.</div>
+    </div>`
+      : ''
+
+  const contenidoHtml = `
+    <div class="folio-box">
+      <div class="folio-label">Folio de la participación dictaminada</div>
+      <div class="folio-value">${escapeHtml(p.folio)}</div>
+    </div>
+
+    <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-top: 0;">
+      Estimado(a) <strong>${escapeHtml(p.nombre || 'Ciudadano(a)')}</strong>:
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+      La <strong>Dirección General de Transformación y Planeación Urbana</strong> del Municipio de
+      San Pedro Tlaquepaque le comunica que su participación, registrada con el folio
+      <strong>${escapeHtml(p.folio)}</strong>, ha sido analizada por el Comité Técnico del
+      <em>Programa de Ordenamiento Ecológico y Territorial (POETDUM)</em> y se ha emitido la
+      resolución correspondiente.
+    </p>
+
+    <div class="section-heading">1. Resolución</div>
+    <table class="info-table">
+      <tr>
+        <td class="label-col">Dictamen</td>
+        <td class="val-col"><span style="color:${color};font-weight:800;">● ${escapeHtml(p.estado)}</span></td>
+      </tr>
+      <tr><td class="label-col">Folio</td><td class="val-col"><strong>${escapeHtml(p.folio)}</strong></td></tr>
+      <tr><td class="label-col">Eje temático</td><td class="val-col">${escapeHtml(p.tematica || 'General / Medio Ambiente')}</td></tr>
+      <tr><td class="label-col">Fecha de resolución</td><td class="val-col">${escapeHtml(new Date().toLocaleString('es-MX', { dateStyle: 'full' }))}</td></tr>
+    </table>
+
+    <div class="section-heading">2. Fundamento y consideraciones</div>
+    <div class="observation-box">${escapeHtml(
+      p.resolucion_motivo || '(La autoridad no capturó un motivo detallado para esta resolución.)',
+    )}</div>
+    ${bloqueCita}
+
+    <div class="section-heading">${bloqueCita ? '4' : '3'}. Su planteamiento original</div>
+    <div class="observation-box">${escapeHtml(p.observacion || '(Sin texto de observación capturado)')}</div>
+
+    <p style="font-size: 12.5px; color: #64748B; line-height: 1.5; margin-top: 16px;">
+      <em>Fundamento: Artículos 19, 20 y 20 BIS de la Ley General del Equilibrio Ecológico y la
+      Protección al Ambiente, y el Reglamento de Planeación y Ordenamiento Territorial de
+      San Pedro Tlaquepaque, Jalisco.</em>
+    </p>
+  `
+
+  const html = renderPlantillaBase({
+    titulo: procede ? 'Su participación fue aceptada' : 'Resolución de su participación',
+    subtitulo: 'Dictamen del Comité Técnico · Bitácora Ambiental POETDUM',
+    badge: p.estado,
+    badgeColor: color,
+    contenidoHtml,
+  })
+
+  const transporter = getTransporter()
+  await transporter.sendMail({
+    from: MAIL_FROM,
+    to: para,
+    subject: `[Resolución POETDUM] Participación ${p.folio} — ${p.estado}`,
+    html,
+  })
+
+  return { enviado: true, folio: p.folio, estado: p.estado }
+}
+
 /**
  * Envía por correo la participación (función estándar de reenvío).
  */

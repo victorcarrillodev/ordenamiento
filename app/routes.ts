@@ -31,6 +31,7 @@ export const adminRoutes = route({
   participacionNueva: form(`${basePath}/admin/participaciones/nueva`),
   participaciones: get(`${basePath}/admin/participaciones`),
   participacionEnviar: form(`${basePath}/admin/participaciones/:id/enviar`),
+  participacionResolver: form(`${basePath}/admin/participaciones/:id/resolucion`),
   word: get(`${basePath}/admin/participaciones/:id/word`),
   adjunto: get(`${basePath}/admin/participaciones/:id/adjuntos/:aid`),
   participacionDetalle: get(`${basePath}/admin/participaciones/:id`),
