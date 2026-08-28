@@ -1,7 +1,8 @@
 import type { Handle } from 'remix/ui'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { adminRoutes, routes } from '../../routes.ts'
-import type { ThemeData } from '../../ui/civic-horizon.ts'
+import { Button } from '../../ui/button.tsx'
+import { HERO_IMAGEN_POR_DEFECTO, type ThemeData } from '../../ui/civic-horizon.ts'
 
 export interface AuditLogEntry {
   id: number
@@ -52,9 +53,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
     const heroImgs: string[] =
       Array.isArray(img.heroImagenes) && img.heroImagenes.length > 0
         ? img.heroImagenes
-        : [
-            'https://imgs.search.brave.com/8f1SgJygGgIrQH2BcZXess4TRcaOtm3FXVfawE9VxRE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTEy/NTUyNzc3Mi9lcy9m/b3RvL3RsYXF1ZXBh/cXVlLmpwZz9zPTYx/Mng2MTImdz0wJms9/MjAmYz1VU3FwdjNw/OEJxbG9LY0JaY01q/YUdPNkpQWW1Va0xl/N1FYUGx5YVREM1Zz/PQ',
-          ]
+        : [HERO_IMAGEN_POR_DEFECTO]
 
     return (
       <AdminLayout
@@ -80,26 +79,26 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
             </div>
 
             <div style="display: flex; gap: 10px; align-items: center;">
-              <a
+              <Button
                 href={routes.home.href()}
                 target="_blank"
                 rel="noreferrer"
-                class="btn"
-                style="background: #0f172a; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(15,23,42,0.15);"
+                variant="dark"
+                icon={<span>🌐</span>}
               >
-                <span>🌐</span> Ver Portal en Vivo
-              </a>
-              <button
-                type="button"
+                Ver Portal en Vivo
+              </Button>
+              <Button
+                buttonType="button"
                 id="btn-open-preview"
-                class="btn"
-                style="background: #2563eb; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37,99,235,0.2);"
+                variant="primary"
+                icon={<span>👁️</span>}
                 {...domEvents({
                   onclick: "document.getElementById('mini-preview-modal').style.display='flex';",
                 })}
               >
-                <span>👁️</span> Previsualizar (Mini Página)
-              </button>
+                Previsualizar (Mini Página)
+              </Button>
             </div>
           </div>
 
@@ -957,13 +956,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                   </div>
 
                   <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
-                    <button
-                      type="submit"
-                      class="btn"
-                      style="background: #2563eb; color: #fff; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 800; cursor: pointer; border: none; box-shadow: 0 4px 14px rgba(37,99,235,0.3);"
-                    >
+                    <Button buttonType="submit" variant="primary" size="lg">
                       💾 Guardar Cambios de Vista de Usuario
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -1183,13 +1178,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                   </div>
 
                   <div style="display: flex; justify-content: flex-end;">
-                    <button
-                      type="submit"
-                      class="btn"
-                      style="background: #2563eb; color: #fff; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 800; cursor: pointer; border: none; box-shadow: 0 4px 14px rgba(37,99,235,0.3);"
-                    >
+                    <Button buttonType="submit" variant="primary" size="lg">
                       💾 Guardar Cambios de Vista de Panel
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

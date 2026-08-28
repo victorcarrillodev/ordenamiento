@@ -40,6 +40,8 @@ export function Document(handle: Handle<DocumentProps>) {
             href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap"
           />
           <script src="https://code.iconify.design/3/3.1.1/iconify-icon.min.js"></script>
+          <link rel="stylesheet" href={`${basePath}/autocomplete.css`} />
+          <script src={`${basePath}/autocomplete.js`} defer></script>
           <title>{title}</title>
           {head}
           {entryPreloads.map((href) => (

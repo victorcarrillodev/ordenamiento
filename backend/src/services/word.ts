@@ -22,6 +22,8 @@ interface Row {
   numero: string
   colonia: string
   municipio: string
+  domicilio: string
+  municipio_participante: string
   institucion: string
   ocupacion: string
   latitud: string
@@ -143,6 +145,8 @@ export async function participationDocx(p: Row): Promise<Buffer> {
               fila('Temática', p.tematica, true),
               fila('Municipio', p.municipio, false),
               fila('Colonia', p.colonia, true),
+              fila('Domicilio', p.domicilio, false),
+              fila('Municipio de participante', p.municipio_participante, true),
               fila('Calle', p.calle, false),
               fila('Número', p.numero, true),
               fila('Latitud', p.latitud, false),

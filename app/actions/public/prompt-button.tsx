@@ -30,7 +30,7 @@ export const PromptButton = clientEntry(
           type="button"
           mix={[
             buttonStyle,
-            on('click', async (_event, signal) => {
+            on<HTMLElement>('click', async (_event, signal) => {
               try {
                 await navigator.clipboard.writeText(handle.props.text)
                 if (signal.aborted) return

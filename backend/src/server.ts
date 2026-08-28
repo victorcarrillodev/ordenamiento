@@ -1,4 +1,5 @@
 import { handleRequest, init } from './app.ts'
+import { MAX_TOTAL_BYTES } from './files/limits.ts'
 
 const PORT = Number(process.env.PORT ?? 5920)
 
@@ -6,6 +7,7 @@ await init()
 
 Bun.serve({
   port: PORT,
+  maxRequestBodySize: MAX_TOTAL_BYTES + 16 * 1024 * 1024,
   fetch(request) {
     return handleRequest(request).catch((err) => {
       console.error('[server] error', err)

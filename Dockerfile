@@ -15,7 +15,9 @@ RUN bun install --frozen-lockfile --production
 # así que el código fuente (no un build) debe estar presente en runtime.
 COPY app ./app
 COPY public ./public
+COPY scripts ./scripts
 COPY server.ts tsconfig.json ./
+RUN CATALOGO_DESTINO=app/data/colonias.json node --import remix/node-tsx scripts/build-catalogo.ts
 
 # Usuario no-root
 RUN useradd --system --create-home --shell /usr/sbin/nologin remixapp \

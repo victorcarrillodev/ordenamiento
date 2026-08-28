@@ -4,6 +4,7 @@
 import type { Handle } from 'remix/ui'
 
 import { routes } from '../../routes.ts'
+import { Button } from '../button.tsx'
 import type { LoginErrors } from './types.ts'
 import { TextField } from './text-field.tsx'
 
@@ -42,18 +43,30 @@ export function LoginForm(handle: Handle<LoginFormProps>) {
           }
         />
 
-        <button class="login__submit" type="submit">
+        <Button
+          buttonType="submit"
+          variant="primary"
+          fullWidth
+          class="login__submit"
+          iconRight={
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+              style="width: 16px; height: 16px;"
+            >
+              <path
+                d="M4 12h16m0 0-6-6m6 6-6 6"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          }
+        >
           Iniciar Sesión
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M4 12h16m0 0-6-6m6 6-6 6"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
+        </Button>
       </form>
     )
   }

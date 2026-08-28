@@ -2,6 +2,7 @@ import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Button } from '../../ui/button.tsx'
 
 export interface AdminPageProps {
   user: { name: string; role: string }
@@ -98,12 +99,16 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
                 <span id="live-clock-day">{ahora.dia}</span> <span>| </span>
                 <span id="live-clock-greeting">{ahora.saludo ?? 'Buenos días'}</span>
               </div>
-              <div class="card__value" id="live-clock-time">{ahora.hora}</div>
-              <div class="card__label" id="live-clock-date">{ahora.fecha}</div>
+              <div class="card__value" id="live-clock-time">
+                {ahora.hora}
+              </div>
+              <div class="card__label" id="live-clock-date">
+                {ahora.fecha}
+              </div>
             </div>
           </div>
           <a
-            href={`${adminRoutes.index.href()}#usuarios`}
+            href={adminRoutes.usuarios.index.href()}
             class="card card--link"
             title="Gestionar Usuarios"
           >
@@ -246,9 +251,9 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
                 <option value="admin">Admin</option>
               </select>
             </div>
-            <button type="submit" class="btn btn--dark">
+            <Button buttonType="submit" variant="dark">
               ＋ Crear usuario
-            </button>
+            </Button>
           </form>
           <div class="table-wrap">
             <table>

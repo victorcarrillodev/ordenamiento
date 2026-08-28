@@ -1,4 +1,4 @@
-import { sql } from '../db/pool.ts'
+import { sql, type Db } from '../db/pool.ts'
 import { chunkText } from '../text/chunk.ts'
 import { extractPdfText, TextLayerMissingError } from '../text/pdf-extract.ts'
 import { featurizeWeighted, toVectorLiteral, tokenize } from '../vector/tfidf.ts'
@@ -28,16 +28,27 @@ export interface IngestFile {
  * Cada sección se convierte en chunks con embedding TF-IDF 512D.
  */
 export async function ingestParticipation(
-  participationId: number,
-  fields: Record<string, string>,
-  files?: IngestFile[],
+  dbOrParticipationId: Db | number,
+  participationIdOrFields: number | Record<string, string>,
+  maybeFieldsOrFiles?: Record<string, string> | IngestFile[],
+  maybeFiles?: IngestFile[],
 ): Promise<IngestResult> {
+  const isDb = typeof dbOrParticipationId === 'function' && 'unsafe' in dbOrParticipationId
+  const db: Db = isDb ? (dbOrParticipationId as Db) : sql
+  const participationId = isDb
+    ? (participationIdOrFields as number)
+    : (dbOrParticipationId as number)
+  const fields = isDb
+    ? (maybeFieldsOrFiles as Record<string, string>)
+    : (participationIdOrFields as Record<string, string>)
+  const files = isDb ? maybeFiles : (maybeFieldsOrFiles as IngestFile[] | undefined)
+
   let chunks = 0
   let needsOcr = false
 
   // 1) Adjuntos: guardar registro + vectorizar si es PDF
   for (const file of files ?? []) {
-    await sql`--sql
+    await db`--sql
       INSERT INTO attachments (participation_id, nombre_original, mime, size, ruta_local)
       VALUES (
         ${participationId},
@@ -58,44 +69,50 @@ export async function ingestParticipation(
       try {
         text = await extractPdfText(file.buffer)
       } catch (err) {
-        if (err instanceof TextLayerMissingError) {
-          needsOcr = true
-        } else {
-          throw err
-        }
+        // Si el PDF es un escaneo, solo imágenes o no tiene capa de texto,
+        // no fallamos la transacción: el archivo se preserva y se marca para OCR.
+        needsOcr = true
       }
     }
 
     if (text) {
       for (const chunk of chunkText(text)) {
-        await insertChunk(participationId, chunk.position, chunk.content)
-        chunks++
+        const cleanContent = chunk.content.replace(/\0/g, '').trim()
+        if (cleanContent) {
+          await insertChunk(db, participationId, chunk.position, cleanContent)
+          chunks++
+        }
       }
     }
   }
 
   // 2) Campos del formulario (siempre)
-  const formText = Object.entries(fields)
+  const formText = Object.entries(fields ?? {})
     .filter(([, v]) => v && v.trim())
     .map(([k, v]) => `${k}: ${v}`)
     .join('\n')
 
   if (formText) {
     for (const chunk of chunkText(formText, 512)) {
-      await insertChunk(participationId, chunks + chunk.position, chunk.content)
-      chunks++
+      const cleanFormContent = chunk.content.replace(/\0/g, '').trim()
+      if (cleanFormContent) {
+        await insertChunk(db, participationId, chunks + chunk.position, cleanFormContent)
+        chunks++
+      }
     }
   }
 
   return { chunks, needsOcr }
 }
 
-async function insertChunk(participationId: number, position: number, content: string) {
-  const terms = [...new Set(tokenize(content))]
+async function insertChunk(db: Db, participationId: number, position: number, content: string) {
+  const sanitized = content.replace(/\0/g, '').trim()
+  if (!sanitized) return
+  const terms = [...new Set(tokenize(sanitized))]
   const idfWeights = await getIdfMap(terms)
-  const vector = featurizeWeighted(content, idfWeights)
-  await sql`--sql
+  const vector = featurizeWeighted(sanitized, idfWeights)
+  await db`--sql
     INSERT INTO participation_chunks (participation_id, position, content, embedding)
-    VALUES (${participationId}, ${position}, ${content}, ${toVectorLiteral(vector)}::vector)
+    VALUES (${participationId}, ${position}, ${sanitized}, ${toVectorLiteral(vector)}::vector)
   `
 }

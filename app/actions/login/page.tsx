@@ -5,6 +5,7 @@
 import type { Handle } from 'remix/ui'
 
 import { routes } from '../../routes.ts'
+import { Button } from '../../ui/button.tsx'
 import { Document } from '../document.tsx'
 import { LoginFooter } from '../../ui/login/login-footer.tsx'
 import { LoginForm } from '../../ui/login/login-form.tsx'
@@ -77,9 +78,14 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
                       autoComplete="new-password"
                       error={errors.password}
                     />
-                    <button class="login__submit login__submit--accent" type="submit">
+                    <Button
+                      buttonType="submit"
+                      variant="gold"
+                      fullWidth
+                      class="login__submit login__submit--accent"
+                    >
                       Crear cuenta
-                    </button>
+                    </Button>
                   </form>
                 </details>
               </div>

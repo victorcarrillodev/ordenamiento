@@ -2,6 +2,20 @@ import * as http from 'node:http'
 import { createRequestListener } from 'remix/node-fetch-server'
 
 import { router } from './app/router.ts'
+import { cargarCatalogo } from './app/data/colonias.ts'
+
+// Servidor principal de Ordenamiento Territorial – San Pedro Tlaquepaque
+
+// Precalentar catálogo SEPOMEX de Jalisco en memoria RAM en el arranque
+cargarCatalogo()
+  .then((cat) => {
+    console.log(
+      `[server] Catálogo SEPOMEX de Jalisco precalentado en memoria (${cat.length} entradas)`,
+    )
+  })
+  .catch((err) => {
+    console.warn('[server] Aviso al precalentar catálogo:', err)
+  })
 
 const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 44100
 const hmrProxyPort = process.env.HMR_PROXY_PORT
@@ -40,11 +54,11 @@ function withSecurityHeaders(response: Response): Response {
   if (!headers.has('Content-Security-Policy')) {
     const cspDirectives = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://code.iconify.design",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net",
       "font-src 'self' https://fonts.gstatic.com data:",
-      "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://unpkg.com",
-      "connect-src 'self' http://localhost:* ws://localhost:* ws: wss:",
+      "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://unpkg.com https:",
+      "connect-src 'self' http://localhost:* ws://localhost:* ws: wss: https://api.iconify.design",
       "frame-ancestors 'self'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -59,28 +73,60 @@ function withSecurityHeaders(response: Response): Response {
   })
 }
 
+const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 const server = http.createServer(
   createRequestListener(async (request: Request) => {
     try {
       const res = await router.fetch(request)
-      return withSecurityHeaders(res)
+      // Si la respuesta es exitosa, es una redirección, o ya es HTML con estado de error, servir directamente
+      if (res) {
+        const isRedirect = res.status >= 300 && res.status < 400
+        const isHtml = res.headers.get('content-type')?.includes('text/html')
+        const isApiOrAsset =
+          request.url.includes('/api/') ||
+          request.url.includes('/assets/') ||
+          request.url.includes('.css') ||
+          request.url.includes('.js') ||
+          request.url.includes('.png') ||
+          request.url.includes('.svg')
+
+        if (res.ok || isRedirect || isHtml || isApiOrAsset) {
+          return withSecurityHeaders(res)
+        }
+      }
+
+      // Si la ruta no existe (404 / null) o no devolvió HTML para un error, servir vista de error institucional
+      const status = res ? res.status : 404
+      const validStatus = [400, 401, 403, 404, 429, 500, 502, 503, 504].includes(status)
+        ? status
+        : 404
+      const errorUrl = new URL(`${basePath}/error/${validStatus}`, request.url)
+      const errorRes = await router.fetch(new Request(errorUrl, request))
+      if (errorRes) {
+        return withSecurityHeaders(errorRes)
+      }
+
+      return withSecurityHeaders(res || new Response('Not Found', { status: 404 }))
     } catch (error) {
       if (!(request.signal.aborted && error === request.signal.reason)) {
         console.error(error)
       }
-      return withSecurityHeaders(errorPage('500'))
+      try {
+        const errorUrl = new URL(`${basePath}/error/500`, request.url)
+        const errorRes = await router.fetch(new Request(errorUrl, request))
+        if (errorRes) return withSecurityHeaders(errorRes)
+      } catch {
+        // Fallback silencioso
+      }
+      return withSecurityHeaders(
+        new Response('Error interno del servidor', {
+          status: 500,
+          headers: { 'content-type': 'text/plain; charset=utf-8' },
+        }),
+      )
     }
   }),
 )
-
-/** Página de error con la imagen institucional (public/image/errores/<code>.png). */
-function errorPage(code: '404' | '401' | '403' | '429' | '500' | '503'): Response {
-  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Error ${code}</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f4f6fb;font-family:Montserrat,system-ui,sans-serif;color:#2b3445}img{max-width:min(90vw,520px);height:auto;border-radius:12px}</style></head><body><img src="/image/errores/${code}.png" alt="Error ${code}"></body></html>`
-  return new Response(html, {
-    status: Number(code),
-    headers: { 'content-type': 'text/html; charset=utf-8' },
-  })
-}
 
 server.listen(port, () => {
   if (process.env.REMIX_NODE_HMR) {

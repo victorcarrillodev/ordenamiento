@@ -9,20 +9,7 @@ import { createController } from 'remix/router'
 import { backendFetch, requireAdminUser } from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
 import { ReunionesPage } from './reuniones-page.tsx'
-
-interface Reunion {
-  id: number
-  titulo: string
-  fecha: string
-  hora_inicio: string
-  hora_fin: string
-}
-
-async function reunionesDe(request: Request): Promise<Reunion[]> {
-  const response = await backendFetch(request, '/api/reuniones')
-  const data = response.ok ? await response.json() : { reuniones: [] as Reunion[] }
-  return data.reuniones
-}
+import { reunionesDe } from './_shared.ts'
 
 export default createController(adminRoutes.reuniones, {
   actions: {
