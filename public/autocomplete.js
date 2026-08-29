@@ -36,7 +36,7 @@
       municipio: e.municipio,
       cp: e.cp,
       tipo: e.tipo,
-      busqueda: normalizar(`${e.colonia} ${e.municipio} ${e.cp}`),
+      busqueda: normalizarParaIndice(`${e.colonia} ${e.municipio} ${e.cp}`),
     }
   })
 
