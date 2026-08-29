@@ -6,13 +6,13 @@ import { Button } from '../../ui/button.tsx'
 import { etapaDe, PASOS } from './etapa.ts'
 
 interface Adjunto {
-  id: number
+  id: string
   nombre_original: string
   mime: string
   size: number
 }
 interface Detalle {
-  id: number
+  id: string
   folio: string
   origen: string
   nombre: string
@@ -89,7 +89,7 @@ function extensionDe(nombre: string): string {
  * el cuerpo de la respuesta dentro del HTML. Con un PDF eso vuelca bytes
  * binarios en el documento y el visor nunca aparece.
  */
-function VistaAdjunto(handle: Handle<{ participacionId: number; adjunto: Adjunto }>) {
+function VistaAdjunto(handle: Handle<{ participacionId: string; adjunto: Adjunto }>) {
   return () => {
     const { participacionId, adjunto } = handle.props
     const href = adminRoutes.adjunto.href({ id: participacionId, aid: adjunto.id })

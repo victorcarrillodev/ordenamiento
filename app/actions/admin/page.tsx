@@ -12,7 +12,7 @@ export interface AdminPageProps {
     fisicas: number
     resultado: Array<{ estado: string; total: number }>
   }
-  users: Array<{ id: number; email: string; name: string; role: string; created_at: string }>
+  users: Array<{ id: string; email: string; name: string; role: string; created_at: string }>
   ahora: { dia: string; saludo?: string; fecha: string; hora: string }
 }
 

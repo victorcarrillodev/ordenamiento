@@ -21,13 +21,15 @@ function sign(value: string): string {
   return createHmac('sha256', SECRET).update(value).digest('base64url')
 }
 
-export async function createSessionToken(userId: number): Promise<string> {
+export async function createSessionToken(userId: string): Promise<string> {
   const payload = `${userId}.${Date.now()}`
   const sig = sign(payload)
   return `${payload}.${sig}`
 }
 
-export async function verifySessionToken(token: string): Promise<number | null> {
+const UUID_RE_AUTH = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export async function verifySessionToken(token: string): Promise<string | null> {
   const parts = token.split('.')
   if (parts.length !== 3) return null
   const payload = `${parts[0]}.${parts[1]}`
@@ -38,8 +40,8 @@ export async function verifySessionToken(token: string): Promise<number | null> 
   // el tiempo de respuesta (timing attack) al comparar carácter a carácter.
   if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null
 
-  const userId = Number(parts[0])
-  if (!Number.isInteger(userId) || userId <= 0) return null
+  const userId = parts[0]
+  if (!UUID_RE_AUTH.test(userId)) return null
 
   // Expiración: el timestamp (parte 2) no debe exceder MAX_AGE_SECONDS.
   const issued = Number(parts[1])
@@ -74,7 +76,7 @@ export function clearSessionCookie(): string {
 }
 
 export interface SessionUser {
-  id: number
+  id: string
   name: string
   email: string
   role: string
@@ -85,18 +87,18 @@ export async function registerUser(input: {
   name: string
   password: string
   role?: 'admin' | 'user'
-}): Promise<{ id: number }> {
+}): Promise<{ id: string }> {
   const password_hash = await Bun.password.hash(input.password, {
     algorithm: 'argon2id',
     memoryCost: 65536,
     timeCost: 3,
   })
 
-  const rows = await sql<{ id: number }[]>`--sql
+  const rows = await sql<{ id: string }[]>`--sql
     INSERT INTO users (email, name, password_hash, role)
     VALUES (${input.email.toLowerCase()}, ${input.name}, ${password_hash}, ${input.role ?? 'user'})
     ON CONFLICT (email) DO NOTHING
-    RETURNING id
+    RETURNING id::text AS id
   `
 
   if (rows.length === 0) {
@@ -111,9 +113,9 @@ export async function verifyCredentials(
   password: string,
 ): Promise<SessionUser | null> {
   const rows = await sql<
-    Array<{ id: number; name: string; email: string; role: string; password_hash: string }>
+    Array<{ id: string; name: string; email: string; role: string; password_hash: string }>
   >`--sql
-    SELECT id, name, email, role, password_hash FROM users WHERE email = ${email.toLowerCase()}
+    SELECT id::text AS id, name, email, role, password_hash FROM users WHERE email = ${email.toLowerCase()}
   `
 
   if (rows.length === 0) return null
@@ -125,9 +127,9 @@ export async function verifyCredentials(
   return { id: user.id, name: user.name, email: user.email, role: user.role }
 }
 
-export async function getUserById(id: number): Promise<SessionUser | null> {
-  const rows = await sql<Array<{ id: number; name: string; email: string; role: string }>>`--sql
-    SELECT id, name, email, role FROM users WHERE id = ${id}
+export async function getUserById(id: string): Promise<SessionUser | null> {
+  const rows = await sql<Array<{ id: string; name: string; email: string; role: string }>>`--sql
+    SELECT id::text AS id, name, email, role FROM users WHERE id = ${id}
   `
   return rows[0] ?? null
 }

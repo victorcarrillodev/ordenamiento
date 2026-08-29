@@ -7,7 +7,7 @@ import { Button } from '../../ui/button.tsx'
 export interface PoelPageProps {
   user: { name: string; role: string }
   sesiones: Array<{
-    id: number
+    id: string
     categoria: string
     orden: number
     titulo: string

@@ -2,7 +2,7 @@ import { sql } from '../db/pool.ts'
 
 export async function listDocuments(): Promise<
   Array<{
-    id: number
+    id: string
     folio: string
     nombre: string
     descripcion: string
@@ -13,7 +13,7 @@ export async function listDocuments(): Promise<
 > {
   const rows = await sql<
     Array<{
-      id: number
+      id: string
       folio: string
       nombre: string
       descripcion: string
@@ -22,7 +22,7 @@ export async function listDocuments(): Promise<
       created_at: Date
     }>
   >`--sql
-    SELECT id, folio, nombre, descripcion, estado, es_fisico, created_at
+    SELECT id::text AS id, folio, nombre, descripcion, estado, es_fisico, created_at
     FROM documents
     ORDER BY created_at DESC
   `

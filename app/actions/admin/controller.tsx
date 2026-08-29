@@ -27,7 +27,7 @@ interface Stats {
 }
 
 interface AdminUserRow {
-  id: number
+  id: string
   email: string
   name: string
   role: string
@@ -147,14 +147,14 @@ export default createController(adminRoutes, {
         Number.isInteger(Number(rawLimit)) && Number(rawLimit) > 0 ? Number(rawLimit) : 10
       const data = await fetchJsonOr<{
         items: Array<{
-          id: number
+          id: string
           folio: string
           origen: string
           nombre: string
           estado: string
           fecha: string
           notificado_en: string | null
-          adjuntos: Array<{ id: number; nombre_original: string; mime: string; size: number }>
+          adjuntos: Array<{ id: string; nombre_original: string; mime: string; size: number }>
         }>
         total: number
         page: number
@@ -248,7 +248,7 @@ export default createController(adminRoutes, {
       )
       const p = raw
         ? {
-            id: raw.id as number,
+            id: raw.id as string,
             folio: raw.folio as string,
             origen: raw.origen as string,
             nombre: raw.nombre as string,
@@ -273,7 +273,7 @@ export default createController(adminRoutes, {
             notificado_a: (raw.notificado_a as string) ?? '',
             adjuntos: (
               (raw.attachments ?? []) as Array<{
-                id: number
+                id: string
                 nombre_original: string
                 mime: string
                 size: number

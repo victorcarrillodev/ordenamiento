@@ -3,12 +3,14 @@
 -- nativo (tsvector/tsquery en español): basta para localizar una
 -- participación por lo que dice su PDF, sin embeddings ni pgvector.
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- ---------------------------------------------------------------------------
 -- Usuarios (admin crea físicas; usuario crea digitales) – relacional
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS users (
-  id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email         TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   role          TEXT NOT NULL DEFAULT 'user',  -- 'admin' | 'user'
@@ -21,7 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS participations (
-  id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   folio        TEXT NOT NULL UNIQUE,             -- autogenerado SPAGU-DGTPU-E-000X
   origen       TEXT NOT NULL DEFAULT 'digital',  -- 'digital' | 'fisica'
   nombre       TEXT NOT NULL,
@@ -47,7 +49,7 @@ CREATE TABLE IF NOT EXISTS participations (
   -- describen el lugar del aporte; la captura física registra ambos.
   domicilio              TEXT NOT NULL DEFAULT '',
   municipio_participante TEXT NOT NULL DEFAULT '',
-  creado_por   BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  creado_por   UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -75,7 +77,7 @@ ALTER TABLE participations ADD COLUMN IF NOT EXISTS resolucion_motivo    TEXT NO
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS resolucion_direccion TEXT NOT NULL DEFAULT '';
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS resolucion_cita      TEXT NOT NULL DEFAULT '';
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS resolucion_en        TIMESTAMPTZ;
-ALTER TABLE participations ADD COLUMN IF NOT EXISTS resuelto_por         BIGINT REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS resuelto_por         UUID REFERENCES users(id) ON DELETE SET NULL;
 -- Sello del correo de dictamen: mientras sea NULL, la participacion esta
 -- resuelta pero el ciudadano todavia no lo sabe.
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS notificado_en        TIMESTAMPTZ;
@@ -100,8 +102,8 @@ CREATE INDEX IF NOT EXISTS idx_participations_tsv ON participations USING gin (b
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS attachments (
-  id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  participation_id BIGINT NOT NULL REFERENCES participations(id) ON DELETE CASCADE,
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  participation_id UUID NOT NULL REFERENCES participations(id) ON DELETE CASCADE,
   nombre_original  TEXT NOT NULL,
   mime             TEXT NOT NULL,
   size             BIGINT NOT NULL,
@@ -137,24 +139,20 @@ DROP EXTENSION IF EXISTS vector;
 -- Historial de búsquedas (auditoría) – relacional
 -- ---------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS search_history (
-  id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id    BIGINT REFERENCES users(id) ON DELETE SET NULL,
-  query      TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+-- (Tabla de historial de búsquedas eliminada en H3 2026-08-28: era tabla muerta, sin
+--  lecturas/escrituras en el código; el endpoint que la llenaba se podó en la auditoría previa.)
 
 -- ---------------------------------------------------------------------------
 -- Reuniones (bitácora administrativa) — relacional
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS reuniones (
-  id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   titulo       TEXT NOT NULL,
   fecha        DATE NOT NULL,
   hora_inicio  TEXT NOT NULL DEFAULT '',
   hora_fin     TEXT NOT NULL DEFAULT '',
-  creado_por   BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  creado_por   UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -163,11 +161,11 @@ CREATE TABLE IF NOT EXISTS reuniones (
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS avisos (
-  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   titulo      TEXT NOT NULL,
   descripcion TEXT NOT NULL DEFAULT '',
   activo      BOOLEAN NOT NULL DEFAULT true,
-  creado_por  BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  creado_por  UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -177,7 +175,7 @@ CREATE TABLE IF NOT EXISTS avisos (
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS poel_sesiones (
-  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   categoria   TEXT NOT NULL DEFAULT '',
   orden       INT NOT NULL DEFAULT 0,
   titulo      TEXT NOT NULL,
@@ -195,7 +193,7 @@ CREATE TABLE IF NOT EXISTS poel_sesiones (
 CREATE TABLE IF NOT EXISTS site_customizations (
   id          INT PRIMARY KEY DEFAULT 1,
   config      JSONB NOT NULL DEFAULT '{}'::jsonb,
-  updated_by  BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  updated_by  UUID REFERENCES users(id) ON DELETE SET NULL,
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -204,8 +202,8 @@ CREATE TABLE IF NOT EXISTS site_customizations (
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS customization_audit_logs (
-  id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id          BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id          UUID REFERENCES users(id) ON DELETE SET NULL,
   user_name        TEXT NOT NULL,
   user_email       TEXT NOT NULL,
   motivo           TEXT NOT NULL DEFAULT '',

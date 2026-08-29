@@ -29,7 +29,7 @@ export default createController(adminRoutes.reuniones, {
       const intent = String(formData.get('intent') ?? 'crear')
 
       if (intent === 'eliminar') {
-        const id = Number(formData.get('id'))
+        const id = String(formData.get('id') ?? '').trim()
         const response = await backendFetch(context.request, `/api/reuniones/${id}`, {
           method: 'DELETE',
         })

@@ -28,11 +28,11 @@ export interface ParticipationInput {
   fuente?: string
   genero?: string
   tematica?: string
-  creadoPor?: number
+  creadoPor?: string
 }
 
 export interface CreateResult {
-  participationId: number
+  participationId: string
   folio: string
 }
 
@@ -46,7 +46,7 @@ export async function createParticipation(
   const input = isDb ? (inputOrFolio as ParticipationInput) : (dbOrInput as ParticipationInput)
   const folio = isDb ? (maybeFolio as string) : (inputOrFolio as string)
 
-  const rows = await db<{ id: number }[]>`--sql
+  const rows = await db<{ id: string }[]>`--sql
     INSERT INTO participations (
       folio, origen, nombre, correo, calle, numero, colonia, municipio,
       codigo_postal, direccion_origen, domicilio, municipio_participante,
@@ -106,6 +106,22 @@ export interface ListResult {
   limit: number
 }
 
+/**
+ * H4 — Cache para count(*) de paginación (TTL 30s).
+ * Decisión (2026-08-28): el COUNT(*) con mismos filtros se repite en cada
+ * cambio de página del panel admin (limit 10/100). Sin cache, cada request
+ * hace 2 queries (COUNT + SELECT). Con Map en memoria + TTL 30s evitamos
+ * saturar Postgres bajo navegación concurrente, coherente con el rate-limiter
+ * en auth.ts (memoria local, sin Redis). No se cachean items, solo total.
+ * Invalidación por TTL: eventual consistencia ≤30s (nueva participación
+ * visible en siguiente ventana). No se sube el límite del frontend.
+ */
+const COUNT_TTL_MS = 30_000
+const countCache = new Map<string, { total: number; expires: number }>()
+function countCacheKey(whereSql: string, params: Array<string | number>): string {
+  return `${whereSql}|${JSON.stringify(params)}`
+}
+
 export async function listParticipations(filters: ListFilters): Promise<ListResult> {
   const where: string[] = []
   const params: Array<string | number> = []
@@ -134,11 +150,19 @@ export async function listParticipations(filters: ListFilters): Promise<ListResu
 
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : ''
 
-  const countRows = await sql.unsafe<Array<{ n: string }>>(
-    `SELECT count(*)::text AS n FROM participations p ${whereSql}`,
-    params,
-  )
-  const total = Number(countRows[0].n)
+  const cacheKey = countCacheKey(whereSql, params)
+  const cached = countCache.get(cacheKey)
+  let total: number
+  if (cached && cached.expires > Date.now()) {
+    total = cached.total
+  } else {
+    const countRows = await sql.unsafe<Array<{ n: string }>>(
+      `SELECT count(*)::text AS n FROM participations p ${whereSql}`,
+      params,
+    )
+    total = Number(countRows[0].n)
+    countCache.set(cacheKey, { total, expires: Date.now() + COUNT_TTL_MS })
+  }
 
   const offset = (filters.page - 1) * filters.limit
   const limitParams = [...params, filters.limit, offset]
@@ -173,10 +197,16 @@ export async function listParticipations(filters: ListFilters): Promise<ListResu
   return { items, total, page: filters.page, limit: filters.limit }
 }
 
-export async function getParticipation(id: number): Promise<Record<string, unknown> | null> {
+export async function getParticipation(id: string): Promise<Record<string, unknown> | null> {
   const rows = await sql.unsafe<Array<Record<string, unknown>>>(
     `--sql
-      SELECT * FROM participations WHERE id = $1
+      SELECT
+        id, folio, origen, nombre, correo, calle, numero, colonia, municipio,
+        domicilio, municipio_participante, institucion, ocupacion, latitud, longitud,
+        observacion, estado, fuente, genero, tematica, created_at,
+        resolucion_motivo, resolucion_direccion, resolucion_cita, resolucion_en,
+        resuelto_por, notificado_en, notificado_a, creado_por, updated_at
+      FROM participations WHERE id = $1
     `,
     [id],
   )
@@ -210,15 +240,15 @@ export interface ResolucionInput {
   motivo: string
   direccion: string
   cita: string
-  resueltoPor?: number
+  resueltoPor?: string
 }
 
 /**
  * Registra el dictamen del admin. No envía nada: notificar es un paso aparte
  * (`marcarNotificada`) para que un fallo de SMTP no deje el dictamen perdido.
  */
-export async function registrarResolucion(id: number, input: ResolucionInput): Promise<boolean> {
-  const rows = await sql<{ id: number }[]>`--sql
+export async function registrarResolucion(id: string, input: ResolucionInput): Promise<boolean> {
+  const rows = await sql<{ id: string }[]>`--sql
     UPDATE participations SET
       estado               = ${input.estado},
       resolucion_motivo    = ${input.motivo},
@@ -234,7 +264,7 @@ export async function registrarResolucion(id: number, input: ResolucionInput): P
 }
 
 /** Sella la participación como notificada al ciudadano. */
-export async function marcarNotificada(id: number, para: string): Promise<void> {
+export async function marcarNotificada(id: string, para: string): Promise<void> {
   await sql`--sql
     UPDATE participations
     SET notificado_en = now(), notificado_a = ${para}, updated_at = now()
@@ -242,8 +272,8 @@ export async function marcarNotificada(id: number, para: string): Promise<void> 
   `
 }
 
-export async function deleteParticipation(id: number): Promise<boolean> {
-  const rows = await sql<{ id: number }[]>`--sql
+export async function deleteParticipation(id: string): Promise<boolean> {
+  const rows = await sql<{ id: string }[]>`--sql
     DELETE FROM participations WHERE id = ${id} RETURNING id
   `
   return rows.length > 0

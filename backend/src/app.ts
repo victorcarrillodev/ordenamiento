@@ -111,6 +111,15 @@ function safePositiveInt(v: string | null, fallback: number): number {
   return Number.isInteger(n) && n > 0 ? n : fallback
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isUuid(v: string): boolean {
+  return UUID_RE.test(v)
+}
+
+function requireUuidParam(id: string): Response | null {
+  return isUuid(id) ? null : json({ error: 'id inválido' }, 400)
+}
+
 /**
  * Router manual del backend — DECISIÓN A2 (2026-08-28, Arquitecto)
  *
@@ -267,7 +276,9 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (detailMatch) {
     const authError = requireAdmin()
     if (authError) return authError
-    const participation = await getParticipation(Number(detailMatch.id))
+    const err = requireUuidParam(detailMatch.id)
+    if (err) return err
+    const participation = await getParticipation(detailMatch.id)
     if (!participation) return json({ error: 'No encontrado' }, 404)
     return json(participation)
   }
@@ -284,8 +295,9 @@ export async function handleRequest(request: Request): Promise<Response> {
     const authError = requireAdmin()
     if (authError) return authError
 
-    const id = Number(resolucionMatch.id)
-    if (!Number.isInteger(id) || id <= 0) return json({ error: 'id inválido' }, 400)
+    const id = resolucionMatch.id
+    const err = requireUuidParam(id)
+    if (err) return err
 
     const body = (await request.json()) as {
       estado?: string
@@ -340,7 +352,9 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (deleteMatch) {
     const authError = requireAdmin()
     if (authError) return authError
-    if (!(await deleteParticipation(Number(deleteMatch.id)))) {
+    const err = requireUuidParam(deleteMatch.id)
+    if (err) return err
+    if (!(await deleteParticipation(deleteMatch.id))) {
       return json({ error: 'No encontrado' }, 404)
     }
     return json({ ok: true })
@@ -353,12 +367,16 @@ export async function handleRequest(request: Request): Promise<Response> {
     // Descarga el archivo adjunto de un participante: solo admin.
     const authError = requireAdmin()
     if (authError) return authError
+    const errId = requireUuidParam(attachMatch.id)
+    if (errId) return errId
+    const errAid = requireUuidParam(attachMatch.aid)
+    if (errAid) return errAid
     const rows = await sql<
       Array<{ ruta_local: string; nombre_original: string; mime: string }>
     >`--sql
       SELECT ruta_local, nombre_original, mime
       FROM attachments
-      WHERE id = ${Number(attachMatch.aid)} AND participation_id = ${Number(attachMatch.id)}
+      WHERE id = ${attachMatch.aid} AND participation_id = ${attachMatch.id}
     `
     if (rows.length === 0) {
       return json({ error: 'Adjunto no encontrado' }, 404)
@@ -404,9 +422,11 @@ export async function handleRequest(request: Request): Promise<Response> {
     // Exporta los datos completos (PII) de un participante a Word: solo admin.
     const authError = requireAdmin()
     if (authError) return authError
+    const err = requireUuidParam(wordMatch.id)
+    if (err) return err
     const rows = await sql<
       Array<{
-        id: number
+        id: string
         folio: string
         origen: string
         nombre: string
@@ -429,11 +449,11 @@ export async function handleRequest(request: Request): Promise<Response> {
         created_at: Date
       }>
     >`
-      SELECT id, folio, origen, nombre, correo, calle, numero, colonia, municipio,
+      SELECT id::text AS id, folio, origen, nombre, correo, calle, numero, colonia, municipio,
              domicilio, municipio_participante,
              institucion, ocupacion, latitud, longitud, observacion, estado,
              fuente, genero, tematica, created_at
-      FROM participations WHERE id = ${Number(wordMatch.id)}
+      FROM participations WHERE id = ${wordMatch.id}
     `
     if (rows.length === 0) return json({ error: 'No encontrado' }, 404)
     const buffer = await participationDocx(rows[0])
@@ -450,8 +470,10 @@ export async function handleRequest(request: Request): Promise<Response> {
     // Envía los datos (PII) de un participante por correo: solo admin.
     const authError = requireAdmin()
     if (authError) return authError
-    const body = (await request.json()) as { id?: number; para?: string }
+    const body = (await request.json()) as { id?: string; para?: string }
     if (!body.id || !body.para) return json({ error: 'Faltan datos: id, para' }, 400)
+    const err = requireUuidParam(String(body.id))
+    if (err) return err
     if (/[\r\n]/.test(String(body.para)) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.para).trim()) || /[<>]/.test(String(body.para))) {
       return json({ error: 'Correo destino inválido' }, 400)
     }
@@ -459,7 +481,7 @@ export async function handleRequest(request: Request): Promise<Response> {
       return json({ error: 'Correo no configurado: define SMTP_HOST, SMTP_USER y SMTP_PASS' }, 503)
     }
     try {
-      const r = await enviarParticipacion(Number(body.id), body.para)
+      const r = await enviarParticipacion(String(body.id), body.para)
       return json({ ok: true, ...r })
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -472,8 +494,10 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (method === 'POST' && pathname === '/api/avisos/enviar') {
     const authError = requireAdmin()
     if (authError) return authError
-    const body = (await request.json()) as { id?: number; para?: string }
+    const body = (await request.json()) as { id?: string; para?: string }
     if (!body.id || !body.para) return json({ error: 'Faltan datos: id, para' }, 400)
+    const err = requireUuidParam(String(body.id))
+    if (err) return err
     if (/[\r\n]/.test(String(body.para)) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.para).trim()) || /[<>]/.test(String(body.para))) {
       return json({ error: 'Correo destino inválido' }, 400)
     }
@@ -481,7 +505,7 @@ export async function handleRequest(request: Request): Promise<Response> {
       return json({ error: 'Correo no configurado: define SMTP_HOST, SMTP_USER y SMTP_PASS' }, 503)
     }
     try {
-      const r = await enviarAviso(Number(body.id), body.para)
+      const r = await enviarAviso(String(body.id), body.para)
       return json({ ok: true, ...r })
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -546,7 +570,9 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (reunionDeleteMatch) {
     const authError = requireAdmin()
     if (authError) return authError
-    if (!(await deleteReunion(Number(reunionDeleteMatch.id)))) {
+    const err = requireUuidParam(reunionDeleteMatch.id)
+    if (err) return err
+    if (!(await deleteReunion(reunionDeleteMatch.id))) {
       return json({ error: 'No encontrado' }, 404)
     }
     return json({ ok: true })
@@ -573,9 +599,9 @@ export async function handleRequest(request: Request): Promise<Response> {
     const authError = requireAdmin()
     if (authError) return authError
     const users = await sql<
-      Array<{ id: number; email: string; name: string; role: string; created_at: string }>
+      Array<{ id: string; email: string; name: string; role: string; created_at: string }>
     >`
-      SELECT id, email, name, role, created_at::text AS created_at FROM users ORDER BY id
+      SELECT id::text AS id, email, name, role, created_at::text AS created_at FROM users ORDER BY id
     `
     return json({ users })
   }
@@ -667,7 +693,9 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (avisoDeleteMatch) {
     const authError = requireAdmin()
     if (authError) return authError
-    if (!(await deleteAviso(Number(avisoDeleteMatch.id))))
+    const err = requireUuidParam(avisoDeleteMatch.id)
+    if (err) return err
+    if (!(await deleteAviso(avisoDeleteMatch.id)))
       return json({ error: 'No encontrado' }, 404)
     return json({ ok: true })
   }
@@ -706,7 +734,9 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (poelDeleteMatch) {
     const authError = requireAdmin()
     if (authError) return authError
-    if (!(await deletePoelSesion(Number(poelDeleteMatch.id)))) {
+    const err = requireUuidParam(poelDeleteMatch.id)
+    if (err) return err
+    if (!(await deletePoelSesion(poelDeleteMatch.id))) {
       return json({ error: 'No encontrado' }, 404)
     }
     return json({ ok: true })
@@ -754,9 +784,11 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (restoreMatch) {
     const authError = requireAdmin()
     if (authError) return authError
+    const err = requireUuidParam(restoreMatch.id)
+    if (err) return err
     const body = (await request.json().catch(() => ({}))) as { motivo?: string }
     const restored = await restoreAuditSnapshot(
-      Number(restoreMatch.id),
+      restoreMatch.id,
       {
         id: user!.id,
         name: user!.name,

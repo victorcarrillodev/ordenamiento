@@ -61,7 +61,7 @@ export default createController(adminRoutes.personalizacion, {
 
       // ── Acción: Restaurar snapshot desde auditoría ──
       if (actionType === 'restore') {
-        const logId = Number(formData.get('log_id'))
+        const logId = String(formData.get('log_id') ?? '').trim()
         if (!logId) {
           return redirect(
             `${adminRoutes.personalizacion.index.href()}?tab=historial&err=ID+inválido`,

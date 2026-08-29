@@ -36,8 +36,8 @@ export async function seedRootAdmin(): Promise<void> {
     )
   }
 
-  const existing = await sql<{ id: number }[]>`
-    SELECT id FROM users WHERE email = ${ROOT_EMAIL}
+  const existing = await sql<{ id: string }[]>`
+    SELECT id::text AS id FROM users WHERE email = ${ROOT_EMAIL}
   `
   if (existing.length > 0) {
     // El seed es insert-only a propósito: no pisa la contraseña de una cuenta

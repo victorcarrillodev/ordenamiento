@@ -31,7 +31,6 @@ marca `needsOcr`.
   del formulario, estado
 - `attachments` – archivos subidos (PDF, DWG, JPG, SHX...) y, para los PDF
   con capa de texto, ese texto en `texto_extraido` + índice `texto_tsv`
-- `search_history` – auditoría
 
 ## Arranque
 

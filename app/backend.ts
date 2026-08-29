@@ -13,7 +13,7 @@ export const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:5920'
 export interface LoginResponse {
   ok: boolean
   status: number
-  user?: { id: number; name: string; role: string } | null
+  user?: { id: string; name: string; role: string } | null
   error?: string
   setCookie?: string
 }
@@ -30,7 +30,7 @@ export async function loginBackend(email: string, password: string): Promise<Log
     })
 
     const data = (await response.json().catch(() => ({}))) as {
-      user?: { id: number; name: string; role: string }
+      user?: { id: string; name: string; role: string }
       error?: string
     }
 
@@ -64,7 +64,7 @@ export async function logoutBackend(request: Request): Promise<string | undefine
 }
 
 export interface AdminUser {
-  id: number
+  id: string
   name: string
   role: string
 }

@@ -188,7 +188,7 @@ export async function getCustomizations(): Promise<ThemeConfig> {
 
 export interface SaveCustomizationParams {
   config: Partial<ThemeConfig>
-  user: { id: number; name: string; email: string; role?: string }
+  user: { id: string; name: string; email: string; role?: string }
   motivo: string
   section?: 'usuario' | 'panel' | 'general'
 }
@@ -230,8 +230,8 @@ export async function saveCustomizations(params: SaveCustomizationParams): Promi
 }
 
 export interface AuditLogEntry {
-  id: number
-  user_id: number | null
+  id: string
+  user_id: string | null
   user_name: string
   user_email: string
   motivo: string
@@ -245,8 +245,8 @@ export async function listAuditLogs(limit = 50): Promise<AuditLogEntry[]> {
   try {
     const rows = await sql<
       Array<{
-        id: number
-        user_id: number | null
+        id: string
+        user_id: string | null
         user_name: string
         user_email: string
         motivo: string
@@ -257,7 +257,7 @@ export async function listAuditLogs(limit = 50): Promise<AuditLogEntry[]> {
         created_at: string
       }>
     >`
-      SELECT id, user_id, user_name, user_email, motivo, section, changes_summary, snapshot, created_at::text
+      SELECT id::text AS id, user_id::text AS user_id, user_name, user_email, motivo, section, changes_summary, snapshot, created_at::text
       FROM customization_audit_logs
       ORDER BY created_at DESC
       LIMIT ${limit}
@@ -273,8 +273,8 @@ export async function listAuditLogs(limit = 50): Promise<AuditLogEntry[]> {
 }
 
 export async function restoreAuditSnapshot(
-  logId: number,
-  user: { id: number; name: string; email: string },
+  logId: string,
+  user: { id: string; name: string; email: string },
   motivo = 'Restauración de versión anterior desde auditoría',
 ): Promise<ThemeConfig | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- columna JSONB, forma dinámica

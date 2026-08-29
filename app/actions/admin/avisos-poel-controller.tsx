@@ -11,7 +11,7 @@ import { PoelPage } from './poel-page.tsx'
 import { reunionesDe } from './_shared.ts'
 
 interface SesionAvisos {
-  id: number
+  id: string
   categoria: string
   titulo: string
   fecha?: string
@@ -19,7 +19,7 @@ interface SesionAvisos {
 }
 
 interface SesionPoel {
-  id: number
+  id: string
   categoria: string
   orden: number
   titulo: string
@@ -32,7 +32,7 @@ interface SesionPoel {
 async function avisosDe(request: Request) {
   return (
     await fetchJsonOr<{
-      avisos: { id: number; titulo: string; descripcion: string; activo: boolean; fecha?: string }[]
+      avisos: { id: string; titulo: string; descripcion: string; activo: boolean; fecha?: string }[]
     }>(request, '/api/avisos', { avisos: [] })
   ).avisos
 }
@@ -85,11 +85,11 @@ export const avisosController = createController(adminRoutes.avisos, {
       const intent = String(formData.get('intent') ?? 'crear')
 
       if (intent === 'eliminar') {
-        await backendFetch(context.request, `/api/avisos/${Number(formData.get('id'))}`, {
+        await backendFetch(context.request, `/api/avisos/${String(formData.get('id') ?? '')}`, {
           method: 'DELETE',
         })
       } else if (intent === 'enviar_correo') {
-        const id = Number(formData.get('id'))
+        const id = String(formData.get('id') ?? '').trim()
         const para = String(formData.get('para') ?? '').trim()
         if (id && para) {
           await backendFetch(context.request, '/api/avisos/enviar', {
@@ -141,7 +141,7 @@ export const poelController = createController(adminRoutes.poel, {
       const intent = String(formData.get('intent') ?? 'crear')
 
       if (intent === 'eliminar') {
-        await backendFetch(context.request, `/api/poel/${Number(formData.get('id'))}`, {
+        await backendFetch(context.request, `/api/poel/${String(formData.get('id') ?? '')}`, {
           method: 'DELETE',
         })
       } else {

@@ -71,7 +71,7 @@ interface ParticipacionCorreo {
 }
 
 interface AvisoCorreo {
-  id: number
+  id: string
   titulo: string
   descripcion: string
   activo: boolean
@@ -337,7 +337,7 @@ function renderPlantillaBase({
  * Envía el Acuse de Recibo Oficial formal al ciudadano (modalidad digital o física).
  */
 export async function enviarAcuseReciboParticipacion(
-  participationId: number,
+  participationId: string,
   para: string,
 ): Promise<{ enviado: true; adjuntos: number; folio: string }> {
   if (!mailConfigurado()) {
@@ -466,7 +466,7 @@ interface ResolucionCorreo extends ParticipacionCorreo {
  * Es distinto del acuse: el acuse confirma que llegó, esto le dice en qué acabó.
  */
 export async function enviarResolucionParticipacion(
-  participationId: number,
+  participationId: string,
   para: string,
 ): Promise<{ enviado: true; folio: string; estado: string }> {
   if (!mailConfigurado()) {
@@ -575,7 +575,7 @@ export async function enviarResolucionParticipacion(
  * Envía por correo la participación (función estándar de reenvío).
  */
 export async function enviarParticipacion(
-  participationId: number,
+  participationId: string,
   para: string,
 ): Promise<{ enviado: true; adjuntos: number }> {
   const res = await enviarAcuseReciboParticipacion(participationId, para)
@@ -585,7 +585,7 @@ export async function enviarParticipacion(
 /**
  * Envía por correo un Aviso institucional oficial.
  */
-export async function enviarAviso(avisoId: number, para: string): Promise<{ enviado: true }> {
+export async function enviarAviso(avisoId: string, para: string): Promise<{ enviado: true }> {
   if (!mailConfigurado()) {
     throw new Error('SMTP_NO_CONFIGURADO')
   }

@@ -5,14 +5,14 @@ import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { ETAPAS, infoEtapa, INFO_ETAPA, type Etapa } from './etapa.ts'
 
 interface Adjunto {
-  id: number
+  id: string
   nombre_original: string
   mime: string
   size: number
 }
 
 interface ParticipationRow {
-  id: number
+  id: string
   folio: string
   origen: string
   nombre: string

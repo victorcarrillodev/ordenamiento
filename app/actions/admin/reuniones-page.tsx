@@ -7,7 +7,7 @@ import { Button } from '../../ui/button.tsx'
 export interface ReunionesPageProps {
   user: { name: string; role: string }
   reuniones: Array<{
-    id: number
+    id: string
     titulo: string
     fecha: string
     hora_inicio: string | null

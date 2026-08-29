@@ -13,15 +13,15 @@ export const EXPORTABLE = {
     sheet: 'Reuniones',
     fetch: () =>
       sql<
-        Array<{ id: number; titulo: string; fecha: string; hora_inicio: string; hora_fin: string }>
-      >`SELECT id, titulo, fecha::text AS fecha, hora_inicio, hora_fin FROM reuniones ORDER BY fecha DESC, id DESC`,
+        Array<{ id: string; titulo: string; fecha: string; hora_inicio: string; hora_fin: string }>
+      >`SELECT id::text AS id, titulo, fecha::text AS fecha, hora_inicio, hora_fin FROM reuniones ORDER BY fecha DESC, id DESC`,
   },
   participaciones: {
     sheet: 'Participaciones',
     fetch: () =>
       sql<
         Array<{
-          id: number
+          id: string
           folio: string
           origen: string
           nombre: string
@@ -29,15 +29,15 @@ export const EXPORTABLE = {
           estado: string
           created_at: string
         }>
-      >`SELECT id, folio, origen, nombre, correo, estado, created_at::text AS created_at
+      >`SELECT id::text AS id, folio, origen, nombre, correo, estado, created_at::text AS created_at
          FROM participations ORDER BY id DESC`,
   },
   usuarios: {
     sheet: 'Usuarios',
     fetch: () =>
       sql<
-        Array<{ id: number; email: string; name: string; role: string; created_at: string }>
-      >`SELECT id, email, name, role, created_at::text AS created_at FROM users ORDER BY id`,
+        Array<{ id: string; email: string; name: string; role: string; created_at: string }>
+      >`SELECT id::text AS id, email, name, role, created_at::text AS created_at FROM users ORDER BY id`,
   },
 } as const
 

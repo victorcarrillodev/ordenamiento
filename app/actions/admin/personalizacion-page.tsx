@@ -5,7 +5,7 @@ import { Button } from '../../ui/button.tsx'
 import { HERO_IMAGEN_POR_DEFECTO, type ThemeData } from '../../ui/civic-horizon.ts'
 
 export interface AuditLogEntry {
-  id: number
+  id: string
   user_name: string
   user_email: string
   motivo: string
