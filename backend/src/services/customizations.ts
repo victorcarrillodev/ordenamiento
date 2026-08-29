@@ -153,10 +153,14 @@ const BRANDING_UPLOAD_DIR = join(process.cwd(), 'uploads', 'branding')
 // config JSONB de site_customizations); un tipo recursivo preciso aquí no
 // aportaría seguridad real sobre datos que ya vienen sin tipar desde la BD.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function deepMerge(target: any, source: any): any {
+export function deepMerge(target: any, source: any): any {
   if (!source || typeof source !== 'object') return target
   const output = { ...target }
   for (const key of Object.keys(source)) {
+    // Protección contra prototype pollution: nunca permitir sobrescribir
+    // __proto__/constructor/prototype desde un payload no confiable (el admin
+    // puede guardar JSON arbitrario vía saveCustomizations).
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue
     if (
       source[key] &&
       typeof source[key] === 'object' &&

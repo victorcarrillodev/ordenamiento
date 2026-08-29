@@ -254,6 +254,20 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (estado && !isEstado(estado)) return json({ error: 'estado inválido' }, 400)
     if (etapa && !isEtapa(etapa)) return json({ error: 'etapa inválida' }, 400)
 
+    // Fechas: solo se aceptan ISO 8601 válidos; un valor mal formado devuelve 400
+    // en vez de un 500 del motor al castear a timestamptz.
+    const desdeRaw = url.searchParams.get('desde')
+    const hastaRaw = url.searchParams.get('hasta')
+    const validarFecha = (v: string | null): string | undefined => {
+      if (!v) return undefined
+      const t = Date.parse(v)
+      return Number.isNaN(t) ? (undefined as unknown as string) : v
+    }
+    const desde = validarFecha(desdeRaw)
+    const hasta = validarFecha(hastaRaw)
+    if (desdeRaw && desde === undefined) return json({ error: 'desde inválido (ISO 8601)' }, 400)
+    if (hastaRaw && hasta === undefined) return json({ error: 'hasta inválido (ISO 8601)' }, 400)
+
     const result = await listParticipations({
       origen: (origen as Origen | undefined) ?? undefined,
       estado: (estado as Estado | undefined) ?? undefined,
@@ -261,8 +275,8 @@ export async function handleRequest(request: Request): Promise<Response> {
       folio: url.searchParams.get('folio') ?? undefined,
       nombre: url.searchParams.get('nombre') ?? undefined,
       colonia: url.searchParams.get('colonia') ?? undefined,
-      desde: url.searchParams.get('desde') ?? undefined,
-      hasta: url.searchParams.get('hasta') ?? undefined,
+      desde: desde,
+      hasta: hasta,
       q: url.searchParams.get('q') ?? undefined,
       page: safePositiveInt(url.searchParams.get('page'), 1),
       limit: safePositiveInt(url.searchParams.get('limit'), 10),

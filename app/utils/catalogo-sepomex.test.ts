@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { indexar, normalizar, parseSepomex } from './catalogo-sepomex.ts'
+import { normalizar, parseSepomex } from './catalogo-sepomex.ts'
 
 describe('catalogo-sepomex', () => {
   it('normalizar elimina acentos y pasa a minúsculas', () => {

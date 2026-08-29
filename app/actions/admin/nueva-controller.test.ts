@@ -44,10 +44,10 @@ function formularioBase() {
   fd.set('nombre', 'Ciudadano Físico')
   fd.set('correo', 'fisico@ejemplo.com')
   fd.set('domicilio', 'Av. Juárez 100, Centro')
-  fd.set('municipio_participante', 'Guadalajara')
+  fd.set('municipio_participante', 'San Pedro Tlaquepaque')
   fd.set('calle', 'Prolongación Colón 500')
   fd.set('colonia', 'Santa Anita')
-  fd.set('municipio', 'Tlajomulco de Zúñiga')
+  fd.set('municipio', 'San Pedro Tlaquepaque')
   fd.set('cp', '45640')
   fd.set('observacion', 'Aporte capturado en módulo físico')
   return fd
@@ -76,8 +76,8 @@ describe('Admin · nueva participación', () => {
       expect(response?.status).toBe(302)
 
       const body = captured.body as FormData
-      expect(body.get('municipio')).toBe('Tlajomulco de Zúñiga') // el del aporte
-      expect(body.get('municipio_participante')).toBe('Guadalajara') // el de quien participa
+      expect(body.get('municipio')).toBe('San Pedro Tlaquepaque') // el del aporte
+      expect(body.get('municipio_participante')).toBe('San Pedro Tlaquepaque') // el de quien participa
       expect(body.get('domicilio')).toBe('Av. Juárez 100, Centro')
     })
 
@@ -94,7 +94,7 @@ describe('Admin · nueva participación', () => {
       // cubrir la cadena vacía o nunca se alcanza.
       const body = captured.body as FormData
       expect(body.get('municipio')).toBe('San Pedro Tlaquepaque')
-      expect(body.get('municipio_participante')).toBe('Guadalajara')
+      expect(body.get('municipio_participante')).toBe('San Pedro Tlaquepaque')
     })
 
     it('omite el municipio del participante cuando no se capturó', async () => {
@@ -108,7 +108,7 @@ describe('Admin · nueva participación', () => {
 
       const body = captured.body as FormData
       expect(body.has('municipio_participante')).toBe(false)
-      expect(body.get('municipio')).toBe('Tlajomulco de Zúñiga')
+      expect(body.get('municipio')).toBe('San Pedro Tlaquepaque')
     })
   })
 

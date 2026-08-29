@@ -58,8 +58,9 @@ export function parseSepomex(
     }
 
     // Restringe a un municipio concreto cuando se indica (ej. San Pedro Tlaquepaque).
-    // Esto mantiene el bundle del navegador pequeño y cumple el alcance geográfico.
-    if (municipioFiltroNorm && normalizar(municipio) !== municipioFiltroNorm) {
+    // Se usa includes (no igualdad exacta) porque SEPOMEX a veces publica el
+    // municipio como "Tlaquepaque" sin el prefijo "San Pedro".
+    if (municipioFiltroNorm && !normalizar(municipio).includes(municipioFiltroNorm)) {
       continue
     }
 

@@ -122,6 +122,14 @@ function countCacheKey(whereSql: string, params: Array<string | number>): string
   return `${whereSql}|${JSON.stringify(params)}`
 }
 
+/**
+ * Escapa caracteres comodín de LIKE (% y _) para evitar que el usuario fuerce un
+ * full scan o patrones inesperados. El backslash se usa como carácter de escape.
+ */
+function escapeLike(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_')
+}
+
 export async function listParticipations(filters: ListFilters): Promise<ListResult> {
   const where: string[] = []
   const params: Array<string | number> = []
@@ -129,6 +137,10 @@ export async function listParticipations(filters: ListFilters): Promise<ListResu
   const push = (clause: string, value: string | number) => {
     params.push(value)
     where.push(clause.replace('?', `$${params.length}`))
+  }
+
+  const like = (column: string, raw: string) => {
+    push(`${column} ILIKE ? ESCAPE '\\'`, `%${escapeLike(raw)}%`)
   }
 
   if (filters.origen) push('p.origen = ?', filters.origen)
@@ -142,9 +154,19 @@ export async function listParticipations(filters: ListFilters): Promise<ListResu
   } else if (filters.etapa === 'Notificada') {
     where.push('p.notificado_en IS NOT NULL')
   }
-  if (filters.folio) push('p.folio ILIKE ?', `%${filters.folio}%`)
-  if (filters.nombre) push('p.nombre ILIKE ?', `%${filters.nombre}%`)
-  if (filters.colonia) push('p.colonia ILIKE ?', `%${filters.colonia}%`)
+  // Búsqueda general (q) sobre los campos más relevantes. Es un OR de ILIKE con
+  // escape de comodines para no romper ni permitir patrones arbitrarios.
+  if (filters.q && filters.q.trim().length >= 2) {
+    const q = filters.q.trim()
+    where.push(
+      `(p.nombre ILIKE $${params.length + 1} ESCAPE '\\' OR p.colonia ILIKE $${params.length + 2} ESCAPE '\\' OR p.calle ILIKE $${params.length + 3} ESCAPE '\\' OR p.folio ILIKE $${params.length + 4} ESCAPE '\\' OR p.observacion ILIKE $${params.length + 5} ESCAPE '\\')`,
+    )
+    const pat = `%${escapeLike(q)}%`
+    params.push(pat, pat, pat, pat, pat)
+  }
+  if (filters.folio) like('p.folio', filters.folio)
+  if (filters.nombre) like('p.nombre', filters.nombre)
+  if (filters.colonia) like('p.colonia', filters.colonia)
   if (filters.desde) push('p.created_at >= ?::timestamptz', filters.desde)
   if (filters.hasta) push('p.created_at <= ?::timestamptz', filters.hasta)
 

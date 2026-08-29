@@ -15,6 +15,7 @@ import { createController } from 'remix/router'
 import { BACKEND_URL } from '../../backend.ts'
 import { routes } from '../../routes.ts'
 import { MAX_FILE_BYTES, MAX_FILES, MAX_TOTAL_BYTES } from '../../utils/uploads.ts'
+import { sanitizeFilename } from '../../../backend/src/services/upload-guard.ts'
 import { ParticipationPage } from './page.tsx'
 import {
   errorMap,
@@ -43,7 +44,8 @@ export default createController(routes.participation, {
 
       async function uploadHandler(fileUpload: FileUpload) {
         if (fileUpload.fieldName === 'archivos') {
-          const key = `${Date.now()}-${randomBytes(4).toString('hex')}-${fileUpload.name}`
+          const safeName = sanitizeFilename(fileUpload.name)
+          const key = `${Date.now()}-${randomBytes(4).toString('hex')}-${safeName}`
           storedKeys.push(key)
           const storageFile = await tmpStorage.put(key, fileUpload)
           return storageFile ? await storageFile.toFile() : undefined
