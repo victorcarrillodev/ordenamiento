@@ -1598,3 +1598,241 @@ a.cal__mas:hover {
   border-color: var(--a-border-strong);
   box-shadow: var(--a-shadow);
 }
+
+/* ---------------------------------------------------------------------------
+   Mini previsualizador del portal (Personalización) — maqueta en vivo, no un
+   iframe: el iframe solo mostraría lo ya guardado, no lo que se está editando.
+   --------------------------------------------------------------------------- */
+.mp-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.mp-modal.mp-modal--abierto {
+  display: flex;
+}
+.mp-modal__box {
+  background: #fff;
+  width: 95%;
+  max-width: 900px;
+  height: 85vh;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+.mp-modal__head {
+  background: var(--a-dark);
+  color: #fff;
+  padding: 14px 20px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 14px;
+  row-gap: 2px;
+  align-items: center;
+}
+.mp-modal__title {
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mp-modal__hint {
+  grid-column: 1;
+  margin: 0;
+  font-size: 11.5px;
+  color: #cbd5e1;
+}
+.mp-modal__close {
+  grid-row: 1 / span 2;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+.mp-modal__close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.mp-modal__body {
+  flex: 1;
+  overflow-y: auto;
+  background: #eef1f6;
+  padding: 18px;
+}
+
+/* La maqueta en sí: cada bloque replica una sección real del portal y trae su
+   propia etiqueta ".mp__tag" para señalar que es editable. */
+.mp {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--a-shadow);
+  font-family: inherit;
+}
+.mp__tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--a-blue);
+}
+.mp__tag--light {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+.mp__nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px 14px 100px;
+  min-height: 56px;
+}
+.mp__nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.mp__nav-brand img {
+  height: 28px;
+  width: 28px;
+  object-fit: contain;
+}
+.mp__logo-fallback {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.06);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+.mp__nav-links {
+  display: flex;
+  gap: 16px;
+  font-size: 11.5px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+.mp__hero {
+  position: relative;
+  padding: 60px 28px 32px;
+  background-size: cover;
+  background-position: center;
+  background-color: #1f2430;
+  color: #fff;
+  text-align: center;
+  background-image: linear-gradient(180deg, rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.65));
+}
+.mp__cintillo {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  margin-bottom: 8px;
+}
+.mp__titulo {
+  margin: 0 0 10px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.mp__subtitulo {
+  max-width: 480px;
+  margin: 0 auto 18px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  opacity: 0.92;
+}
+.mp__hero-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.mp__btn {
+  display: inline-block;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1.5px solid transparent;
+}
+.mp__btn--fill {
+  color: #fff;
+}
+.mp__btn--outline {
+  background: #fff;
+}
+.mp__cards {
+  position: relative;
+  padding: 40px 18px 18px;
+  background: #fff;
+}
+.mp__cards-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+.mp__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  padding: 14px 10px;
+  border-radius: 10px;
+  background: var(--a-bg);
+}
+.mp__card-icon {
+  font-size: 22px;
+}
+.mp__card strong {
+  font-size: 11.5px;
+  line-height: 1.3;
+}
+.mp__footer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 30px 18px 18px;
+}
+.mp__footer img,
+.mp__footer .mp__logo-fallback {
+  height: 32px;
+  width: 32px;
+  object-fit: contain;
+  flex: none;
+}
+.mp__footer strong {
+  display: block;
+  font-size: 12.5px;
+}
+.mp__footer div div {
+  font-size: 11px;
+  opacity: 0.8;
+}

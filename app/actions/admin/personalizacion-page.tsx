@@ -1263,29 +1263,130 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
             </p>
           </div>
 
-          {/* MINI PREVIEW MODAL */}
-          <div
-            id="mini-preview-modal"
-            style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.75); z-index: 9999; align-items: center; justify-content: center; padding: 20px;"
-          >
-            <div style="background: #ffffff; width: 95%; max-width: 1100px; height: 85vh; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
-              <div style="background: #1e293b; color: #ffffff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
-                <div style="font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-                  <span>👁️</span> Previsualizador de Página (Mini Portal)
+          {/* MINI PREVIEW MODAL: no es un iframe al sitio real (eso mostraría la
+              última versión guardada, no lo que se está editando). Es una maqueta
+              reducida del portal que se actualiza en vivo mientras se escribe, y
+              marca con una etiqueta cada zona que se puede personalizar. */}
+          <div id="mini-preview-modal" class="mp-modal">
+            <div class="mp-modal__box">
+              <div class="mp-modal__head">
+                <div class="mp-modal__title">
+                  <span>👁️</span> Vista previa en vivo (mini portal)
                 </div>
-                <button
-                  type="button"
-                  id="btn-close-preview"
-                  style="background: transparent; border: none; color: #ffffff; font-size: 20px; cursor: pointer;"
-                >
+                <p class="mp-modal__hint">
+                  Se actualiza mientras editas la pestaña "Vista de Usuario". Cada
+                  etiqueta marca una zona personalizable.
+                </p>
+                <button type="button" id="btn-close-preview" class="mp-modal__close" aria-label="Cerrar">
                   ✕
                 </button>
               </div>
-              <iframe
-                src={routes.home.href()}
-                style="width: 100%; flex: 1; border: none;"
-                title="Mini Preview"
-              />
+              <div class="mp-modal__body">
+                <div class="mp">
+                  <div
+                    id="mp-nav"
+                    class="mp__nav"
+                    style={`background:${c.navbarFondo || '#ffffff'};color:${c.navbarTexto || '#1a1d26'};`}
+                  >
+                    <span class="mp__tag">✎ Menú superior</span>
+                    <div class="mp__nav-brand">
+                      {img.logoNavbar ? (
+                        <img id="mp-nav-logo" src={img.logoNavbar} alt="Logo" />
+                      ) : (
+                        <span id="mp-nav-logo" class="mp__logo-fallback">
+                          🏛️
+                        </span>
+                      )}
+                      <strong>Ordenamiento Ecológico</strong>
+                    </div>
+                    <div class="mp__nav-links">
+                      <span>Inicio</span>
+                      <span>Participa</span>
+                      <span>Documentos</span>
+                    </div>
+                  </div>
+
+                  <div id="mp-hero" class="mp__hero" style={`background-image:url("${heroImgs[0]}");`}>
+                    <span class="mp__tag mp__tag--light">✎ Portada (Hero)</span>
+                    <span id="mp-cintillo" class="mp__cintillo">
+                      {txt.heroCintillo || 'Programa de Ordenamiento Ecológico'}
+                    </span>
+                    <h2 class="mp__titulo">
+                      <span id="mp-titulo">{txt.heroTitulo || 'Participa en el ordenamiento'}</span>{' '}
+                      <span id="mp-resaltado" style={`color:${c.acento || '#e0b84a'}`}>
+                        {txt.heroTituloResaltado || 'de tu territorio'}
+                      </span>
+                    </h2>
+                    <p id="mp-subtitulo" class="mp__subtitulo">
+                      {txt.heroSubtitulo ||
+                        'Consulta el proceso, revisa documentos y registra tu participación ciudadana.'}
+                    </p>
+                    <div class="mp__hero-actions">
+                      <span id="mp-btn1" class="mp__btn mp__btn--fill" style={`background:${c.primario || '#8c1d3d'};`}>
+                        {txt.heroBtn1 || 'Conoce el programa'}
+                      </span>
+                      <span
+                        id="mp-btn2"
+                        class="mp__btn mp__btn--outline"
+                        style={`border-color:${c.secundario || '#2d6a4f'};color:${c.secundario || '#2d6a4f'};`}
+                      >
+                        {txt.heroBtn2 || 'Registra tu participación'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="mp__cards">
+                    <span class="mp__tag">✎ Tarjetas de acción</span>
+                    <div class="mp__cards-row">
+                      <div class="mp__card">
+                        <span id="mp-card-icon-1" class="mp__card-icon" style={`color:${c.acento || '#e0b84a'};`}>
+                          {ico.cardPrograma || '🏛️'}
+                        </span>
+                        <strong id="mp-card-titulo-1">{txt.card1Titulo || 'Conoce el Programa'}</strong>
+                      </div>
+                      <div class="mp__card">
+                        <span id="mp-card-icon-2" class="mp__card-icon" style={`color:${c.acento || '#e0b84a'};`}>
+                          {ico.cardProceso || '⚙️'}
+                        </span>
+                        <strong id="mp-card-titulo-2">{txt.card2Titulo || 'Conoce el Proceso'}</strong>
+                      </div>
+                      <div class="mp__card">
+                        <span id="mp-card-icon-3" class="mp__card-icon" style={`color:${c.acento || '#e0b84a'};`}>
+                          {ico.cardCalendario || '📅'}
+                        </span>
+                        <strong id="mp-card-titulo-3">{txt.card3Titulo || 'Calendario de Actividades'}</strong>
+                      </div>
+                      <div class="mp__card">
+                        <span id="mp-card-icon-4" class="mp__card-icon" style={`color:${c.acento || '#e0b84a'};`}>
+                          {ico.cardDocumentos || '📄'}
+                        </span>
+                        <strong id="mp-card-titulo-4">{txt.card4Titulo || 'Consulta Documentos'}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    id="mp-footer"
+                    class="mp__footer"
+                    style={`background:${c.footerFondo || '#0f1117'};color:${c.footerTexto || '#ffffff'};`}
+                  >
+                    <span class="mp__tag mp__tag--light">✎ Pie de página</span>
+                    {img.logoFooter ? (
+                      <img id="mp-footer-logo" src={img.logoFooter} alt="Logo" />
+                    ) : (
+                      <span id="mp-footer-logo" class="mp__logo-fallback">
+                        🏛️
+                      </span>
+                    )}
+                    <div>
+                      <strong id="mp-footer-entidad">
+                        {txt.footerEntidad || 'Municipio de San Pedro Tlaquepaque'}
+                      </strong>
+                      <div id="mp-footer-email">{txt.footerEmail || 'ordenamiento@tlaquepaque.gob.mx'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

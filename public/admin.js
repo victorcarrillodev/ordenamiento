@@ -141,9 +141,7 @@
         m.style.display = 'none'
       }
       var mp = document.getElementById('mini-preview-modal')
-      if (mp && mp.style.display !== 'none') {
-        mp.style.display = 'none'
-      }
+      if (mp) mp.classList.remove('mp-modal--abierto')
     }
   })
 
@@ -155,19 +153,20 @@
     var miniModal = document.getElementById('mini-preview-modal')
     if (btnOpenPreview && miniModal) {
       btnOpenPreview.addEventListener('click', function () {
-        miniModal.style.display = 'flex'
+        miniModal.classList.add('mp-modal--abierto')
       })
     }
     if (btnClosePreview && miniModal) {
       btnClosePreview.addEventListener('click', function () {
-        miniModal.style.display = 'none'
+        miniModal.classList.remove('mp-modal--abierto')
       })
     }
     if (miniModal) {
       miniModal.addEventListener('click', function (e) {
-        if (e.target === miniModal) miniModal.style.display = 'none'
+        if (e.target === miniModal) miniModal.classList.remove('mp-modal--abierto')
       })
     }
+    initMiniPreviewBindings()
 
     // Paletas rápidas en 1 clic
     document.addEventListener('click', function (e) {
@@ -280,6 +279,107 @@
         img.style.display = 'none'
       })
     })
+  }
+
+  // Refleja en vivo, dentro de la maqueta del mini-previsualizador, lo que se
+  // va escribiendo en la pestaña "Vista de Usuario". Si esa pestaña no está
+  // activa los campos no existen en el DOM y los listeners simplemente no se
+  // registran: la maqueta queda mostrando el último valor guardado.
+  function initMiniPreviewBindings() {
+    var COLOR_TARGETS = {
+      'c-primario': [{ id: 'mp-btn1', prop: 'backgroundColor' }],
+      'c-acento': [
+        { id: 'mp-resaltado', prop: 'color' },
+        { id: 'mp-card-icon-1', prop: 'color' },
+        { id: 'mp-card-icon-2', prop: 'color' },
+        { id: 'mp-card-icon-3', prop: 'color' },
+        { id: 'mp-card-icon-4', prop: 'color' },
+      ],
+      'c-secundario': [
+        { id: 'mp-btn2', prop: 'borderColor' },
+        { id: 'mp-btn2', prop: 'color' },
+      ],
+      'c-nav-bg': [{ id: 'mp-nav', prop: 'backgroundColor' }],
+      'c-nav-text': [{ id: 'mp-nav', prop: 'color' }],
+      'c-footer-bg': [{ id: 'mp-footer', prop: 'backgroundColor' }],
+      'c-footer-text': [{ id: 'mp-footer', prop: 'color' }],
+    }
+
+    Object.keys(COLOR_TARGETS).forEach(function (id) {
+      var input = document.getElementById(id)
+      if (!input) return
+      input.addEventListener('input', function () {
+        COLOR_TARGETS[id].forEach(function (t) {
+          var el = document.getElementById(t.id)
+          if (el) el.style[t.prop] = input.value
+        })
+      })
+    })
+
+    var TEXT_TARGETS = {
+      txt_hero_cintillo: 'mp-cintillo',
+      txt_hero_titulo: 'mp-titulo',
+      txt_hero_resaltado: 'mp-resaltado',
+      txt_hero_subtitulo: 'mp-subtitulo',
+      txt_hero_btn1: 'mp-btn1',
+      txt_hero_btn2: 'mp-btn2',
+      ico_card1: 'mp-card-icon-1',
+      txt_card1_titulo: 'mp-card-titulo-1',
+      ico_card2: 'mp-card-icon-2',
+      txt_card2_titulo: 'mp-card-titulo-2',
+      ico_card3: 'mp-card-icon-3',
+      txt_card3_titulo: 'mp-card-titulo-3',
+      ico_card4: 'mp-card-icon-4',
+      txt_card4_titulo: 'mp-card-titulo-4',
+      txt_footer_entidad: 'mp-footer-entidad',
+      txt_footer_email: 'mp-footer-email',
+    }
+
+    Object.keys(TEXT_TARGETS).forEach(function (name) {
+      var input = document.querySelector('[name="' + name + '"]')
+      var el = document.getElementById(TEXT_TARGETS[name])
+      if (!input || !el) return
+      input.addEventListener('input', function () {
+        el.textContent = input.value
+      })
+    })
+
+    var LOGO_TARGETS = { logo_navbar: 'mp-nav-logo', logo_footer: 'mp-footer-logo' }
+    Object.keys(LOGO_TARGETS).forEach(function (name) {
+      var input = document.querySelector('[name="' + name + '"]')
+      var el = document.getElementById(LOGO_TARGETS[name])
+      if (!input || !el) return
+      input.addEventListener('input', function () {
+        if (!input.value) return
+        // Sin logo guardado la maqueta muestra un <span> de respaldo (emoji);
+        // hay que sustituirlo por un <img> real la primera vez que se escribe una URL.
+        if (el.tagName !== 'IMG') {
+          var img = document.createElement('img')
+          img.id = el.id
+          img.alt = 'Logo'
+          el.replaceWith(img)
+          el = img
+        }
+        el.src = input.value
+      })
+    })
+
+    var hero = document.getElementById('mp-hero')
+    if (hero) {
+      document.addEventListener('input', function (e) {
+        if (!e.target || e.target.name !== 'hero_imagenes[]') return
+        var inputs = document.querySelectorAll('input[name="hero_imagenes[]"]')
+        for (var i = 0; i < inputs.length; i++) {
+          if (inputs[i].value) {
+            hero.style.backgroundImage =
+              'linear-gradient(180deg, rgba(15,23,42,.35), rgba(15,23,42,.65)), url("' +
+              inputs[i].value.replace(/"/g, '') +
+              '")'
+            return
+          }
+        }
+      })
+    }
   }
 
   function addHeroImageInput() {
