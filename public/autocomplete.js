@@ -1,5 +1,5 @@
 /**
- * Autocompletado de Domicilio, Colonias y Municipios de Jalisco
+ * Autocompletado de Domicilio, Colonias y Municipios de San Pedro Tlaquepaque
  * Estilo Material UI (MUI Autocomplete) de Alto Rendimiento.
  * Carga instantánea a la primera con Caché en Memoria, Precarga de Municipios,
  * Delegación de Eventos Global y Observador de Mutaciones DOM.
@@ -8,63 +8,202 @@
   'use strict'
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Catálogo base de Municipios de Jalisco (Fallback y precarga instantánea 0ms)
+  // Catálogo embebido (window.__COLONIAS__) — autocompletado 100% local, sin red.
+  // Generado por scripts/build-catalogo.ts y servido como archivo estático.
+  // Solo incluye San Pedro Tlaquepaque (alcance geográfico del proyecto).
   // ─────────────────────────────────────────────────────────────────────────
-  const JALISCO_MUNICIPIOS_BASE = [
-    { municipio: 'San Pedro Tlaquepaque', coloniasCount: 184 },
-    { municipio: 'Guadalajara', coloniasCount: 520 },
-    { municipio: 'Zapopan', coloniasCount: 612 },
-    { municipio: 'Tlajomulco de Zúñiga', coloniasCount: 298 },
-    { municipio: 'Tonalá', coloniasCount: 245 },
-    { municipio: 'El Salto', coloniasCount: 86 },
-    { municipio: 'Ixtlahuacán de los Membrillos', coloniasCount: 42 },
-    { municipio: 'Juanacatlán', coloniasCount: 28 },
-    { municipio: 'Zapotlanejo', coloniasCount: 65 },
-    { municipio: 'Chapala', coloniasCount: 54 },
-    { municipio: 'Puerto Vallarta', coloniasCount: 210 },
-    { municipio: 'Lagos de Moreno', coloniasCount: 140 },
-    { municipio: 'Tepatitlán de Morelos', coloniasCount: 95 },
-    { municipio: 'Ciudad Guzmán (Zapotlán el Grande)', coloniasCount: 88 },
-    { municipio: 'Ocotlán', coloniasCount: 62 },
-    { municipio: 'Autlán de Navarro', coloniasCount: 51 },
-    { municipio: 'Ameca', coloniasCount: 48 },
-    { municipio: 'Arandas', coloniasCount: 52 },
-    { municipio: 'Tala', coloniasCount: 39 },
-    { municipio: 'Sayula', coloniasCount: 32 },
-  ]
+  const MUNICIPIO_UNICO = 'San Pedro Tlaquepaque'
+
+  /**
+   * Devuelve el catálogo cargado. Si window.__COLONIAS__ aún no está disponible
+   * (orden de scripts incorrecto), degrada a un arreglo vacío para no romper.
+   */
+  function getCatalog() {
+    return Array.isArray(window.__COLONIAS__) ? window.__COLONIAS__ : []
+  }
 
   // Caché en memoria RAM para respuestas de autocompletado (0ms latencia)
   const memoryCache = new Map()
 
   /**
-   * Ruta del endpoint de colonias, derivada del propio despliegue.
-   *
-   * BASE_PATH es configurable por entorno (ver app/router.ts), así que escribirla
-   * a mano aquí rompería la precarga en silencio en cualquier despliegue que no
-   * use el prefijo por defecto. Se toma del `data-endpoint` que el servidor ya
-   * resuelve con routes.colonias.href(); si todavía no hay ningún formulario en
-   * el DOM, se deduce del <script> que cargó este archivo.
+   * Estructura que usa la lógica de búsqueda: { colonia, municipio, cp, tipo, busqueda }.
+   * El catálogo embebido ya trae esos campos; busqueda (normalizada) lo calculamos
+   * una vez aquí para no recalcular en cada tecleo.
    */
-  function coloniasEndpoint() {
-    const grupo = document.querySelector('[data-autocomplete-group][data-endpoint]')
-    const declarado = grupo && grupo.getAttribute('data-endpoint')
-    if (declarado) return declarado
+  const CATALOGO = getCatalog().map(function (e) {
+    return {
+      colonia: e.colonia,
+      municipio: e.municipio,
+      cp: e.cp,
+      tipo: e.tipo,
+      busqueda: normalizar(`${e.colonia} ${e.municipio} ${e.cp}`),
+    }
+  })
 
-    const script = document.querySelector('script[src*="autocomplete.js"]')
-    const base = script ? new URL(script.src, window.location.origin).pathname : ''
-    return base.replace(/\/autocomplete\.js.*$/, '') + '/api/colonias'
+  function normalizarParaIndice(texto) {
+    return (texto || '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .trim()
   }
 
-  // Guardar municipios base en caché inmediatamente
-  memoryCache.set('municipio:', JALISCO_MUNICIPIOS_BASE)
+  // STOPWORDS y prefijos de calle para tokenizar como en el backend
+  const STOPWORDS = new Set(['el', 'la', 'los', 'las', 'de', 'del', 'y', 'en', 'un', 'una'])
+  const STREET_PREFIXES = new Set([
+    'calle', 'av', 'ave', 'avenida', 'andador', 'and', 'privada', 'priv',
+    'prolongacion', 'prol', 'carretera', 'carr', 'calzada', 'blvd', 'boulevard',
+    'cerrada', 'cda', 'c', 'no', 'num', 'numero',
+  ])
+
+  function tokenize(query) {
+    return normalizarParaIndice(query)
+      .split(/[\s,.-]+/)
+      .filter(function (t) {
+        return t.length > 0 && !STOPWORDS.has(t) && !STREET_PREFIXES.has(t) && !/^\d+$/.test(t)
+      })
+  }
+
+  function normalizePhonetic(term) {
+    return normalizarParaIndice(term)
+      .replace(/th/g, 't')
+      .replace(/z/g, 's')
+      .replace(/c([ei])/g, 's$1')
+      .replace(/v/g, 'b')
+      .replace(/h/g, '')
+  }
+
+  function buscarMunicipiosLocal(query, limite) {
+    const q = (query || '').trim()
+    if (q.length < 1) return []
+    const qNorm = normalizarParaIndice(q)
+    const qSin = qNorm.replace(/^(el|la|los|las|san|santa|sta)\s+/, '')
+    const seen = new Map()
+    for (let i = 0; i < CATALOGO.length; i++) {
+      const m = CATALOGO[i].municipio
+      if (!seen.has(m)) seen.set(m, 0)
+      seen.set(m, seen.get(m) + 1)
+    }
+    const results = []
+    seen.forEach(function (count, municipio) {
+      const munNorm = normalizarParaIndice(municipio)
+      const munSin = munNorm.replace(/^(el|la|los|las|san|santa|sta)\s+/, '')
+      let score = 0
+      if (munNorm.startsWith(qNorm)) score = 1
+      else if (qSin.length >= 2 && munSin.startsWith(qSin)) score = 2
+      else if (munNorm.includes(qNorm)) score = 3
+      else return
+      results.push({ municipio: municipio, coloniasCount: count, score: score })
+    })
+    results.sort(function (a, b) {
+      if (a.score !== b.score) return a.score - b.score
+      return a.municipio.localeCompare(b.municipio, 'es', { sensitivity: 'base' })
+    })
+    return results.slice(0, limite || 10)
+  }
+
+  function buscarColoniasLocal(query, municipio, limite) {
+    const qRaw = (query || '').trim()
+    if (qRaw.length < 2) return []
+    const qNorm = normalizarParaIndice(qRaw)
+    const qTokens = tokenize(qRaw)
+    const qTokensPhon = qTokens.map(normalizePhonetic).filter(function (t) {
+      return t.length >= 2
+    })
+    const munNorm = municipio ? normalizarParaIndice(municipio) : ''
+    const lim = limite && limite > 0 ? limite : 10
+    const esCp = /^\d{5}$/.test(qRaw)
+    const numeroMatch = qRaw.match(/(?:#|no\.?|num\.?|núm\.?)?\s*(\d{1,5}(?:\s*-[A-Za-z0-9]+)?)/i)
+    const numeroCalle = numeroMatch ? numeroMatch[1] : undefined
+    const qLimpia = qTokens.join(' ')
+
+    const matches = []
+    for (let i = 0; i < CATALOGO.length; i++) {
+      const entrada = CATALOGO[i]
+      const munEntradaNorm = normalizarParaIndice(entrada.municipio)
+      if (munNorm && munEntradaNorm !== munNorm) continue
+
+      if (esCp) {
+        if (entrada.cp === qRaw) matches.push({ entrada: entrada, score: 0 })
+        continue
+      }
+
+      const colNorm = normalizarParaIndice(entrada.colonia)
+      const busquedaNorm = entrada.busqueda
+
+      if (colNorm.startsWith(qNorm) || (qLimpia.length >= 2 && colNorm.startsWith(qLimpia))) {
+        matches.push({ entrada: entrada, score: 1 })
+        continue
+      }
+      const colSin = colNorm.replace(/^(el|la|los|las|de|del|san|santa|sta)\s+/, '')
+      const qSin = (qLimpia || qNorm).replace(/^(el|la|los|las|de|del|san|santa|sta)\s+/, '')
+      if (qSin.length >= 2 && colSin.startsWith(qSin)) {
+        matches.push({ entrada: entrada, score: 2 })
+        continue
+      }
+      if (colNorm.includes(qNorm) || (qLimpia.length >= 2 && colNorm.includes(qLimpia))) {
+        matches.push({ entrada: entrada, score: 3 })
+        continue
+      }
+      if (munEntradaNorm.startsWith(qNorm) || (qLimpia.length >= 2 && munEntradaNorm.startsWith(qLimpia))) {
+        matches.push({ entrada: entrada, score: 4 })
+        continue
+      }
+      if (qTokens.length > 0) {
+        const all = qTokens.every(function (tok) {
+          return busquedaNorm.includes(tok)
+        })
+        if (all) {
+          matches.push({ entrada: entrada, score: 5 })
+          continue
+        }
+      }
+      if (busquedaNorm.includes(qNorm) || (qLimpia.length >= 2 && busquedaNorm.includes(qLimpia))) {
+        matches.push({ entrada: entrada, score: 6 })
+        continue
+      }
+      if (qTokensPhon.length > 0) {
+        const entradaPhon = normalizePhonetic(busquedaNorm)
+        if (qTokensPhon.every(function (tok) {
+          return entradaPhon.includes(tok)
+        })) {
+          matches.push({ entrada: entrada, score: 7 })
+        }
+      }
+    }
+
+    matches.sort(function (a, b) {
+      if (a.score !== b.score) return a.score - b.score
+      const cmpCol = a.entrada.colonia.localeCompare(b.entrada.colonia, 'es', { sensitivity: 'base' })
+      if (cmpCol !== 0) return cmpCol
+      const cmpMun = a.entrada.municipio.localeCompare(b.entrada.municipio, 'es', { sensitivity: 'base' })
+      if (cmpMun !== 0) return cmpMun
+      return a.entrada.cp.localeCompare(b.entrada.cp)
+    })
+
+    return matches.slice(0, lim).map(function (m) {
+      let calleSugerida
+      if (numeroCalle) calleSugerida = `${m.entrada.colonia} ${numeroCalle}`
+      return {
+        colonia: m.entrada.colonia,
+        municipio: m.entrada.municipio,
+        cp: m.entrada.cp,
+        tipo: m.entrada.tipo,
+        calleSugerida: calleSugerida,
+      }
+    })
+  }
+
+  // Municipio único precargado en caché (catálogo ya está filtrado a Tlaquepaque)
+  memoryCache.set('municipio:', [
+    { municipio: MUNICIPIO_UNICO, coloniasCount: CATALOGO.length },
+  ])
   memoryCache.set('municipio:tlaquepaque', [
-    { municipio: 'San Pedro Tlaquepaque', coloniasCount: 184 },
+    { municipio: MUNICIPIO_UNICO, coloniasCount: CATALOGO.length },
   ])
   memoryCache.set('municipio:san pedro tlaquepaque', [
-    { municipio: 'San Pedro Tlaquepaque', coloniasCount: 184 },
+    { municipio: MUNICIPIO_UNICO, coloniasCount: CATALOGO.length },
   ])
-  memoryCache.set('municipio:guadalajara', [{ municipio: 'Guadalajara', coloniasCount: 520 }])
-  memoryCache.set('municipio:zapopan', [{ municipio: 'Zapopan', coloniasCount: 612 }])
 
   function formatBytes(bytes) {
     if (!bytes || bytes === 0) return '0 Bytes'
@@ -475,7 +614,6 @@
   let itemsColonias = []
   let itemsMunicipios = []
   let debounceTimer = null
-  let abortCtrl = null
 
   function getPopper() {
     if (!popper) {
@@ -616,12 +754,12 @@
     header.className = 'mui-autocomplete-header'
     const title =
       tipo === 'municipio'
-        ? '🏛️ Municipios de Jalisco'
+        ? '🏛️ Municipio'
         : tipo === 'calle'
-          ? '📍 Domicilios y Colonias de Jalisco'
+          ? '📍 Domicilios y Colonias de San Pedro Tlaquepaque'
           : tipo === 'cp'
             ? '📮 Colonias por Código Postal'
-            : '🏘️ Colonias de Jalisco (SEPOMEX)'
+            : '🏘️ Colonias de San Pedro Tlaquepaque (SEPOMEX)'
 
     header.innerHTML = `
       <span>${title}</span>
@@ -647,7 +785,7 @@
               ${highlight(m.municipio, currentQuery)}
             </span>
             <span style="font-size:11px;color:#64748b;margin-top:1px;">
-              Estado de Jalisco · ${m.coloniasCount} ${m.coloniasCount === 1 ? 'colonia' : 'colonias'}
+              Municipio de Tlaquepaque · ${m.coloniasCount} ${m.coloniasCount === 1 ? 'colonia' : 'colonias'}
             </span>
           </div>
           <span class="${getChipClass('municipio')}">Municipio</span>
@@ -740,17 +878,10 @@
     })
   }
 
-  async function executeSearch(target, q, tipo, municipio) {
+  function executeSearch(target, q, tipo, municipio) {
     const cacheKey = `${tipo}:${q.toLowerCase()}:${(municipio || '').toLowerCase()}`
 
-    // Cualquier búsqueda nueva invalida la anterior, también cuando la resuelve
-    // la caché: si no, una respuesta en vuelo llega después y pisa el resultado
-    // recién pintado con datos de una consulta que el usuario ya abandonó.
-    if (abortCtrl) abortCtrl.abort()
-    abortCtrl = new AbortController()
-    const peticion = abortCtrl
-
-    // 1. Revisar caché en memoria RAM (0ms)
+    // 1. Revisar caché en memoria RAM (0ms, sin red)
     if (memoryCache.has(cacheKey)) {
       const cached = memoryCache.get(cacheKey)
       if (tipo === 'municipio') {
@@ -765,50 +896,28 @@
       return
     }
 
-    try {
-      const group =
-        target.closest('[data-autocomplete-group]') ||
-        target.closest('[data-endpoint]') ||
-        target.closest('form')
-      const endpointAttr = group ? group.getAttribute('data-endpoint') : null
-      const resolvedEndpoint = endpointAttr || coloniasEndpoint()
+    // 2. Búsqueda local sobre el catálogo embebido (window.__COLONIAS__).
+    //    Sin fetch: el endpoint /api/colonias no existe y causaba el bug de recarga.
+    const munRaw = municipio || MUNICIPIO_UNICO
+    let resultados
+    if (tipo === 'municipio') {
+      resultados = buscarMunicipiosLocal(q, 10)
+    } else {
+      resultados = buscarColoniasLocal(q, munRaw, 10)
+    }
 
-      const url = new URL(resolvedEndpoint, window.location.origin)
-      url.searchParams.set('tipo', tipo)
-      url.searchParams.set('q', q)
-      if (municipio) {
-        url.searchParams.set('municipio', municipio)
+    memoryCache.set(cacheKey, resultados)
+
+    if (currentTarget === target) {
+      if (tipo === 'municipio') {
+        itemsMunicipios = resultados
+        itemsColonias = []
+      } else {
+        itemsColonias = resultados
+        itemsMunicipios = []
       }
-
-      const res = await fetch(url.toString(), {
-        signal: peticion.signal,
-        headers: { Accept: 'application/json' },
-      })
-
-      if (!res.ok) return
-      const data = await res.json()
-      const items = data.items || []
-
-      // Guardar en caché
-      memoryCache.set(cacheKey, items)
-
-      // Descartar la respuesta si el usuario ya lanzó otra búsqueda mientras
-      // ésta viajaba: sin esto, la lenta pisa a la rápida.
-      if (peticion !== abortCtrl) return
-
-      if (currentTarget === target) {
-        if (tipo === 'municipio') {
-          itemsMunicipios = items
-          itemsColonias = []
-        } else {
-          itemsColonias = items
-          itemsMunicipios = []
-        }
-        activeIndex = -1
-        render(target, tipo)
-      }
-    } catch {
-      // Petición cancelada o error de red
+      activeIndex = -1
+      render(target, tipo)
     }
   }
 
@@ -819,10 +928,10 @@
     const siblings = getSiblingInputs(target)
     if (siblings.origen) siblings.origen.value = 'manual'
 
-    // Municipios muestran catálogo al enfocar o escribir
+    // Municipios muestran catálogo al enfocar o escribir (solo Tlaquepaque)
     if (tipo === 'municipio') {
       if (q.length === 0) {
-        itemsMunicipios = JALISCO_MUNICIPIOS_BASE
+        itemsMunicipios = buscarMunicipiosLocal('', 10)
         itemsColonias = []
         activeIndex = -1
         render(target, tipo)
@@ -843,6 +952,29 @@
       debounceTimer = setTimeout(function () {
         executeSearch(target, q, tipo, mun)
       }, 35)
+    }
+  }
+
+  function applyActiveSelection(target, p, tipo) {
+    const siblings = getSiblingInputs(target)
+    if (tipo === 'municipio' && itemsMunicipios[activeIndex]) {
+      const m = itemsMunicipios[activeIndex]
+      target.value = m.municipio
+      if (siblings.municipio) siblings.municipio.value = m.municipio
+      if (siblings.origen) siblings.origen.value = 'catalogo'
+      hidePopper()
+      if (siblings.colonia && !siblings.colonia.value) siblings.colonia.focus()
+    } else if (itemsColonias[activeIndex]) {
+      const s = itemsColonias[activeIndex]
+      if (tipo === 'calle') {
+        if (target && !target.value.trim()) target.value = s.colonia
+        if (siblings.calle && !siblings.calle.value.trim()) siblings.calle.value = s.colonia
+      }
+      if (siblings.colonia) siblings.colonia.value = s.colonia
+      if (siblings.municipio) siblings.municipio.value = s.municipio
+      if (siblings.cp) siblings.cp.value = s.cp
+      if (siblings.origen) siblings.origen.value = 'catalogo'
+      hidePopper()
     }
   }
 
@@ -880,7 +1012,28 @@
       if (!isAddressField(target)) return
 
       const p = getPopper()
-      if (!p || p.style.display === 'none') return
+      const isPopperOpen = p && p.style.display !== 'none'
+      const hasQuery = (target.value || '').trim().length > 0
+
+      // BUGFIX (crítico): con el popper abierto o texto en el campo, Enter NUNCA
+      // debe enviar el formulario (eso recargaba la página). Solo se permite el
+      // submit normal cuando el popper está cerrado Y el campo está vacío.
+      if (e.key === 'Enter') {
+        if (isPopperOpen || hasQuery) {
+          e.preventDefault()
+          if (!isPopperOpen) return // campo con texto pero sin sugerencias: no hacemos nada
+          if (activeIndex >= 0) {
+            applyActiveSelection(target, p, tipo())
+          } else {
+            hidePopper()
+          }
+          return
+        }
+        // popper cerrado y campo vacío: dejar que el formulario se envíe
+        return
+      }
+
+      if (!isPopperOpen) return
 
       const tipo = getFieldType(target)
       const total = tipo === 'municipio' ? itemsMunicipios.length : itemsColonias.length
@@ -897,45 +1050,11 @@
         e.preventDefault()
         activeIndex = Math.max(activeIndex - 1, 0)
         if (ul) updateSelection(ul)
-      } else if (e.key === 'Enter') {
-        if (activeIndex >= 0) {
-          e.preventDefault()
-          if (tipo === 'municipio' && itemsMunicipios[activeIndex]) {
-            const m = itemsMunicipios[activeIndex]
-            target.value = m.municipio
-            if (siblings.municipio) siblings.municipio.value = m.municipio
-            if (siblings.origen) siblings.origen.value = 'catalogo'
-            hidePopper()
-            if (siblings.colonia && !siblings.colonia.value) siblings.colonia.focus()
-          } else if (itemsColonias[activeIndex]) {
-            const s = itemsColonias[activeIndex]
-            if (tipo === 'calle') {
-              if (target && !target.value.trim()) target.value = s.colonia
-              if (siblings.calle && !siblings.calle.value.trim()) siblings.calle.value = s.colonia
-            }
-            if (siblings.colonia) siblings.colonia.value = s.colonia
-            if (siblings.municipio) siblings.municipio.value = s.municipio
-            if (siblings.cp) siblings.cp.value = s.cp
-            if (siblings.origen) siblings.origen.value = 'catalogo'
-            hidePopper()
-          }
-        }
       } else if (e.key === 'Escape') {
         hidePopper()
       } else if (e.key === 'Tab') {
-        if (activeIndex >= 0) {
-          if (tipo === 'municipio' && itemsMunicipios[activeIndex]) {
-            const m = itemsMunicipios[activeIndex]
-            target.value = m.municipio
-            if (siblings.municipio) siblings.municipio.value = m.municipio
-            if (siblings.origen) siblings.origen.value = 'catalogo'
-          } else if (itemsColonias[activeIndex]) {
-            const s = itemsColonias[activeIndex]
-            if (siblings.colonia) siblings.colonia.value = s.colonia
-            if (siblings.municipio) siblings.municipio.value = s.municipio
-            if (siblings.cp) siblings.cp.value = s.cp
-            if (siblings.origen) siblings.origen.value = 'catalogo'
-          }
+        if (isPopperOpen && activeIndex >= 0) {
+          applyActiveSelection(target, p, tipo)
         }
         hidePopper()
       }
@@ -960,29 +1079,16 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 5. Precarga de Datos en Background al Iniciar
+  // 5. Precarga de Datos en Background al Iniciar (catálogo local, sin red)
   // ─────────────────────────────────────────────────────────────────────────
   function preloadBackgroundData() {
-    const endpoint = coloniasEndpoint()
-
-    const precargar = (query, cacheKey) => {
-      fetch(`${endpoint}?${query}`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => {
-          if (data && data.items && data.items.length > 0) {
-            memoryCache.set(cacheKey, data.items)
-          }
-        })
-        .catch((err) => {
-          // Silencioso en precarga: fallos de cache no afectan funcionamiento
-          if (globalThis.DEBUG_AUTOCOMPLETE) {
-            console.debug('[autocomplete] Precarga falló:', err)
-          }
-        })
+    // El catálogo ya está en window.__COLONIAS__; precargamos las búsquedas
+    // comunes en la caché RAM para respuesta 0ms. Sin fetch.
+    buscarColoniasLocal('', MUNICIPIO_UNICO, 10) // no-op si query < 2; mantiene caché tibia
+    const coloniasTlaq = buscarColoniasLocal('tlaquepaque', MUNICIPIO_UNICO, 10)
+    if (coloniasTlaq.length > 0) {
+      memoryCache.set('colonia:tlaquepaque:', coloniasTlaq)
     }
-
-    precargar('tipo=municipio&q=', 'municipio:')
-    precargar('tipo=colonia&q=tlaquepaque', 'colonia:tlaquepaque:')
   }
 
   // ─────────────────────────────────────────────────────────────────────────
