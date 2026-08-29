@@ -133,3 +133,18 @@ export function sanitizeText(text: unknown, maxLength: number = 500): string {
 
   return cleaned
 }
+
+/**
+ * Logger mínimo del backend. Centraliza el registro para que los errores en
+ * hot paths sean visibles y consistentes (en vez de `console.*` dispersos).
+ * No silencia: el error se escribe con nivel, marca de tiempo y contexto.
+ */
+export const logger = {
+  error(context: string, err: unknown): void {
+    const msg = err instanceof Error ? `${err.message}\n${err.stack ?? ''}` : String(err)
+    console.error(`[${new Date().toISOString()}] ERROR ${context}: ${msg}`)
+  },
+  warn(context: string, msg: string): void {
+    console.warn(`[${new Date().toISOString()}] WARN ${context}: ${msg}`)
+  },
+}

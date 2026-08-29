@@ -1,4 +1,5 @@
 import { isSafeCssColor, isSafeImageUrl, sanitizeText } from '../utils.ts'
+import { logger } from '../utils.ts'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { sql } from '../db/pool.ts'
@@ -178,8 +179,8 @@ export function deepMerge(target: any, source: any): any {
 
 export async function getCustomizations(): Promise<ThemeConfig> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- columna JSONB, forma dinámica
-    const rows = await sql<Array<{ config: any }>>`
+    // Columna JSONB de forma dinámica: el tipo en crudo es un objeto plano.
+    const rows = await sql<Array<{ config: Record<string, unknown> }>>`
       SELECT config FROM site_customizations WHERE id = 1 LIMIT 1
     `
     if (rows.length === 0 || !rows[0].config || Object.keys(rows[0].config).length === 0) {
@@ -187,7 +188,9 @@ export async function getCustomizations(): Promise<ThemeConfig> {
     }
     return deepMerge(DEFAULT_THEME_CONFIG, rows[0].config)
   } catch (err) {
-    console.error('[customizations] Error al leer configuración:', err)
+    // M3: el error es visible (logger), pero se mantiene el fallback para que
+    // el sitio siga renderizando con el tema por defecto en vez de caer 500.
+    logger.error('customizations.getCustomizations', err)
     return DEFAULT_THEME_CONFIG
   }
 }
@@ -258,8 +261,8 @@ export async function listAuditLogs(limit = 50): Promise<AuditLogEntry[]> {
         motivo: string
         section: string
         changes_summary: string
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- columna JSONB, forma dinámica
-        snapshot: any
+        // Columna JSONB de forma dinámica: objeto plano en crudo.
+        snapshot: Record<string, unknown>
         created_at: string
       }>
     >`
@@ -273,7 +276,8 @@ export async function listAuditLogs(limit = 50): Promise<AuditLogEntry[]> {
       snapshot: deepMerge(DEFAULT_THEME_CONFIG, r.snapshot),
     }))
   } catch (err) {
-    console.error('[customizations] Error al listar auditoría:', err)
+    // M3: error visible con logger; se mantiene [] para no romper el panel.
+    logger.error('customizations.listAuditLogs', err)
     return []
   }
 }

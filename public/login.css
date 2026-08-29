@@ -369,3 +369,92 @@
 .login__submit--accent:hover {
   background: #374151;
 }
+
+/* ---------------------------------------------------------------------------
+   Alert (Material UI style)
+   -------------------------------------------------------------------------- */
+
+.login__alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  animation: login__alert-in 0.2s ease-out;
+}
+
+@keyframes login__alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login__alert-icon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login__alert-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.login__alert-message {
+  flex: 1;
+}
+
+/* Error */
+.login__alert--error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.login__alert--error .login__alert-icon {
+  color: #dc2626;
+}
+
+/* Warning */
+.login__alert--warning {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.login__alert--warning .login__alert-icon {
+  color: #d97706;
+}
+
+/* Success */
+.login__alert--success {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.login__alert--success .login__alert-icon {
+  color: #16a34a;
+}
+
+/* Info */
+.login__alert--info {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.login__alert--info .login__alert-icon {
+  color: #2563eb;
+}
