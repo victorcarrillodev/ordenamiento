@@ -50,7 +50,8 @@ describe('enviarAcuseReciboParticipacion', () => {
 
   beforeEach(() => {
     process.env.SMTP_HOST = 'smtp.example.com'
-    sqlMock = spyOn(pool.sql, 'unsafe')
+    // mail.ts usa el template tag `sql\`...\`` (la función sql misma, no .unsafe)
+    sqlMock = spyOn(pool, 'sql')
     sendMailCalls.length = 0
   })
   afterEach(() => {
@@ -64,7 +65,8 @@ describe('enviarAcuseReciboParticipacion', () => {
   })
 
   it('arma el correo con folio y nombre del participante', async () => {
-    sqlMock!.mockImplementation(async (sql: string) => {
+    sqlMock!.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = strings.join('')
       if (sql.includes('FROM participations')) {
         return [
           {
@@ -83,10 +85,10 @@ describe('enviarAcuseReciboParticipacion', () => {
             observacion: 'Propuesta de parque',
             created_at: new Date('2026-01-15T10:00:00Z'),
           },
-        ] as any
+        ] as Array<Record<string, unknown>>
       }
-      if (sql.includes('FROM attachments')) return [] as any
-      return [] as any
+      if (sql.includes('FROM attachments')) return [] as Array<Record<string, unknown>>
+      return [] as Array<Record<string, unknown>>
     })
 
     const res = await enviarAcuseReciboParticipacion('id-1', 'juan@ejemplo.com')
@@ -100,7 +102,8 @@ describe('enviarAcuseReciboParticipacion', () => {
   })
 
   it('escapa HTML inyectado en campos del participante', async () => {
-    sqlMock!.mockImplementation(async (sql: string) => {
+    sqlMock!.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = strings.join('')
       if (sql.includes('FROM participations')) {
         return [
           {
@@ -119,10 +122,10 @@ describe('enviarAcuseReciboParticipacion', () => {
             observacion: '<b>hack</b>',
             created_at: new Date(),
           },
-        ] as any
+        ] as Array<Record<string, unknown>>
       }
-      if (sql.includes('FROM attachments')) return [] as any
-      return [] as any
+      if (sql.includes('FROM attachments')) return [] as Array<Record<string, unknown>>
+      return [] as Array<Record<string, unknown>>
     })
 
     await enviarAcuseReciboParticipacion('id-2', 'a@b.com')
