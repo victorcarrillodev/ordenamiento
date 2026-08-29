@@ -515,12 +515,7 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
               Descripción
             </div>
             <div class="cal-modal__actions">
-              <button
-                id="cal-m-btn-close"
-                type="button"
-                class="btn btn--white"
-                style="border: 1px solid #cbd5e1;"
-              >
+              <button id="cal-m-btn-close" type="button" class="btn btn--white">
                 Cerrar
               </button>
               <a id="cal-m-link" href="#" class="btn btn--dark">

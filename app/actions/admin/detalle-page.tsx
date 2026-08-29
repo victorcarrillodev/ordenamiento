@@ -312,7 +312,11 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
     const titulo = p ? `Participación ${p.folio}` : 'Participación no encontrada'
 
     return (
-      <AdminLayout user={user} active="participaciones" title={titulo}>
+      <AdminLayout
+        user={user}
+        active={p?.origen === 'digital' ? 'participaciones-digital' : 'participaciones-fisica'}
+        title={titulo}
+      >
         <h1 class="page-title">{titulo}</h1>
         <p class="breadcrumb">
           <a href={`${adminRoutes.participaciones.href()}?origen=${p?.origen ?? 'fisica'}`}>

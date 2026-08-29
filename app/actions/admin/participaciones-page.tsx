@@ -89,7 +89,11 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
       `&limit=${limit}&page=${p}`
 
     return (
-      <AdminLayout user={user} active="participaciones" title={titulo}>
+      <AdminLayout
+        user={user}
+        active={origen === 'fisica' ? 'participaciones-fisica' : 'participaciones-digital'}
+        title={titulo}
+      >
         <h1 class="page-title">{titulo}</h1>
         <p class="breadcrumb">
           <a href={adminRoutes.index.href()}>Vista general</a> / {titulo}

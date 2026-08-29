@@ -14,8 +14,10 @@ export interface AdminLayoutProps {
     | 'avisos'
     | 'reuniones'
     | 'poel'
-    | 'participaciones'
-    | 'estadisticas'
+    | 'participaciones-digital'
+    | 'participaciones-fisica'
+    | 'estadisticas-digital'
+    | 'estadisticas-fisica'
     | 'usuarios'
     | 'exportar'
     | 'personalizacion'
@@ -75,25 +77,25 @@ const MENU: Array<{
     icon: <Icon name="mdi:book-open-page-variant-outline" />,
   },
   {
-    key: 'participaciones',
+    key: 'participaciones-digital',
     href: adminRoutes.participaciones.href() + '?origen=digital',
     label: 'Participaciones Digitales',
     icon: <Icon name="mdi:laptop" />,
   },
   {
-    key: 'estadisticas',
+    key: 'estadisticas-digital',
     href: adminRoutes.estadisticas.href() + '?origen=digital',
     label: 'Estadísticas Digitales',
     icon: <Icon name="mdi:chart-bar" />,
   },
   {
-    key: 'participaciones',
+    key: 'participaciones-fisica',
     href: adminRoutes.participaciones.href() + '?origen=fisica',
     label: 'Participaciones Físicas',
     icon: <Icon name="mdi:file-document-outline" />,
   },
   {
-    key: 'estadisticas',
+    key: 'estadisticas-fisica',
     href: adminRoutes.estadisticas.href() + '?origen=fisica',
     label: 'Estadísticas Físicas',
     icon: <Icon name="mdi:chart-box-outline" />,

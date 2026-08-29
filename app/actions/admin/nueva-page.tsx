@@ -83,7 +83,7 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
     const { user, error, folioRegistrado, values = {} } = handle.props
 
     return (
-      <AdminLayout user={user} active="participaciones" title="Nueva participación física">
+      <AdminLayout user={user} active="participaciones-fisica" title="Nueva participación física">
         <h1 class="page-title">Ingresa aquí tu participación</h1>
         <p class="breadcrumb">
           <a href={`${adminRoutes.participaciones.href()}?origen=fisica`}>
@@ -95,50 +95,41 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
         {error ? <p class="form-error">{error}</p> : null}
 
         {folioRegistrado ? (
-          <dialog
-            open
-            style="border: none; border-radius: 18px; padding: 32px 28px; max-width: 500px; width: 90%; background: #ffffff; box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35); margin: auto; font-family: Montserrat, sans-serif; text-align: center; z-index: 9999;"
-          >
-            <div style="width: 60px; height: 60px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 16px; box-shadow: 0 0 0 6px rgba(220, 252, 231, 0.5);">
+          <dialog open class="dialog-success">
+            <div class="dialog-success__icon">
               <iconify-icon icon="mdi:check-circle" width="36" height="36" />
             </div>
 
-            <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 8px;">
-              ¡Participación física registrada con éxito!
-            </h2>
+            <h2 class="dialog-success__title">¡Participación física registrada con éxito!</h2>
 
-            <p style="font-size: 13.5px; color: #475569; line-height: 1.5; margin: 0 0 16px;">
+            <p class="dialog-success__desc">
               La información y los documentos han sido vinculados correctamente al expediente
               ambiental del POETDUM.
             </p>
 
-            <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 10px; padding: 12px 16px; margin-bottom: 22px;">
-              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; display: block;">
-                Folio Oficial Asignado
-              </span>
-              <strong style="font-size: 20px; font-weight: 900; color: #8c1d3d;">
-                {folioRegistrado}
-              </strong>
+            <div class="dialog-success__folio">
+              <span>Folio Oficial Asignado</span>
+              <strong>{folioRegistrado}</strong>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-              <a
+            <div class="dialog-success__actions">
+              <Button
                 href={adminRoutes.participacionNueva.index.href()}
-                class="btn btn-primary"
-                style="justify-content: center; padding: 12px 20px; font-size: 13.5px; font-weight: 700; text-decoration: none;"
+                variant="primary"
+                fullWidth
+                icon={<iconify-icon icon="mdi:plus-circle" width="18" height="18" />}
               >
-                <iconify-icon icon="mdi:plus-circle" width="18" height="18" />
-                <span>Registrar otra participación</span>
-              </a>
+                Registrar otra participación
+              </Button>
 
-              <a
+              <Button
                 href={adminRoutes.participaciones.href()}
-                class="btn btn-secondary"
-                style="justify-content: center; padding: 10px 20px; font-size: 13px; font-weight: 600; text-decoration: none;"
+                variant="secondary"
+                fullWidth
+                icon={<iconify-icon icon="mdi:format-list-bulleted" width="18" height="18" />}
               >
-                <iconify-icon icon="mdi:format-list-bulleted" width="18" height="18" />
-                <span>Continuar con otras actividades</span>
-              </a>
+                Continuar con otras actividades
+              </Button>
             </div>
           </dialog>
         ) : null}
@@ -299,7 +290,7 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
 
           <p class="form-hint">Los campos marcados con (*) son obligatorios</p>
 
-          <div class="form-actions" style="display: flex; gap: 12px; margin-top: 18px;">
+          <div class="form-actions">
             <Button buttonType="submit" variant="primary">
               Guardar participación
             </Button>
