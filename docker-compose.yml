@@ -59,6 +59,7 @@ services:
       MAIL_FROM: ${MAIL_FROM:-}
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}
       MAX_UPLOAD_FILES: ${MAX_UPLOAD_FILES:-5}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
     volumes:
       - uploads:/app/uploads
       # Cuentas admin extra (ej. la de Leo). Copia backend/seed-admins.example.json

@@ -27,7 +27,7 @@ export async function createSessionToken(userId: string): Promise<string> {
   return `${payload}.${sig}`
 }
 
-const UUID_RE_AUTH = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const UUID_RE_AUTH = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|\d+)$/i
 
 export async function verifySessionToken(token: string): Promise<string | null> {
   const parts = token.split('.')
@@ -53,6 +53,7 @@ export async function verifySessionToken(token: string): Promise<string | null> 
 
 export function sessionCookie(token: string): string {
   const isProd = process.env.NODE_ENV === 'production'
+  const isSecure = isProd && process.env.COOKIE_SECURE !== 'false'
   const attrs = [
     `ordenamiento_session=${encodeURIComponent(token)}`,
     'HttpOnly',
@@ -60,7 +61,7 @@ export function sessionCookie(token: string): string {
     'SameSite=Lax',
     `Max-Age=${MAX_AGE_SECONDS}`,
   ]
-  if (isProd) {
+  if (isSecure) {
     attrs.push('Secure')
   }
   return attrs.join('; ')
@@ -68,8 +69,9 @@ export function sessionCookie(token: string): string {
 
 export function clearSessionCookie(): string {
   const isProd = process.env.NODE_ENV === 'production'
+  const isSecure = isProd && process.env.COOKIE_SECURE !== 'false'
   const attrs = ['ordenamiento_session=', 'HttpOnly', 'Path=/', 'SameSite=Lax', 'Max-Age=0']
-  if (isProd) {
+  if (isSecure) {
     attrs.push('Secure')
   }
   return attrs.join('; ')
