@@ -126,14 +126,21 @@ export default createController(adminRoutes.personalizacion, {
         const fileNavLogo = formData.get('archivo_logo_navbar') as File | null
         const fileFooterLogo = formData.get('archivo_logo_footer') as File | null
         const fileEcoImg = formData.get('archivo_imagen_ecologia') as File | null
+        const fileProgramaImg = formData.get('archivo_imagen_programa') as File | null
 
-        const [uploadedHero, uploadedNavLogo, uploadedFooterLogo, uploadedEcoImg] =
-          await Promise.all([
-            uploadFileIfNeeded(context.request, fileHero),
-            uploadFileIfNeeded(context.request, fileNavLogo),
-            uploadFileIfNeeded(context.request, fileFooterLogo),
-            uploadFileIfNeeded(context.request, fileEcoImg),
-          ])
+        const [
+          uploadedHero,
+          uploadedNavLogo,
+          uploadedFooterLogo,
+          uploadedEcoImg,
+          uploadedProgramaImg,
+        ] = await Promise.all([
+          uploadFileIfNeeded(context.request, fileHero),
+          uploadFileIfNeeded(context.request, fileNavLogo),
+          uploadFileIfNeeded(context.request, fileFooterLogo),
+          uploadFileIfNeeded(context.request, fileEcoImg),
+          uploadFileIfNeeded(context.request, fileProgramaImg),
+        ])
 
         const rawHeroImages = formData.getAll('hero_imagenes[]').map(String).filter(Boolean)
         if (uploadedHero) {
@@ -156,6 +163,7 @@ export default createController(adminRoutes.personalizacion, {
               logoFooter: uploadedFooterLogo || String(formData.get('logo_footer') ?? ''),
               heroImagenes: rawHeroImages.length > 0 ? rawHeroImages : undefined,
               imagenEcologia: uploadedEcoImg || String(formData.get('imagen_ecologia') ?? ''),
+              imagenPrograma: uploadedProgramaImg || String(formData.get('imagen_programa') ?? ''),
             },
             iconos: {
               cardPrograma: String(formData.get('ico_card1') ?? '🏛️'),

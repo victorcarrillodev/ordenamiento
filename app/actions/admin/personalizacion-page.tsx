@@ -279,7 +279,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={c.primario || '#8c1d3d'} class="sync-color-text" data-target="c-primario"
+                        value={c.primario || '#8c1d3d'}
+                        class="sync-color-text"
+                        data-target="c-primario"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -299,7 +301,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={c.acento || '#e0b84a'} class="sync-color-text" data-target="c-acento"
+                        value={c.acento || '#e0b84a'}
+                        class="sync-color-text"
+                        data-target="c-acento"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -319,7 +323,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={c.secundario || '#2d6a4f'} class="sync-color-text" data-target="c-secundario"
+                        value={c.secundario || '#2d6a4f'}
+                        class="sync-color-text"
+                        data-target="c-secundario"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -339,7 +345,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={c.navbarFondo || '#ffffff'} class="sync-color-text" data-target="c-nav-bg"
+                        value={c.navbarFondo || '#ffffff'}
+                        class="sync-color-text"
+                        data-target="c-nav-bg"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -359,7 +367,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={c.navbarTexto || '#1a1d26'} class="sync-color-text" data-target="c-nav-text"
+                        value={c.navbarTexto || '#1a1d26'}
+                        class="sync-color-text"
+                        data-target="c-nav-text"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -379,7 +389,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={c.footerFondo || '#0f1117'} class="sync-color-text" data-target="c-footer-bg"
+                        value={c.footerFondo || '#0f1117'}
+                        class="sync-color-text"
+                        data-target="c-footer-bg"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -399,7 +411,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={c.footerTexto || '#ffffff'} class="sync-color-text" data-target="c-footer-text"
+                        value={c.footerTexto || '#ffffff'}
+                        class="sync-color-text"
+                        data-target="c-footer-text"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -598,6 +612,41 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                     <input
                       type="file"
                       name="archivo_imagen_ecologia"
+                      accept="image/*"
+                      style="font-size: 12px;"
+                    />
+                  </div>
+
+                  {/* Imagen Programa */}
+                  <div
+                    class="form-field"
+                    style="background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0;"
+                  >
+                    <label style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 6px;">
+                      Imagen de Sección "¿Qué es el Programa?"
+                    </label>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+                      {img.imagenPrograma && (
+                        <img
+                          src={img.imagenPrograma}
+                          alt="Programa"
+                          style="max-height: 40px; max-width: 80px; object-fit: cover; border-radius: 4px;"
+                        />
+                      )}
+                      <input
+                        type="text"
+                        name="imagen_programa"
+                        value={img.imagenPrograma || ''}
+                        placeholder="URL imagen"
+                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
+                      />
+                    </div>
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">
+                      O subir imagen nueva:
+                    </div>
+                    <input
+                      type="file"
+                      name="archivo_imagen_programa"
                       accept="image/*"
                       style="font-size: 12px;"
                     />
@@ -870,21 +919,24 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       type="button"
                       class="btn motivo-suggest"
                       data-motivo="Actualización de colores y diseño"
-                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;">
+                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;"
+                    >
                       Colores y diseño
                     </button>
                     <button
                       type="button"
                       class="btn motivo-suggest"
                       data-motivo="Actualización de fotos del carrusel"
-                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;">
+                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;"
+                    >
                       Fotos del carrusel
                     </button>
                     <button
                       type="button"
                       class="btn motivo-suggest"
                       data-motivo="Cambio de logotipos oficiales"
-                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;">
+                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;"
+                    >
                       Logotipos
                     </button>
                   </div>
@@ -932,7 +984,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={p.sidebarFondo || '#ffffff'} class="sync-color-text" data-target="p-side-bg"
+                        value={p.sidebarFondo || '#ffffff'}
+                        class="sync-color-text"
+                        data-target="p-side-bg"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -952,7 +1006,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={p.sidebarTexto || '#475066'} class="sync-color-text" data-target="p-side-text"
+                        value={p.sidebarTexto || '#475066'}
+                        class="sync-color-text"
+                        data-target="p-side-text"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -972,7 +1028,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={p.topbarFondo || '#2e3440'} class="sync-color-text" data-target="p-top-bg"
+                        value={p.topbarFondo || '#2e3440'}
+                        class="sync-color-text"
+                        data-target="p-top-bg"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -992,7 +1050,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={p.colorAcento || '#2563eb'} class="sync-color-text" data-target="p-acento"
+                        value={p.colorAcento || '#2563eb'}
+                        class="sync-color-text"
+                        data-target="p-acento"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -1012,7 +1072,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       />
                       <input
                         type="text"
-                        value={p.adminBg || '#f4f6fb'} class="sync-color-text" data-target="p-admin-bg"
+                        value={p.adminBg || '#f4f6fb'}
+                        class="sync-color-text"
+                        data-target="p-admin-bg"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
                       />
                     </div>
@@ -1122,18 +1184,25 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                     Historial inmutable con cada cambio realizado, el autor responsable, fecha
                     exacta y motivo.
                   </p>
-                                  <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;">
-                  <div style="flex: 1; min-width: 240px; position: relative;">
-                    <input
-                      type="text"
-                      id="historial-search"
-                      placeholder="🔍 Buscar en historial por usuario, motivo o sección..."
-                      style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 14px 10px 36px; font-size: 13px;"
-                    />
-                    <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8;">🔍</span>
+                  <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 240px; position: relative;">
+                      <input
+                        type="text"
+                        id="historial-search"
+                        placeholder="🔍 Buscar en historial por usuario, motivo o sección..."
+                        style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 14px 10px 36px; font-size: 13px;"
+                      />
+                      <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8;">
+                        🔍
+                      </span>
+                    </div>
+                    <span
+                      id="historial-count"
+                      style="font-size: 12px; color: #64748b; font-weight: 600;"
+                    >
+                      {auditLogs.length} registros
+                    </span>
                   </div>
-                  <span id="historial-count" style="font-size: 12px; color: #64748b; font-weight: 600;">{auditLogs.length} registros</span>
-                </div>
                 </div>
               </div>
 
@@ -1173,7 +1242,8 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                         const d = new Date(log.created_at)
                         const fechaStr = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
 
-                        const haystack = `${log.user_name} ${log.user_email} ${log.motivo} ${log.section}`.toLowerCase()
+                        const haystack =
+                          `${log.user_name} ${log.user_email} ${log.motivo} ${log.section}`.toLowerCase()
                         return (
                           <tr data-search={haystack} style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 12px; font-weight: 700; color: #64748b;">
@@ -1197,7 +1267,11 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                               "{log.motivo}"
                             </td>
                             <td style="padding: 12px; text-align: center;">
-                              <form method="post" action={adminRoutes.personalizacion.index.href()} class="restore-form">
+                              <form
+                                method="post"
+                                action={adminRoutes.personalizacion.index.href()}
+                                class="restore-form"
+                              >
                                 <input type="hidden" name="_action" value="restore" />
                                 <input type="hidden" name="log_id" value={log.id} />
                                 <input type="hidden" name="tab" value="historial" />
@@ -1205,7 +1279,6 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                                   type="submit"
                                   class="btn"
                                   style="background: #0284c7; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; border: none;"
-                                  
                                 >
                                   ⏪ Restaurar esta versión
                                 </button>
@@ -1241,7 +1314,10 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
               <input type="hidden" name="_action" value="testMail" />
               <input type="hidden" name="tab" value={tabActiva} />
               <div class="form-field" style="flex: 1; min-width: 240px;">
-                <label for="smtp-test-para" style="font-weight: 700; font-size: 12px; color: #475569;">
+                <label
+                  for="smtp-test-para"
+                  style="font-weight: 700; font-size: 12px; color: #475569;"
+                >
                   Correo destino para la prueba
                 </label>
                 <input
@@ -1258,8 +1334,8 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
               </Button>
             </form>
             <p style="font-size: 11px; color: #94a3b8; margin: 10px 0 0;">
-              Solo admin. El backend responde 503 si SMTP no está configurado y 502 si el envío falla; el
-              resultado se muestra arriba como mensaje de éxito o error.
+              Solo admin. El backend responde 503 si SMTP no está configurado y 502 si el envío
+              falla; el resultado se muestra arriba como mensaje de éxito o error.
             </p>
           </div>
 
@@ -1274,10 +1350,15 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                   <span>👁️</span> Vista previa en vivo (mini portal)
                 </div>
                 <p class="mp-modal__hint">
-                  Se actualiza mientras editas la pestaña "Vista de Usuario". Cada
-                  etiqueta marca una zona personalizable.
+                  Se actualiza mientras editas la pestaña "Vista de Usuario". Cada etiqueta marca
+                  una zona personalizable.
                 </p>
-                <button type="button" id="btn-close-preview" class="mp-modal__close" aria-label="Cerrar">
+                <button
+                  type="button"
+                  id="btn-close-preview"
+                  class="mp-modal__close"
+                  aria-label="Cerrar"
+                >
                   ✕
                 </button>
               </div>
@@ -1306,7 +1387,11 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                     </div>
                   </div>
 
-                  <div id="mp-hero" class="mp__hero" style={`background-image:url("${heroImgs[0]}");`}>
+                  <div
+                    id="mp-hero"
+                    class="mp__hero"
+                    style={`background-image:url("${heroImgs[0]}");`}
+                  >
                     <span class="mp__tag mp__tag--light">✎ Portada (Hero)</span>
                     <span id="mp-cintillo" class="mp__cintillo">
                       {txt.heroCintillo || 'Programa de Ordenamiento Ecológico'}
@@ -1322,7 +1407,11 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                         'Consulta el proceso, revisa documentos y registra tu participación ciudadana.'}
                     </p>
                     <div class="mp__hero-actions">
-                      <span id="mp-btn1" class="mp__btn mp__btn--fill" style={`background:${c.primario || '#8c1d3d'};`}>
+                      <span
+                        id="mp-btn1"
+                        class="mp__btn mp__btn--fill"
+                        style={`background:${c.primario || '#8c1d3d'};`}
+                      >
                         {txt.heroBtn1 || 'Conoce el programa'}
                       </span>
                       <span
@@ -1339,28 +1428,52 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                     <span class="mp__tag">✎ Tarjetas de acción</span>
                     <div class="mp__cards-row">
                       <div class="mp__card">
-                        <span id="mp-card-icon-1" class="mp__card-icon" style={`color:${c.acento || '#e0b84a'};`}>
+                        <span
+                          id="mp-card-icon-1"
+                          class="mp__card-icon"
+                          style={`color:${c.acento || '#e0b84a'};`}
+                        >
                           {ico.cardPrograma || '🏛️'}
                         </span>
-                        <strong id="mp-card-titulo-1">{txt.card1Titulo || 'Conoce el Programa'}</strong>
+                        <strong id="mp-card-titulo-1">
+                          {txt.card1Titulo || 'Conoce el Programa'}
+                        </strong>
                       </div>
                       <div class="mp__card">
-                        <span id="mp-card-icon-2" class="mp__card-icon" style={`color:${c.acento || '#e0b84a'};`}>
+                        <span
+                          id="mp-card-icon-2"
+                          class="mp__card-icon"
+                          style={`color:${c.acento || '#e0b84a'};`}
+                        >
                           {ico.cardProceso || '⚙️'}
                         </span>
-                        <strong id="mp-card-titulo-2">{txt.card2Titulo || 'Conoce el Proceso'}</strong>
+                        <strong id="mp-card-titulo-2">
+                          {txt.card2Titulo || 'Conoce el Proceso'}
+                        </strong>
                       </div>
                       <div class="mp__card">
-                        <span id="mp-card-icon-3" class="mp__card-icon" style={`color:${c.acento || '#e0b84a'};`}>
+                        <span
+                          id="mp-card-icon-3"
+                          class="mp__card-icon"
+                          style={`color:${c.acento || '#e0b84a'};`}
+                        >
                           {ico.cardCalendario || '📅'}
                         </span>
-                        <strong id="mp-card-titulo-3">{txt.card3Titulo || 'Calendario de Actividades'}</strong>
+                        <strong id="mp-card-titulo-3">
+                          {txt.card3Titulo || 'Calendario de Actividades'}
+                        </strong>
                       </div>
                       <div class="mp__card">
-                        <span id="mp-card-icon-4" class="mp__card-icon" style={`color:${c.acento || '#e0b84a'};`}>
+                        <span
+                          id="mp-card-icon-4"
+                          class="mp__card-icon"
+                          style={`color:${c.acento || '#e0b84a'};`}
+                        >
                           {ico.cardDocumentos || '📄'}
                         </span>
-                        <strong id="mp-card-titulo-4">{txt.card4Titulo || 'Consulta Documentos'}</strong>
+                        <strong id="mp-card-titulo-4">
+                          {txt.card4Titulo || 'Consulta Documentos'}
+                        </strong>
                       </div>
                     </div>
                   </div>
@@ -1382,7 +1495,9 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       <strong id="mp-footer-entidad">
                         {txt.footerEntidad || 'Municipio de San Pedro Tlaquepaque'}
                       </strong>
-                      <div id="mp-footer-email">{txt.footerEmail || 'ordenamiento@tlaquepaque.gob.mx'}</div>
+                      <div id="mp-footer-email">
+                        {txt.footerEmail || 'ordenamiento@tlaquepaque.gob.mx'}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1390,7 +1505,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
             </div>
           </div>
         </div>
-</AdminLayout>
+      </AdminLayout>
     )
   }
 }

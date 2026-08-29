@@ -22,6 +22,7 @@ export interface ThemeConfig {
       logoFooter: string
       heroImagenes: string[]
       imagenEcologia: string
+      imagenPrograma: string
     }
     iconos: {
       cardPrograma: string
@@ -89,6 +90,7 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
         'https://imgs.search.brave.com/8f1SgJygGgIrQH2BcZXess4TRcaOtm3FXVfawE9VxRE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTEy/NTUyNzc3Mi9lcy9m/b3RvL3RsYXF1ZXBh/cXVlLmpwZz9zPTYx/Mng2MTImdz0wJms9/MjAmYz1VU3FwdjNw/OEJxbG9LY0JaY01q/YUdPNkpQWW1Va0xl/N1FYUGx5YVREM1Zz/PQ',
       ],
       imagenEcologia: '/ordena/images/ecology-split.jpg',
+      imagenPrograma: '/ordena/images/ecology-split.jpg',
     },
     iconos: {
       cardPrograma: '🏛️',
@@ -344,7 +346,7 @@ export function validarYSanitizarThemeConfig(config: Partial<ThemeConfig>): stri
           }
         }
       } else {
-        // Para las demás imágenes (logoNavbar, logoFooter, imagenEcologia)
+        // Para las demás imágenes (logoNavbar, logoFooter, imagenEcologia, imagenPrograma)
         if (value && value !== '' && !isSafeImageUrl(value)) {
           return `URL de imagen inválida en ${key}`
         }
@@ -356,10 +358,7 @@ export function validarYSanitizarThemeConfig(config: Partial<ThemeConfig>): stri
   if (config.usuario?.textos) {
     for (const [key, text] of Object.entries(config.usuario.textos)) {
       if (text && typeof text === 'string') {
-        config.usuario.textos[key as keyof typeof config.usuario.textos] = sanitizeText(
-          text,
-          500,
-        )
+        config.usuario.textos[key as keyof typeof config.usuario.textos] = sanitizeText(text, 500)
       }
     }
   }
