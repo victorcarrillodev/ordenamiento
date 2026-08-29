@@ -49,6 +49,7 @@ export const adminRoutes = route({
   participacionDetalle: get(`${basePath}/admin/participaciones/:id`),
   avisos: form(`${basePath}/admin/avisos`),
   poel: form(`${basePath}/admin/poel`),
+  poelImagen: get(`${basePath}/admin/poel/:id/imagen`),
   actividades: form(`${basePath}/admin/actividades`),
   documentos: form(`${basePath}/admin/documentos`),
   indicadores: form(`${basePath}/admin/indicadores`),

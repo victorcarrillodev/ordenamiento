@@ -3,19 +3,7 @@ import { NavBar } from '../../../ui/nav-bar.tsx'
 import { css, type Handle } from 'remix/ui'
 import { colors, FONT_STACK, type ThemeData } from '../../../ui/civic-horizon.ts'
 import { routes } from '../../../routes.ts'
-
-export const TIPOS_DOCUMENTOS = [
-  'Convenios y anexos',
-  'Acuerdos',
-  'Actas y minutas',
-  'Convocatorias',
-  'Documentos técnicos',
-  'Cartografía',
-  'Avances y resultados',
-  'Programa',
-] as const
-
-export const ETAPAS_DOCUMENTOS = ['En proceso', 'Dictaminada', 'Notificada'] as const
+import { ETAPAS_DOCUMENTO, TIPOS_DOCUMENTO } from '../../../data/poetdum.ts'
 
 export interface DocumentosPageProps {
   theme?: ThemeData
@@ -115,7 +103,7 @@ export function DocumentosPage(handle: Handle<DocumentosPageProps>) {
               </span>
               <select name="tipo" defaultValue={tipo} mix={selectStyle}>
                 <option value="">Todos los tipos</option>
-                {TIPOS_DOCUMENTOS.map((t) => (
+                {TIPOS_DOCUMENTO.map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>
@@ -136,7 +124,7 @@ export function DocumentosPage(handle: Handle<DocumentosPageProps>) {
               </span>
               <select name="etapa" defaultValue={etapa} mix={selectStyle}>
                 <option value="">Todas las etapas</option>
-                {ETAPAS_DOCUMENTOS.map((e) => (
+                {ETAPAS_DOCUMENTO.map((e) => (
                   <option key={e} value={e}>
                     {e}
                   </option>

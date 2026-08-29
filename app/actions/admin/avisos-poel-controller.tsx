@@ -27,6 +27,9 @@ interface SesionPoel {
   fecha: string | null
   ubicacion: string
   activo: boolean
+  latitud: string
+  longitud: string
+  imagen_nombre: string
 }
 
 async function avisosDe(request: Request) {
@@ -130,7 +133,15 @@ export const poelController = createController(adminRoutes.poel, {
     async index(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
-      return context.render(<PoelPage user={user} sesiones={await poelDe(context.request)} />)
+
+      const fb = new URL(context.request.url).searchParams.get('ok')
+      const feedback = (['creada', 'editada', 'imagen', 'estado', 'error'] as const).find(
+        (v) => v === fb,
+      )
+
+      return context.render(
+        <PoelPage user={user} sesiones={await poelDe(context.request)} feedback={feedback} />,
+      )
     },
 
     async action(context) {
@@ -139,26 +150,74 @@ export const poelController = createController(adminRoutes.poel, {
 
       const formData = await context.request.formData()
       const intent = String(formData.get('intent') ?? 'crear')
+      const id = String(formData.get('id') ?? '')
+      const texto = (k: string) => String(formData.get(k) ?? '')
+      const volver = (ok: string) => redirect(`${adminRoutes.poel.index.href()}?ok=${ok}`)
 
       if (intent === 'eliminar') {
-        await backendFetch(context.request, `/api/poel/${String(formData.get('id') ?? '')}`, {
-          method: 'DELETE',
+        const res = await backendFetch(context.request, `/api/poel/${id}`, { method: 'DELETE' })
+        return volver(res.ok ? 'editada' : 'error')
+      }
+
+      if (intent === 'activo') {
+        // Update parcial: solo viaja `activo`, para no pisar una edición que
+        // otro admin pueda tener a medias en el formulario.
+        const res = await backendFetch(context.request, `/api/poel/${id}`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ activo: texto('activo') === '1' }),
         })
-      } else {
-        await backendFetch(context.request, '/api/poel', {
+        return volver(res.ok ? 'estado' : 'error')
+      }
+
+      if (intent === 'imagen') {
+        const archivo = formData.get('imagen')
+        if (!(archivo instanceof File) || archivo.size === 0) return volver('error')
+
+        const cuerpo = new FormData()
+        cuerpo.append('imagen', archivo, archivo.name)
+        const res = await backendFetch(context.request, `/api/poel/${id}/imagen`, {
           method: 'POST',
+          body: cuerpo,
+        })
+        return volver(res.ok ? 'imagen' : 'error')
+      }
+
+      if (intent === 'editar') {
+        const res = await backendFetch(context.request, `/api/poel/${id}`, {
+          method: 'PATCH',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
-            categoria: formData.get('categoria'),
+            categoria: texto('categoria'),
             orden: Number(formData.get('orden') ?? 0),
-            titulo: formData.get('titulo'),
-            descripcion: formData.get('descripcion'),
-            fecha: formData.get('fecha') || null,
-            ubicacion: formData.get('ubicacion'),
+            titulo: texto('titulo'),
+            descripcion: texto('descripcion'),
+            ubicacion: texto('ubicacion'),
+            latitud: texto('latitud'),
+            longitud: texto('longitud'),
+            // Vacío significa quitar la fecha: por eso se manda null en vez
+            // de omitir la clave, que el backend interpreta como "no tocar".
+            fecha: texto('fecha') || null,
           }),
         })
+        return volver(res.ok ? 'editada' : 'error')
       }
-      return redirect(adminRoutes.poel.index.href())
+
+      const res = await backendFetch(context.request, '/api/poel', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          categoria: texto('categoria'),
+          orden: Number(formData.get('orden') ?? 0),
+          titulo: texto('titulo'),
+          descripcion: texto('descripcion'),
+          fecha: texto('fecha') || null,
+          ubicacion: texto('ubicacion'),
+          latitud: texto('latitud'),
+          longitud: texto('longitud'),
+        }),
+      })
+      return volver(res.ok ? 'creada' : 'error')
     },
   },
 })

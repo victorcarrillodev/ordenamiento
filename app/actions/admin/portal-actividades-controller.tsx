@@ -38,13 +38,20 @@ export default createController(adminRoutes.actividades, {
           documentos: [],
         }),
       ])
-      // También cargar realizadas para tener listado completo en admin
-      const realizadasData = await fetchJsonOr<{ actividades: Actividad[] }>(
-        context.request,
-        '/api/actividades?estado=realizadas',
-        { actividades: [] },
-      )
-      const todas = [...(actividadesData.actividades ?? []), ...(realizadasData.actividades ?? [])]
+      // También cargar realizadas y canceladas para tener listado completo en admin
+      const [realizadasData, canceladasData] = await Promise.all([
+        fetchJsonOr<{ actividades: Actividad[] }>(context.request, '/api/actividades?estado=realizadas', {
+          actividades: [],
+        }),
+        fetchJsonOr<{ actividades: Actividad[] }>(context.request, '/api/actividades?estado=canceladas', {
+          actividades: [],
+        }),
+      ])
+      const todas = [
+        ...(actividadesData.actividades ?? []),
+        ...(realizadasData.actividades ?? []),
+        ...(canceladasData.actividades ?? []),
+      ]
 
       return context.render(
         <PortalActividadesPage

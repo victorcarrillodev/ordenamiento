@@ -1,5 +1,6 @@
 import type { Handle } from 'remix/ui'
 
+import { ESTADOS_ACTIVIDAD } from '../../data/poetdum.ts'
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
@@ -64,9 +65,11 @@ export function PortalActividadesPage(handle: Handle<PortalActividadesPageProps>
             <div class="form-field">
               <label for="estado">Estado</label>
               <select id="estado" name="estado">
-                <option value="proxima">próxima</option>
-                <option value="realizada">realizada</option>
-                <option value="cancelada">cancelada</option>
+                {ESTADOS_ACTIVIDAD.map((e) => (
+                  <option key={e} value={e}>
+                    {e === 'proxima' ? 'próxima' : e}
+                  </option>
+                ))}
               </select>
             </div>
             <div class="form-field">

@@ -214,6 +214,27 @@ export default createController(adminRoutes, {
       return new Response(response.body, { headers })
     },
 
+    /** Sirve la imagen de una sesión POEL a través del panel. */
+    async poelImagen(context) {
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
+
+      const response = await backendFetch(context.request, `/api/poel/${context.params.id}/imagen`)
+      if (!response.ok) return new Response('Not Found', { status: response.status })
+
+      const headers = new Headers()
+      for (const h of ['content-type', 'content-disposition', 'content-length']) {
+        const v = response.headers.get(h)
+        if (v) headers.set(h, v)
+      }
+      headers.set('x-content-type-options', 'nosniff')
+      // Igual que con los adjuntos: la CSP del backend impediría incrustarla en
+      // el propio panel, así que se emite una que sí lo permite en mismo origen.
+      headers.set('content-security-policy', "default-src 'none'; frame-ancestors 'self'")
+
+      return new Response(response.body, { headers })
+    },
+
     async estadisticas(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user

@@ -1836,3 +1836,201 @@ a.cal__mas:hover {
   font-size: 11px;
   opacity: 0.8;
 }
+/* ---------------------------------------------------------------------------
+   Sesiones POEL
+   --------------------------------------------------------------------------- */
+.poel-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.poel-form__fila {
+  display: grid;
+  grid-template-columns: 110px 1fr 180px;
+  gap: 14px;
+}
+@media (max-width: 760px) {
+  .poel-form__fila {
+    grid-template-columns: 1fr;
+  }
+}
+.poel-form .form-field {
+  margin: 0;
+}
+.poel-inline {
+  margin: 0;
+  display: inline-flex;
+}
+
+.poel-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.poel-card {
+  background: #fff;
+  border: 1px solid var(--a-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+/* Una sesión oculta se ve apagada, para distinguirla de un vistazo de las
+   que sí están publicadas en el sitio. */
+.poel-card--inactiva {
+  background: #fbfbfa;
+  border-style: dashed;
+}
+.poel-card--inactiva .poel-card__titulo {
+  color: var(--a-muted);
+}
+.poel-card__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.poel-card__identidad {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.poel-card__orden {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--a-bg);
+  border: 1px solid var(--a-border);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--a-muted);
+}
+.poel-card__titulo {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.poel-card__categoria {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--a-muted);
+}
+.poel-card__acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.poel-card__resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--a-muted);
+}
+.poel-card__resumen span,
+.poel-card__resumen a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.poel-card__resumen a {
+  color: var(--a-blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+.poel-card__resumen a:hover {
+  text-decoration: underline;
+}
+.poel-card__desc {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--a-text);
+}
+
+.poel-editar {
+  margin-top: 12px;
+  border-top: 1px solid var(--a-border);
+  padding-top: 10px;
+}
+.poel-editar > summary {
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--a-dark);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+}
+.poel-editar > summary::-webkit-details-marker {
+  display: none;
+}
+.poel-editar > summary:hover {
+  text-decoration: underline;
+}
+.poel-editar__cuerpo {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 20px;
+  margin-top: 14px;
+}
+@media (max-width: 900px) {
+  .poel-editar__cuerpo {
+    grid-template-columns: 1fr;
+  }
+}
+
+.poel-ubicacion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--a-border);
+  border-radius: 10px;
+  background: var(--a-bg);
+}
+.poel-coords {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.poel-ubicacion .form-field {
+  margin: 0;
+}
+
+.poel-imagen {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px dashed var(--a-border);
+  border-radius: 10px;
+  align-self: start;
+}
+.poel-imagen__titulo {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.poel-imagen__vista {
+  width: 100%;
+  max-height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--a-border);
+}
+.poel-imagen .form-field {
+  margin: 0;
+}
+.poel-imagen input[type='file'] {
+  font-size: 11.5px;
+}

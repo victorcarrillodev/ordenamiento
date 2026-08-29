@@ -186,6 +186,19 @@ CREATE TABLE IF NOT EXISTS poel_sesiones (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Imagen ilustrativa de la sesión (foto del taller, cartel de la convocatoria).
+-- El archivo vive en uploads/ como los adjuntos; aquí solo su referencia.
+ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS imagen_ruta   TEXT NOT NULL DEFAULT '';
+ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS imagen_nombre TEXT NOT NULL DEFAULT '';
+ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS imagen_mime   TEXT NOT NULL DEFAULT '';
+
+-- Coordenadas del lugar. Van aparte de `ubicacion` (que es la dirección escrita)
+-- porque una cosa es cómo se lee y otra dónde cae en el mapa.
+ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS latitud  TEXT NOT NULL DEFAULT '';
+ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS longitud TEXT NOT NULL DEFAULT '';
+
+ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
 -- ---------------------------------------------------------------------------
 -- Personalización Visual y Marca (Site Customizations & Theming)
 -- ---------------------------------------------------------------------------

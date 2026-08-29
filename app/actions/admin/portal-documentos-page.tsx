@@ -1,21 +1,9 @@
 import type { Handle } from 'remix/ui'
 
+import { ETAPAS_DOCUMENTO, TIPOS_DOCUMENTO } from '../../data/poetdum.ts'
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
-
-const TIPOS = [
-  'Convenios y anexos',
-  'Acuerdos',
-  'Actas y minutas',
-  'Convocatorias',
-  'Documentos técnicos',
-  'Cartografía',
-  'Avances y resultados',
-  'Programa',
-] as const
-
-const ETAPAS = ['En proceso', 'Dictaminada', 'Notificada'] as const
 
 export interface PortalDocumentosPageProps {
   user: { name: string; role: string }
@@ -53,7 +41,7 @@ export function PortalDocumentosPage(handle: Handle<PortalDocumentosPageProps>) 
             <div class="form-field">
               <label for="tipo">Tipo</label>
               <select id="tipo" name="tipo" required>
-                {TIPOS.map((t) => (
+                {TIPOS_DOCUMENTO.map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>
@@ -63,7 +51,7 @@ export function PortalDocumentosPage(handle: Handle<PortalDocumentosPageProps>) 
             <div class="form-field">
               <label for="etapa">Etapa</label>
               <select id="etapa" name="etapa" required>
-                {ETAPAS.map((e) => (
+                {ETAPAS_DOCUMENTO.map((e) => (
                   <option key={e} value={e}>
                     {e}
                   </option>

@@ -36,10 +36,37 @@ import {
 } from './services/participations.ts'
 import { createReunion, deleteReunion, listReuniones } from './services/reuniones.ts'
 import { listAvisos, createAviso, deleteAviso } from './services/avisos.ts'
-import { listPoel, createPoelSesion, deletePoelSesion } from './services/poel.ts'
-import { listActividades, createActividad, updateActividad, deleteActividad } from './services/actividades.ts'
-import { listDocumentos, getDocumento, createDocumento, updateDocumento, deleteDocumento, isTipoDocumento, isEtapaDoc } from './services/documentos.ts'
-import { listIndicadores, createIndicador, updateIndicador, deleteIndicador } from './services/indicadores.ts'
+import {
+  listPoel,
+  createPoelSesion,
+  deletePoelSesion,
+  updatePoelSesion,
+  setPoelImagen,
+  getPoelImagen,
+  isCategoriaPoel,
+} from './services/poel.ts'
+import { subirArchivosDesdeForm } from './services/upload.ts'
+import {
+  listActividades,
+  createActividad,
+  updateActividad,
+  deleteActividad,
+} from './services/actividades.ts'
+import {
+  listDocumentos,
+  getDocumento,
+  createDocumento,
+  updateDocumento,
+  deleteDocumento,
+  isTipoDocumento,
+  isEtapaDoc,
+} from './services/documentos.ts'
+import {
+  listIndicadores,
+  createIndicador,
+  updateIndicador,
+  deleteIndicador,
+} from './services/indicadores.ts'
 import { validarAdjunto } from './files/limits.ts'
 import { nombreEnDisco, sanitizarNombre } from './files/nombres.ts'
 import { exportTableToXlsx, isExportable } from './services/export.ts'
@@ -491,7 +518,11 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (!body.id || !body.para) return json({ error: 'Faltan datos: id, para' }, 400)
     const err = requireUuidParam(String(body.id))
     if (err) return err
-    if (/[\r\n]/.test(String(body.para)) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.para).trim()) || /[<>]/.test(String(body.para))) {
+    if (
+      /[\r\n]/.test(String(body.para)) ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.para).trim()) ||
+      /[<>]/.test(String(body.para))
+    ) {
       return json({ error: 'Correo destino inválido' }, 400)
     }
     if (!mailConfigurado()) {
@@ -515,7 +546,11 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (!body.id || !body.para) return json({ error: 'Faltan datos: id, para' }, 400)
     const err = requireUuidParam(String(body.id))
     if (err) return err
-    if (/[\r\n]/.test(String(body.para)) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.para).trim()) || /[<>]/.test(String(body.para))) {
+    if (
+      /[\r\n]/.test(String(body.para)) ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.para).trim()) ||
+      /[<>]/.test(String(body.para))
+    ) {
       return json({ error: 'Correo destino inválido' }, 400)
     }
     if (!mailConfigurado()) {
@@ -541,7 +576,11 @@ export async function handleRequest(request: Request): Promise<Response> {
     // Anti-CRLF/XSS: el destino es header `To:` de SMTP y se refleja en JSON (`para`).
     // Rechaza \r\n y valida formato email básico; complementa el filtro del frontend
     // porque el backend es el guarda definitivo (bypass directo vía curl).
-    if (/[\r\n]/.test(destino) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(destino) || /[<>]/.test(destino)) {
+    if (
+      /[\r\n]/.test(destino) ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(destino) ||
+      /[<>]/.test(destino)
+    ) {
       return json({ error: 'Correo destino inválido' }, 400)
     }
     if (!mailConfigurado()) {
@@ -712,8 +751,7 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (authError) return authError
     const err = requireUuidParam(avisoDeleteMatch.id)
     if (err) return err
-    if (!(await deleteAviso(avisoDeleteMatch.id)))
-      return json({ error: 'No encontrado' }, 404)
+    if (!(await deleteAviso(avisoDeleteMatch.id))) return json({ error: 'No encontrado' }, 404)
     return json({ ok: true })
   }
 
@@ -734,17 +772,131 @@ export async function handleRequest(request: Request): Promise<Response> {
       descripcion?: string
       fecha?: string
       ubicacion?: string
+      latitud?: string
+      longitud?: string
     }
     if (!body.titulo) return json({ error: 'Falta titulo' }, 400)
-    const sesion = await createPoelSesion({
-      categoria: body.categoria ?? '',
-      orden: body.orden ?? 0,
-      titulo: body.titulo,
-      descripcion: body.descripcion,
-      fecha: body.fecha || null,
-      ubicacion: body.ubicacion ?? '',
+    // Validación temprana — mantiene contrato 400 igual que !titulo, sin depender del throw del servicio
+    if (!isCategoriaPoel(body.categoria ?? '')) return json({ error: 'categoría inválida' }, 400)
+    try {
+      const sesion = await createPoelSesion({
+        categoria: body.categoria ?? '',
+        orden: body.orden ?? 0,
+        titulo: body.titulo,
+        descripcion: body.descripcion,
+        fecha: body.fecha || null,
+        ubicacion: body.ubicacion ?? '',
+        latitud: body.latitud ?? '',
+        longitud: body.longitud ?? '',
+      })
+      return json({ ok: true, sesion }, 201)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      const status = (err as { status?: number }).status ?? 500
+      if (status >= 400 && status < 500) return json({ error: msg }, status)
+      throw err
+    }
+  }
+
+  // Editar una sesión POEL (update parcial: sirve tanto para el formulario
+  // completo como para el botón de activar/desactivar).
+  const poelUpdateMatch = method === 'PATCH' ? matchPath(pathname, '/api/poel/:id') : null
+  if (poelUpdateMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(poelUpdateMatch.id)
+    if (err) return err
+
+    const body = (await request.json()) as Record<string, unknown>
+    const texto = (k: string) => (typeof body[k] === 'string' ? (body[k] as string) : undefined)
+
+    try {
+      const sesion = await updatePoelSesion(poelUpdateMatch.id, {
+        categoria: texto('categoria'),
+        titulo: texto('titulo'),
+        descripcion: texto('descripcion'),
+        ubicacion: texto('ubicacion'),
+        latitud: texto('latitud'),
+        longitud: texto('longitud'),
+        orden: typeof body.orden === 'number' ? body.orden : undefined,
+        activo: typeof body.activo === 'boolean' ? body.activo : undefined,
+        // `fecha` distingue ausente (no tocar) de null (borrar la fecha).
+        fecha: 'fecha' in body ? (body.fecha as string | null) || null : undefined,
+      })
+      if (!sesion) return json({ error: 'No encontrado' }, 404)
+      return json({ ok: true, sesion })
+    } catch (e) {
+      const status = (e as { status?: number }).status ?? 500
+      if (status === 400) return json({ error: (e as Error).message }, 400)
+      throw e
+    }
+  }
+
+  // Subir la imagen de una sesión (multipart). Reutiliza el mismo guard de
+  // archivos que los adjuntos ciudadanos: límites, magic bytes y nombre saneado.
+  const poelImagenPost = method === 'POST' ? matchPath(pathname, '/api/poel/:id/imagen') : null
+  if (poelImagenPost) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(poelImagenPost.id)
+    if (err) return err
+
+    let escritos: string[] = []
+    try {
+      const subida = await subirArchivosDesdeForm(request, ['imagen'])
+      escritos = subida.escritos
+      const archivo = subida.archivos[0]
+      if (!archivo) return json({ error: 'No se recibió ninguna imagen' }, 400)
+
+      // Solo imágenes: un PDF o un DWG no tienen sentido como portada.
+      if (!isImageExtension(getExtension(archivo.nombreOriginal))) {
+        await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
+        return json({ error: 'El archivo debe ser una imagen (JPG, PNG, WEBP o GIF)' }, 415)
+      }
+
+      const sesion = await setPoelImagen(poelImagenPost.id, archivo)
+      if (!sesion) {
+        await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
+        return json({ error: 'No encontrado' }, 404)
+      }
+      return json({ ok: true, sesion })
+    } catch (e) {
+      // Si algo falla, no dejar la imagen huérfana en disco.
+      await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
+      const status = (e as { status?: number }).status
+      if (status) return json({ error: (e as Error).message }, status)
+      throw e
+    }
+  }
+
+  // Ver la imagen de una sesión. Es contenido institucional (fotos de talleres,
+  // carteles), no PII, así que se sirve sin sesión: la consulta pública la usa.
+  const poelImagenGet = method === 'GET' ? matchPath(pathname, '/api/poel/:id/imagen') : null
+  if (poelImagenGet) {
+    const err = requireUuidParam(poelImagenGet.id)
+    if (err) return err
+    const img = await getPoelImagen(poelImagenGet.id)
+    if (!img) return json({ error: 'Sin imagen' }, 404)
+
+    const ruta = isAbsolute(img.ruta) ? img.ruta : join(UPLOAD_DIR, img.ruta)
+    if (!ruta.startsWith(UPLOAD_DIR)) {
+      return json({ error: 'Acceso a archivo no autorizado' }, 403)
+    }
+    let file: Buffer
+    try {
+      file = await readFile(ruta)
+    } catch {
+      return json({ error: 'Archivo en disco no disponible' }, 404)
+    }
+    const ext = getExtension(img.nombre)
+    return new Response(new Uint8Array(file), {
+      headers: {
+        'content-type': canonicalMimeFor(ext) ?? 'application/octet-stream',
+        'content-disposition': contentDispositionHeader('inline', img.nombre),
+        'x-content-type-options': 'nosniff',
+        'content-security-policy': "default-src 'none'; frame-ancestors 'self'",
+      },
     })
-    return json({ ok: true, sesion }, 201)
   }
 
   const poelDeleteMatch = method === 'DELETE' ? matchPath(pathname, '/api/poel/:id') : null
@@ -887,18 +1039,23 @@ export async function handleRequest(request: Request): Promise<Response> {
   }
 
   // Pública: foto de actividad (anti-traversal + headers de seguridad)
-  const actividadFotoMatch = method === 'GET' ? matchPath(pathname, '/api/actividades/:id/fotos/:fid') : null
+  const actividadFotoMatch =
+    method === 'GET' ? matchPath(pathname, '/api/actividades/:id/fotos/:fid') : null
   if (actividadFotoMatch) {
     const errId = requireUuidParam(actividadFotoMatch.id)
     if (errId) return errId
     const errFid = requireUuidParam(actividadFotoMatch.fid)
     if (errFid) return errFid
-    const rows = await sql<Array<{ ruta_local: string; nombre_original: string; mime: string }>>`--sql
+    const rows = await sql<
+      Array<{ ruta_local: string; nombre_original: string; mime: string }>
+    >`--sql
       SELECT ruta_local, nombre_original, mime FROM actividad_fotos
       WHERE id = ${actividadFotoMatch.fid} AND actividad_id = ${actividadFotoMatch.id}
     `
     if (rows.length === 0) return json({ error: 'Foto no encontrada' }, 404)
-    const ruta = isAbsolute(rows[0].ruta_local) ? rows[0].ruta_local : join(UPLOAD_DIR, rows[0].ruta_local)
+    const ruta = isAbsolute(rows[0].ruta_local)
+      ? rows[0].ruta_local
+      : join(UPLOAD_DIR, rows[0].ruta_local)
     if (!ruta.startsWith(UPLOAD_DIR) && !ruta.startsWith(BRANDING_DIR)) {
       return json({ error: 'Acceso a archivo no autorizado' }, 403)
     }
@@ -940,7 +1097,8 @@ export async function handleRequest(request: Request): Promise<Response> {
   }
 
   // Pública: descarga archivo de documento
-  const documentoArchivoMatch = method === 'GET' ? matchPath(pathname, '/api/documentos/:id/archivo') : null
+  const documentoArchivoMatch =
+    method === 'GET' ? matchPath(pathname, '/api/documentos/:id/archivo') : null
   if (documentoArchivoMatch) {
     const errId = requireUuidParam(documentoArchivoMatch.id)
     if (errId) return errId
@@ -981,7 +1139,8 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (method === 'POST' && pathname === '/api/actividades') {
     const authError = requireAdmin()
     if (authError) return authError
-    if (bodyTooLarge(request, 21 * 1024 * 1024)) return json({ error: 'Cuerpo demasiado grande' }, 413)
+    if (bodyTooLarge(request, 21 * 1024 * 1024))
+      return json({ error: 'Cuerpo demasiado grande' }, 413)
     const form = await request.formData()
     const titulo = String(form.get('titulo') ?? '').trim()
     const fecha = String(form.get('fecha') ?? '').trim()
@@ -990,7 +1149,10 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (estadoRaw && !['proxima', 'realizada', 'cancelada'].includes(estadoRaw)) {
       return json({ error: `estado inválido: ${estadoRaw}` }, 400)
     }
-    const documentoIds = form.getAll('documentos').map((v) => String(v).trim()).filter(Boolean)
+    const documentoIds = form
+      .getAll('documentos')
+      .map((v) => String(v).trim())
+      .filter(Boolean)
     for (const did of documentoIds) {
       const err = requireUuidParam(did)
       if (err) return json({ error: `documento id inválido: ${did}` }, 400)
@@ -998,7 +1160,12 @@ export async function handleRequest(request: Request): Promise<Response> {
     // Fotos: validar y escribir a disco (con rollback)
     const rawFotos = form.getAll('fotos').filter((e): e is File => e instanceof File && e.size > 0)
     const escritos: string[] = []
-    const fotosParaDb: Array<{ nombreOriginal: string; mime: string; size: number; rutaLocal: string }> = []
+    const fotosParaDb: Array<{
+      nombreOriginal: string
+      mime: string
+      size: number
+      rutaLocal: string
+    }> = []
     let persistido = false
     try {
       for (const file of rawFotos) {
@@ -1006,14 +1173,23 @@ export async function handleRequest(request: Request): Promise<Response> {
         if (!v.ok) return json({ error: v.reason }, v.codigo ?? 400)
         const buf = Buffer.from(await file.arrayBuffer())
         const verdict = validateUpload({ filename: file.name, buffer: buf })
-        if (!verdict.ok) return json({ error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` }, 415)
+        if (!verdict.ok)
+          return json(
+            { error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` },
+            415,
+          )
         const { mkdir, writeFile } = await import('node:fs/promises')
         await mkdir(UPLOAD_DIR, { recursive: true })
         const disco = nombreEnDisco(file.name)
         const ruta = join(UPLOAD_DIR, disco)
         await writeFile(ruta, buf)
         escritos.push(ruta)
-        fotosParaDb.push({ nombreOriginal: sanitizarNombre(file.name), mime: verdict.safeMime!, size: file.size, rutaLocal: ruta })
+        fotosParaDb.push({
+          nombreOriginal: sanitizarNombre(file.name),
+          mime: verdict.safeMime!,
+          size: file.size,
+          rutaLocal: ruta,
+        })
       }
       const result = await sql.begin(async (tx) => {
         return createActividad(
@@ -1053,20 +1229,32 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (err) return err
     const contentType = request.headers.get('content-type') ?? ''
     let input: Record<string, string> = {}
-    let fotosParaDb: Array<{ nombreOriginal: string; mime: string; size: number; rutaLocal: string }> | undefined
+    let fotosParaDb:
+      Array<{ nombreOriginal: string; mime: string; size: number; rutaLocal: string }> | undefined
     let documentoIds: string[] | undefined
     const escritos: string[] = []
     let persistido = false
     try {
       if (contentType.includes('multipart/form-data')) {
         const form = await request.formData()
-        for (const k of ['titulo', 'fecha', 'hora_inicio', 'hora_fin', 'lugar', 'descripcion', 'estado', 'resultados']) {
+        for (const k of [
+          'titulo',
+          'fecha',
+          'hora_inicio',
+          'hora_fin',
+          'lugar',
+          'descripcion',
+          'estado',
+          'resultados',
+        ]) {
           const v = form.get(k)
           if (v !== null) input[k] = String(v)
         }
         const docs = form.getAll('documentos')
         if (docs.length > 0) documentoIds = docs.map((v) => String(v).trim()).filter(Boolean)
-        const rawFotos = form.getAll('fotos').filter((e): e is File => e instanceof File && e.size > 0)
+        const rawFotos = form
+          .getAll('fotos')
+          .filter((e): e is File => e instanceof File && e.size > 0)
         if (rawFotos.length > 0) {
           fotosParaDb = []
           for (const file of rawFotos) {
@@ -1074,14 +1262,23 @@ export async function handleRequest(request: Request): Promise<Response> {
             if (!v.ok) return json({ error: v.reason }, v.codigo ?? 400)
             const buf = Buffer.from(await file.arrayBuffer())
             const verdict = validateUpload({ filename: file.name, buffer: buf })
-            if (!verdict.ok) return json({ error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` }, 415)
+            if (!verdict.ok)
+              return json(
+                { error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` },
+                415,
+              )
             const { mkdir, writeFile } = await import('node:fs/promises')
             await mkdir(UPLOAD_DIR, { recursive: true })
             const disco = nombreEnDisco(file.name)
             const ruta = join(UPLOAD_DIR, disco)
             await writeFile(ruta, buf)
             escritos.push(ruta)
-            fotosParaDb.push({ nombreOriginal: sanitizarNombre(file.name), mime: verdict.safeMime!, size: file.size, rutaLocal: ruta })
+            fotosParaDb.push({
+              nombreOriginal: sanitizarNombre(file.name),
+              mime: verdict.safeMime!,
+              size: file.size,
+              rutaLocal: ruta,
+            })
           }
         }
       } else {
@@ -1105,13 +1302,15 @@ export async function handleRequest(request: Request): Promise<Response> {
     }
   }
 
-  const actividadDeleteMatch = method === 'DELETE' ? matchPath(pathname, '/api/actividades/:id') : null
+  const actividadDeleteMatch =
+    method === 'DELETE' ? matchPath(pathname, '/api/actividades/:id') : null
   if (actividadDeleteMatch) {
     const authError = requireAdmin()
     if (authError) return authError
     const err = requireUuidParam(actividadDeleteMatch.id)
     if (err) return err
-    if (!(await deleteActividad(actividadDeleteMatch.id))) return json({ error: 'No encontrado' }, 404)
+    if (!(await deleteActividad(actividadDeleteMatch.id)))
+      return json({ error: 'No encontrado' }, 404)
     return json({ ok: true })
   }
 
@@ -1119,7 +1318,8 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (method === 'POST' && pathname === '/api/documentos') {
     const authError = requireAdmin()
     if (authError) return authError
-    if (bodyTooLarge(request, 21 * 1024 * 1024)) return json({ error: 'Cuerpo demasiado grande' }, 413)
+    if (bodyTooLarge(request, 21 * 1024 * 1024))
+      return json({ error: 'Cuerpo demasiado grande' }, 413)
     const form = await request.formData()
     const titulo = String(form.get('titulo') ?? '').trim()
     const tipo = String(form.get('tipo') ?? '').trim()
@@ -1137,7 +1337,11 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (!lim.ok) return json({ error: lim.reason }, lim.codigo ?? 400)
     const buf = Buffer.from(await file.arrayBuffer())
     const verdict = validateUpload({ filename: file.name, buffer: buf })
-    if (!verdict.ok) return json({ error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` }, 415)
+    if (!verdict.ok)
+      return json(
+        { error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` },
+        415,
+      )
     const { mkdir, writeFile } = await import('node:fs/promises')
     await mkdir(UPLOAD_DIR, { recursive: true })
     const disco = nombreEnDisco(file.name)
@@ -1148,8 +1352,20 @@ export async function handleRequest(request: Request): Promise<Response> {
       const result = await sql.begin(async (tx) => {
         return createDocumento(
           tx,
-          { titulo, tipo, etapa: etapa || 'En proceso', fecha: String(form.get('fecha') ?? '') || null, descripcion: String(form.get('descripcion') ?? ''), creadoPor: user?.id },
-          { nombreOriginal: sanitizarNombre(file.name), mime: verdict.safeMime!, size: file.size, rutaLocal: ruta },
+          {
+            titulo,
+            tipo,
+            etapa: etapa || 'En proceso',
+            fecha: String(form.get('fecha') ?? '') || null,
+            descripcion: String(form.get('descripcion') ?? ''),
+            creadoPor: user?.id,
+          },
+          {
+            nombreOriginal: sanitizarNombre(file.name),
+            mime: verdict.safeMime!,
+            size: file.size,
+            rutaLocal: ruta,
+          },
         )
       })
       persistido = true
@@ -1167,7 +1383,8 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (err) return err
     const contentType = request.headers.get('content-type') ?? ''
     let input: Record<string, string> = {}
-    let archivo: { nombreOriginal: string; mime: string; size: number; rutaLocal: string } | undefined
+    let archivo:
+      { nombreOriginal: string; mime: string; size: number; rutaLocal: string } | undefined
     const escritos: string[] = []
     let persistido = false
     try {
@@ -1177,27 +1394,40 @@ export async function handleRequest(request: Request): Promise<Response> {
           const v = form.get(k)
           if (v !== null) input[k] = String(v)
         }
-        const raw = [...form.getAll('archivo'), ...form.getAll('archivos')].filter((e): e is File => e instanceof File && e.size > 0)
+        const raw = [...form.getAll('archivo'), ...form.getAll('archivos')].filter(
+          (e): e is File => e instanceof File && e.size > 0,
+        )
         if (raw.length > 0) {
           const file = raw[0]
           const lim = validarAdjunto({ size: file.size, name: file.name }, 1)
           if (!lim.ok) return json({ error: lim.reason }, lim.codigo ?? 400)
           const buf = Buffer.from(await file.arrayBuffer())
           const verdict = validateUpload({ filename: file.name, buffer: buf })
-          if (!verdict.ok) return json({ error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` }, 415)
+          if (!verdict.ok)
+            return json(
+              { error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` },
+              415,
+            )
           const { mkdir, writeFile } = await import('node:fs/promises')
           await mkdir(UPLOAD_DIR, { recursive: true })
           const disco = nombreEnDisco(file.name)
           const ruta = join(UPLOAD_DIR, disco)
           await writeFile(ruta, buf)
           escritos.push(ruta)
-          archivo = { nombreOriginal: sanitizarNombre(file.name), mime: verdict.safeMime!, size: file.size, rutaLocal: ruta }
+          archivo = {
+            nombreOriginal: sanitizarNombre(file.name),
+            mime: verdict.safeMime!,
+            size: file.size,
+            rutaLocal: ruta,
+          }
         }
       } else {
         input = (await request.json().catch(() => ({}))) as Record<string, string>
       }
-      if (input.tipo && !isTipoDocumento(input.tipo)) return json({ error: `tipo inválido: ${input.tipo}` }, 400)
-      if (input.etapa && !isEtapaDoc(input.etapa)) return json({ error: `etapa inválida: ${input.etapa}` }, 400)
+      if (input.tipo && !isTipoDocumento(input.tipo))
+        return json({ error: `tipo inválido: ${input.tipo}` }, 400)
+      if (input.etapa && !isEtapaDoc(input.etapa))
+        return json({ error: `etapa inválida: ${input.etapa}` }, 400)
       // input.fecha puede ser '' → null
       const payload: Record<string, string | null> = { ...input }
       if (payload.fecha === '') payload.fecha = null as unknown as string
@@ -1213,13 +1443,15 @@ export async function handleRequest(request: Request): Promise<Response> {
     }
   }
 
-  const documentoDeleteMatch = method === 'DELETE' ? matchPath(pathname, '/api/documentos/:id') : null
+  const documentoDeleteMatch =
+    method === 'DELETE' ? matchPath(pathname, '/api/documentos/:id') : null
   if (documentoDeleteMatch) {
     const authError = requireAdmin()
     if (authError) return authError
     const err = requireUuidParam(documentoDeleteMatch.id)
     if (err) return err
-    if (!(await deleteDocumento(documentoDeleteMatch.id))) return json({ error: 'No encontrado' }, 404)
+    if (!(await deleteDocumento(documentoDeleteMatch.id)))
+      return json({ error: 'No encontrado' }, 404)
     return json({ ok: true })
   }
 
@@ -1242,7 +1474,10 @@ export async function handleRequest(request: Request): Promise<Response> {
       const err = requireUuidParam(String(body.documento_respaldo_id))
       if (err) return json({ error: 'documento_respaldo_id inválido' }, 400)
     }
-    const meds = (body.mediciones ?? []).map((m) => ({ periodo: String(m.periodo ?? ''), valor: m.valor as number }))
+    const meds = (body.mediciones ?? []).map((m) => ({
+      periodo: String(m.periodo ?? ''),
+      valor: m.valor as number,
+    }))
     const result = await sql.begin(async (tx) => {
       return createIndicador(
         tx,
@@ -1282,7 +1517,13 @@ export async function handleRequest(request: Request): Promise<Response> {
       const e = requireUuidParam(String(body.documento_respaldo_id))
       if (e) return json({ error: 'documento_respaldo_id inválido' }, 400)
     }
-    const meds = body.mediciones !== undefined ? body.mediciones.map((m) => ({ periodo: String(m.periodo ?? ''), valor: m.valor as number })) : undefined
+    const meds =
+      body.mediciones !== undefined
+        ? body.mediciones.map((m) => ({
+            periodo: String(m.periodo ?? ''),
+            valor: m.valor as number,
+          }))
+        : undefined
     const ok = await updateIndicador(
       indicadorPutMatch.id,
       {
@@ -1300,13 +1541,15 @@ export async function handleRequest(request: Request): Promise<Response> {
     return json({ ok: true })
   }
 
-  const indicadorDeleteMatch = method === 'DELETE' ? matchPath(pathname, '/api/indicadores/:id') : null
+  const indicadorDeleteMatch =
+    method === 'DELETE' ? matchPath(pathname, '/api/indicadores/:id') : null
   if (indicadorDeleteMatch) {
     const authError = requireAdmin()
     if (authError) return authError
     const err = requireUuidParam(indicadorDeleteMatch.id)
     if (err) return err
-    if (!(await deleteIndicador(indicadorDeleteMatch.id))) return json({ error: 'No encontrado' }, 404)
+    if (!(await deleteIndicador(indicadorDeleteMatch.id)))
+      return json({ error: 'No encontrado' }, 404)
     return json({ ok: true })
   }
 
