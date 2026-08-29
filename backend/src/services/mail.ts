@@ -682,7 +682,7 @@ export async function enviarCorreoPrueba(para: string): Promise<{ enviado: true 
   return { enviado: true }
 }
 
-function escapeHtml(s: string): string {
+export function escapeHtml(s: string): string {
   return String(s).replace(
     /[&<>"']/g,
     (c) =>

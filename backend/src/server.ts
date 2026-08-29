@@ -11,7 +11,7 @@ Bun.serve({
   maxRequestBodySize: MAX_TOTAL_BYTES + 16 * 1024 * 1024,
   fetch(request) {
     return handleRequest(request).catch((err) => {
-      console.error('[server] error', err)
+      logger.error('server.handleRequest', err)
       return new Response(JSON.stringify({ error: 'Error interno' }), {
         status: 500,
         headers: { 'content-type': 'application/json' },

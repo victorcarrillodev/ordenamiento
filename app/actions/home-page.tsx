@@ -1070,7 +1070,7 @@ function ProcessTimeline(handle: Handle<{ theme?: ThemeData }>) {
       <section
         id="proceso"
         aria-labelledby="proceso-heading"
-        mix={css({ ...sectionPaddingProps, background: c.secundario || colors.gray50 })}
+        mix={css({ ...sectionPaddingProps, background: colors.gray50 })}
       >
         <div mix={css(sectionContainerProps)}>
           <div
