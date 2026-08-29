@@ -619,7 +619,7 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
         title: txt.card1Titulo || 'Conoce el Programa',
         description:
           txt.card1Desc ||
-          'Explora los fundamentos legales, objetivos y alcances del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
+          'Explora los fundamentos legales, objetivos y alcances del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano, y entiende por qué es la base para el uso responsable del territorio municipal.',
         href: '#que-es-el-programa',
         cta: 'Ver programa',
         accent: primary,
@@ -631,7 +631,7 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
         title: txt.card2Titulo || 'Conoce el Proceso',
         description:
           txt.card2Desc ||
-          'Entiende las cinco fases del proceso: desde la formulación hasta la evaluación continua del ordenamiento territorial.',
+          'Conoce paso a paso las cinco fases del proceso —diagnóstico, formulación, aprobación, ejecución y evaluación— y cómo se articulan para dar seguimiento continuo al ordenamiento territorial.',
         href: '#proceso',
         cta: 'Ver fases',
         accent: secondary,
@@ -643,7 +643,7 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
         title: txt.card3Titulo || 'Calendario de Actividades',
         description:
           txt.card3Desc ||
-          'Consulta las fechas de talleres, mesas de trabajo, consultas públicas y sesiones técnicas del programa.',
+          'Consulta las fechas de talleres, mesas de trabajo, consultas públicas y sesiones técnicas, y entérate con anticipación de cada oportunidad para participar.',
         href: '#calendario',
         cta: 'Ver calendario',
         accent: accent,
@@ -655,10 +655,10 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
         title: txt.card4Titulo || 'Consulta Documentos',
         description:
           txt.card4Desc ||
-          'Accede a la memoria técnica, estudios de diagnóstico, cartografía y acuerdos oficiales del proceso de ordenamiento.',
+          'Accede a la memoria técnica, estudios de diagnóstico, cartografía y acuerdos oficiales, y descarga la documentación completa que respalda cada etapa del proceso.',
         href: '#documentos',
         cta: 'Ver documentos',
-        accent: colors.gray700,
+        accent: colors.burgundy700,
       },
     ]
 
@@ -722,7 +722,7 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
                     justify-content: center;
                     font-size: 26px;
                     flex-shrink: 0;
-                    border: 1px solid ${card.accent}28;
+                    border: 1px solid ${colors.gray700};
                   `}
                   aria-hidden="true"
                 >
