@@ -1,6 +1,11 @@
 import { sql } from '../db/pool.ts'
 
-export const CATEGORIAS_POEL = ['Talleres Sectoriales', 'Consulta pública'] as const
+// Espeja app/data/poetdum.ts: las tres secciones del sitio público.
+export const CATEGORIAS_POEL = [
+  'Comité del Ordenamiento Ecológico',
+  'Talleres Sectoriales',
+  'Consulta pública',
+] as const
 export type CategoriaPoel = (typeof CATEGORIAS_POEL)[number]
 
 export function isCategoriaPoel(v: string): v is CategoriaPoel {

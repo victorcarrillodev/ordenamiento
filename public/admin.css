@@ -2034,3 +2034,26 @@ a.cal__mas:hover {
 .poel-imagen input[type='file'] {
   font-size: 11.5px;
 }
+/* Las coordenadas van plegadas: son opcionales y no deben competir con el
+   campo de ubicación, que es el que de verdad se llena siempre. */
+.poel-coords-detalle > summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--a-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+}
+.poel-coords-detalle > summary::-webkit-details-marker {
+  display: none;
+}
+.poel-coords-detalle > summary:hover {
+  color: var(--a-dark);
+}
+.poel-ubicacion .form-field small {
+  display: block;
+  margin-top: 4px;
+  line-height: 1.4;
+}

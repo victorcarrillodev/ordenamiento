@@ -50,6 +50,35 @@ function loadLeaflet(): Promise<Leaflet | null> {
   return leafletPromise
 }
 
+/**
+ * Saca lat/lng de un enlace de Google Maps pegado en el campo de ubicación.
+ *
+ * Cubre las formas que traen las coordenadas dentro de la propia URL:
+ *   .../@20.6409,-103.3126,17z        (barra de direcciones)
+ *   ...?q=20.6409,-103.3126           (compartir → enlace)
+ *   ...!3d20.6409!4d-103.3126         (enlaces largos de lugar)
+ *
+ * Los acortados (maps.app.goo.gl) NO se pueden resolver aquí: harían falta una
+ * petición al servidor de Google y seguir la redirección. No pasa nada: ese
+ * enlace igual se guarda y se muestra como tal; solo no pinta el marcador.
+ */
+export function coordenadasDeEnlace(texto: string): [number, number] | null {
+  const patrones = [
+    /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+    /[?&]q=(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/,
+    /!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/,
+  ]
+  for (const re of patrones) {
+    const m = re.exec(texto)
+    if (m) {
+      const lat = Number(m[1])
+      const lng = Number(m[2])
+      if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return [lat, lng]
+    }
+  }
+  return null
+}
+
 export interface MapaSelectorProps extends SerializableProps {
   /** Sufijo de los inputs a rellenar: lat_<destino> y lng_<destino>. */
   destino: string
@@ -134,6 +163,19 @@ export const MapaSelector = clientEntry(
           }
           inputLat?.addEventListener('change', sincronizar)
           inputLng?.addEventListener('change', sincronizar)
+
+          // Pegar un enlace de Google Maps con coordenadas las copia solas, para
+          // que nadie tenga que leerlas ni teclearlas.
+          const inputUbicacion = document.getElementById(
+            `ubicacion_${destino}`,
+          ) as HTMLInputElement | null
+
+          inputUbicacion?.addEventListener('change', () => {
+            const punto = coordenadasDeEnlace(inputUbicacion.value)
+            if (!punto) return
+            fijar(punto[0], punto[1])
+            map?.setView(punto, 17)
+          })
         })
       }
 

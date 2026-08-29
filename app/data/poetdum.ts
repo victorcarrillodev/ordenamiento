@@ -1,5 +1,12 @@
 // Fuente de verdad frontend para constantes POETDUM/POEL
-export const CATEGORIAS_POEL = ['Talleres Sectoriales', 'Consulta pública'] as const
+// Las tres secciones en las que el sitio público agrupa las sesiones. Faltaba
+// la del Comité: sin ella no se podían capturar sus sesiones (el backend
+// rechazaba la categoría con 400) aunque la página sí tenga ese bloque.
+export const CATEGORIAS_POEL = [
+  'Comité del Ordenamiento Ecológico',
+  'Talleres Sectoriales',
+  'Consulta pública',
+] as const
 export type CategoriaPoel = (typeof CATEGORIAS_POEL)[number]
 
 export const TIPOS_DOCUMENTO = [

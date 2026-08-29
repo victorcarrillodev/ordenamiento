@@ -41,6 +41,12 @@ const AVISOS: Record<PoelFeedback, { clase: string; texto: string }> = {
   },
 }
 
+/** La ubicación puede venir como texto o como enlace de Maps pegado. */
+function esEnlace(v: string): boolean {
+  const t = v.trim()
+  return t.startsWith('http://') || t.startsWith('https://')
+}
+
 function fmtFecha(v: string | null): string {
   if (!v) return 'Sin fecha'
   const d = new Date(v + 'T12:00:00')
@@ -49,7 +55,17 @@ function fmtFecha(v: string | null): string {
     : d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-/** Campos de ubicación: dirección escrita + coordenadas + mapa para fijarlas. */
+/**
+ * Campos de ubicación.
+ *
+ * Lo único obligatorio en la práctica es la primera casilla, que acepta lo que
+ * el admin tenga a mano: la dirección escrita o un enlace de Google Maps pegado
+ * tal cual (que es como se viene capturando en el sitio en vivo).
+ *
+ * Las coordenadas son OPCIONALES y nadie tiene que saberlas: se rellenan solas
+ * al hacer clic en el mapa, o al pegar un enlace de Maps que ya las traiga.
+ * Sirven únicamente para poder pintar el punto; sin ellas todo sigue igual.
+ */
 function CamposUbicacion(
   handle: Handle<{ destino: string; ubicacion?: string; latitud?: string; longitud?: string }>,
 ) {
@@ -58,33 +74,52 @@ function CamposUbicacion(
     return (
       <div class="poel-ubicacion">
         <div class="form-field">
-          <label for={`ubicacion_${destino}`}>Ubicación (cómo se lee)</label>
+          <label for={`ubicacion_${destino}`}>Ubicación</label>
           <input
             id={`ubicacion_${destino}`}
             name="ubicacion"
             value={ubicacion}
-            placeholder="Ej. Casa de la Cultura, Centro"
+            placeholder="Casa de la Cultura, Centro — o pega un enlace de Google Maps"
           />
+          <small class="breadcrumb">
+            Escribe la dirección como quieras que se lea, o pega el enlace de Google Maps. Si el
+            enlace trae coordenadas, se copian solas abajo.
+          </small>
         </div>
-        <div class="poel-coords">
-          <div class="form-field">
-            <label for={`lat_${destino}`}>Latitud</label>
-            <input id={`lat_${destino}`} name="latitud" value={latitud} placeholder="20.640900" />
+
+        <details class="poel-coords-detalle">
+          <summary>
+            <Icon name="mdi:crosshairs-gps" size={14} /> Punto exacto en el mapa (opcional)
+          </summary>
+
+          <p class="breadcrumb" style="margin:8px 0;">
+            No hace falta que sepas las coordenadas: haz clic en el mapa y se llenan solas. Si no
+            ubicas el punto exacto, déjalo vacío — con la dirección de arriba es suficiente.
+          </p>
+
+          <div class="poel-coords">
+            <div class="form-field">
+              <label for={`lat_${destino}`}>Latitud</label>
+              <input
+                id={`lat_${destino}`}
+                name="latitud"
+                value={latitud}
+                placeholder="Se llena al hacer clic"
+              />
+            </div>
+            <div class="form-field">
+              <label for={`lng_${destino}`}>Longitud</label>
+              <input
+                id={`lng_${destino}`}
+                name="longitud"
+                value={longitud}
+                placeholder="Se llena al hacer clic"
+              />
+            </div>
           </div>
-          <div class="form-field">
-            <label for={`lng_${destino}`}>Longitud</label>
-            <input
-              id={`lng_${destino}`}
-              name="longitud"
-              value={longitud}
-              placeholder="-103.312600"
-            />
-          </div>
-        </div>
-        <p class="breadcrumb" style="margin:0 0 6px;">
-          Haz clic en el mapa para fijar el punto, o escribe las coordenadas a mano.
-        </p>
-        <MapaSelector destino={destino} latitud={latitud} longitud={longitud} />
+
+          <MapaSelector destino={destino} latitud={latitud} longitud={longitud} />
+        </details>
       </div>
     )
   }
@@ -148,7 +183,18 @@ function FichaSesion(handle: Handle<{ s: Sesion }>) {
             <Icon name="mdi:calendar-outline" size={14} /> {fmtFecha(s.fecha)}
           </span>
           <span>
-            <Icon name="mdi:map-marker-outline" size={14} /> {s.ubicacion || 'Sin ubicación'}
+            <Icon name="mdi:map-marker-outline" size={14} />{' '}
+            {s.ubicacion ? (
+              esEnlace(s.ubicacion) ? (
+                <a href={s.ubicacion} target="_blank" rel="noopener noreferrer">
+                  Abrir ubicación
+                </a>
+              ) : (
+                s.ubicacion
+              )
+            ) : (
+              'Sin ubicación'
+            )}
           </span>
           {tieneMapa ? (
             <a
