@@ -5,6 +5,9 @@ import controller from './actions/controller.tsx'
 import loginController from './actions/login/controller.tsx'
 import participationController from './actions/participation/controller.tsx'
 import poetdumController from './actions/poetdum/controller.tsx'
+import actividadesController from './actions/poetdum/actividades/controller.tsx'
+import documentosController from './actions/poetdum/documentos/controller.tsx'
+import indicadoresController from './actions/poetdum/indicadores/controller.tsx'
 import adminController from './actions/admin/controller.tsx'
 import adminReunionesController from './actions/admin/reuniones-controller.tsx'
 import adminUsuariosController from './actions/admin/usuarios-controller.tsx'
@@ -13,6 +16,9 @@ import nuevaController from './actions/admin/nueva-controller.tsx'
 import enviarController from './actions/admin/enviar-controller.tsx'
 import resolverController from './actions/admin/resolver-controller.tsx'
 import personalizacionController from './actions/admin/personalizacion-controller.tsx'
+import portalActividadesController from './actions/admin/portal-actividades-controller.tsx'
+import portalDocumentosController from './actions/admin/portal-documentos-controller.tsx'
+import portalIndicadoresController from './actions/admin/portal-indicadores-controller.tsx'
 import { render } from './middleware/render.tsx'
 import { adminRoutes, routes } from './routes.ts'
 
@@ -74,6 +80,9 @@ export const router = createRouter<AppContext>({
 router.map(routes, controller)
 router.map(routes.login, loginController)
 router.map(routes.participation, participationController)
+router.map(routes.poetdum.actividades, actividadesController)
+router.map(routes.poetdum.documentos, documentosController)
+router.map(routes.poetdum.indicadores, indicadoresController)
 router.map(routes.poetdum, poetdumController)
 
 // Rutas de administración (sub-controllers específicos primero)
@@ -85,4 +94,7 @@ router.map(adminRoutes.participacionNueva, nuevaController)
 router.map(adminRoutes.participacionEnviar, enviarController)
 router.map(adminRoutes.participacionResolver, resolverController)
 router.map(adminRoutes.personalizacion, personalizacionController)
+router.map(adminRoutes.actividades, portalActividadesController)
+router.map(adminRoutes.documentos, portalDocumentosController)
+router.map(adminRoutes.indicadores, portalIndicadoresController)
 router.map(adminRoutes, adminController)

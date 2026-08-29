@@ -214,3 +214,88 @@ CREATE TABLE IF NOT EXISTS customization_audit_logs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_customization_audit_fecha ON customization_audit_logs (created_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- Portal POETDUM — Actividades, Documentos, Indicadores
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS actividades (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  titulo        TEXT NOT NULL,
+  fecha         DATE NOT NULL,
+  hora_inicio   TEXT NOT NULL DEFAULT '',
+  hora_fin      TEXT NOT NULL DEFAULT '',
+  lugar         TEXT NOT NULL DEFAULT '',
+  descripcion   TEXT NOT NULL DEFAULT '',
+  estado        TEXT NOT NULL DEFAULT 'proxima'
+                CHECK (estado IN ('proxima','realizada','cancelada')),
+  resultados    TEXT NOT NULL DEFAULT '',
+  creado_por    UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_actividades_fecha  ON actividades (fecha DESC);
+CREATE INDEX IF NOT EXISTS idx_actividades_estado ON actividades (estado);
+
+CREATE TABLE IF NOT EXISTS documentos (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  titulo           TEXT NOT NULL,
+  tipo             TEXT NOT NULL CHECK (tipo IN (
+    'Convenios y anexos','Acuerdos','Actas y minutas','Convocatorias',
+    'Documentos técnicos','Cartografía','Avances y resultados','Programa')),
+  etapa            TEXT NOT NULL DEFAULT 'En proceso'
+                   CHECK (etapa IN ('En proceso','Dictaminada','Notificada')),
+  fecha            DATE,
+  descripcion      TEXT NOT NULL DEFAULT '',
+  nombre_original  TEXT NOT NULL,
+  mime             TEXT NOT NULL,
+  size             BIGINT NOT NULL,
+  ruta_local       TEXT NOT NULL,
+  creado_por       UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_documentos_tipo  ON documentos (tipo);
+CREATE INDEX IF NOT EXISTS idx_documentos_etapa ON documentos (etapa);
+CREATE INDEX IF NOT EXISTS idx_documentos_fecha ON documentos (fecha DESC);
+
+CREATE TABLE IF NOT EXISTS actividad_fotos (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actividad_id     UUID NOT NULL REFERENCES actividades(id) ON DELETE CASCADE,
+  nombre_original  TEXT NOT NULL,
+  mime             TEXT NOT NULL,
+  size             BIGINT NOT NULL,
+  ruta_local       TEXT NOT NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_actividad_fotos_act ON actividad_fotos (actividad_id);
+
+CREATE TABLE IF NOT EXISTS actividad_documentos (
+  actividad_id  UUID NOT NULL REFERENCES actividades(id) ON DELETE CASCADE,
+  documento_id  UUID NOT NULL REFERENCES documentos(id) ON DELETE CASCADE,
+  PRIMARY KEY (actividad_id, documento_id)
+);
+
+CREATE TABLE IF NOT EXISTS indicadores (
+  id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre               TEXT NOT NULL,
+  descripcion          TEXT NOT NULL DEFAULT '',
+  unidad               TEXT NOT NULL DEFAULT '',
+  meta                 NUMERIC,
+  fecha_evaluacion     TEXT NOT NULL DEFAULT '',
+  resultado_texto      TEXT NOT NULL DEFAULT '',
+  documento_respaldo_id UUID REFERENCES documentos(id) ON DELETE SET NULL,
+  creado_por           UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_indicadores_nombre ON indicadores (nombre);
+
+CREATE TABLE IF NOT EXISTS mediciones (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  indicador_id  UUID NOT NULL REFERENCES indicadores(id) ON DELETE CASCADE,
+  periodo       TEXT NOT NULL DEFAULT '',
+  valor         NUMERIC NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_mediciones_indicador ON mediciones (indicador_id);

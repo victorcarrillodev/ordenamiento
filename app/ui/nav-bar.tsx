@@ -125,6 +125,15 @@ export function NavBar(handle: Handle<NavBarProps>) {
             <a href={routes.poetdum.show.href()} mix={navLinkStyle}>
               Elaboración del POETDUM
             </a>
+            <a href={routes.poetdum.actividades.show.href()} mix={navLinkStyle}>
+              Actividades
+            </a>
+            <a href={routes.poetdum.documentos.show.href()} mix={navLinkStyle}>
+              Documentos
+            </a>
+            <a href={routes.poetdum.indicadores.show.href()} mix={navLinkStyle}>
+              Seguimiento
+            </a>
           </div>
 
           {/* CTA */}

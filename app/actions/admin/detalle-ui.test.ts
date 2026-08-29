@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const css = readFileSync(join(process.cwd(), 'public/admin.css'), 'utf8')
-const detalle = readFileSync(join(process.cwd(), 'app/actions/admin/detalle-page.tsx'), 'utf8')
+const detalleRaw = readFileSync(join(process.cwd(), 'app/actions/admin/detalle-page.tsx'), 'utf8')
+const detalle = detalleRaw.replace(/\r\n/g, '\n')
 
 describe('UI-1 · detalle-split 60/40 responsivo', () => {
   it('define grid 3fr 2fr (≈60/40) con gap 18px y align-items:start', () => {

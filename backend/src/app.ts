@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, rm } from 'node:fs/promises'
 import { join, isAbsolute } from 'node:path'
 import {
   canonicalMimeFor,
@@ -37,6 +37,11 @@ import {
 import { createReunion, deleteReunion, listReuniones } from './services/reuniones.ts'
 import { listAvisos, createAviso, deleteAviso } from './services/avisos.ts'
 import { listPoel, createPoelSesion, deletePoelSesion } from './services/poel.ts'
+import { listActividades, createActividad, updateActividad, deleteActividad } from './services/actividades.ts'
+import { listDocumentos, getDocumento, createDocumento, updateDocumento, deleteDocumento, isTipoDocumento, isEtapaDoc } from './services/documentos.ts'
+import { listIndicadores, createIndicador, updateIndicador, deleteIndicador } from './services/indicadores.ts'
+import { validarAdjunto } from './files/limits.ts'
+import { nombreEnDisco, sanitizarNombre } from './files/nombres.ts'
 import { exportTableToXlsx, isExportable } from './services/export.ts'
 import { participationDocx } from './services/word.ts'
 import {
@@ -866,6 +871,443 @@ export async function handleRequest(request: Request): Promise<Response> {
     } catch {
       return json({ error: 'Archivo no encontrado' }, 404)
     }
+  }
+
+  // ── Portal POETDUM — Actividades (público listado/detalle) ───────────
+  if (method === 'GET' && pathname === '/api/actividades') {
+    const estado = url.searchParams.get('estado')
+    try {
+      const actividades = await listActividades({ estado })
+      return json({ actividades })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      const status = (err as { status?: number }).status ?? 400
+      return json({ error: msg }, status)
+    }
+  }
+
+  // Pública: foto de actividad (anti-traversal + headers de seguridad)
+  const actividadFotoMatch = method === 'GET' ? matchPath(pathname, '/api/actividades/:id/fotos/:fid') : null
+  if (actividadFotoMatch) {
+    const errId = requireUuidParam(actividadFotoMatch.id)
+    if (errId) return errId
+    const errFid = requireUuidParam(actividadFotoMatch.fid)
+    if (errFid) return errFid
+    const rows = await sql<Array<{ ruta_local: string; nombre_original: string; mime: string }>>`--sql
+      SELECT ruta_local, nombre_original, mime FROM actividad_fotos
+      WHERE id = ${actividadFotoMatch.fid} AND actividad_id = ${actividadFotoMatch.id}
+    `
+    if (rows.length === 0) return json({ error: 'Foto no encontrada' }, 404)
+    const ruta = isAbsolute(rows[0].ruta_local) ? rows[0].ruta_local : join(UPLOAD_DIR, rows[0].ruta_local)
+    if (!ruta.startsWith(UPLOAD_DIR) && !ruta.startsWith(BRANDING_DIR)) {
+      return json({ error: 'Acceso a archivo no autorizado' }, 403)
+    }
+    let file: Buffer
+    try {
+      file = await readFile(ruta)
+    } catch {
+      return json({ error: 'Archivo en disco no disponible' }, 404)
+    }
+    const isDownload = url.searchParams.get('download') === '1'
+    const ext = getExtension(rows[0].nombre_original || rows[0].ruta_local)
+    const mime = canonicalMimeFor(ext) ?? 'application/octet-stream'
+    const disposition = isDownload || !shouldServeInline(ext) ? 'attachment' : 'inline'
+    return new Response(new Uint8Array(file), {
+      headers: {
+        'content-type': mime,
+        'content-disposition': contentDispositionHeader(disposition, rows[0].nombre_original),
+        'x-content-type-options': 'nosniff',
+        'content-security-policy': "default-src 'none'; sandbox; frame-ancestors 'none'",
+        'cross-origin-resource-policy': 'same-origin',
+      },
+    })
+  }
+
+  // ── Portal POETDUM — Documentos (público listado) ────────────────────
+  if (method === 'GET' && pathname === '/api/documentos') {
+    const tipo = url.searchParams.get('tipo') ?? undefined
+    const etapa = url.searchParams.get('etapa') ?? undefined
+    try {
+      if (tipo && !isTipoDocumento(tipo)) return json({ error: `tipo inválido: ${tipo}` }, 400)
+      if (etapa && !isEtapaDoc(etapa)) return json({ error: `etapa inválida: ${etapa}` }, 400)
+      const documentos = await listDocumentos({ tipo, etapa })
+      return json({ documentos })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      const status = (err as { status?: number }).status ?? 400
+      return json({ error: msg }, status)
+    }
+  }
+
+  // Pública: descarga archivo de documento
+  const documentoArchivoMatch = method === 'GET' ? matchPath(pathname, '/api/documentos/:id/archivo') : null
+  if (documentoArchivoMatch) {
+    const errId = requireUuidParam(documentoArchivoMatch.id)
+    if (errId) return errId
+    const doc = await getDocumento(documentoArchivoMatch.id)
+    if (!doc) return json({ error: 'Documento no encontrado' }, 404)
+    const ruta = isAbsolute(doc.ruta_local) ? doc.ruta_local : join(UPLOAD_DIR, doc.ruta_local)
+    if (!ruta.startsWith(UPLOAD_DIR) && !ruta.startsWith(BRANDING_DIR)) {
+      return json({ error: 'Acceso a archivo no autorizado' }, 403)
+    }
+    let file: Buffer
+    try {
+      file = await readFile(ruta)
+    } catch {
+      return json({ error: 'Archivo en disco no disponible' }, 404)
+    }
+    const isDownload = url.searchParams.get('download') === '1'
+    const ext = getExtension(doc.nombre_original || doc.ruta_local)
+    const mime = canonicalMimeFor(ext) ?? 'application/octet-stream'
+    const disposition = isDownload || !shouldServeInline(ext) ? 'attachment' : 'inline'
+    return new Response(new Uint8Array(file), {
+      headers: {
+        'content-type': mime,
+        'content-disposition': contentDispositionHeader(disposition, doc.nombre_original),
+        'x-content-type-options': 'nosniff',
+        'content-security-policy': "default-src 'none'; sandbox; frame-ancestors 'none'",
+        'cross-origin-resource-policy': 'same-origin',
+      },
+    })
+  }
+
+  // ── Portal POETDUM — Indicadores (público) ───────────────────────────
+  if (method === 'GET' && pathname === '/api/indicadores') {
+    const indicadores = await listIndicadores()
+    return json({ indicadores })
+  }
+
+  // ── Portal POETDUM — Actividades (admin escritura) ───────────────────
+  if (method === 'POST' && pathname === '/api/actividades') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    if (bodyTooLarge(request, 21 * 1024 * 1024)) return json({ error: 'Cuerpo demasiado grande' }, 413)
+    const form = await request.formData()
+    const titulo = String(form.get('titulo') ?? '').trim()
+    const fecha = String(form.get('fecha') ?? '').trim()
+    if (!titulo || !fecha) return json({ error: 'Faltan datos: titulo, fecha' }, 400)
+    const estadoRaw = String(form.get('estado') ?? 'proxima').trim()
+    if (estadoRaw && !['proxima', 'realizada', 'cancelada'].includes(estadoRaw)) {
+      return json({ error: `estado inválido: ${estadoRaw}` }, 400)
+    }
+    const documentoIds = form.getAll('documentos').map((v) => String(v).trim()).filter(Boolean)
+    for (const did of documentoIds) {
+      const err = requireUuidParam(did)
+      if (err) return json({ error: `documento id inválido: ${did}` }, 400)
+    }
+    // Fotos: validar y escribir a disco (con rollback)
+    const rawFotos = form.getAll('fotos').filter((e): e is File => e instanceof File && e.size > 0)
+    const escritos: string[] = []
+    const fotosParaDb: Array<{ nombreOriginal: string; mime: string; size: number; rutaLocal: string }> = []
+    let persistido = false
+    try {
+      for (const file of rawFotos) {
+        const v = validarAdjunto({ size: file.size, name: file.name }, rawFotos.length)
+        if (!v.ok) return json({ error: v.reason }, v.codigo ?? 400)
+        const buf = Buffer.from(await file.arrayBuffer())
+        const verdict = validateUpload({ filename: file.name, buffer: buf })
+        if (!verdict.ok) return json({ error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` }, 415)
+        const { mkdir, writeFile } = await import('node:fs/promises')
+        await mkdir(UPLOAD_DIR, { recursive: true })
+        const disco = nombreEnDisco(file.name)
+        const ruta = join(UPLOAD_DIR, disco)
+        await writeFile(ruta, buf)
+        escritos.push(ruta)
+        fotosParaDb.push({ nombreOriginal: sanitizarNombre(file.name), mime: verdict.safeMime!, size: file.size, rutaLocal: ruta })
+      }
+      const result = await sql.begin(async (tx) => {
+        return createActividad(
+          tx,
+          {
+            titulo,
+            fecha,
+            hora_inicio: String(form.get('hora_inicio') ?? ''),
+            hora_fin: String(form.get('hora_fin') ?? ''),
+            lugar: String(form.get('lugar') ?? ''),
+            descripcion: String(form.get('descripcion') ?? ''),
+            estado: estadoRaw || 'proxima',
+            resultados: String(form.get('resultados') ?? ''),
+            creadoPor: user?.id,
+          },
+          fotosParaDb,
+          documentoIds,
+        )
+      })
+      persistido = true
+      return json({ ok: true, id: result.id }, 201)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      const status = (err as { status?: number }).status ?? 500
+      if (status >= 400 && status < 500) return json({ error: msg }, status)
+      throw err
+    } finally {
+      if (!persistido) await Promise.allSettled(escritos.map((p) => rm(p, { force: true })))
+    }
+  }
+
+  const actividadPutMatch = method === 'PUT' ? matchPath(pathname, '/api/actividades/:id') : null
+  if (actividadPutMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(actividadPutMatch.id)
+    if (err) return err
+    const contentType = request.headers.get('content-type') ?? ''
+    let input: Record<string, string> = {}
+    let fotosParaDb: Array<{ nombreOriginal: string; mime: string; size: number; rutaLocal: string }> | undefined
+    let documentoIds: string[] | undefined
+    const escritos: string[] = []
+    let persistido = false
+    try {
+      if (contentType.includes('multipart/form-data')) {
+        const form = await request.formData()
+        for (const k of ['titulo', 'fecha', 'hora_inicio', 'hora_fin', 'lugar', 'descripcion', 'estado', 'resultados']) {
+          const v = form.get(k)
+          if (v !== null) input[k] = String(v)
+        }
+        const docs = form.getAll('documentos')
+        if (docs.length > 0) documentoIds = docs.map((v) => String(v).trim()).filter(Boolean)
+        const rawFotos = form.getAll('fotos').filter((e): e is File => e instanceof File && e.size > 0)
+        if (rawFotos.length > 0) {
+          fotosParaDb = []
+          for (const file of rawFotos) {
+            const v = validarAdjunto({ size: file.size, name: file.name }, rawFotos.length)
+            if (!v.ok) return json({ error: v.reason }, v.codigo ?? 400)
+            const buf = Buffer.from(await file.arrayBuffer())
+            const verdict = validateUpload({ filename: file.name, buffer: buf })
+            if (!verdict.ok) return json({ error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` }, 415)
+            const { mkdir, writeFile } = await import('node:fs/promises')
+            await mkdir(UPLOAD_DIR, { recursive: true })
+            const disco = nombreEnDisco(file.name)
+            const ruta = join(UPLOAD_DIR, disco)
+            await writeFile(ruta, buf)
+            escritos.push(ruta)
+            fotosParaDb.push({ nombreOriginal: sanitizarNombre(file.name), mime: verdict.safeMime!, size: file.size, rutaLocal: ruta })
+          }
+        }
+      } else {
+        input = (await request.json().catch(() => ({}))) as Record<string, string>
+      }
+      if (input.estado && !['proxima', 'realizada', 'cancelada'].includes(input.estado)) {
+        return json({ error: `estado inválido: ${input.estado}` }, 400)
+      }
+      if (documentoIds) {
+        for (const did of documentoIds) {
+          const e = requireUuidParam(did)
+          if (e) return json({ error: `documento id inválido: ${did}` }, 400)
+        }
+      }
+      const ok = await updateActividad(actividadPutMatch.id, input, fotosParaDb, documentoIds)
+      if (!ok) return json({ error: 'No encontrado' }, 404)
+      persistido = true
+      return json({ ok: true })
+    } finally {
+      if (!persistido) await Promise.allSettled(escritos.map((p) => rm(p, { force: true })))
+    }
+  }
+
+  const actividadDeleteMatch = method === 'DELETE' ? matchPath(pathname, '/api/actividades/:id') : null
+  if (actividadDeleteMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(actividadDeleteMatch.id)
+    if (err) return err
+    if (!(await deleteActividad(actividadDeleteMatch.id))) return json({ error: 'No encontrado' }, 404)
+    return json({ ok: true })
+  }
+
+  // ── Portal POETDUM — Documentos (admin escritura) ────────────────────
+  if (method === 'POST' && pathname === '/api/documentos') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    if (bodyTooLarge(request, 21 * 1024 * 1024)) return json({ error: 'Cuerpo demasiado grande' }, 413)
+    const form = await request.formData()
+    const titulo = String(form.get('titulo') ?? '').trim()
+    const tipo = String(form.get('tipo') ?? '').trim()
+    if (!titulo || !tipo) return json({ error: 'Faltan datos: titulo, tipo' }, 400)
+    if (!isTipoDocumento(tipo)) return json({ error: `tipo inválido: ${tipo}` }, 400)
+    const etapa = String(form.get('etapa') ?? 'En proceso').trim()
+    if (etapa && !isEtapaDoc(etapa)) return json({ error: `etapa inválida: ${etapa}` }, 400)
+    const raw = form.getAll('archivo').filter((e): e is File => e instanceof File && e.size > 0)
+    // también acepta clave 'archivos' por compatibilidad
+    const alt = form.getAll('archivos').filter((e): e is File => e instanceof File && e.size > 0)
+    const files = raw.length > 0 ? raw : alt
+    if (files.length === 0) return json({ error: 'Falta archivo' }, 400)
+    const file = files[0]
+    const lim = validarAdjunto({ size: file.size, name: file.name }, 1)
+    if (!lim.ok) return json({ error: lim.reason }, lim.codigo ?? 400)
+    const buf = Buffer.from(await file.arrayBuffer())
+    const verdict = validateUpload({ filename: file.name, buffer: buf })
+    if (!verdict.ok) return json({ error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` }, 415)
+    const { mkdir, writeFile } = await import('node:fs/promises')
+    await mkdir(UPLOAD_DIR, { recursive: true })
+    const disco = nombreEnDisco(file.name)
+    const ruta = join(UPLOAD_DIR, disco)
+    await writeFile(ruta, buf)
+    let persistido = false
+    try {
+      const result = await sql.begin(async (tx) => {
+        return createDocumento(
+          tx,
+          { titulo, tipo, etapa: etapa || 'En proceso', fecha: String(form.get('fecha') ?? '') || null, descripcion: String(form.get('descripcion') ?? ''), creadoPor: user?.id },
+          { nombreOriginal: sanitizarNombre(file.name), mime: verdict.safeMime!, size: file.size, rutaLocal: ruta },
+        )
+      })
+      persistido = true
+      return json({ ok: true, id: result.id }, 201)
+    } finally {
+      if (!persistido) await rm(ruta, { force: true }).catch(() => {})
+    }
+  }
+
+  const documentoPutMatch = method === 'PUT' ? matchPath(pathname, '/api/documentos/:id') : null
+  if (documentoPutMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(documentoPutMatch.id)
+    if (err) return err
+    const contentType = request.headers.get('content-type') ?? ''
+    let input: Record<string, string> = {}
+    let archivo: { nombreOriginal: string; mime: string; size: number; rutaLocal: string } | undefined
+    const escritos: string[] = []
+    let persistido = false
+    try {
+      if (contentType.includes('multipart/form-data')) {
+        const form = await request.formData()
+        for (const k of ['titulo', 'tipo', 'etapa', 'fecha', 'descripcion']) {
+          const v = form.get(k)
+          if (v !== null) input[k] = String(v)
+        }
+        const raw = [...form.getAll('archivo'), ...form.getAll('archivos')].filter((e): e is File => e instanceof File && e.size > 0)
+        if (raw.length > 0) {
+          const file = raw[0]
+          const lim = validarAdjunto({ size: file.size, name: file.name }, 1)
+          if (!lim.ok) return json({ error: lim.reason }, lim.codigo ?? 400)
+          const buf = Buffer.from(await file.arrayBuffer())
+          const verdict = validateUpload({ filename: file.name, buffer: buf })
+          if (!verdict.ok) return json({ error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` }, 415)
+          const { mkdir, writeFile } = await import('node:fs/promises')
+          await mkdir(UPLOAD_DIR, { recursive: true })
+          const disco = nombreEnDisco(file.name)
+          const ruta = join(UPLOAD_DIR, disco)
+          await writeFile(ruta, buf)
+          escritos.push(ruta)
+          archivo = { nombreOriginal: sanitizarNombre(file.name), mime: verdict.safeMime!, size: file.size, rutaLocal: ruta }
+        }
+      } else {
+        input = (await request.json().catch(() => ({}))) as Record<string, string>
+      }
+      if (input.tipo && !isTipoDocumento(input.tipo)) return json({ error: `tipo inválido: ${input.tipo}` }, 400)
+      if (input.etapa && !isEtapaDoc(input.etapa)) return json({ error: `etapa inválida: ${input.etapa}` }, 400)
+      // input.fecha puede ser '' → null
+      const payload: Record<string, string | null> = { ...input }
+      if (payload.fecha === '') payload.fecha = null as unknown as string
+      const ok = await updateDocumento(documentoPutMatch.id, payload as never, archivo)
+      if (!ok) {
+        await Promise.allSettled(escritos.map((p) => rm(p, { force: true })))
+        return json({ error: 'No encontrado' }, 404)
+      }
+      persistido = true
+      return json({ ok: true })
+    } finally {
+      if (!persistido) await Promise.allSettled(escritos.map((p) => rm(p, { force: true })))
+    }
+  }
+
+  const documentoDeleteMatch = method === 'DELETE' ? matchPath(pathname, '/api/documentos/:id') : null
+  if (documentoDeleteMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(documentoDeleteMatch.id)
+    if (err) return err
+    if (!(await deleteDocumento(documentoDeleteMatch.id))) return json({ error: 'No encontrado' }, 404)
+    return json({ ok: true })
+  }
+
+  // ── Portal POETDUM — Indicadores (admin escritura) ───────────────────
+  if (method === 'POST' && pathname === '/api/indicadores') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const body = (await request.json().catch(() => null)) as {
+      nombre?: string
+      descripcion?: string
+      unidad?: string
+      meta?: number | string | null
+      fecha_evaluacion?: string
+      resultado_texto?: string
+      documento_respaldo_id?: string | null
+      mediciones?: Array<{ periodo?: string; valor?: number | string }>
+    } | null
+    if (!body?.nombre) return json({ error: 'Falta nombre' }, 400)
+    if (body.documento_respaldo_id) {
+      const err = requireUuidParam(String(body.documento_respaldo_id))
+      if (err) return json({ error: 'documento_respaldo_id inválido' }, 400)
+    }
+    const meds = (body.mediciones ?? []).map((m) => ({ periodo: String(m.periodo ?? ''), valor: m.valor as number }))
+    const result = await sql.begin(async (tx) => {
+      return createIndicador(
+        tx,
+        {
+          nombre: body.nombre!,
+          descripcion: body.descripcion,
+          unidad: body.unidad,
+          meta: body.meta ?? null,
+          fecha_evaluacion: body.fecha_evaluacion,
+          resultado_texto: body.resultado_texto,
+          documento_respaldo_id: body.documento_respaldo_id ?? null,
+          creadoPor: user?.id,
+        },
+        meds,
+      )
+    })
+    return json({ ok: true, id: result.id }, 201)
+  }
+
+  const indicadorPutMatch = method === 'PUT' ? matchPath(pathname, '/api/indicadores/:id') : null
+  if (indicadorPutMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(indicadorPutMatch.id)
+    if (err) return err
+    const body = (await request.json().catch(() => ({}))) as {
+      nombre?: string
+      descripcion?: string
+      unidad?: string
+      meta?: number | string | null
+      fecha_evaluacion?: string
+      resultado_texto?: string
+      documento_respaldo_id?: string | null
+      mediciones?: Array<{ periodo?: string; valor?: number | string }>
+    }
+    if (body.documento_respaldo_id) {
+      const e = requireUuidParam(String(body.documento_respaldo_id))
+      if (e) return json({ error: 'documento_respaldo_id inválido' }, 400)
+    }
+    const meds = body.mediciones !== undefined ? body.mediciones.map((m) => ({ periodo: String(m.periodo ?? ''), valor: m.valor as number })) : undefined
+    const ok = await updateIndicador(
+      indicadorPutMatch.id,
+      {
+        nombre: body.nombre,
+        descripcion: body.descripcion,
+        unidad: body.unidad,
+        meta: body.meta,
+        fecha_evaluacion: body.fecha_evaluacion,
+        resultado_texto: body.resultado_texto,
+        documento_respaldo_id: body.documento_respaldo_id,
+      },
+      meds,
+    )
+    if (!ok) return json({ error: 'No encontrado' }, 404)
+    return json({ ok: true })
+  }
+
+  const indicadorDeleteMatch = method === 'DELETE' ? matchPath(pathname, '/api/indicadores/:id') : null
+  if (indicadorDeleteMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(indicadorDeleteMatch.id)
+    if (err) return err
+    if (!(await deleteIndicador(indicadorDeleteMatch.id))) return json({ error: 'No encontrado' }, 404)
+    return json({ ok: true })
   }
 
   return json({ error: 'No encontrado' }, 404)

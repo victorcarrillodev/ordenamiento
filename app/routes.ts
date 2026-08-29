@@ -13,6 +13,18 @@ export const routes = route({
   participation: form(`${basePath}/participation`),
   poetdum: {
     show: get(`${basePath}/poetdum`),
+    actividades: {
+      show: get(`${basePath}/poetdum/actividades`),
+      // Proxy de la foto servida por el backend (el navegador no accede al
+      // backend directamente; el patrón del repo es proxear con backendFetch).
+      foto: get(`${basePath}/poetdum/actividades/:id/fotos/:fid`),
+    },
+    documentos: {
+      show: get(`${basePath}/poetdum/documentos`),
+      // Proxy de descarga de archivo del repositorio de documentos.
+      archivo: get(`${basePath}/poetdum/documentos/:id/archivo`),
+    },
+    indicadores: { show: get(`${basePath}/poetdum/indicadores`) },
   },
   error: get(`${basePath}/error/:code`),
   errorDefault: get(`${basePath}/error`),
@@ -37,6 +49,9 @@ export const adminRoutes = route({
   participacionDetalle: get(`${basePath}/admin/participaciones/:id`),
   avisos: form(`${basePath}/admin/avisos`),
   poel: form(`${basePath}/admin/poel`),
+  actividades: form(`${basePath}/admin/actividades`),
+  documentos: form(`${basePath}/admin/documentos`),
+  indicadores: form(`${basePath}/admin/indicadores`),
   estadisticas: get(`${basePath}/admin/estadisticas`),
   cuenta: get(`${basePath}/admin/cuenta`),
   personalizacion: form(`${basePath}/admin/personalizacion`),
