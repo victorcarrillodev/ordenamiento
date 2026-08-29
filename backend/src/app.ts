@@ -55,7 +55,7 @@ import {
   DEFAULT_THEME_CONFIG,
 } from './services/customizations.ts'
 import { sql } from './db/pool.ts'
-import { json, bodyTooLarge, rateLimit } from './utils.ts'
+import { json, bodyTooLarge, rateLimit, logger } from './utils.ts'
 
 /** Rate limiter para participaciones. Admins están exentos, otros tienen 10 POSTs por minuto */
 export function participationRateLimited(
@@ -354,7 +354,7 @@ export async function handleRequest(request: Request): Promise<Response> {
       await marcarNotificada(id, destino)
       return json({ ok: true, notificado: true, para: destino })
     } catch (err) {
-      console.error('[mail] No se pudo enviar la resolución:', err)
+      logger.error('app.enviarResolucion', err)
       return json({ ok: true, notificado: false, motivo: 'ENVIO_FALLIDO' })
     }
   }

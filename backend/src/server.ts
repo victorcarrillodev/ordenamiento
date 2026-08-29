@@ -1,5 +1,6 @@
 import { handleRequest, init } from './app.ts'
 import { MAX_TOTAL_BYTES } from './files/limits.ts'
+import { logger } from './utils.ts'
 
 const PORT = Number(process.env.PORT ?? 5920)
 

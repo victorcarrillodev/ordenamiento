@@ -287,8 +287,8 @@ export async function restoreAuditSnapshot(
   user: { id: string; name: string; email: string },
   motivo = 'Restauración de versión anterior desde auditoría',
 ): Promise<ThemeConfig | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- columna JSONB, forma dinámica
-  const rows = await sql<Array<{ snapshot: any }>>`
+  // Columna JSONB de forma dinámica: objeto plano en crudo.
+  const rows = await sql<Array<{ snapshot: Record<string, unknown> }>>`
     SELECT snapshot FROM customization_audit_logs WHERE id = ${logId} LIMIT 1
   `
   if (rows.length === 0) return null

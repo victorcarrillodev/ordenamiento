@@ -16,7 +16,7 @@ import { nextFolio } from '../services/folio.ts'
 import { ingestParticipation, type IngestFile } from '../services/ingest.ts'
 import { enviarAcuseReciboParticipacion, mailConfigurado } from '../services/mail.ts'
 import { createParticipation, type Origen } from '../services/participations.ts'
-import { json, bodyTooLarge } from '../utils.ts'
+import { json, bodyTooLarge, logger } from '../utils.ts'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
 
@@ -178,7 +178,7 @@ export async function handleCreateParticipation(
     const userEmail = camposFormulario.correo.trim()
     if (userEmail && mailConfigurado()) {
       void enviarAcuseReciboParticipacion(resultado.participationId, userEmail).catch((err) => {
-        console.error('[mail] No se pudo enviar acuse automático:', err)
+        logger.error('participations.acuse', err)
       })
     }
 
