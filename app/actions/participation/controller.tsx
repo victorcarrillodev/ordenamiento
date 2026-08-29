@@ -14,8 +14,12 @@ import { createController } from 'remix/router'
 
 import { BACKEND_URL } from '../../backend.ts'
 import { routes } from '../../routes.ts'
-import { MAX_FILE_BYTES, MAX_FILES, MAX_TOTAL_BYTES } from '../../utils/uploads.ts'
-import { sanitizeFilename } from '../../../backend/src/services/upload-guard.ts'
+import {
+  MAX_FILE_BYTES,
+  MAX_FILES,
+  MAX_TOTAL_BYTES,
+  sanitizeFilename,
+} from '../../utils/uploads.ts'
 import { ParticipationPage } from './page.tsx'
 import {
   errorMap,
