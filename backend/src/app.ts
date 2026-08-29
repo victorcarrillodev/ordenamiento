@@ -22,8 +22,6 @@ import {
   verifySessionToken,
   type SessionUser,
 } from './auth/auth.ts'
-import { seedRootAdmin, seedExtraAdmins } from './seed.ts'
-import { seedDemoData } from './seed-demo.ts'
 import { migrate } from './db/migrate.ts'
 import { handleCreateParticipation } from './routes/participations.ts'
 import {
@@ -875,8 +873,28 @@ export async function handleRequest(request: Request): Promise<Response> {
 
 export async function init(): Promise<void> {
   await migrate()
-  await seedRootAdmin()
-  await seedExtraAdmins()
-  await seedDemoData()
+
+  // Los archivos de seed están gitignorados (contienen datos de ejemplo y
+  // contraseñas temporales). Si no existen en este checkout, se omiten sin
+  // error. Para crear el admin ROOT, define ROOT_PASSWORD en el .env.
+  try {
+    const seed = await import('./seed.ts')
+    await seed.seedRootAdmin()
+  } catch (err) {
+    console.warn('[init] seedRootAdmin omitido:', err instanceof Error ? err.message : err)
+  }
+  try {
+    const seed = await import('./seed.ts')
+    await seed.seedExtraAdmins()
+  } catch {
+    // opcional: no hay seed-admins.json
+  }
+  try {
+    const seedDemo = await import('./seed-demo.ts')
+    await seedDemo.seedDemoData()
+  } catch {
+    // opcional: no hay seed-demo.ts
+  }
+
   console.log('[server] listo para recibir requests')
 }
