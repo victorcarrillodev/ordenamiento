@@ -102,8 +102,23 @@ export default createController(routes.login, {
         // no responde" fuera indistinguible de "la contraseña está mal", que es
         // justo el caso en el que uno pierde media hora probando contraseñas.
         const status = [401, 409, 429, 503].includes(result.status) ? result.status : 401
+
+        // Mensaje descriptivo según el tipo de error
+        let alertMessage = result.error ?? 'Credenciales inválidas'
+        let alertType: 'error' | 'warning' | 'info' = 'error'
+
+        if (result.status === 429) {
+          alertMessage = 'Demasiados intentos fallidos. Intenta de nuevo en 15 minutos.'
+          alertType = 'warning'
+        } else if (result.status === 503) {
+          alertMessage = 'El servicio de autenticación no está disponible. Intenta más tarde.'
+          alertType = 'warning'
+        } else if (result.status === 401) {
+          alertMessage = 'Correo o contraseña incorrectos. Verifica tus credenciales.'
+        }
+
         return context.render(
-          <LoginPage errors={{ email: result.error ?? 'Credenciales inválidas' }} />,
+          <LoginPage alert={{ type: alertType, message: alertMessage }} errors={{ email: alertMessage }} />,
           { status },
         )
       }

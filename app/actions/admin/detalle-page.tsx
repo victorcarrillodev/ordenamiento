@@ -6,13 +6,13 @@ import { Button } from '../../ui/button.tsx'
 import { etapaDe, PASOS } from './etapa.ts'
 
 interface Adjunto {
-  id: number
+  id: string
   nombre_original: string
   mime: string
   size: number
 }
 interface Detalle {
-  id: number
+  id: string
   folio: string
   origen: string
   nombre: string
@@ -89,7 +89,7 @@ function extensionDe(nombre: string): string {
  * el cuerpo de la respuesta dentro del HTML. Con un PDF eso vuelca bytes
  * binarios en el documento y el visor nunca aparece.
  */
-function VistaAdjunto(handle: Handle<{ participacionId: number; adjunto: Adjunto }>) {
+function VistaAdjunto(handle: Handle<{ participacionId: string; adjunto: Adjunto }>) {
   return () => {
     const { participacionId, adjunto } = handle.props
     const href = adminRoutes.adjunto.href({ id: participacionId, aid: adjunto.id })
@@ -312,7 +312,11 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
     const titulo = p ? `Participación ${p.folio}` : 'Participación no encontrada'
 
     return (
-      <AdminLayout user={user} active="participaciones" title={titulo}>
+      <AdminLayout
+        user={user}
+        active={p?.origen === 'digital' ? 'participaciones-digital' : 'participaciones-fisica'}
+        title={titulo}
+      >
         <h1 class="page-title">{titulo}</h1>
         <p class="breadcrumb">
           <a href={`${adminRoutes.participaciones.href()}?origen=${p?.origen ?? 'fisica'}`}>
@@ -351,69 +355,71 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
               <p class="form-error">⚠️ Elige si la participación es procedente o no.</p>
             ) : null}
             <LineaEtapas p={p} />
-            <div class="panel">
-              <div class="panel__head">
-                <h2 class="panel__title" style="margin:0;">
-                  Datos de la participación
-                </h2>
-                <span class={'badge ' + (ESTADO_BADGE[p.estado] ?? 'en-proceso')}>{p.estado}</span>
+            <div class="detalle-split">
+              <div class="panel">
+                <div class="panel__head">
+                  <h2 class="panel__title" style="margin:0;">
+                    Datos de la participación
+                  </h2>
+                  <span class={'badge ' + (ESTADO_BADGE[p.estado] ?? 'en-proceso')}>{p.estado}</span>
+                </div>
+                <div class="detalle-grid">
+                  <Campo label="Folio" value={p.folio} />
+                  <Campo label="Nombre" value={p.nombre} />
+                  <Campo label="Correo" value={p.correo} />
+                  <Campo label="Municipio" value={p.municipio} />
+                  <Campo label="Colonia" value={p.colonia} />
+                  <Campo label="Domicilio" value={p.domicilio} />
+                  <Campo label="Municipio de participante" value={p.municipio_participante} />
+                  <Campo label="Fuente" value={p.fuente} />
+                  <Campo label="Género" value={p.genero} />
+                  <Campo label="Temática" value={p.tematica} />
+                  <Campo label="Institución" value={p.institucion} />
+                  <Campo label="Ocupación" value={p.ocupacion} />
+                  <Campo label="Registro" value={fmtFecha(p.fecha)} />
+                </div>
+                <div class="campo campo--full">
+                  <span class="meta-label">Observación</span>
+                  <p class="campo__value">{p.observacion || '—'}</p>
+                </div>
               </div>
-              <div class="detalle-grid">
-                <Campo label="Folio" value={p.folio} />
-                <Campo label="Nombre" value={p.nombre} />
-                <Campo label="Correo" value={p.correo} />
-                <Campo label="Municipio" value={p.municipio} />
-                <Campo label="Colonia" value={p.colonia} />
-                <Campo label="Domicilio" value={p.domicilio} />
-                <Campo label="Municipio de participante" value={p.municipio_participante} />
-                <Campo label="Fuente" value={p.fuente} />
-                <Campo label="Género" value={p.genero} />
-                <Campo label="Temática" value={p.tematica} />
-                <Campo label="Institución" value={p.institucion} />
-                <Campo label="Ocupación" value={p.ocupacion} />
-                <Campo label="Registro" value={fmtFecha(p.fecha)} />
-              </div>
-              <div class="campo campo--full">
-                <span class="meta-label">Observación</span>
-                <p class="campo__value">{p.observacion || '—'}</p>
-              </div>
-            </div>
 
-            <div class="panel">
-              <div class="panel__head">
-                <h2 class="panel__title" style="margin:0;">
-                  Adjuntos
-                </h2>
-                {p.adjuntos.map((a) => (
-                  <span key={a.id} style="display:flex; gap:8px; align-items:center;">
-                    <span class="meta-label">
-                      {a.nombre_original} · {fmtSize(a.size)}
+              <div class="panel">
+                <div class="panel__head">
+                  <h2 class="panel__title" style="margin:0;">
+                    Adjuntos
+                  </h2>
+                  {p.adjuntos.map((a) => (
+                    <span key={a.id} style="display:flex; gap:8px; align-items:center;">
+                      <span class="meta-label">
+                        {a.nombre_original} · {fmtSize(a.size)}
+                      </span>
+                      <a
+                        class="btn btn--green"
+                        href={adminRoutes.adjunto.href({ id: p.id, aid: a.id })}
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        👁 Ver
+                      </a>
+                      <a
+                        class="btn btn--excel"
+                        href={`${adminRoutes.adjunto.href({ id: p.id, aid: a.id })}?download=1`}
+                      >
+                        ⬇ Descargar
+                      </a>
                     </span>
-                    <a
-                      class="btn btn--green"
-                      href={adminRoutes.adjunto.href({ id: p.id, aid: a.id })}
-                      target="_blank"
-                      rel="noopener"
-                    >
-                      👁 Ver
-                    </a>
-                    <a
-                      class="btn btn--excel"
-                      href={`${adminRoutes.adjunto.href({ id: p.id, aid: a.id })}?download=1`}
-                    >
-                      ⬇ Descargar
-                    </a>
-                  </span>
-                ))}
-                <a class="btn btn--excel" href={adminRoutes.word.href({ id: p.id })}>
-                  ⬇ Descargar datos (.docx)
-                </a>
+                  ))}
+                  <a class="btn btn--excel" href={adminRoutes.word.href({ id: p.id })}>
+                    ⬇ Descargar datos (.docx)
+                  </a>
+                </div>
+                {p.adjuntos.length === 0 ? (
+                  <p class="empty">Esta participación no tiene documento adjunto.</p>
+                ) : (
+                  <VistaAdjunto participacionId={p.id} adjunto={p.adjuntos[0]} />
+                )}
               </div>
-              {p.adjuntos.length === 0 ? (
-                <p class="empty">Esta participación no tiene documento adjunto.</p>
-              ) : (
-                <VistaAdjunto participacionId={p.id} adjunto={p.adjuntos[0]} />
-              )}
             </div>
 
             <PanelDictamen p={p} />

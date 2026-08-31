@@ -83,8 +83,8 @@ describe('participation controller action', () => {
     }
   })
 
-  it('búsqueda de colonias con coincidencias fonéticas (ej. el betel -> Bethel)', async () => {
-    const request = new Request('http://localhost/ordena/api/colonias?q=el+betel')
+  it('búsqueda de colonias con coincidencias fonéticas (ej. el alamo -> Álamo en Tlaquepaque)', async () => {
+    const request = new Request('http://localhost/ordena/api/colonias?q=el+alamo')
     const response = await router.fetch(request)
     expect(response?.status).toBe(200)
 
@@ -92,9 +92,9 @@ describe('participation controller action', () => {
       items: Array<{ colonia: string; cp: string; municipio: string }>
     }
     expect(data.items.length).toBeGreaterThan(0)
-    expect(data.items[0].colonia).toBe('Bethel')
-    expect(data.items[0].municipio).toBe('Guadalajara')
-    expect(data.items[0].cp).toBe('44720')
+    expect(data.items[0].colonia).toBe('Álamo')
+    expect(data.items[0].municipio).toBe('San Pedro Tlaquepaque')
+    expect(data.items[0].cp).toBe('45560')
   })
 
   it('reenvía múltiples archivos adjuntos al backend', async () => {

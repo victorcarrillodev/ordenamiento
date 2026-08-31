@@ -272,8 +272,7 @@ export function Button(handle: Handle<ButtonProps>) {
 
     const content = children ?? label ?? data
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mixes: MixInput<any> = [
+    const mixes: MixInput<HTMLElement> = [
       baseButtonStyle,
       variantStyle,
       sizeStyle,

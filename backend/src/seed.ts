@@ -36,19 +36,25 @@ export async function seedRootAdmin(): Promise<void> {
     )
   }
 
-  const existing = await sql<{ id: number }[]>`
-    SELECT id FROM users WHERE email = ${ROOT_EMAIL}
-  `
+  const existing = await sql<{ id: string }[]>`SELECT id::text AS id FROM users WHERE email = ${ROOT_EMAIL}`
+
   if (existing.length > 0) {
-    // El seed es insert-only a propósito: no pisa la contraseña de una cuenta
-    // viva en cada arranque. Pero eso hace que cambiar ROOT_PASSWORD en el .env
-    // no tenga ningún efecto, y desde fuera se ve como "el login no funciona".
-    // Se dice en voz alta para que no haya que adivinarlo.
-    console.log(
-      process.env.ROOT_PASSWORD
-        ? `[seed] ROOT ya existe (${ROOT_EMAIL}). OJO: se conserva la contraseña con la que se creó; ROOT_PASSWORD del entorno NO se aplica a una cuenta existente.`
-        : `[seed] ROOT ya existe (${ROOT_EMAIL}); para cambiarlo define ROOT_PASSWORD y borra el usuario.`,
-    )
+    // Si hay ROOT_PASSWORD en .env, sincroniza la contraseña en cada arranque.
+    // Así cambiar la contraseña del .env surte efecto inmediato sin tener que
+    // borrar el usuario manualmente.
+    if (ROOT_PASSWORD) {
+      const password_hash = await Bun.password.hash(ROOT_PASSWORD, {
+        algorithm: 'argon2id',
+        memoryCost: 65536,
+        timeCost: 3,
+      })
+      await sql`UPDATE users SET password_hash = ${password_hash} WHERE email = ${ROOT_EMAIL}`
+      console.log(`[seed] ROOT (${ROOT_EMAIL}): contraseña sincronizada desde .env`)
+    } else {
+      console.log(
+        `[seed] ROOT ya existe (${ROOT_EMAIL}); para cambiar la contraseña define ROOT_PASSWORD en .env`,
+      )
+    }
     return
   }
 

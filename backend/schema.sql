@@ -3,12 +3,14 @@
 -- nativo (tsvector/tsquery en español): basta para localizar una
 -- participación por lo que dice su PDF, sin embeddings ni pgvector.
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- ---------------------------------------------------------------------------
 -- Usuarios (admin crea físicas; usuario crea digitales) – relacional
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS users (
-  id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email         TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   role          TEXT NOT NULL DEFAULT 'user',  -- 'admin' | 'user'
@@ -16,12 +18,17 @@ CREATE TABLE IF NOT EXISTS users (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Avatar de perfil (subido desde Mi Cuenta)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_ruta   TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_nombre TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_mime   TEXT NOT NULL DEFAULT '';
+
 -- ---------------------------------------------------------------------------
 -- Participaciones (física y digital son la MISMA entidad; origen distinto)
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS participations (
-  id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   folio        TEXT NOT NULL UNIQUE,             -- autogenerado SPAGU-DGTPU-E-000X
   origen       TEXT NOT NULL DEFAULT 'digital',  -- 'digital' | 'fisica'
   nombre       TEXT NOT NULL,
@@ -47,7 +54,7 @@ CREATE TABLE IF NOT EXISTS participations (
   -- describen el lugar del aporte; la captura física registra ambos.
   domicilio              TEXT NOT NULL DEFAULT '',
   municipio_participante TEXT NOT NULL DEFAULT '',
-  creado_por   BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  creado_por   UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -75,7 +82,7 @@ ALTER TABLE participations ADD COLUMN IF NOT EXISTS resolucion_motivo    TEXT NO
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS resolucion_direccion TEXT NOT NULL DEFAULT '';
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS resolucion_cita      TEXT NOT NULL DEFAULT '';
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS resolucion_en        TIMESTAMPTZ;
-ALTER TABLE participations ADD COLUMN IF NOT EXISTS resuelto_por         BIGINT REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS resuelto_por         UUID REFERENCES users(id) ON DELETE SET NULL;
 -- Sello del correo de dictamen: mientras sea NULL, la participacion esta
 -- resuelta pero el ciudadano todavia no lo sabe.
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS notificado_en        TIMESTAMPTZ;
@@ -100,8 +107,8 @@ CREATE INDEX IF NOT EXISTS idx_participations_tsv ON participations USING gin (b
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS attachments (
-  id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  participation_id BIGINT NOT NULL REFERENCES participations(id) ON DELETE CASCADE,
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  participation_id UUID NOT NULL REFERENCES participations(id) ON DELETE CASCADE,
   nombre_original  TEXT NOT NULL,
   mime             TEXT NOT NULL,
   size             BIGINT NOT NULL,
@@ -137,24 +144,20 @@ DROP EXTENSION IF EXISTS vector;
 -- Historial de búsquedas (auditoría) – relacional
 -- ---------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS search_history (
-  id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id    BIGINT REFERENCES users(id) ON DELETE SET NULL,
-  query      TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+-- (Tabla de historial de búsquedas eliminada en H3 2026-08-28: era tabla muerta, sin
+--  lecturas/escrituras en el código; el endpoint que la llenaba se podó en la auditoría previa.)
 
 -- ---------------------------------------------------------------------------
 -- Reuniones (bitácora administrativa) — relacional
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS reuniones (
-  id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   titulo       TEXT NOT NULL,
   fecha        DATE NOT NULL,
   hora_inicio  TEXT NOT NULL DEFAULT '',
   hora_fin     TEXT NOT NULL DEFAULT '',
-  creado_por   BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  creado_por   UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -163,11 +166,11 @@ CREATE TABLE IF NOT EXISTS reuniones (
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS avisos (
-  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   titulo      TEXT NOT NULL,
   descripcion TEXT NOT NULL DEFAULT '',
   activo      BOOLEAN NOT NULL DEFAULT true,
-  creado_por  BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  creado_por  UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -177,7 +180,7 @@ CREATE TABLE IF NOT EXISTS avisos (
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS poel_sesiones (
-  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   categoria   TEXT NOT NULL DEFAULT '',
   orden       INT NOT NULL DEFAULT 0,
   titulo      TEXT NOT NULL,
@@ -188,6 +191,48 @@ CREATE TABLE IF NOT EXISTS poel_sesiones (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Imagen ilustrativa de la sesión (foto del taller, cartel de la convocatoria).
+-- El archivo vive en uploads/ como los adjuntos; aquí solo su referencia.
+ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS imagen_ruta   TEXT NOT NULL DEFAULT '';
+ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS imagen_nombre TEXT NOT NULL DEFAULT '';
+ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS imagen_mime   TEXT NOT NULL DEFAULT '';
+
+-- Coordenadas del lugar. Van aparte de `ubicacion` (que es la dirección escrita)
+-- porque una cosa es cómo se lee y otra dónde cae en el mapa.
+ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS latitud  TEXT NOT NULL DEFAULT '';
+ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS longitud TEXT NOT NULL DEFAULT '';
+
+ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
+-- Archivos de la sesión: varios por sesión y de cualquier tipo permitido. Las
+-- columnas `imagen_*` de arriba solo admitían UNA imagen; el sitio público
+-- necesita separar "Documentos de la sesión" de "Imágenes de la sesión", así
+-- que cada archivo lleva su `tipo` y se clasifica al subirlo por su extensión.
+CREATE TABLE IF NOT EXISTS poel_archivos (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  sesion_id       UUID NOT NULL REFERENCES poel_sesiones(id) ON DELETE CASCADE,
+  tipo            TEXT NOT NULL DEFAULT 'documento'
+                  CHECK (tipo IN ('imagen','documento')),
+  nombre_original TEXT NOT NULL,
+  mime            TEXT NOT NULL,
+  size            BIGINT NOT NULL DEFAULT 0,
+  ruta_local      TEXT NOT NULL,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_poel_archivos_sesion ON poel_archivos (sesion_id);
+
+-- Traslada la imagen única que ya estuviera guardada. Idempotente: el NOT
+-- EXISTS evita duplicarla si el schema se aplica varias veces.
+INSERT INTO poel_archivos (sesion_id, tipo, nombre_original, mime, ruta_local)
+SELECT s.id, 'imagen', s.imagen_nombre, s.imagen_mime, s.imagen_ruta
+FROM poel_sesiones s
+WHERE s.imagen_ruta <> ''
+  AND NOT EXISTS (
+    SELECT 1 FROM poel_archivos a
+    WHERE a.sesion_id = s.id AND a.ruta_local = s.imagen_ruta
+  );
+
 -- ---------------------------------------------------------------------------
 -- Personalización Visual y Marca (Site Customizations & Theming)
 -- ---------------------------------------------------------------------------
@@ -195,7 +240,7 @@ CREATE TABLE IF NOT EXISTS poel_sesiones (
 CREATE TABLE IF NOT EXISTS site_customizations (
   id          INT PRIMARY KEY DEFAULT 1,
   config      JSONB NOT NULL DEFAULT '{}'::jsonb,
-  updated_by  BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  updated_by  UUID REFERENCES users(id) ON DELETE SET NULL,
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -204,8 +249,8 @@ CREATE TABLE IF NOT EXISTS site_customizations (
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS customization_audit_logs (
-  id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id          BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id          UUID REFERENCES users(id) ON DELETE SET NULL,
   user_name        TEXT NOT NULL,
   user_email       TEXT NOT NULL,
   motivo           TEXT NOT NULL DEFAULT '',
@@ -216,3 +261,88 @@ CREATE TABLE IF NOT EXISTS customization_audit_logs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_customization_audit_fecha ON customization_audit_logs (created_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- Portal POETDUM — Actividades, Documentos, Indicadores
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS actividades (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  titulo        TEXT NOT NULL,
+  fecha         DATE NOT NULL,
+  hora_inicio   TEXT NOT NULL DEFAULT '',
+  hora_fin      TEXT NOT NULL DEFAULT '',
+  lugar         TEXT NOT NULL DEFAULT '',
+  descripcion   TEXT NOT NULL DEFAULT '',
+  estado        TEXT NOT NULL DEFAULT 'proxima'
+                CHECK (estado IN ('proxima','realizada','cancelada')),
+  resultados    TEXT NOT NULL DEFAULT '',
+  creado_por    UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_actividades_fecha  ON actividades (fecha DESC);
+CREATE INDEX IF NOT EXISTS idx_actividades_estado ON actividades (estado);
+
+CREATE TABLE IF NOT EXISTS documentos (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  titulo           TEXT NOT NULL,
+  tipo             TEXT NOT NULL CHECK (tipo IN (
+    'Convenios y anexos','Acuerdos','Actas y minutas','Convocatorias',
+    'Documentos técnicos','Cartografía','Avances y resultados','Programa')),
+  etapa            TEXT NOT NULL DEFAULT 'En proceso'
+                   CHECK (etapa IN ('En proceso','Dictaminada','Notificada')),
+  fecha            DATE,
+  descripcion      TEXT NOT NULL DEFAULT '',
+  nombre_original  TEXT NOT NULL,
+  mime             TEXT NOT NULL,
+  size             BIGINT NOT NULL,
+  ruta_local       TEXT NOT NULL,
+  creado_por       UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_documentos_tipo  ON documentos (tipo);
+CREATE INDEX IF NOT EXISTS idx_documentos_etapa ON documentos (etapa);
+CREATE INDEX IF NOT EXISTS idx_documentos_fecha ON documentos (fecha DESC);
+
+CREATE TABLE IF NOT EXISTS actividad_fotos (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actividad_id     UUID NOT NULL REFERENCES actividades(id) ON DELETE CASCADE,
+  nombre_original  TEXT NOT NULL,
+  mime             TEXT NOT NULL,
+  size             BIGINT NOT NULL,
+  ruta_local       TEXT NOT NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_actividad_fotos_act ON actividad_fotos (actividad_id);
+
+CREATE TABLE IF NOT EXISTS actividad_documentos (
+  actividad_id  UUID NOT NULL REFERENCES actividades(id) ON DELETE CASCADE,
+  documento_id  UUID NOT NULL REFERENCES documentos(id) ON DELETE CASCADE,
+  PRIMARY KEY (actividad_id, documento_id)
+);
+
+CREATE TABLE IF NOT EXISTS indicadores (
+  id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre               TEXT NOT NULL,
+  descripcion          TEXT NOT NULL DEFAULT '',
+  unidad               TEXT NOT NULL DEFAULT '',
+  meta                 NUMERIC,
+  fecha_evaluacion     TEXT NOT NULL DEFAULT '',
+  resultado_texto      TEXT NOT NULL DEFAULT '',
+  documento_respaldo_id UUID REFERENCES documentos(id) ON DELETE SET NULL,
+  creado_por           UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_indicadores_nombre ON indicadores (nombre);
+
+CREATE TABLE IF NOT EXISTS mediciones (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  indicador_id  UUID NOT NULL REFERENCES indicadores(id) ON DELETE CASCADE,
+  periodo       TEXT NOT NULL DEFAULT '',
+  valor         NUMERIC NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_mediciones_indicador ON mediciones (indicador_id);

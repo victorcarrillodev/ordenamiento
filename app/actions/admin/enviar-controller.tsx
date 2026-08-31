@@ -31,7 +31,7 @@ export default createController(adminRoutes.participacionEnviar, {
       const response = await backendFetch(context.request, '/api/participations/enviar', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ id: Number(context.params.id), para }),
+        body: JSON.stringify({ id: context.params.id, para }),
       })
 
       return redirect(base + (response.ok ? '?mail=ok' : '?mail=error'))

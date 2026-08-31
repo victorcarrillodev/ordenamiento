@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, rm } from 'node:fs/promises'
 import { join, isAbsolute } from 'node:path'
 import {
   canonicalMimeFor,
@@ -22,8 +22,6 @@ import {
   verifySessionToken,
   type SessionUser,
 } from './auth/auth.ts'
-import { seedRootAdmin, seedExtraAdmins } from './seed.ts'
-import { seedDemoData } from './seed-demo.ts'
 import { migrate } from './db/migrate.ts'
 import { handleCreateParticipation } from './routes/participations.ts'
 import {
@@ -32,15 +30,55 @@ import {
   listParticipations,
   marcarNotificada,
   registrarResolucion,
-  updateEstado,
   type Estado,
   type Etapa,
   type Origen,
 } from './services/participations.ts'
-import { searchParticipations } from './services/search.ts'
-import { createReunion, deleteReunion, listReuniones } from './services/reuniones.ts'
+import {
+  createReunion,
+  deleteReunion,
+  getProximaReunion,
+  listReuniones,
+} from './services/reuniones.ts'
 import { listAvisos, createAviso, deleteAviso } from './services/avisos.ts'
-import { listPoel, createPoelSesion, deletePoelSesion } from './services/poel.ts'
+import {
+  listPoel,
+  listPoelPublicas,
+  createPoelSesion,
+  deletePoelSesion,
+  updatePoelSesion,
+  setPoelImagen,
+  getPoelImagen,
+  listPoelArchivos,
+  addPoelArchivo,
+  getPoelArchivo,
+  deletePoelArchivo,
+  isCategoriaPoel,
+} from './services/poel.ts'
+import { subirArchivosDesdeForm } from './services/upload.ts'
+import {
+  listActividades,
+  createActividad,
+  updateActividad,
+  deleteActividad,
+} from './services/actividades.ts'
+import {
+  listDocumentos,
+  getDocumento,
+  createDocumento,
+  updateDocumento,
+  deleteDocumento,
+  isTipoDocumento,
+  isEtapaDoc,
+} from './services/documentos.ts'
+import {
+  listIndicadores,
+  createIndicador,
+  updateIndicador,
+  deleteIndicador,
+} from './services/indicadores.ts'
+import { validarAdjunto } from './files/limits.ts'
+import { nombreEnDisco, sanitizarNombre } from './files/nombres.ts'
 import { exportTableToXlsx, isExportable } from './services/export.ts'
 import { participationDocx } from './services/word.ts'
 import {
@@ -59,7 +97,7 @@ import {
   DEFAULT_THEME_CONFIG,
 } from './services/customizations.ts'
 import { sql } from './db/pool.ts'
-import { json, bodyTooLarge, clientIp, rateLimit } from './utils.ts'
+import { json, bodyTooLarge, rateLimit, logger } from './utils.ts'
 
 /** Rate limiter para participaciones. Admins están exentos, otros tienen 10 POSTs por minuto */
 export function participationRateLimited(
@@ -113,6 +151,39 @@ function safePositiveInt(v: string | null, fallback: number): number {
   return Number.isInteger(n) && n > 0 ? n : fallback
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isUuid(v: string): boolean {
+  return UUID_RE.test(v)
+}
+
+function requireUuidParam(id: string): Response | null {
+  return isUuid(id) ? null : json({ error: 'id inválido' }, 400)
+}
+
+/**
+ * Router manual del backend — DECISIÓN A2 (2026-08-28, Arquitecto)
+ *
+ * Se evaluó migrar `handleRequest` (hoy ~800 líneas, 24 ramas `if (method+pathname)`)
+ * hacia un router tipado al estilo `remix/router` sin nuevas dependencias.
+ *
+ * Decisión: (a) MANTENER el router manual y documentarlo como aceptable.
+ * Razones:
+ *  - Backend sin framework: usa el `fetch` nativo de Bun/Node. `matchPath` (15 líneas)
+ *    + `handleRequest` son zero-deps, predecibles, fáciles de auditar y sin DSL que aprender.
+ *  - El frontend sí necesita `remix/router` por `href` tipados, navegación y data-loading
+ *    en React; el backend solo despacha (auth guards + validación + servicio), no navega.
+ *  - Extraer a `backend/src/router.ts` con tabla `Array<{method, pattern, handler}>`
+ *    no reduce complejidad ciclomática, solo la mueve; el hot-spot CRAP (alta complejidad +
+ *    22 commits en `app.ts`) se mitiga mejor podando rutas huérfanas (A1) que añadiendo
+ *    indirección ahora.
+ *  - Umbral de refactor: si el número de rutas supera ~40 o aparecen middlewares
+ *    componibles (rate-limit por ruta, validación por esquema), entonces migrar a una
+ *    tabla tipada mínima sin deps: `type Route = {method, pattern, auth: 'admin'|'auth'|null,
+ *    handler}`. Hasta entonces, se deja como está y se monitoriza.
+ *
+ * Si se reintroduce búsqueda, usar el flujo canónico `GET /api/participations?q=...`
+ * con ranking en vez de resucitar `GET /api/search` aislado.
+ */
 function matchPath(pathname: string, pattern: string): Record<string, string> | null {
   const pathParts = pathname.split('/').filter(Boolean)
   const patternParts = pattern.split('/').filter(Boolean)
@@ -223,6 +294,20 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (estado && !isEstado(estado)) return json({ error: 'estado inválido' }, 400)
     if (etapa && !isEtapa(etapa)) return json({ error: 'etapa inválida' }, 400)
 
+    // Fechas: solo se aceptan ISO 8601 válidos; un valor mal formado devuelve 400
+    // en vez de un 500 del motor al castear a timestamptz.
+    const desdeRaw = url.searchParams.get('desde')
+    const hastaRaw = url.searchParams.get('hasta')
+    const validarFecha = (v: string | null): string | undefined => {
+      if (!v) return undefined
+      const t = Date.parse(v)
+      return Number.isNaN(t) ? (undefined as unknown as string) : v
+    }
+    const desde = validarFecha(desdeRaw)
+    const hasta = validarFecha(hastaRaw)
+    if (desdeRaw && desde === undefined) return json({ error: 'desde inválido (ISO 8601)' }, 400)
+    if (hastaRaw && hasta === undefined) return json({ error: 'hasta inválido (ISO 8601)' }, 400)
+
     const result = await listParticipations({
       origen: (origen as Origen | undefined) ?? undefined,
       estado: (estado as Estado | undefined) ?? undefined,
@@ -230,8 +315,8 @@ export async function handleRequest(request: Request): Promise<Response> {
       folio: url.searchParams.get('folio') ?? undefined,
       nombre: url.searchParams.get('nombre') ?? undefined,
       colonia: url.searchParams.get('colonia') ?? undefined,
-      desde: url.searchParams.get('desde') ?? undefined,
-      hasta: url.searchParams.get('hasta') ?? undefined,
+      desde: desde,
+      hasta: hasta,
       q: url.searchParams.get('q') ?? undefined,
       page: safePositiveInt(url.searchParams.get('page'), 1),
       limit: safePositiveInt(url.searchParams.get('limit'), 10),
@@ -245,7 +330,9 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (detailMatch) {
     const authError = requireAdmin()
     if (authError) return authError
-    const participation = await getParticipation(Number(detailMatch.id))
+    const err = requireUuidParam(detailMatch.id)
+    if (err) return err
+    const participation = await getParticipation(detailMatch.id)
     if (!participation) return json({ error: 'No encontrado' }, 404)
     return json(participation)
   }
@@ -255,20 +342,6 @@ export async function handleRequest(request: Request): Promise<Response> {
     return handleCreateParticipation(request, user)
   }
 
-  // Cambiar estado
-  const estadoMatch =
-    method === 'PATCH' ? matchPath(pathname, '/api/participations/:id/estado') : null
-  if (estadoMatch) {
-    const authError = requireAdmin()
-    if (authError) return authError
-    const body = (await request.json()) as { estado?: string }
-    if (!body.estado || !isEstado(body.estado)) return json({ error: 'estado inválido' }, 400)
-    if (!(await updateEstado(Number(estadoMatch.id), body.estado))) {
-      return json({ error: 'No encontrado' }, 404)
-    }
-    return json({ ok: true })
-  }
-
   // Dictaminar una participación y, opcionalmente, notificar al ciudadano.
   const resolucionMatch =
     method === 'POST' ? matchPath(pathname, '/api/participations/:id/resolucion') : null
@@ -276,8 +349,9 @@ export async function handleRequest(request: Request): Promise<Response> {
     const authError = requireAdmin()
     if (authError) return authError
 
-    const id = Number(resolucionMatch.id)
-    if (!Number.isInteger(id) || id <= 0) return json({ error: 'id inválido' }, 400)
+    const id = resolucionMatch.id
+    const err = requireUuidParam(id)
+    if (err) return err
 
     const body = (await request.json()) as {
       estado?: string
@@ -313,7 +387,7 @@ export async function handleRequest(request: Request): Promise<Response> {
     const destino =
       (body.para ?? '').trim() ||
       String(((await getParticipation(id)) as { correo?: string } | null)?.correo ?? '').trim()
-    if (!destino.includes('@')) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(destino) || /[\r\n<>]/.test(destino)) {
       return json({ ok: true, notificado: false, motivo: 'SIN_CORREO' })
     }
 
@@ -322,7 +396,7 @@ export async function handleRequest(request: Request): Promise<Response> {
       await marcarNotificada(id, destino)
       return json({ ok: true, notificado: true, para: destino })
     } catch (err) {
-      console.error('[mail] No se pudo enviar la resolución:', err)
+      logger.error('app.enviarResolucion', err)
       return json({ ok: true, notificado: false, motivo: 'ENVIO_FALLIDO' })
     }
   }
@@ -332,7 +406,9 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (deleteMatch) {
     const authError = requireAdmin()
     if (authError) return authError
-    if (!(await deleteParticipation(Number(deleteMatch.id)))) {
+    const err = requireUuidParam(deleteMatch.id)
+    if (err) return err
+    if (!(await deleteParticipation(deleteMatch.id))) {
       return json({ error: 'No encontrado' }, 404)
     }
     return json({ ok: true })
@@ -345,12 +421,16 @@ export async function handleRequest(request: Request): Promise<Response> {
     // Descarga el archivo adjunto de un participante: solo admin.
     const authError = requireAdmin()
     if (authError) return authError
+    const errId = requireUuidParam(attachMatch.id)
+    if (errId) return errId
+    const errAid = requireUuidParam(attachMatch.aid)
+    if (errAid) return errAid
     const rows = await sql<
       Array<{ ruta_local: string; nombre_original: string; mime: string }>
     >`--sql
       SELECT ruta_local, nombre_original, mime
       FROM attachments
-      WHERE id = ${Number(attachMatch.aid)} AND participation_id = ${Number(attachMatch.id)}
+      WHERE id = ${attachMatch.aid} AND participation_id = ${attachMatch.id}
     `
     if (rows.length === 0) {
       return json({ error: 'Adjunto no encontrado' }, 404)
@@ -396,9 +476,11 @@ export async function handleRequest(request: Request): Promise<Response> {
     // Exporta los datos completos (PII) de un participante a Word: solo admin.
     const authError = requireAdmin()
     if (authError) return authError
+    const err = requireUuidParam(wordMatch.id)
+    if (err) return err
     const rows = await sql<
       Array<{
-        id: number
+        id: string
         folio: string
         origen: string
         nombre: string
@@ -421,11 +503,11 @@ export async function handleRequest(request: Request): Promise<Response> {
         created_at: Date
       }>
     >`
-      SELECT id, folio, origen, nombre, correo, calle, numero, colonia, municipio,
+      SELECT id::text AS id, folio, origen, nombre, correo, calle, numero, colonia, municipio,
              domicilio, municipio_participante,
              institucion, ocupacion, latitud, longitud, observacion, estado,
              fuente, genero, tematica, created_at
-      FROM participations WHERE id = ${Number(wordMatch.id)}
+      FROM participations WHERE id = ${wordMatch.id}
     `
     if (rows.length === 0) return json({ error: 'No encontrado' }, 404)
     const buffer = await participationDocx(rows[0])
@@ -442,13 +524,22 @@ export async function handleRequest(request: Request): Promise<Response> {
     // Envía los datos (PII) de un participante por correo: solo admin.
     const authError = requireAdmin()
     if (authError) return authError
-    const body = (await request.json()) as { id?: number; para?: string }
+    const body = (await request.json()) as { id?: string; para?: string }
     if (!body.id || !body.para) return json({ error: 'Faltan datos: id, para' }, 400)
+    const err = requireUuidParam(String(body.id))
+    if (err) return err
+    if (
+      /[\r\n]/.test(String(body.para)) ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.para).trim()) ||
+      /[<>]/.test(String(body.para))
+    ) {
+      return json({ error: 'Correo destino inválido' }, 400)
+    }
     if (!mailConfigurado()) {
       return json({ error: 'Correo no configurado: define SMTP_HOST, SMTP_USER y SMTP_PASS' }, 503)
     }
     try {
-      const r = await enviarParticipacion(Number(body.id), body.para)
+      const r = await enviarParticipacion(String(body.id), body.para)
       return json({ ok: true, ...r })
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -461,13 +552,22 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (method === 'POST' && pathname === '/api/avisos/enviar') {
     const authError = requireAdmin()
     if (authError) return authError
-    const body = (await request.json()) as { id?: number; para?: string }
+    const body = (await request.json()) as { id?: string; para?: string }
     if (!body.id || !body.para) return json({ error: 'Faltan datos: id, para' }, 400)
+    const err = requireUuidParam(String(body.id))
+    if (err) return err
+    if (
+      /[\r\n]/.test(String(body.para)) ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.para).trim()) ||
+      /[<>]/.test(String(body.para))
+    ) {
+      return json({ error: 'Correo destino inválido' }, 400)
+    }
     if (!mailConfigurado()) {
       return json({ error: 'Correo no configurado: define SMTP_HOST, SMTP_USER y SMTP_PASS' }, 503)
     }
     try {
-      const r = await enviarAviso(Number(body.id), body.para)
+      const r = await enviarAviso(String(body.id), body.para)
       return json({ ok: true, ...r })
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -483,6 +583,16 @@ export async function handleRequest(request: Request): Promise<Response> {
     const body = (await request.json()) as { para?: string }
     const destino = (body.para ?? '').trim()
     if (!destino) return json({ error: 'Falta datos: para' }, 400)
+    // Anti-CRLF/XSS: el destino es header `To:` de SMTP y se refleja en JSON (`para`).
+    // Rechaza \r\n y valida formato email básico; complementa el filtro del frontend
+    // porque el backend es el guarda definitivo (bypass directo vía curl).
+    if (
+      /[\r\n]/.test(destino) ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(destino) ||
+      /[<>]/.test(destino)
+    ) {
+      return json({ error: 'Correo destino inválido' }, 400)
+    }
     if (!mailConfigurado()) {
       return json({ error: 'Correo no configurado: define SMTP_HOST, SMTP_USER y SMTP_PASS' }, 503)
     }
@@ -493,19 +603,6 @@ export async function handleRequest(request: Request): Promise<Response> {
       const msg = err instanceof Error ? err.message : String(err)
       return json({ error: `No se pudo enviar prueba: ${msg}` }, 502)
     }
-  }
-
-  // Búsqueda híbrida — busca dentro del contenido (PII) de participaciones: solo admin.
-  if (method === 'GET' && pathname === '/api/search') {
-    const authError = requireAdmin()
-    if (authError) return authError
-    const q = url.searchParams.get('q') ?? ''
-    if (!q) return json({ error: 'Faltan datos: q' }, 400)
-    const results = await searchParticipations(q, 10, {
-      origen: url.searchParams.get('origen') ?? undefined,
-      estado: url.searchParams.get('estado') ?? undefined,
-    })
-    return json({ query: q, results })
   }
 
   // ── Reuniones (bitácora) ─────────────────────────────────────────────
@@ -539,7 +636,9 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (reunionDeleteMatch) {
     const authError = requireAdmin()
     if (authError) return authError
-    if (!(await deleteReunion(Number(reunionDeleteMatch.id)))) {
+    const err = requireUuidParam(reunionDeleteMatch.id)
+    if (err) return err
+    if (!(await deleteReunion(reunionDeleteMatch.id))) {
       return json({ error: 'No encontrado' }, 404)
     }
     return json({ ok: true })
@@ -561,14 +660,104 @@ export async function handleRequest(request: Request): Promise<Response> {
     })
   }
 
+  // ── Mi cuenta — avatar (auth) ANTES de /api/users exacto para que no colisione ──
+  if (method === 'GET' && pathname === '/api/users/me/avatar') {
+    const authError = requireAuth()
+    if (authError) return authError
+    const { getUserAvatar } = await import('./services/users.ts')
+    const img = await getUserAvatar(user!.id)
+    if (!img) return json({ error: 'Sin avatar' }, 404)
+    const ruta = isAbsolute(img.ruta) ? img.ruta : join(UPLOAD_DIR, img.ruta)
+    if (!ruta.startsWith(UPLOAD_DIR) && !ruta.startsWith(BRANDING_DIR)) {
+      return json({ error: 'Acceso a archivo no autorizado' }, 403)
+    }
+    let file: Buffer
+    try {
+      file = await readFile(ruta)
+    } catch {
+      return json({ error: 'Archivo en disco no disponible' }, 404)
+    }
+    const ext = getExtension(img.nombre)
+    return new Response(new Uint8Array(file), {
+      headers: {
+        'content-type': canonicalMimeFor(ext) ?? 'application/octet-stream',
+        'content-disposition': contentDispositionHeader('inline', img.nombre),
+        'x-content-type-options': 'nosniff',
+        'content-security-policy': "default-src 'none'; frame-ancestors 'self'",
+      },
+    })
+  }
+
+  if (method === 'POST' && pathname === '/api/users/me/avatar') {
+    const authError = requireAuth()
+    if (authError) return authError
+    let escritos: string[] = []
+    try {
+      // Validación 5MB inline antes de validateUpload (validarAdjunto usa 50MB por defecto)
+      const form = await request.formData()
+      const raw = form.get('avatar') as unknown as File | null
+      if (!(raw instanceof File) || raw.size === 0) {
+        return json({ error: 'No se recibió ninguna imagen' }, 400)
+      }
+      if (raw.size > 5 * 1024 * 1024) {
+        return json({ error: 'Archivo demasiado grande (máx 5 MB)' }, 413)
+      }
+      const buf = Buffer.from(await raw.arrayBuffer())
+      const verdict = validateUpload({ filename: String(raw.name), buffer: buf })
+      if (!verdict.ok) {
+        return json(
+          { error: `Archivo rechazado (${sanitizarNombre(String(raw.name))}): ${verdict.reason}` },
+          415,
+        )
+      }
+      if (!isImageExtension(getExtension(String(raw.name)))) {
+        return json({ error: 'El archivo debe ser una imagen (JPG, PNG, WEBP o GIF)' }, 415)
+      }
+      // Escribir a disco (reusando helpers de nombres)
+      const { mkdir, writeFile } = await import('node:fs/promises')
+      await mkdir(UPLOAD_DIR, { recursive: true })
+      const disco = nombreEnDisco(String(raw.name))
+      const ruta = join(UPLOAD_DIR, disco)
+      await writeFile(ruta, buf)
+      escritos = [ruta]
+      const archivo = {
+        nombreOriginal: sanitizarNombre(String(raw.name)),
+        mime: verdict.safeMime!,
+        size: raw.size,
+        rutaLocal: ruta,
+      }
+      const { setUserAvatar } = await import('./services/users.ts')
+      const saved = await setUserAvatar(user!.id, archivo)
+      if (!saved) {
+        await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
+        return json({ error: 'No encontrado' }, 404)
+      }
+      return json({ ok: true, avatar_ruta: saved.avatar_ruta })
+    } catch (e) {
+      await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
+      const status = (e as { status?: number }).status
+      if (status) return json({ error: (e as Error).message }, status)
+      throw e
+    }
+  }
+
+  if (method === 'GET' && pathname === '/api/users/me') {
+    const authError = requireAuth()
+    if (authError) return authError
+    const { getUserProfile } = await import('./services/users.ts')
+    const profile = await getUserProfile(user!.id)
+    if (!profile) return json({ error: 'No encontrado' }, 404)
+    return json({ user: profile })
+  }
+
   // ── Usuarios (solo root/admin) ────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/users') {
     const authError = requireAdmin()
     if (authError) return authError
     const users = await sql<
-      Array<{ id: number; email: string; name: string; role: string; created_at: string }>
+      Array<{ id: string; email: string; name: string; role: string; created_at: string }>
     >`
-      SELECT id, email, name, role, created_at::text AS created_at FROM users ORDER BY id
+      SELECT id::text AS id, email, name, role, created_at::text AS created_at FROM users ORDER BY id
     `
     return json({ users })
   }
@@ -605,7 +794,24 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (method === 'GET' && pathname === '/api/stats') {
     const authError = requireAdmin()
     if (authError) return authError
-    const [users, digital, fisica, estados, fuente, genero, tematica] = await Promise.all([
+    const [
+      users,
+      digital,
+      fisica,
+      estados,
+      fuente,
+      genero,
+      tematica,
+      cntActividades,
+      cntDocumentos,
+      cntIndicadores,
+      cntPoel,
+      cntReuniones,
+      cntAvisos,
+      partMes,
+      proxima,
+      ultAvisos,
+    ] = await Promise.all([
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM users`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM participations WHERE origen = 'digital'`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM participations WHERE origen = 'fisica'`,
@@ -621,6 +827,17 @@ export async function handleRequest(request: Request): Promise<Response> {
       sql<{ k: string; n: string }[]>`
         SELECT tematica AS k, count(*)::text AS n FROM participations GROUP BY tematica ORDER BY count(*) DESC
       `,
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM actividades`,
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM documentos`,
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM indicadores`,
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM poel_sesiones`,
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM reuniones`,
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM avisos`,
+      sql<{ mes: string; n: string }[]>`
+        SELECT to_char(date_trunc('month', created_at),'YYYY-MM') AS mes, count(*)::text AS n FROM participations GROUP BY 1 ORDER BY 1 ASC
+      `,
+      getProximaReunion(),
+      listAvisos().then((a) => a.slice(0, 5)),
     ])
     const tu: Array<[string, number]> = fuente.filter((r) => r.k).map((r) => [r.k, Number(r.n)])
     const tg: Array<[string, number]> = genero.filter((r) => r.k).map((r) => [r.k, Number(r.n)])
@@ -633,6 +850,17 @@ export async function handleRequest(request: Request): Promise<Response> {
       fuente: tu,
       genero: tg,
       tematica: tt,
+      contenido: {
+        actividades: Number(cntActividades[0].n),
+        documentos: Number(cntDocumentos[0].n),
+        indicadores: Number(cntIndicadores[0].n),
+        poelSesiones: Number(cntPoel[0].n),
+        reuniones: Number(cntReuniones[0].n),
+        avisos: Number(cntAvisos[0].n),
+      },
+      participacionesPorMes: partMes.map((r) => ({ mes: r.mes, total: Number(r.n) })),
+      proximaReunion: proxima,
+      ultimosAvisos: ultAvisos,
     })
   }
 
@@ -660,9 +888,15 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (avisoDeleteMatch) {
     const authError = requireAdmin()
     if (authError) return authError
-    if (!(await deleteAviso(Number(avisoDeleteMatch.id))))
-      return json({ error: 'No encontrado' }, 404)
+    const err = requireUuidParam(avisoDeleteMatch.id)
+    if (err) return err
+    if (!(await deleteAviso(avisoDeleteMatch.id))) return json({ error: 'No encontrado' }, 404)
     return json({ ok: true })
+  }
+
+  // ── Sesiones POEL públicas (sin auth, solo activas, sin campos sensibles) ──
+  if (method === 'GET' && pathname === '/api/poel/sesiones') {
+    return json({ sesiones: await listPoelPublicas() })
   }
 
   // ── Sesiones POEL (solo admin) ─────────────────────────────────────
@@ -682,24 +916,234 @@ export async function handleRequest(request: Request): Promise<Response> {
       descripcion?: string
       fecha?: string
       ubicacion?: string
+      latitud?: string
+      longitud?: string
     }
     if (!body.titulo) return json({ error: 'Falta titulo' }, 400)
-    const sesion = await createPoelSesion({
-      categoria: body.categoria ?? '',
-      orden: body.orden ?? 0,
-      titulo: body.titulo,
-      descripcion: body.descripcion,
-      fecha: body.fecha || null,
-      ubicacion: body.ubicacion ?? '',
+    // Validación temprana — mantiene contrato 400 igual que !titulo, sin depender del throw del servicio
+    if (!isCategoriaPoel(body.categoria ?? '')) return json({ error: 'categoría inválida' }, 400)
+    try {
+      const sesion = await createPoelSesion({
+        categoria: body.categoria ?? '',
+        orden: body.orden ?? 0,
+        titulo: body.titulo,
+        descripcion: body.descripcion,
+        fecha: body.fecha || null,
+        ubicacion: body.ubicacion ?? '',
+        latitud: body.latitud ?? '',
+        longitud: body.longitud ?? '',
+      })
+      return json({ ok: true, sesion }, 201)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      const status = (err as { status?: number }).status ?? 500
+      if (status >= 400 && status < 500) return json({ error: msg }, status)
+      throw err
+    }
+  }
+
+  // Editar una sesión POEL (update parcial: sirve tanto para el formulario
+  // completo como para el botón de activar/desactivar).
+  const poelUpdateMatch = method === 'PATCH' ? matchPath(pathname, '/api/poel/:id') : null
+  if (poelUpdateMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(poelUpdateMatch.id)
+    if (err) return err
+
+    const body = (await request.json()) as Record<string, unknown>
+    const texto = (k: string) => (typeof body[k] === 'string' ? (body[k] as string) : undefined)
+
+    try {
+      const sesion = await updatePoelSesion(poelUpdateMatch.id, {
+        categoria: texto('categoria'),
+        titulo: texto('titulo'),
+        descripcion: texto('descripcion'),
+        ubicacion: texto('ubicacion'),
+        latitud: texto('latitud'),
+        longitud: texto('longitud'),
+        orden: typeof body.orden === 'number' ? body.orden : undefined,
+        activo: typeof body.activo === 'boolean' ? body.activo : undefined,
+        // `fecha` distingue ausente (no tocar) de null (borrar la fecha).
+        fecha: 'fecha' in body ? (body.fecha as string | null) || null : undefined,
+      })
+      if (!sesion) return json({ error: 'No encontrado' }, 404)
+      return json({ ok: true, sesion })
+    } catch (e) {
+      const status = (e as { status?: number }).status ?? 500
+      if (status === 400) return json({ error: (e as Error).message }, 400)
+      throw e
+    }
+  }
+
+  // Subir la imagen de una sesión (multipart). Reutiliza el mismo guard de
+  // archivos que los adjuntos ciudadanos: límites, magic bytes y nombre saneado.
+  // ── Archivos de una sesión POEL ────────────────────────────────────
+  // Acepta cualquier tipo permitido por el guard, no solo imágenes: la
+  // sesión necesita colgar tanto fotos como actas, minutas o convocatorias.
+  const poelArchivosGet = method === 'GET' ? matchPath(pathname, '/api/poel/:id/archivos') : null
+  if (poelArchivosGet) {
+    const err = requireUuidParam(poelArchivosGet.id)
+    if (err) return err
+    return json({ archivos: await listPoelArchivos(poelArchivosGet.id) })
+  }
+
+  const poelArchivoPost = method === 'POST' ? matchPath(pathname, '/api/poel/:id/archivos') : null
+  if (poelArchivoPost) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(poelArchivoPost.id)
+    if (err) return err
+
+    let escritos: string[] = []
+    try {
+      const subida = await subirArchivosDesdeForm(request, ['archivo'])
+      escritos = subida.escritos
+      if (subida.archivos.length === 0) return json({ error: 'No se recibió ningún archivo' }, 400)
+
+      const guardados = []
+      for (const archivo of subida.archivos) {
+        // El tipo sale de la extensión, no de lo que declare el cliente: es
+        // lo que separa "Imágenes" de "Documentos" en el sitio público.
+        const tipo = isImageExtension(getExtension(archivo.nombreOriginal)) ? 'imagen' : 'documento'
+        const fila = await addPoelArchivo(poelArchivoPost.id, tipo, archivo)
+        if (!fila) {
+          await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
+          return json({ error: 'No encontrado' }, 404)
+        }
+        guardados.push(fila)
+      }
+      return json({ ok: true, archivos: guardados }, 201)
+    } catch (e) {
+      await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
+      const status = (e as { status?: number }).status
+      if (status) return json({ error: (e as Error).message }, status)
+      throw e
+    }
+  }
+
+  // Servir un archivo. Público como la imagen: son actas y fotos de sesiones,
+  // contenido institucional sin datos personales.
+  const poelArchivoGet = method === 'GET' ? matchPath(pathname, '/api/poel/archivos/:aid') : null
+  if (poelArchivoGet) {
+    const err = requireUuidParam(poelArchivoGet.aid)
+    if (err) return err
+    const arch = await getPoelArchivo(poelArchivoGet.aid)
+    if (!arch) return json({ error: 'No encontrado' }, 404)
+
+    const ruta = isAbsolute(arch.ruta) ? arch.ruta : join(UPLOAD_DIR, arch.ruta)
+    if (!ruta.startsWith(UPLOAD_DIR)) {
+      return json({ error: 'Acceso a archivo no autorizado' }, 403)
+    }
+    let file: Buffer
+    try {
+      file = await readFile(ruta)
+    } catch {
+      return json({ error: 'Archivo en disco no disponible' }, 404)
+    }
+    const ext = getExtension(arch.nombre)
+    const descarga = url.searchParams.get('download') === '1'
+    // Solo se muestran en línea los formatos inertes; el resto se descarga.
+    const modo = descarga || !shouldServeInline(ext) ? 'attachment' : 'inline'
+    return new Response(new Uint8Array(file), {
+      headers: {
+        'content-type': canonicalMimeFor(ext) ?? 'application/octet-stream',
+        'content-disposition': contentDispositionHeader(modo, arch.nombre),
+        'x-content-type-options': 'nosniff',
+        'content-security-policy': "default-src 'none'; frame-ancestors 'self'",
+      },
     })
-    return json({ ok: true, sesion }, 201)
+  }
+
+  const poelArchivoDelete =
+    method === 'DELETE' ? matchPath(pathname, '/api/poel/archivos/:aid') : null
+  if (poelArchivoDelete) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(poelArchivoDelete.aid)
+    if (err) return err
+
+    const ruta = await deletePoelArchivo(poelArchivoDelete.aid)
+    if (!ruta) return json({ error: 'No encontrado' }, 404)
+    // El registro ya no está; si el fichero no se puede borrar no se falla la
+    // petición, solo quedaría un huérfano en disco.
+    const abs = isAbsolute(ruta) ? ruta : join(UPLOAD_DIR, ruta)
+    if (abs.startsWith(UPLOAD_DIR)) await rm(abs, { force: true }).catch(() => {})
+    return json({ ok: true })
+  }
+
+  const poelImagenPost = method === 'POST' ? matchPath(pathname, '/api/poel/:id/imagen') : null
+  if (poelImagenPost) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(poelImagenPost.id)
+    if (err) return err
+
+    let escritos: string[] = []
+    try {
+      const subida = await subirArchivosDesdeForm(request, ['imagen'])
+      escritos = subida.escritos
+      const archivo = subida.archivos[0]
+      if (!archivo) return json({ error: 'No se recibió ninguna imagen' }, 400)
+
+      // Solo imágenes: un PDF o un DWG no tienen sentido como portada.
+      if (!isImageExtension(getExtension(archivo.nombreOriginal))) {
+        await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
+        return json({ error: 'El archivo debe ser una imagen (JPG, PNG, WEBP o GIF)' }, 415)
+      }
+
+      const sesion = await setPoelImagen(poelImagenPost.id, archivo)
+      if (!sesion) {
+        await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
+        return json({ error: 'No encontrado' }, 404)
+      }
+      return json({ ok: true, sesion })
+    } catch (e) {
+      // Si algo falla, no dejar la imagen huérfana en disco.
+      await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
+      const status = (e as { status?: number }).status
+      if (status) return json({ error: (e as Error).message }, status)
+      throw e
+    }
+  }
+
+  // Ver la imagen de una sesión. Es contenido institucional (fotos de talleres,
+  // carteles), no PII, así que se sirve sin sesión: la consulta pública la usa.
+  const poelImagenGet = method === 'GET' ? matchPath(pathname, '/api/poel/:id/imagen') : null
+  if (poelImagenGet) {
+    const err = requireUuidParam(poelImagenGet.id)
+    if (err) return err
+    const img = await getPoelImagen(poelImagenGet.id)
+    if (!img) return json({ error: 'Sin imagen' }, 404)
+
+    const ruta = isAbsolute(img.ruta) ? img.ruta : join(UPLOAD_DIR, img.ruta)
+    if (!ruta.startsWith(UPLOAD_DIR)) {
+      return json({ error: 'Acceso a archivo no autorizado' }, 403)
+    }
+    let file: Buffer
+    try {
+      file = await readFile(ruta)
+    } catch {
+      return json({ error: 'Archivo en disco no disponible' }, 404)
+    }
+    const ext = getExtension(img.nombre)
+    return new Response(new Uint8Array(file), {
+      headers: {
+        'content-type': canonicalMimeFor(ext) ?? 'application/octet-stream',
+        'content-disposition': contentDispositionHeader('inline', img.nombre),
+        'x-content-type-options': 'nosniff',
+        'content-security-policy': "default-src 'none'; frame-ancestors 'self'",
+      },
+    })
   }
 
   const poelDeleteMatch = method === 'DELETE' ? matchPath(pathname, '/api/poel/:id') : null
   if (poelDeleteMatch) {
     const authError = requireAdmin()
     if (authError) return authError
-    if (!(await deletePoelSesion(Number(poelDeleteMatch.id)))) {
+    const err = requireUuidParam(poelDeleteMatch.id)
+    if (err) return err
+    if (!(await deletePoelSesion(poelDeleteMatch.id))) {
       return json({ error: 'No encontrado' }, 404)
     }
     return json({ ok: true })
@@ -747,9 +1191,11 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (restoreMatch) {
     const authError = requireAdmin()
     if (authError) return authError
+    const err = requireUuidParam(restoreMatch.id)
+    if (err) return err
     const body = (await request.json().catch(() => ({}))) as { motivo?: string }
     const restored = await restoreAuditSnapshot(
-      Number(restoreMatch.id),
+      restoreMatch.id,
       {
         id: user!.id,
         name: user!.name,
@@ -817,13 +1263,561 @@ export async function handleRequest(request: Request): Promise<Response> {
     }
   }
 
+  // ── Portal POETDUM — Actividades (público listado/detalle) ───────────
+  if (method === 'GET' && pathname === '/api/actividades') {
+    const estado = url.searchParams.get('estado')
+    try {
+      const actividades = await listActividades({ estado })
+      return json({ actividades })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      const status = (err as { status?: number }).status ?? 400
+      return json({ error: msg }, status)
+    }
+  }
+
+  // Pública: foto de actividad (anti-traversal + headers de seguridad)
+  const actividadFotoMatch =
+    method === 'GET' ? matchPath(pathname, '/api/actividades/:id/fotos/:fid') : null
+  if (actividadFotoMatch) {
+    const errId = requireUuidParam(actividadFotoMatch.id)
+    if (errId) return errId
+    const errFid = requireUuidParam(actividadFotoMatch.fid)
+    if (errFid) return errFid
+    const rows = await sql<
+      Array<{ ruta_local: string; nombre_original: string; mime: string }>
+    >`--sql
+      SELECT ruta_local, nombre_original, mime FROM actividad_fotos
+      WHERE id = ${actividadFotoMatch.fid} AND actividad_id = ${actividadFotoMatch.id}
+    `
+    if (rows.length === 0) return json({ error: 'Foto no encontrada' }, 404)
+    const ruta = isAbsolute(rows[0].ruta_local)
+      ? rows[0].ruta_local
+      : join(UPLOAD_DIR, rows[0].ruta_local)
+    if (!ruta.startsWith(UPLOAD_DIR) && !ruta.startsWith(BRANDING_DIR)) {
+      return json({ error: 'Acceso a archivo no autorizado' }, 403)
+    }
+    let file: Buffer
+    try {
+      file = await readFile(ruta)
+    } catch {
+      return json({ error: 'Archivo en disco no disponible' }, 404)
+    }
+    const isDownload = url.searchParams.get('download') === '1'
+    const ext = getExtension(rows[0].nombre_original || rows[0].ruta_local)
+    const mime = canonicalMimeFor(ext) ?? 'application/octet-stream'
+    const disposition = isDownload || !shouldServeInline(ext) ? 'attachment' : 'inline'
+    return new Response(new Uint8Array(file), {
+      headers: {
+        'content-type': mime,
+        'content-disposition': contentDispositionHeader(disposition, rows[0].nombre_original),
+        'x-content-type-options': 'nosniff',
+        'content-security-policy': "default-src 'none'; sandbox; frame-ancestors 'none'",
+        'cross-origin-resource-policy': 'same-origin',
+      },
+    })
+  }
+
+  // ── Portal POETDUM — Documentos (público listado) ────────────────────
+  if (method === 'GET' && pathname === '/api/documentos') {
+    const tipo = url.searchParams.get('tipo') ?? undefined
+    const etapa = url.searchParams.get('etapa') ?? undefined
+    try {
+      if (tipo && !isTipoDocumento(tipo)) return json({ error: `tipo inválido: ${tipo}` }, 400)
+      if (etapa && !isEtapaDoc(etapa)) return json({ error: `etapa inválida: ${etapa}` }, 400)
+      const documentos = await listDocumentos({ tipo, etapa })
+      return json({ documentos })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      const status = (err as { status?: number }).status ?? 400
+      return json({ error: msg }, status)
+    }
+  }
+
+  // Pública: descarga archivo de documento
+  const documentoArchivoMatch =
+    method === 'GET' ? matchPath(pathname, '/api/documentos/:id/archivo') : null
+  if (documentoArchivoMatch) {
+    const errId = requireUuidParam(documentoArchivoMatch.id)
+    if (errId) return errId
+    const doc = await getDocumento(documentoArchivoMatch.id)
+    if (!doc) return json({ error: 'Documento no encontrado' }, 404)
+    const ruta = isAbsolute(doc.ruta_local) ? doc.ruta_local : join(UPLOAD_DIR, doc.ruta_local)
+    if (!ruta.startsWith(UPLOAD_DIR) && !ruta.startsWith(BRANDING_DIR)) {
+      return json({ error: 'Acceso a archivo no autorizado' }, 403)
+    }
+    let file: Buffer
+    try {
+      file = await readFile(ruta)
+    } catch {
+      return json({ error: 'Archivo en disco no disponible' }, 404)
+    }
+    const isDownload = url.searchParams.get('download') === '1'
+    const ext = getExtension(doc.nombre_original || doc.ruta_local)
+    const mime = canonicalMimeFor(ext) ?? 'application/octet-stream'
+    const disposition = isDownload || !shouldServeInline(ext) ? 'attachment' : 'inline'
+    return new Response(new Uint8Array(file), {
+      headers: {
+        'content-type': mime,
+        'content-disposition': contentDispositionHeader(disposition, doc.nombre_original),
+        'x-content-type-options': 'nosniff',
+        'content-security-policy': "default-src 'none'; sandbox; frame-ancestors 'none'",
+        'cross-origin-resource-policy': 'same-origin',
+      },
+    })
+  }
+
+  // ── Portal POETDUM — Indicadores (público) ───────────────────────────
+  if (method === 'GET' && pathname === '/api/indicadores') {
+    const indicadores = await listIndicadores()
+    return json({ indicadores })
+  }
+
+  // ── Portal POETDUM — Actividades (admin escritura) ───────────────────
+  if (method === 'POST' && pathname === '/api/actividades') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    if (bodyTooLarge(request, 21 * 1024 * 1024))
+      return json({ error: 'Cuerpo demasiado grande' }, 413)
+    const form = await request.formData()
+    const titulo = String(form.get('titulo') ?? '').trim()
+    const fecha = String(form.get('fecha') ?? '').trim()
+    if (!titulo || !fecha) return json({ error: 'Faltan datos: titulo, fecha' }, 400)
+    const estadoRaw = String(form.get('estado') ?? 'proxima').trim()
+    if (estadoRaw && !['proxima', 'realizada', 'cancelada'].includes(estadoRaw)) {
+      return json({ error: `estado inválido: ${estadoRaw}` }, 400)
+    }
+    const documentoIds = form
+      .getAll('documentos')
+      .map((v) => String(v).trim())
+      .filter(Boolean)
+    for (const did of documentoIds) {
+      const err = requireUuidParam(did)
+      if (err) return json({ error: `documento id inválido: ${did}` }, 400)
+    }
+    // Fotos: validar y escribir a disco (con rollback)
+    const rawFotos = form.getAll('fotos').filter((e): e is File => e instanceof File && e.size > 0)
+    const escritos: string[] = []
+    const fotosParaDb: Array<{
+      nombreOriginal: string
+      mime: string
+      size: number
+      rutaLocal: string
+    }> = []
+    let persistido = false
+    try {
+      for (const file of rawFotos) {
+        const v = validarAdjunto({ size: file.size, name: file.name }, rawFotos.length)
+        if (!v.ok) return json({ error: v.reason }, v.codigo ?? 400)
+        const buf = Buffer.from(await file.arrayBuffer())
+        const verdict = validateUpload({ filename: file.name, buffer: buf })
+        if (!verdict.ok)
+          return json(
+            { error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` },
+            415,
+          )
+        const { mkdir, writeFile } = await import('node:fs/promises')
+        await mkdir(UPLOAD_DIR, { recursive: true })
+        const disco = nombreEnDisco(file.name)
+        const ruta = join(UPLOAD_DIR, disco)
+        await writeFile(ruta, buf)
+        escritos.push(ruta)
+        fotosParaDb.push({
+          nombreOriginal: sanitizarNombre(file.name),
+          mime: verdict.safeMime!,
+          size: file.size,
+          rutaLocal: ruta,
+        })
+      }
+      const result = await sql.begin(async (tx) => {
+        return createActividad(
+          tx,
+          {
+            titulo,
+            fecha,
+            hora_inicio: String(form.get('hora_inicio') ?? ''),
+            hora_fin: String(form.get('hora_fin') ?? ''),
+            lugar: String(form.get('lugar') ?? ''),
+            descripcion: String(form.get('descripcion') ?? ''),
+            estado: estadoRaw || 'proxima',
+            resultados: String(form.get('resultados') ?? ''),
+            creadoPor: user?.id,
+          },
+          fotosParaDb,
+          documentoIds,
+        )
+      })
+      persistido = true
+      return json({ ok: true, id: result.id }, 201)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      const status = (err as { status?: number }).status ?? 500
+      if (status >= 400 && status < 500) return json({ error: msg }, status)
+      throw err
+    } finally {
+      if (!persistido) await Promise.allSettled(escritos.map((p) => rm(p, { force: true })))
+    }
+  }
+
+  const actividadPutMatch = method === 'PUT' ? matchPath(pathname, '/api/actividades/:id') : null
+  if (actividadPutMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(actividadPutMatch.id)
+    if (err) return err
+    const contentType = request.headers.get('content-type') ?? ''
+    let input: Record<string, string> = {}
+    let fotosParaDb:
+      Array<{ nombreOriginal: string; mime: string; size: number; rutaLocal: string }> | undefined
+    let documentoIds: string[] | undefined
+    const escritos: string[] = []
+    let persistido = false
+    try {
+      if (contentType.includes('multipart/form-data')) {
+        const form = await request.formData()
+        for (const k of [
+          'titulo',
+          'fecha',
+          'hora_inicio',
+          'hora_fin',
+          'lugar',
+          'descripcion',
+          'estado',
+          'resultados',
+        ]) {
+          const v = form.get(k)
+          if (v !== null) input[k] = String(v)
+        }
+        const docs = form.getAll('documentos')
+        if (docs.length > 0) documentoIds = docs.map((v) => String(v).trim()).filter(Boolean)
+        const rawFotos = form
+          .getAll('fotos')
+          .filter((e): e is File => e instanceof File && e.size > 0)
+        if (rawFotos.length > 0) {
+          fotosParaDb = []
+          for (const file of rawFotos) {
+            const v = validarAdjunto({ size: file.size, name: file.name }, rawFotos.length)
+            if (!v.ok) return json({ error: v.reason }, v.codigo ?? 400)
+            const buf = Buffer.from(await file.arrayBuffer())
+            const verdict = validateUpload({ filename: file.name, buffer: buf })
+            if (!verdict.ok)
+              return json(
+                { error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` },
+                415,
+              )
+            const { mkdir, writeFile } = await import('node:fs/promises')
+            await mkdir(UPLOAD_DIR, { recursive: true })
+            const disco = nombreEnDisco(file.name)
+            const ruta = join(UPLOAD_DIR, disco)
+            await writeFile(ruta, buf)
+            escritos.push(ruta)
+            fotosParaDb.push({
+              nombreOriginal: sanitizarNombre(file.name),
+              mime: verdict.safeMime!,
+              size: file.size,
+              rutaLocal: ruta,
+            })
+          }
+        }
+      } else {
+        input = (await request.json().catch(() => ({}))) as Record<string, string>
+      }
+      if (input.estado && !['proxima', 'realizada', 'cancelada'].includes(input.estado)) {
+        return json({ error: `estado inválido: ${input.estado}` }, 400)
+      }
+      if (documentoIds) {
+        for (const did of documentoIds) {
+          const e = requireUuidParam(did)
+          if (e) return json({ error: `documento id inválido: ${did}` }, 400)
+        }
+      }
+      const ok = await updateActividad(actividadPutMatch.id, input, fotosParaDb, documentoIds)
+      if (!ok) return json({ error: 'No encontrado' }, 404)
+      persistido = true
+      return json({ ok: true })
+    } finally {
+      if (!persistido) await Promise.allSettled(escritos.map((p) => rm(p, { force: true })))
+    }
+  }
+
+  const actividadDeleteMatch =
+    method === 'DELETE' ? matchPath(pathname, '/api/actividades/:id') : null
+  if (actividadDeleteMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(actividadDeleteMatch.id)
+    if (err) return err
+    if (!(await deleteActividad(actividadDeleteMatch.id)))
+      return json({ error: 'No encontrado' }, 404)
+    return json({ ok: true })
+  }
+
+  // ── Portal POETDUM — Documentos (admin escritura) ────────────────────
+  if (method === 'POST' && pathname === '/api/documentos') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    if (bodyTooLarge(request, 21 * 1024 * 1024))
+      return json({ error: 'Cuerpo demasiado grande' }, 413)
+    const form = await request.formData()
+    const titulo = String(form.get('titulo') ?? '').trim()
+    const tipo = String(form.get('tipo') ?? '').trim()
+    if (!titulo || !tipo) return json({ error: 'Faltan datos: titulo, tipo' }, 400)
+    if (!isTipoDocumento(tipo)) return json({ error: `tipo inválido: ${tipo}` }, 400)
+    const etapa = String(form.get('etapa') ?? 'En proceso').trim()
+    if (etapa && !isEtapaDoc(etapa)) return json({ error: `etapa inválida: ${etapa}` }, 400)
+    const raw = form.getAll('archivo').filter((e): e is File => e instanceof File && e.size > 0)
+    // también acepta clave 'archivos' por compatibilidad
+    const alt = form.getAll('archivos').filter((e): e is File => e instanceof File && e.size > 0)
+    const files = raw.length > 0 ? raw : alt
+    if (files.length === 0) return json({ error: 'Falta archivo' }, 400)
+    const file = files[0]
+    const lim = validarAdjunto({ size: file.size, name: file.name }, 1)
+    if (!lim.ok) return json({ error: lim.reason }, lim.codigo ?? 400)
+    const buf = Buffer.from(await file.arrayBuffer())
+    const verdict = validateUpload({ filename: file.name, buffer: buf })
+    if (!verdict.ok)
+      return json(
+        { error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` },
+        415,
+      )
+    const { mkdir, writeFile } = await import('node:fs/promises')
+    await mkdir(UPLOAD_DIR, { recursive: true })
+    const disco = nombreEnDisco(file.name)
+    const ruta = join(UPLOAD_DIR, disco)
+    await writeFile(ruta, buf)
+    let persistido = false
+    try {
+      const result = await sql.begin(async (tx) => {
+        return createDocumento(
+          tx,
+          {
+            titulo,
+            tipo,
+            etapa: etapa || 'En proceso',
+            fecha: String(form.get('fecha') ?? '') || null,
+            descripcion: String(form.get('descripcion') ?? ''),
+            creadoPor: user?.id,
+          },
+          {
+            nombreOriginal: sanitizarNombre(file.name),
+            mime: verdict.safeMime!,
+            size: file.size,
+            rutaLocal: ruta,
+          },
+        )
+      })
+      persistido = true
+      return json({ ok: true, id: result.id }, 201)
+    } finally {
+      if (!persistido) await rm(ruta, { force: true }).catch(() => {})
+    }
+  }
+
+  const documentoPutMatch = method === 'PUT' ? matchPath(pathname, '/api/documentos/:id') : null
+  if (documentoPutMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(documentoPutMatch.id)
+    if (err) return err
+    const contentType = request.headers.get('content-type') ?? ''
+    let input: Record<string, string> = {}
+    let archivo:
+      { nombreOriginal: string; mime: string; size: number; rutaLocal: string } | undefined
+    const escritos: string[] = []
+    let persistido = false
+    try {
+      if (contentType.includes('multipart/form-data')) {
+        const form = await request.formData()
+        for (const k of ['titulo', 'tipo', 'etapa', 'fecha', 'descripcion']) {
+          const v = form.get(k)
+          if (v !== null) input[k] = String(v)
+        }
+        const raw = [...form.getAll('archivo'), ...form.getAll('archivos')].filter(
+          (e): e is File => e instanceof File && e.size > 0,
+        )
+        if (raw.length > 0) {
+          const file = raw[0]
+          const lim = validarAdjunto({ size: file.size, name: file.name }, 1)
+          if (!lim.ok) return json({ error: lim.reason }, lim.codigo ?? 400)
+          const buf = Buffer.from(await file.arrayBuffer())
+          const verdict = validateUpload({ filename: file.name, buffer: buf })
+          if (!verdict.ok)
+            return json(
+              { error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}` },
+              415,
+            )
+          const { mkdir, writeFile } = await import('node:fs/promises')
+          await mkdir(UPLOAD_DIR, { recursive: true })
+          const disco = nombreEnDisco(file.name)
+          const ruta = join(UPLOAD_DIR, disco)
+          await writeFile(ruta, buf)
+          escritos.push(ruta)
+          archivo = {
+            nombreOriginal: sanitizarNombre(file.name),
+            mime: verdict.safeMime!,
+            size: file.size,
+            rutaLocal: ruta,
+          }
+        }
+      } else {
+        input = (await request.json().catch(() => ({}))) as Record<string, string>
+      }
+      if (input.tipo && !isTipoDocumento(input.tipo))
+        return json({ error: `tipo inválido: ${input.tipo}` }, 400)
+      if (input.etapa && !isEtapaDoc(input.etapa))
+        return json({ error: `etapa inválida: ${input.etapa}` }, 400)
+      // input.fecha puede ser '' → null
+      const payload: Record<string, string | null> = { ...input }
+      if (payload.fecha === '') payload.fecha = null as unknown as string
+      const ok = await updateDocumento(documentoPutMatch.id, payload as never, archivo)
+      if (!ok) {
+        await Promise.allSettled(escritos.map((p) => rm(p, { force: true })))
+        return json({ error: 'No encontrado' }, 404)
+      }
+      persistido = true
+      return json({ ok: true })
+    } finally {
+      if (!persistido) await Promise.allSettled(escritos.map((p) => rm(p, { force: true })))
+    }
+  }
+
+  const documentoDeleteMatch =
+    method === 'DELETE' ? matchPath(pathname, '/api/documentos/:id') : null
+  if (documentoDeleteMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(documentoDeleteMatch.id)
+    if (err) return err
+    if (!(await deleteDocumento(documentoDeleteMatch.id)))
+      return json({ error: 'No encontrado' }, 404)
+    return json({ ok: true })
+  }
+
+  // ── Portal POETDUM — Indicadores (admin escritura) ───────────────────
+  if (method === 'POST' && pathname === '/api/indicadores') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const body = (await request.json().catch(() => null)) as {
+      nombre?: string
+      descripcion?: string
+      unidad?: string
+      meta?: number | string | null
+      fecha_evaluacion?: string
+      resultado_texto?: string
+      documento_respaldo_id?: string | null
+      mediciones?: Array<{ periodo?: string; valor?: number | string }>
+    } | null
+    if (!body?.nombre) return json({ error: 'Falta nombre' }, 400)
+    if (body.documento_respaldo_id) {
+      const err = requireUuidParam(String(body.documento_respaldo_id))
+      if (err) return json({ error: 'documento_respaldo_id inválido' }, 400)
+    }
+    const meds = (body.mediciones ?? []).map((m) => ({
+      periodo: String(m.periodo ?? ''),
+      valor: m.valor as number,
+    }))
+    const result = await sql.begin(async (tx) => {
+      return createIndicador(
+        tx,
+        {
+          nombre: body.nombre!,
+          descripcion: body.descripcion,
+          unidad: body.unidad,
+          meta: body.meta ?? null,
+          fecha_evaluacion: body.fecha_evaluacion,
+          resultado_texto: body.resultado_texto,
+          documento_respaldo_id: body.documento_respaldo_id ?? null,
+          creadoPor: user?.id,
+        },
+        meds,
+      )
+    })
+    return json({ ok: true, id: result.id }, 201)
+  }
+
+  const indicadorPutMatch = method === 'PUT' ? matchPath(pathname, '/api/indicadores/:id') : null
+  if (indicadorPutMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(indicadorPutMatch.id)
+    if (err) return err
+    const body = (await request.json().catch(() => ({}))) as {
+      nombre?: string
+      descripcion?: string
+      unidad?: string
+      meta?: number | string | null
+      fecha_evaluacion?: string
+      resultado_texto?: string
+      documento_respaldo_id?: string | null
+      mediciones?: Array<{ periodo?: string; valor?: number | string }>
+    }
+    if (body.documento_respaldo_id) {
+      const e = requireUuidParam(String(body.documento_respaldo_id))
+      if (e) return json({ error: 'documento_respaldo_id inválido' }, 400)
+    }
+    const meds =
+      body.mediciones !== undefined
+        ? body.mediciones.map((m) => ({
+            periodo: String(m.periodo ?? ''),
+            valor: m.valor as number,
+          }))
+        : undefined
+    const ok = await updateIndicador(
+      indicadorPutMatch.id,
+      {
+        nombre: body.nombre,
+        descripcion: body.descripcion,
+        unidad: body.unidad,
+        meta: body.meta,
+        fecha_evaluacion: body.fecha_evaluacion,
+        resultado_texto: body.resultado_texto,
+        documento_respaldo_id: body.documento_respaldo_id,
+      },
+      meds,
+    )
+    if (!ok) return json({ error: 'No encontrado' }, 404)
+    return json({ ok: true })
+  }
+
+  const indicadorDeleteMatch =
+    method === 'DELETE' ? matchPath(pathname, '/api/indicadores/:id') : null
+  if (indicadorDeleteMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(indicadorDeleteMatch.id)
+    if (err) return err
+    if (!(await deleteIndicador(indicadorDeleteMatch.id)))
+      return json({ error: 'No encontrado' }, 404)
+    return json({ ok: true })
+  }
+
   return json({ error: 'No encontrado' }, 404)
 }
 
 export async function init(): Promise<void> {
   await migrate()
-  await seedRootAdmin()
-  await seedExtraAdmins()
-  await seedDemoData()
+
+  // Los archivos de seed están gitignorados (contienen datos de ejemplo y
+  // contraseñas temporales). Si no existen en este checkout, se omiten sin
+  // error. Para crear el admin ROOT, define ROOT_PASSWORD en el .env.
+  try {
+    const seed = await import('./seed.ts')
+    await seed.seedRootAdmin()
+  } catch (err) {
+    console.warn('[init] seedRootAdmin omitido:', err instanceof Error ? err.message : err)
+  }
+  try {
+    const seed = await import('./seed.ts')
+    await seed.seedExtraAdmins()
+  } catch {
+    // opcional: no hay seed-admins.json
+  }
+  try {
+    const seedDemo = await import('./seed-demo.ts')
+    await seedDemo.seedDemoData()
+  } catch {
+    // opcional: no hay seed-demo.ts
+  }
+
   console.log('[server] listo para recibir requests')
 }

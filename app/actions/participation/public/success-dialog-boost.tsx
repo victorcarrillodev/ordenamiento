@@ -1,4 +1,4 @@
-import { clientEntry, on, type Handle, type SerializableProps } from 'remix/ui'
+import { clientEntry, on, type Handle, type MixInput, type SerializableProps } from 'remix/ui'
 
 export interface SuccessDialogBoostProps extends SerializableProps {
   homeHref: string
@@ -30,10 +30,12 @@ export const SuccessDialogBoost = clientEntry(
         <span
           id={handle.id}
           style={{ display: 'none' }}
-          mix={on('cancel', (event) => {
-            event.preventDefault()
-            window.location.href = handle.props.homeHref
-          })}
+          mix={
+            on<HTMLDialogElement>('cancel', (event) => {
+              event.preventDefault()
+              window.location.href = handle.props.homeHref
+            }) as unknown as MixInput<HTMLSpanElement>
+          }
         />
       )
     }

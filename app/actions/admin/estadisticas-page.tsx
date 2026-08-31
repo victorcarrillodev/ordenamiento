@@ -139,7 +139,11 @@ export function EstadisticasPage(handle: Handle<EstadisticasPageProps>) {
     const tematica = stats?.tematica ?? []
 
     return (
-      <AdminLayout user={user} active="estadisticas" title={titulo}>
+      <AdminLayout
+        user={user}
+        active={origen === 'fisica' ? 'estadisticas-fisica' : 'estadisticas-digital'}
+        title={titulo}
+      >
         <h1 class="page-title">{titulo}</h1>
         <p class="breadcrumb">
           <a href={adminRoutes.index.href()}>Vista general</a> / {titulo}

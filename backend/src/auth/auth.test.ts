@@ -11,21 +11,24 @@ import {
 
 describe('session tokens', () => {
   it('round-trips a valid token back to its userId', async () => {
-    const token = await createSessionToken(42)
-    expect(await verifySessionToken(token)).toBe(42)
+    const uid = '550e8400-e29b-41d4-a716-446655440042'
+    const token = await createSessionToken(uid)
+    expect(await verifySessionToken(token)).toBe(uid)
   })
 
   it('rejects a token with a tampered payload', async () => {
-    const token = await createSessionToken(42)
-    const [userId, issuedAt, sig] = token.split('.')
+    const uid = '550e8400-e29b-41d4-a716-446655440042'
+    const token = await createSessionToken(uid)
+    const [, issuedAt, sig] = token.split('.')
     // Cambia el userId sin recalcular la firma: el ataque que
     // verifySessionToken debe bloquear (ver auth.ts).
-    const tampered = `${Number(userId) + 1}.${issuedAt}.${sig}`
+    const tampered = `550e8400-e29b-41d4-a716-446655440099.${issuedAt}.${sig}`
     expect(await verifySessionToken(tampered)).toBeNull()
   })
 
   it('rejects a token with a forged/incorrect signature', async () => {
-    const token = await createSessionToken(1)
+    const uid = '550e8400-e29b-41d4-a716-446655440001'
+    const token = await createSessionToken(uid)
     const [userId, issuedAt] = token.split('.')
     expect(await verifySessionToken(`${userId}.${issuedAt}.forged-signature`)).toBeNull()
   })
@@ -44,7 +47,7 @@ describe('session tokens', () => {
       // timestamp; luego se restaura Date.now para verificar como si hoy
       // ya pasaron más de los 7 días de vigencia (MAX_AGE_SECONDS).
       Date.now = () => realNow() - 8 * 24 * 60 * 60 * 1000
-      oldToken = await createSessionToken(1)
+      oldToken = await createSessionToken('550e8400-e29b-41d4-a716-446655440001')
     } finally {
       Date.now = realNow
     }

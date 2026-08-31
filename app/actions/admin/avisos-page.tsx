@@ -6,7 +6,7 @@ import { Button } from '../../ui/button.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
 
 interface Aviso {
-  id: number
+  id: string
   titulo: string
   descripcion: string
   activo: boolean
@@ -17,14 +17,14 @@ export interface AvisosPageProps {
   user: { name: string; role: string }
   avisos: Aviso[]
   reuniones?: Array<{
-    id: number
+    id: string
     titulo: string
     fecha: string
     hora_inicio: string | null
     hora_fin: string | null
   }>
   sesiones?: Array<{
-    id: number
+    id: string
     categoria: string
     titulo: string
     fecha?: string
@@ -68,7 +68,7 @@ const TIPO: Record<TipoEvento, { icono: string; etiqueta: string; clase: string 
 
 interface EventoDetallado {
   tipo: TipoEvento
-  id: number
+  id: string
   titulo: string
   fecha?: string
   hora?: string
@@ -515,12 +515,7 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
               Descripción
             </div>
             <div class="cal-modal__actions">
-              <button
-                id="cal-m-btn-close"
-                type="button"
-                class="btn btn--white"
-                style="border: 1px solid #cbd5e1;"
-              >
+              <button id="cal-m-btn-close" type="button" class="btn btn--white">
                 Cerrar
               </button>
               <a id="cal-m-link" href="#" class="btn btn--dark">

@@ -32,7 +32,20 @@ function getTransporter() {
     host: SMTP_HOST,
     port: SMTP_PORT,
     secure: SMTP_PORT === 465,
-    requireTLS: true,
+    // `requireTLS: true` exige STARTTLS y rompe con Postfix sin TLS (502 5.5.1
+    // Error: command not implemented) como el del host 172.19.0.1:25.
+    // Usamos TLS oportunista: si el servidor anuncia STARTTLS lo usa, si no
+    // manda en claro (red interna). Solo se exige TLS en 587/465.
+    requireTLS: SMTP_PORT === 587 || SMTP_PORT === 465,
+    // Para puerto 25 sin TLS (relay interno) no intentes STARTTLS.
+    tls: SMTP_PORT === 25 ? { rejectUnauthorized: false } : undefined,
+  }
+  // nodemailer ignora `tls: undefined`, lo dejamos limpio
+  if (!options.tls) delete (options as Record<string, unknown>).tls
+  if (SMTP_PORT === 25) {
+    // En 25 deshabilitamos el intento de upgrade; sin esto nodemailer
+    // igual intenta STARTTLS si el banner lo ofrece y falla con 502.
+    ;(options as Record<string, unknown>).ignoreTLS = true
   }
   if (SMTP_USER && SMTP_PASS) {
     options.auth = { user: SMTP_USER, pass: SMTP_PASS }
@@ -58,7 +71,7 @@ interface ParticipacionCorreo {
 }
 
 interface AvisoCorreo {
-  id: number
+  id: string
   titulo: string
   descripcion: string
   activo: boolean
@@ -324,7 +337,7 @@ function renderPlantillaBase({
  * Envía el Acuse de Recibo Oficial formal al ciudadano (modalidad digital o física).
  */
 export async function enviarAcuseReciboParticipacion(
-  participationId: number,
+  participationId: string,
   para: string,
 ): Promise<{ enviado: true; adjuntos: number; folio: string }> {
   if (!mailConfigurado()) {
@@ -453,7 +466,7 @@ interface ResolucionCorreo extends ParticipacionCorreo {
  * Es distinto del acuse: el acuse confirma que llegó, esto le dice en qué acabó.
  */
 export async function enviarResolucionParticipacion(
-  participationId: number,
+  participationId: string,
   para: string,
 ): Promise<{ enviado: true; folio: string; estado: string }> {
   if (!mailConfigurado()) {
@@ -562,7 +575,7 @@ export async function enviarResolucionParticipacion(
  * Envía por correo la participación (función estándar de reenvío).
  */
 export async function enviarParticipacion(
-  participationId: number,
+  participationId: string,
   para: string,
 ): Promise<{ enviado: true; adjuntos: number }> {
   const res = await enviarAcuseReciboParticipacion(participationId, para)
@@ -572,7 +585,7 @@ export async function enviarParticipacion(
 /**
  * Envía por correo un Aviso institucional oficial.
  */
-export async function enviarAviso(avisoId: number, para: string): Promise<{ enviado: true }> {
+export async function enviarAviso(avisoId: string, para: string): Promise<{ enviado: true }> {
   if (!mailConfigurado()) {
     throw new Error('SMTP_NO_CONFIGURADO')
   }
@@ -669,7 +682,7 @@ export async function enviarCorreoPrueba(para: string): Promise<{ enviado: true 
   return { enviado: true }
 }
 
-function escapeHtml(s: string): string {
+export function escapeHtml(s: string): string {
   return String(s).replace(
     /[&<>"']/g,
     (c) =>

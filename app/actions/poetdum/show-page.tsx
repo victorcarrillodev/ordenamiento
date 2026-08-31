@@ -1,237 +1,268 @@
 import { Document } from '../document.tsx'
-import { Button } from '../../ui/button.tsx'
 import { NavBar } from '../../ui/nav-bar.tsx'
 import { css, type Handle } from 'remix/ui'
 import { Mapa } from './public/mapa.tsx'
-import type { ThemeData } from '../../ui/civic-horizon.ts'
+import {
+  colors,
+  eyebrowProps,
+  FONT_STACK,
+  headingXLProps,
+  sectionContainerProps,
+  type ThemeData,
+} from '../../ui/civic-horizon.ts'
+import type { Actividad, Documento, Indicador, PublicPoelSesion } from './types.ts'
+import { SesionesSection } from './sections/sesiones.tsx'
+import { DescargasSection } from './sections/descargas.tsx'
+import { ActividadesSection } from './sections/actividades.tsx'
+import { DocumentosSection } from './sections/documentos.tsx'
+import { SeguimientoSection } from './sections/seguimiento.tsx'
 
 export interface PoetdumPageProps {
   theme?: ThemeData
+  sesiones: PublicPoelSesion[]
+  actividades: Actividad[]
+  estado: string
+  documentos: Documento[]
+  tipo: string
+  etapa: string
+  indicadores: Indicador[]
 }
 
-const title = css({
-  margin: '5rem',
+const heroWrap = css({
+  background: colors.burgundy900,
+  padding: '120px 0 64px',
   textAlign: 'center',
-  color: 'rgb(171, 163, 163)',
 })
 
-const containerMap = css({
-  display: 'flex',
-  flexDirection: 'row',
-  width: '70%',
-  height: '50%',
-  padding: '100px',
-})
-const infoMap = css({
-  paddingTop: '50px',
-  paddingLeft: '30px',
-})
-const color1 = css({
-  width: '20px',
-  height: '10px',
-  backgroundColor: 'greenyellow',
-})
-const color2 = css({
-  width: '20px',
-  height: '10px',
-  backgroundColor: 'darkorange',
-})
-const color3 = css({
-  width: '20px',
-  height: '10px',
-  backgroundColor: 'cornflowerblue',
-})
-const color4 = css({
-  width: '20px',
-  height: '10px',
-  backgroundColor: 'red',
+const subnavWrap = css({
+  position: 'sticky',
+  top: '85px',
+  zIndex: 50,
+  background: colors.white,
+  borderBottom: `1px solid ${colors.gray200}`,
+  boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
 })
 
-const docOficial = css({
-  margin: '0px',
+const subnavInner = css({
+  maxWidth: '1200px',
+  margin: '0 auto',
+  padding: '0 24px',
   display: 'flex',
-  flexDirection: 'column',
+  gap: '4px',
+  overflowX: 'auto',
+  scrollbarWidth: 'none',
+})
+
+const subnavLink = css({
+  padding: '14px 18px',
+  fontFamily: FONT_STACK,
+  fontSize: '13px',
+  fontWeight: 700,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  color: colors.gray700,
+  textDecoration: 'none',
+  borderBottom: `3px solid transparent`,
+  whiteSpace: 'nowrap',
+  transition: 'color 180ms ease, border-color 180ms ease',
+  '&:hover': { color: colors.burgundy900, borderBottomColor: colors.burgundy900 },
+})
+
+const sectionWrap = css({
+  maxWidth: '1100px',
+  margin: '0 auto',
+  padding: '64px 24px',
+  fontFamily: FONT_STACK,
+})
+
+const chipBase = css({
+  display: 'inline-flex',
   alignItems: 'center',
-  justifyContent: 'flex-start',
-  gap: '0',
-  width: '100%',
-  height: '23rem',
-  backgroundColor: '#a52242',
-})
-const textOficial = css({
-  display: 'block',
-  width: '100%',
-  textAlign: 'center',
-  margin: '0',
-  padding: '0',
-  color: 'white',
-  fontSize: '35.2px',
-  lineHeight: '1.1',
-})
-const pOficioal = css({
-  color: 'white',
-
-  fontSize: '18.6px',
-})
-const buttonsContainer = css({
-  display: 'flex',
-  gap: '32px',
-})
-
-const act = css({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-})
-const actTitle = css({
-  fontSize: '35px',
-  color: '#444444',
-})
-const actText = css({
-  textAlign: 'center',
-  fontSize: '18px',
-  color: '#444444',
-})
-const detalles = css({
-  padding: '2rem',
-  display: 'flex',
-  justifyContent: 'center',
-})
-const futter = css({
-  display: 'flex',
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: '2rem',
-  height: '8rem',
-  backgroundColor: '#101909',
-  color: 'white',
-})
-const logoFuter = css({
-  marginRight: '20rem',
-  width: '50px',
-  height: '70px',
+  gap: '8px',
+  padding: '6px 14px',
+  borderRadius: '9999px',
+  fontFamily: FONT_STACK,
+  fontSize: '13px',
+  fontWeight: 600,
+  border: '1px solid',
 })
 
 
 export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
   return () => {
-    const theme = handle.props.theme
+    const { theme, sesiones, actividades, estado, documentos, tipo, etapa, indicadores } = handle.props
     return (
       <Document
-        title="poetdum"
+        title="Elaboración del POETDUM"
         head={<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />}
       >
+        <style>{'html{scroll-behavior:smooth} section[id]{scroll-margin-top:140px}'}</style>
         <NavBar theme={theme} />
-        <br />
-        <br />
-        <br />
+
+        {/* Hero */}
+        <section aria-labelledby="poetdum-hero" mix={heroWrap}>
+          <div mix={css({ ...sectionContainerProps, display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' })}>
+            <span mix={css({ ...eyebrowProps, color: colors.gold400 })}>Bitácora Ambiental · Tlaquepaque</span>
+            <h1 id="poetdum-hero" mix={css({ ...headingXLProps, margin: 0, color: colors.white })}>
+              ELABORACIÓN DEL POETDUM
+            </h1>
+            <p
+              mix={css({
+                fontFamily: FONT_STACK,
+                fontSize: '18px',
+                lineHeight: 1.6,
+                color: 'rgba(255,255,255,0.85)',
+                maxWidth: '720px',
+                margin: 0,
+              })}
+            >
+              Sigue el avance del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano: sesiones,
+              documentos oficiales, actividades y seguimiento de indicadores en un solo lugar.
+            </p>
+          </div>
+        </section>
+
+        {/* Mapa + simbología */}
+        <section aria-labelledby="mapa-heading" mix={css({ background: colors.gray50, padding: '48px 0' })}>
+          <div mix={css({ ...sectionContainerProps })}>
+            <h2
+              id="mapa-heading"
+              mix={css({
+                fontFamily: FONT_STACK,
+                fontSize: '22px',
+                fontWeight: 700,
+                color: colors.gray900,
+                margin: '0 0 24px',
+                textAlign: 'center',
+              })}
+            >
+              Mapa del territorio
+            </h2>
+            <div
+              mix={css({
+                display: 'grid',
+                gridTemplateColumns: '1fr 320px',
+                gap: '32px',
+                alignItems: 'start',
+                '@media (max-width: 900px)': { gridTemplateColumns: '1fr' },
+              })}
+            >
+              <Mapa />
+              <div mix={css({ display: 'flex', flexDirection: 'column', gap: '12px' })}>
+                <h3
+                  mix={css({
+                    fontFamily: FONT_STACK,
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: colors.gray700,
+                    margin: 0,
+                  })}
+                >
+                  Simbología
+                </h3>
+                <div mix={css({ display: 'flex', flexDirection: 'column', gap: '8px' })}>
+                  <span mix={[chipBase, css({ background: '#dcfce7', borderColor: '#86efac', color: '#166534' })]}>
+                    <span
+                      mix={css({ width: '12px', height: '12px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' })}
+                    />
+                    Protección
+                  </span>
+                  <span mix={[chipBase, css({ background: '#fef3c7', borderColor: '#fcd34d', color: '#92400e' })]}>
+                    <span
+                      mix={css({ width: '12px', height: '12px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block' })}
+                    />
+                    Conservación
+                  </span>
+                  <span mix={[chipBase, css({ background: '#dbeafe', borderColor: '#93c5fd', color: '#1e40af' })]}>
+                    <span
+                      mix={css({ width: '12px', height: '12px', borderRadius: '50%', background: '#3b82f6', display: 'inline-block' })}
+                    />
+                    Restauración
+                  </span>
+                  <span mix={[chipBase, css({ background: '#fee2e2', borderColor: '#fca5a5', color: '#991b1b' })]}>
+                    <span
+                      mix={css({ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' })}
+                    />
+                    Aprovechamiento sustentable
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Subnav sticky */}
+        <nav aria-label="Secciones POETDUM" mix={subnavWrap}>
+          <div mix={subnavInner}>
+            <a href="#sesiones" mix={subnavLink}>
+              Sesiones
+            </a>
+            <a href="#descargas" mix={subnavLink}>
+              Documentos oficiales
+            </a>
+            <a href="#actividades" mix={subnavLink}>
+              Actividades
+            </a>
+            <a href="#documentos" mix={subnavLink}>
+              Repositorio
+            </a>
+            <a href="#seguimiento" mix={subnavLink}>
+              Seguimiento
+            </a>
+          </div>
+        </nav>
 
         <main>
-      
-          <h1 mix={title}>ELABORACIÓN DEL POETDUM</h1>
-          <div>
-            <div mix={containerMap}>
-              <Mapa />
-              <div mix={infoMap}>
-                <section>
-                  <table>
-                    <tr></tr>
-                  </table>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Simbologia</th>
-                        <th> Color</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>proteccion</td>
-                        <td mix={color1}></td>
-                      </tr>
-                      <tr>
-                        <td>Conservacion</td>
-                        <td mix={color2}></td>
-                      </tr>
-                      <tr>
-                        <td>Restauracion</td>
-                        <td mix={color3}></td>
-                      </tr>
-                      <tr>
-                        <td>Aprovechamiento sustentable</td>
-                        <td mix={color4}></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </section>
-              </div>
-            </div>
-          </div>
-
-          <section mix={docOficial}>
-            <h2>
-              <b mix={textOficial}>
-                OBTEN LOS <br /> DOCUMENTOS OFICIALES
-              </b>
+          <section id="sesiones" mix={sectionWrap}>
+            <h2
+              mix={css({
+                fontFamily: FONT_STACK,
+                fontSize: '28px',
+                fontWeight: 800,
+                color: colors.gray900,
+                margin: '0 0 24px',
+              })}
+            >
+              Sesiones del proceso
             </h2>
-
-            <p mix={pOficioal}>
-              Descarga aqui el documento completo del Plan de Ordenamiento Ecológico Local (POETDUM)
-              y las Fichas de las unidades de gestión ambiental
-            </p>
-            <div>
-              <br />
-              <br />
-              <br />
-              <div mix={buttonsContainer}>
-                <Button variant="gold" size="lg">
-                  POETDUM
-                </Button>
-                <Button
-                  variant="contained"
-                  size="lg"
-                >
-                  FICHAS
-                </Button>
-              </div>
-            </div>
+            <SesionesSection sesiones={sesiones} />
           </section>
-          <br />
-          <br />
-          <br />
-          <br />
-          <br />
-          <section mix={act}>
-            <h2 mix={actTitle}>Calendario de Actividades </h2>
-            <p mix={actText}>
-              Consulta de manera clara y actualizada todas las fechas programadas, los horarios y
-              las ubicaciones de cada sesión. <br /> Navega por el calendario para planificar tu
-              asistencia y no perderte ningún evento.
-            </p>
-          </section>
-          <div mix={detalles}>
-            <Button variant="primary" size="md">
-              Detalles de la reunión 
-            </Button>
-          </div>
-          <br />
-          <br />
-          <br />
-          <section mix={futter}>
-            <img
-              mix={logoFuter}
-              src="https://ordenamiento.tlaquepaque.gob.mx/img/logos-02.png"
-              alt="Logo"
-            />
 
-            <p>
-              <strong>© Copyright 2026 Todos los Derechos Reservados | Aviso de privacidad</strong>
-            </p>
+          <section id="descargas" mix={css({ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' })}>
+            <DescargasSection />
+          </section>
+
+          <section id="actividades" mix={sectionWrap}>
+            <ActividadesSection actividades={actividades} estado={estado} />
+          </section>
+
+          <section id="documentos" mix={sectionWrap}>
+            <DocumentosSection documentos={documentos} tipo={tipo} etapa={etapa} />
+          </section>
+
+          <section id="seguimiento" mix={sectionWrap}>
+            <SeguimientoSection indicadores={indicadores} />
           </section>
           <p>contained</p>
         </main>
+
+        <footer
+          mix={css({
+            background: colors.gray900,
+            color: 'rgba(255,255,255,0.7)',
+            padding: '32px 24px',
+            textAlign: 'center',
+            fontFamily: FONT_STACK,
+            fontSize: '13px',
+            borderTop: `1px solid ${colors.gray800}`,
+          })}
+        >
+          <p mix={css({ margin: 0 })}>
+            © 2026 H. Ayuntamiento de San Pedro Tlaquepaque · Bitácora Ambiental POETDUM
+          </p>
+        </footer>
       </Document>
     )
   }

@@ -14,7 +14,12 @@ import { createController } from 'remix/router'
 
 import { BACKEND_URL } from '../../backend.ts'
 import { routes } from '../../routes.ts'
-import { MAX_FILE_BYTES, MAX_FILES, MAX_TOTAL_BYTES } from '../../utils/uploads.ts'
+import {
+  MAX_FILE_BYTES,
+  MAX_FILES,
+  MAX_TOTAL_BYTES,
+  sanitizeFilename,
+} from '../../utils/uploads.ts'
 import { ParticipationPage } from './page.tsx'
 import {
   errorMap,
@@ -43,7 +48,8 @@ export default createController(routes.participation, {
 
       async function uploadHandler(fileUpload: FileUpload) {
         if (fileUpload.fieldName === 'archivos') {
-          const key = `${Date.now()}-${randomBytes(4).toString('hex')}-${fileUpload.name}`
+          const safeName = sanitizeFilename(fileUpload.name)
+          const key = `${Date.now()}-${randomBytes(4).toString('hex')}-${safeName}`
           storedKeys.push(key)
           const storageFile = await tmpStorage.put(key, fileUpload)
           return storageFile ? await storageFile.toFile() : undefined
@@ -51,42 +57,37 @@ export default createController(routes.participation, {
       }
 
       try {
-        let formData: FormData
-        try {
-          const parseResult = await parseParticipationForm(
-            context.request,
-            {
-              maxFiles: MAX_FILES,
-              maxFileSize: MAX_FILE_BYTES,
-              maxTotalSize: MAX_TOTAL_BYTES,
-            },
-            uploadHandler,
-          )
-          formData = parseResult.formData
+        const parseResult = await parseParticipationForm(
+          context.request,
+          {
+            maxFiles: MAX_FILES,
+            maxFileSize: MAX_FILE_BYTES,
+            maxTotalSize: MAX_TOTAL_BYTES,
+          },
+          uploadHandler,
+        )
+        const formData = parseResult.formData
 
-          // Fix 1: 413 con repintado de campos de texto ya leídos
-          if (parseResult.limitError === 'maxfiles') {
-            return context.render(
-              <ParticipationPage
-                errors={{ archivos: `Máximo ${MAX_FILES} archivos por participación` }}
-                values={toFormValues(formData)}
-              />,
-              { status: 413 },
-            )
-          }
-          if (parseResult.limitError === 'maxfilesize') {
-            return context.render(
-              <ParticipationPage
-                errors={{
-                  archivos: `Uno de los archivos excede el límite de ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB`,
-                }}
-                values={toFormValues(formData)}
-              />,
-              { status: 413 },
-            )
-          }
-        } catch (error) {
-          throw error
+        // Fix 1: 413 con repintado de campos de texto ya leídos
+        if (parseResult.limitError === 'maxfiles') {
+          return context.render(
+            <ParticipationPage
+              errors={{ archivos: `Máximo ${MAX_FILES} archivos por participación` }}
+              values={toFormValues(formData)}
+            />,
+            { status: 413 },
+          )
+        }
+        if (parseResult.limitError === 'maxfilesize') {
+          return context.render(
+            <ParticipationPage
+              errors={{
+                archivos: `Uno de los archivos excede el límite de ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB`,
+              }}
+              values={toFormValues(formData)}
+            />,
+            { status: 413 },
+          )
         }
 
         const parsed = s.parseSafe(participationSchema, formData, { errorMap })

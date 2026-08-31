@@ -436,6 +436,67 @@ function HeroSection(handle: Handle<{ theme?: ThemeData }>) {
 }
 
 // ---------------------------------------------------------------------------
+// Check Bullet List (lista con viñeta de check en círculo, usada por las
+// secciones "¿Qué es este sitio?" y "¿Qué es el Programa?")
+// ---------------------------------------------------------------------------
+
+function CheckBulletList(
+  handle: Handle<{
+    items: readonly string[]
+    dotColor: string
+    checkColor: string
+    textColor: string
+    gap?: string
+  }>,
+) {
+  return () => {
+    const { items, dotColor, checkColor, textColor, gap = '12px' } = handle.props
+    return (
+      <div mix={css({ display: 'flex', flexDirection: 'column', gap })}>
+        {items.map((item) => (
+          <div key={item} mix={css({ display: 'flex', alignItems: 'flex-start', gap: '12px' })}>
+            <div
+              style={`
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: ${dotColor};
+                flex-shrink: 0;
+                margin-top: 2px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              `}
+              aria-hidden="true"
+            >
+              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                <path
+                  d="M1 4l3 3 5-6"
+                  stroke={checkColor}
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <span
+              mix={css({
+                fontFamily: FONT_STACK,
+                fontSize: '15px',
+                lineHeight: 1.55,
+                color: textColor,
+              })}
+            >
+              {item}
+            </span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+}
+
+// ---------------------------------------------------------------------------
 // What Is This Site
 // ---------------------------------------------------------------------------
 
@@ -494,55 +555,18 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
             <p mix={css({ ...bodyProps, margin: 0 })}>{p2}</p>
 
             {/* Feature bullets */}
-            <div
-              mix={css({ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' })}
-            >
-              {[
-                'Acceso a documentos técnicos oficiales',
-                'Seguimiento de fases y avances del programa',
-                'Participación ciudadana directa y simplificada',
-                'Consulta del calendario de actividades',
-              ].map((feature) => (
-                <div
-                  key={feature}
-                  mix={css({ display: 'flex', alignItems: 'flex-start', gap: '12px' })}
-                >
-                  <div
-                    style={`
-                      width: 20px;
-                      height: 20px;
-                      border-radius: 50%;
-                      background: ${primary};
-                      flex-shrink: 0;
-                      margin-top: 2px;
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                    `}
-                    aria-hidden="true"
-                  >
-                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                      <path
-                        d="M1 4l3 3 5-6"
-                        stroke="white"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </div>
-                  <span
-                    mix={css({
-                      fontFamily: FONT_STACK,
-                      fontSize: '15px',
-                      lineHeight: 1.5,
-                      color: colors.gray700,
-                    })}
-                  >
-                    {feature}
-                  </span>
-                </div>
-              ))}
+            <div mix={css({ marginTop: '8px' })}>
+              <CheckBulletList
+                items={[
+                  'Acceso a documentos técnicos oficiales',
+                  'Seguimiento de fases y avances del programa',
+                  'Participación ciudadana directa y simplificada',
+                  'Consulta del calendario de actividades',
+                ]}
+                dotColor={primary}
+                checkColor="white"
+                textColor={colors.gray700}
+              />
             </div>
           </div>
 
@@ -619,7 +643,7 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
         title: txt.card1Titulo || 'Conoce el Programa',
         description:
           txt.card1Desc ||
-          'Explora los fundamentos legales, objetivos y alcances del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
+          'Explora los fundamentos legales, objetivos y alcances del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano, y entiende por qué es la base para el uso responsable del territorio municipal.',
         href: '#que-es-el-programa',
         cta: 'Ver programa',
         accent: primary,
@@ -631,7 +655,7 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
         title: txt.card2Titulo || 'Conoce el Proceso',
         description:
           txt.card2Desc ||
-          'Entiende las cinco fases del proceso: desde la formulación hasta la evaluación continua del ordenamiento territorial.',
+          'Conoce paso a paso las cinco fases del proceso —diagnóstico, formulación, aprobación, ejecución y evaluación— y cómo se articulan para dar seguimiento continuo al ordenamiento territorial.',
         href: '#proceso',
         cta: 'Ver fases',
         accent: secondary,
@@ -643,7 +667,7 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
         title: txt.card3Titulo || 'Calendario de Actividades',
         description:
           txt.card3Desc ||
-          'Consulta las fechas de talleres, mesas de trabajo, consultas públicas y sesiones técnicas del programa.',
+          'Consulta las fechas de talleres, mesas de trabajo, consultas públicas y sesiones técnicas, y entérate con anticipación de cada oportunidad para participar.',
         href: '#calendario',
         cta: 'Ver calendario',
         accent: accent,
@@ -655,10 +679,10 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
         title: txt.card4Titulo || 'Consulta Documentos',
         description:
           txt.card4Desc ||
-          'Accede a la memoria técnica, estudios de diagnóstico, cartografía y acuerdos oficiales del proceso de ordenamiento.',
+          'Accede a la memoria técnica, estudios de diagnóstico, cartografía y acuerdos oficiales, y descarga la documentación completa que respalda cada etapa del proceso.',
         href: '#documentos',
         cta: 'Ver documentos',
-        accent: colors.gray700,
+        accent: colors.burgundy700,
       },
     ]
 
@@ -722,7 +746,7 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
                     justify-content: center;
                     font-size: 26px;
                     flex-shrink: 0;
-                    border: 1px solid ${card.accent}28;
+                    border: 1px solid ${colors.gray700};
                   `}
                   aria-hidden="true"
                 >
@@ -816,8 +840,17 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
     const { theme } = handle.props
     const u = theme?.usuario || {}
     const c = u.colores || {}
+    const img = u.imagenes || {}
     const primary = c.primario || colors.burgundy900
     const accent = c.acento || colors.gold400
+    const programaImg = img.imagenPrograma || `${basePath}/images/ecology-split.jpg`
+
+    const preguntas = [
+      '¿Qué zonas deben conservarse o protegerse por su valor ambiental?',
+      '¿Dónde es adecuado el crecimiento y desarrollo urbano del municipio?',
+      '¿Qué tipo de actividades pueden desarrollarse en las distintas zonas del territorio?',
+      '¿En qué condiciones deben realizarse estas actividades para evitar impactos negativos en el ambiente y el entorno urbano?',
+    ]
 
     return (
       <section
@@ -859,159 +892,111 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
         />
 
         <div mix={css({ ...sectionContainerProps, position: 'relative', zIndex: 1 })}>
+          <span
+            mix={css({ ...eyebrowProps, color: accent, display: 'block', marginBottom: '16px' })}
+          >
+            ¿Qué es el Programa?
+          </span>
+          <h2
+            id="programa-heading"
+            mix={css({
+              ...headingLProps,
+              color: colors.white,
+              margin: '0 0 40px',
+              maxWidth: '820px',
+            })}
+          >
+            ¿Qué es el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano?
+          </h2>
+
           <div
             mix={css({
               display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '80px',
+              gridTemplateColumns: '1.1fr 0.9fr',
+              gap: '64px',
               alignItems: 'start',
               '@media (max-width: 900px)': {
                 gridTemplateColumns: '1fr',
-                gap: '48px',
+                gap: '40px',
               },
             })}
           >
-            {/* Left: headline + stats */}
-            <div mix={css({ display: 'flex', flexDirection: 'column', gap: '24px' })}>
-              <span mix={css({ ...eyebrowProps, color: accent })}>¿Qué es el Programa?</span>
-              <h2
-                id="programa-heading"
-                mix={css({ ...headingLProps, color: colors.white, margin: 0 })}
-              >
-                Un instrumento de planeación para el territorio y el ambiente
-              </h2>
+            {/* Left: descripción + preguntas que resuelve */}
+            <div mix={css({ display: 'flex', flexDirection: 'column', gap: '20px' })}>
               <p
                 mix={css({
                   fontFamily: FONT_STACK,
-                  fontSize: '18px',
-                  lineHeight: 1.7,
-                  color: 'rgba(255,255,255,0.75)',
+                  fontSize: '17px',
+                  lineHeight: 1.75,
+                  color: 'rgba(255,255,255,0.78)',
                   margin: 0,
                 })}
               >
-                El Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano es el
-                principal instrumento de política ambiental y urbana del Municipio de San Pedro
-                Tlaquepaque.
+                Es una herramienta que permite organizar el territorio del municipio, definiendo qué
+                actividades pueden realizarse en cada zona y en qué condiciones, con el objetivo de
+                proteger el medio ambiente y orientar el desarrollo urbano de manera ordenada.
               </p>
-
-              <div
+              <p
                 mix={css({
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '16px',
-                  marginTop: '8px',
+                  fontFamily: FONT_STACK,
+                  fontSize: '16px',
+                  lineHeight: 1.75,
+                  color: 'rgba(255,255,255,0.72)',
+                  margin: 0,
                 })}
               >
-                {[
-                  { value: '5', label: 'Fases del proceso' },
-                  { value: '2026', label: 'Año de inicio' },
-                  { value: '600k+', label: 'Habitantes beneficiados' },
-                  { value: '100%', label: 'Participación abierta' },
-                ].map((stat) => (
-                  <div
-                    key={stat.label}
-                    mix={css({
-                      background: 'rgba(255,255,255,0.07)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: '12px',
-                      padding: '20px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '4px',
-                    })}
-                  >
-                    <span
-                      mix={css({
-                        fontFamily: FONT_STACK,
-                        fontSize: '28px',
-                        fontWeight: 800,
-                        color: accent,
-                        lineHeight: 1,
-                      })}
-                    >
-                      {stat.value}
-                    </span>
-                    <span
-                      mix={css({
-                        fontFamily: FONT_STACK,
-                        fontSize: '12px',
-                        color: 'rgba(255,255,255,0.6)',
-                        lineHeight: 1.4,
-                      })}
-                    >
-                      {stat.label}
-                    </span>
-                  </div>
-                ))}
+                Para elaborarlo se analizan las características del territorio, sus recursos
+                naturales y las actividades que se desarrollan en él, con el propósito de encontrar
+                un equilibrio entre la protección del medio ambiente y el desarrollo urbano del
+                municipio. A partir de este análisis se busca responder preguntas como:
+              </p>
+
+              <div mix={css({ marginTop: '4px' })}>
+                <CheckBulletList
+                  items={preguntas}
+                  dotColor={accent}
+                  checkColor={colors.gray900}
+                  textColor="rgba(255,255,255,0.85)"
+                  gap="14px"
+                />
               </div>
             </div>
 
-            {/* Right: body text + legal basis */}
+            {/* Right: imagen + cierre */}
             <div mix={css({ display: 'flex', flexDirection: 'column', gap: '24px' })}>
-              <p
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '16px',
-                  lineHeight: 1.8,
-                  color: 'rgba(255,255,255,0.72)',
-                  margin: 0,
-                })}
-              >
-                Establece los lineamientos para el uso del suelo, la protección de áreas naturales,
-                la distribución de actividades humanas y la gestión sustentable de los recursos
-                naturales en el territorio municipal.
-              </p>
-              <p
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '16px',
-                  lineHeight: 1.8,
-                  color: 'rgba(255,255,255,0.72)',
-                  margin: 0,
-                })}
-              >
-                Su elaboración es participativa: integra las voces de ciudadanos, organizaciones
-                civiles, academia y sector productivo, garantizando que el resultado refleje las
-                necesidades y aspiraciones colectivas del municipio.
-              </p>
-
               <div
                 mix={css({
-                  background: 'rgba(201,162,39,0.12)',
-                  border: `1px solid rgba(201,162,39,0.3)`,
-                  borderRadius: '12px',
-                  padding: '24px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
+                  position: 'relative',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  aspectRatio: '4/3',
+                  border: '1px solid rgba(255,255,255,0.12)',
                 })}
               >
-                <span
+                <img
+                  src={programaImg}
+                  alt="Equipo de trabajo planeando el ordenamiento del territorio"
                   mix={css({
-                    fontFamily: FONT_STACK,
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    letterSpacing: '0.15em',
-                    textTransform: 'uppercase',
-                    color: accent,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block',
                   })}
-                >
-                  Fundamento legal
-                </span>
-                <p
-                  mix={css({
-                    fontFamily: FONT_STACK,
-                    fontSize: '14px',
-                    lineHeight: 1.65,
-                    color: 'rgba(255,255,255,0.65)',
-                    margin: 0,
-                  })}
-                >
-                  Ley General del Equilibrio Ecológico y la Protección al Ambiente · Ley de
-                  Ordenamiento Territorial y Desarrollo Urbano del Estado de Jalisco · Código Urbano
-                  para el Estado de Jalisco
-                </p>
+                />
               </div>
+              <p
+                mix={css({
+                  fontFamily: FONT_STACK,
+                  fontSize: '15px',
+                  lineHeight: 1.75,
+                  color: 'rgba(255,255,255,0.7)',
+                  margin: 0,
+                })}
+              >
+                Una vez aprobado, el Programa establece los criterios y lineamientos que orientan el
+                uso, ocupación y aprovechamiento del territorio, así como las reglas que guiarán el
+                desarrollo urbano del municipio.
+              </p>
             </div>
           </div>
         </div>
@@ -1085,7 +1070,7 @@ function ProcessTimeline(handle: Handle<{ theme?: ThemeData }>) {
       <section
         id="proceso"
         aria-labelledby="proceso-heading"
-        mix={css({ ...sectionPaddingProps, background: c.secundario || colors.gray50 })}
+        mix={css({ ...sectionPaddingProps, background: colors.gray50 })}
       >
         <div mix={css(sectionContainerProps)}>
           <div

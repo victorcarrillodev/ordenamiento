@@ -8,3 +8,8 @@ export interface LoginErrors {
   password?: string
   name?: string
 }
+
+export interface LoginAlert {
+  type: 'error' | 'success' | 'warning' | 'info'
+  message: string
+}

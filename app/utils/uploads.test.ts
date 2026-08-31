@@ -9,6 +9,8 @@ describe('uploads utils', () => {
 
   it('genera el texto de límites derivado correctamente', () => {
     const texto = textoLimites(50, 5)
-    expect(texto).toBe('PDF, SHP, JPG, DWG · hasta 50 MB por archivo, máximo 5')
+    expect(texto).toBe(
+      'PDF, DOC(X), XLS(X), PPT(X), ODT/ODS/ODP, RTF, TXT, CSV, MD, JPG, PNG, GIF, WEBP, BMP, TIFF, ICO, DWG, SHP/SHX/DBF, KMZ, ZIP, RAR, 7Z, MP3, WAV, MP4, MOV, AVI, MKV · hasta 50 MB por archivo, máximo 5',
+    )
   })
 })

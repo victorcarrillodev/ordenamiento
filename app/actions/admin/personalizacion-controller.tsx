@@ -61,7 +61,7 @@ export default createController(adminRoutes.personalizacion, {
 
       // ── Acción: Restaurar snapshot desde auditoría ──
       if (actionType === 'restore') {
-        const logId = Number(formData.get('log_id'))
+        const logId = String(formData.get('log_id') ?? '').trim()
         if (!logId) {
           return redirect(
             `${adminRoutes.personalizacion.index.href()}?tab=historial&err=ID+inválido`,
@@ -82,6 +82,35 @@ export default createController(adminRoutes.personalizacion, {
         )
       }
 
+      // ── Acción: Probar SMTP (usa POST /api/mail/test, expone útil de diagnóstico sin PII) ──
+      if (actionType === 'testMail') {
+        const para = String(formData.get('para') ?? '').trim()
+        const tabRet = String(formData.get('tab') ?? 'usuario')
+        // Validación estricta anti-CRLF/XSS: bloquea \r\n y rechaza formato email inválido.
+        // No basta con contains('@'): un payload con CRLF o <script> pasa ese filtro.
+        const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(para) && !/[\r\n<>]/.test(para)
+        if (!para || !emailValido) {
+          return redirect(
+            `${adminRoutes.personalizacion.index.href()}?tab=${tabRet}&err=${encodeURIComponent('Correo destino inválido')}`,
+          )
+        }
+        const res = await backendFetch(context.request, '/api/mail/test', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ para }),
+        })
+        if (!res.ok) {
+          const errData = (await res.json().catch(() => ({}))) as { error?: string }
+          const msg = errData.error || `Error SMTP (${res.status})`
+          return redirect(
+            `${adminRoutes.personalizacion.index.href()}?tab=${tabRet}&err=${encodeURIComponent(msg)}`,
+          )
+        }
+        return redirect(
+          `${adminRoutes.personalizacion.index.href()}?tab=${tabRet}&msg=${encodeURIComponent(`Correo de prueba enviado a ${para}`)}`,
+        )
+      }
+
       // ── Acción: Guardar configuración ──
       const section = String(formData.get('section') ?? 'usuario') as 'usuario' | 'panel'
       const motivo = String(formData.get('motivo') ?? '').trim()
@@ -97,14 +126,21 @@ export default createController(adminRoutes.personalizacion, {
         const fileNavLogo = formData.get('archivo_logo_navbar') as File | null
         const fileFooterLogo = formData.get('archivo_logo_footer') as File | null
         const fileEcoImg = formData.get('archivo_imagen_ecologia') as File | null
+        const fileProgramaImg = formData.get('archivo_imagen_programa') as File | null
 
-        const [uploadedHero, uploadedNavLogo, uploadedFooterLogo, uploadedEcoImg] =
-          await Promise.all([
-            uploadFileIfNeeded(context.request, fileHero),
-            uploadFileIfNeeded(context.request, fileNavLogo),
-            uploadFileIfNeeded(context.request, fileFooterLogo),
-            uploadFileIfNeeded(context.request, fileEcoImg),
-          ])
+        const [
+          uploadedHero,
+          uploadedNavLogo,
+          uploadedFooterLogo,
+          uploadedEcoImg,
+          uploadedProgramaImg,
+        ] = await Promise.all([
+          uploadFileIfNeeded(context.request, fileHero),
+          uploadFileIfNeeded(context.request, fileNavLogo),
+          uploadFileIfNeeded(context.request, fileFooterLogo),
+          uploadFileIfNeeded(context.request, fileEcoImg),
+          uploadFileIfNeeded(context.request, fileProgramaImg),
+        ])
 
         const rawHeroImages = formData.getAll('hero_imagenes[]').map(String).filter(Boolean)
         if (uploadedHero) {
@@ -127,6 +163,7 @@ export default createController(adminRoutes.personalizacion, {
               logoFooter: uploadedFooterLogo || String(formData.get('logo_footer') ?? ''),
               heroImagenes: rawHeroImages.length > 0 ? rawHeroImages : undefined,
               imagenEcologia: uploadedEcoImg || String(formData.get('imagen_ecologia') ?? ''),
+              imagenPrograma: uploadedProgramaImg || String(formData.get('imagen_programa') ?? ''),
             },
             iconos: {
               cardPrograma: String(formData.get('ico_card1') ?? '🏛️'),

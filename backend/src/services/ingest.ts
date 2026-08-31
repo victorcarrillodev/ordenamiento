@@ -31,16 +31,16 @@ export interface IngestFile {
  * DWG simplemente no aporta texto buscable, pero se ve y se descarga igual.
  */
 export async function ingestParticipation(
-  dbOrParticipationId: Db | number,
-  participationIdOrFields: number | Record<string, string>,
+  dbOrParticipationId: Db | string,
+  participationIdOrFields: string | Record<string, string>,
   maybeFieldsOrFiles?: Record<string, string> | IngestFile[],
   maybeFiles?: IngestFile[],
 ): Promise<IngestResult> {
   const isDb = typeof dbOrParticipationId === 'function' && 'unsafe' in dbOrParticipationId
   const db: Db = isDb ? (dbOrParticipationId as Db) : sql
   const participationId = isDb
-    ? (participationIdOrFields as number)
-    : (dbOrParticipationId as number)
+    ? (participationIdOrFields as string)
+    : (dbOrParticipationId as string)
   const files = isDb ? maybeFiles : (maybeFieldsOrFiles as IngestFile[] | undefined)
 
   let indexados = 0

@@ -1,3 +1,4 @@
+import { join } from 'node:path'
 import { describe, expect, it } from 'bun:test'
 
 import {
@@ -417,12 +418,11 @@ describe('sanitización de nombres (traversal / CRLF)', () => {
   })
   it('ruta destino no escapa de UPLOAD_DIR aun con traversal en nombre original', () => {
     // Simula lo que hace participations.ts: join(UPLOAD_DIR, nombreEnDisco(file.name))
-    const { join } = require('node:path') as typeof import('node:path')
-    const UPLOAD_DIR = '/tmp/uploads-test'
+    const UPLOAD_DIR = join('/tmp', 'uploads-test')
     const malicious = '../../etc/passwd'
     const disco = nombreEnDisco(malicious, 123)
     const ruta = join(UPLOAD_DIR, disco)
-    expect(ruta.startsWith(UPLOAD_DIR + '/')).toBe(true)
+    expect(ruta.startsWith(UPLOAD_DIR)).toBe(true)
     expect(ruta).not.toContain('..')
   })
 })

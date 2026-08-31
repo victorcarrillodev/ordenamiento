@@ -1,4 +1,4 @@
-import { isSafeCssColor, isSafeImageUrl, sanitizeText } from '../utils.ts'
+import { isSafeCssColor, isSafeImageUrl, logger, sanitizeText } from '../utils.ts'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { sql } from '../db/pool.ts'
@@ -22,6 +22,7 @@ export interface ThemeConfig {
       logoFooter: string
       heroImagenes: string[]
       imagenEcologia: string
+      imagenPrograma: string
     }
     iconos: {
       cardPrograma: string
@@ -89,6 +90,7 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
         'https://imgs.search.brave.com/8f1SgJygGgIrQH2BcZXess4TRcaOtm3FXVfawE9VxRE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTEy/NTUyNzc3Mi9lcy9m/b3RvL3RsYXF1ZXBh/cXVlLmpwZz9zPTYx/Mng2MTImdz0wJms9/MjAmYz1VU3FwdjNw/OEJxbG9LY0JaY01q/YUdPNkpQWW1Va0xl/N1FYUGx5YVREM1Zz/PQ',
       ],
       imagenEcologia: '/ordena/images/ecology-split.jpg',
+      imagenPrograma: '/ordena/images/ecology-split.jpg',
     },
     iconos: {
       cardPrograma: '🏛️',
@@ -151,10 +153,14 @@ const BRANDING_UPLOAD_DIR = join(process.cwd(), 'uploads', 'branding')
 // config JSONB de site_customizations); un tipo recursivo preciso aquí no
 // aportaría seguridad real sobre datos que ya vienen sin tipar desde la BD.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function deepMerge(target: any, source: any): any {
+export function deepMerge(target: any, source: any): any {
   if (!source || typeof source !== 'object') return target
   const output = { ...target }
   for (const key of Object.keys(source)) {
+    // Protección contra prototype pollution: nunca permitir sobrescribir
+    // __proto__/constructor/prototype desde un payload no confiable (el admin
+    // puede guardar JSON arbitrario vía saveCustomizations).
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue
     if (
       source[key] &&
       typeof source[key] === 'object' &&
@@ -172,8 +178,8 @@ function deepMerge(target: any, source: any): any {
 
 export async function getCustomizations(): Promise<ThemeConfig> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- columna JSONB, forma dinámica
-    const rows = await sql<Array<{ config: any }>>`
+    // Columna JSONB de forma dinámica: el tipo en crudo es un objeto plano.
+    const rows = await sql<Array<{ config: Record<string, unknown> }>>`
       SELECT config FROM site_customizations WHERE id = 1 LIMIT 1
     `
     if (rows.length === 0 || !rows[0].config || Object.keys(rows[0].config).length === 0) {
@@ -181,14 +187,16 @@ export async function getCustomizations(): Promise<ThemeConfig> {
     }
     return deepMerge(DEFAULT_THEME_CONFIG, rows[0].config)
   } catch (err) {
-    console.error('[customizations] Error al leer configuración:', err)
+    // M3: el error es visible (logger), pero se mantiene el fallback para que
+    // el sitio siga renderizando con el tema por defecto en vez de caer 500.
+    logger.error('customizations.getCustomizations', err)
     return DEFAULT_THEME_CONFIG
   }
 }
 
 export interface SaveCustomizationParams {
   config: Partial<ThemeConfig>
-  user: { id: number; name: string; email: string; role?: string }
+  user: { id: string; name: string; email: string; role?: string }
   motivo: string
   section?: 'usuario' | 'panel' | 'general'
 }
@@ -230,8 +238,8 @@ export async function saveCustomizations(params: SaveCustomizationParams): Promi
 }
 
 export interface AuditLogEntry {
-  id: number
-  user_id: number | null
+  id: string
+  user_id: string | null
   user_name: string
   user_email: string
   motivo: string
@@ -245,19 +253,19 @@ export async function listAuditLogs(limit = 50): Promise<AuditLogEntry[]> {
   try {
     const rows = await sql<
       Array<{
-        id: number
-        user_id: number | null
+        id: string
+        user_id: string | null
         user_name: string
         user_email: string
         motivo: string
         section: string
         changes_summary: string
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- columna JSONB, forma dinámica
-        snapshot: any
+        // Columna JSONB de forma dinámica: objeto plano en crudo.
+        snapshot: Record<string, unknown>
         created_at: string
       }>
     >`
-      SELECT id, user_id, user_name, user_email, motivo, section, changes_summary, snapshot, created_at::text
+      SELECT id::text AS id, user_id::text AS user_id, user_name, user_email, motivo, section, changes_summary, snapshot, created_at::text
       FROM customization_audit_logs
       ORDER BY created_at DESC
       LIMIT ${limit}
@@ -267,18 +275,19 @@ export async function listAuditLogs(limit = 50): Promise<AuditLogEntry[]> {
       snapshot: deepMerge(DEFAULT_THEME_CONFIG, r.snapshot),
     }))
   } catch (err) {
-    console.error('[customizations] Error al listar auditoría:', err)
+    // M3: error visible con logger; se mantiene [] para no romper el panel.
+    logger.error('customizations.listAuditLogs', err)
     return []
   }
 }
 
 export async function restoreAuditSnapshot(
-  logId: number,
-  user: { id: number; name: string; email: string },
+  logId: string,
+  user: { id: string; name: string; email: string },
   motivo = 'Restauración de versión anterior desde auditoría',
 ): Promise<ThemeConfig | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- columna JSONB, forma dinámica
-  const rows = await sql<Array<{ snapshot: any }>>`
+  // Columna JSONB de forma dinámica: objeto plano en crudo.
+  const rows = await sql<Array<{ snapshot: Record<string, unknown> }>>`
     SELECT snapshot FROM customization_audit_logs WHERE id = ${logId} LIMIT 1
   `
   if (rows.length === 0) return null
@@ -344,7 +353,7 @@ export function validarYSanitizarThemeConfig(config: Partial<ThemeConfig>): stri
           }
         }
       } else {
-        // Para las demás imágenes (logoNavbar, logoFooter, imagenEcologia)
+        // Para las demás imágenes (logoNavbar, logoFooter, imagenEcologia, imagenPrograma)
         if (value && value !== '' && !isSafeImageUrl(value)) {
           return `URL de imagen inválida en ${key}`
         }
@@ -356,10 +365,7 @@ export function validarYSanitizarThemeConfig(config: Partial<ThemeConfig>): stri
   if (config.usuario?.textos) {
     for (const [key, text] of Object.entries(config.usuario.textos)) {
       if (text && typeof text === 'string') {
-        config.usuario.textos[key as keyof typeof config.usuario.textos] = sanitizeText(
-          text,
-          500,
-        )
+        config.usuario.textos[key as keyof typeof config.usuario.textos] = sanitizeText(text, 500)
       }
     }
   }

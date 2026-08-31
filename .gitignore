@@ -20,3 +20,8 @@ package-lock.json
 
 # Catálogo SEPOMEX generado en build (la licencia prohíbe redistribuir en repo)
 app/data/colonias.json
+backend/src/seed.ts
+backend/src/seed-demo.ts
+backend/src/seed-victor.ts
+backend/seed-admins.example.json
+docs/seed-usuario.md

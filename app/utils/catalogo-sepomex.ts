@@ -26,11 +26,16 @@ export function normalizar(texto: string): string {
  * 3: D_mnpio (Municipio)
  * 4: d_estado (Estado)
  */
-export function parseSepomex(rawText: string, estadoFiltro = 'Jalisco'): EntradaCatalogo[] {
+export function parseSepomex(
+  rawText: string,
+  estadoFiltro = 'Jalisco',
+  municipioFiltro?: string,
+): EntradaCatalogo[] {
   const lineas = rawText.split(/\r?\n/)
   if (lineas.length === 0) return []
 
   const estadoFiltroNorm = normalizar(estadoFiltro)
+  const municipioFiltroNorm = municipioFiltro ? normalizar(municipioFiltro) : ''
   const entradasMap = new Map<string, EntradaCatalogo>()
 
   for (const linea of lineas) {
@@ -49,6 +54,13 @@ export function parseSepomex(rawText: string, estadoFiltro = 'Jalisco'): Entrada
     const estado = campos[4]
 
     if (estadoFiltroNorm && normalizar(estado) !== estadoFiltroNorm) {
+      continue
+    }
+
+    // Restringe a un municipio concreto cuando se indica (ej. San Pedro Tlaquepaque).
+    // Se usa includes (no igualdad exacta) porque SEPOMEX a veces publica el
+    // municipio como "Tlaquepaque" sin el prefijo "San Pedro".
+    if (municipioFiltroNorm && !normalizar(municipio).includes(municipioFiltroNorm)) {
       continue
     }
 

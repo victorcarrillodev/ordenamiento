@@ -5,7 +5,9 @@ import { parseSepomex } from '../app/utils/catalogo-sepomex.ts'
 
 const DEFAULT_ORIGEN = 'https://www.correosdemexico.gob.mx/DATOSABIERTOS/cp/CPdescarga.txt'
 const DEFAULT_ESTADO = 'Jalisco'
+const DEFAULT_MUNICIPIO = 'San Pedro Tlaquepaque'
 const DEFAULT_DESTINO = 'app/data/colonias.json'
+const DESTINO_NAVEGADOR = 'public/colonias-data.js'
 
 /**
  * Descarga y procesa el catálogo SEPOMEX para generar el artefacto de build en JSON.
@@ -13,10 +15,12 @@ const DEFAULT_DESTINO = 'app/data/colonias.json'
 export async function construirCatalogo({
   origen = process.env.CATALOGO_ORIGEN ?? DEFAULT_ORIGEN,
   estado = process.env.CATALOGO_ESTADO ?? DEFAULT_ESTADO,
+  municipio = process.env.CATALOGO_MUNICIPIO ?? DEFAULT_MUNICIPIO,
   destino = process.env.CATALOGO_DESTINO ?? DEFAULT_DESTINO,
 }: {
   origen?: string
   estado?: string
+  municipio?: string
   destino?: string
 } = {}): Promise<number> {
   const rutaDestino = resolve(process.cwd(), destino)
@@ -64,9 +68,18 @@ export async function construirCatalogo({
     textoSepomex = generarCatalogoBaseJalisco()
   }
 
-  const catalogo = parseSepomex(textoSepomex, estado)
+  const catalogo = parseSepomex(textoSepomex, estado, municipio)
   await writeFile(rutaDestino, JSON.stringify(catalogo, null, 2), 'utf-8')
   console.log(`[build:catalogo] Éxito: ${catalogo.length} colonias generadas en ${destino}`)
+
+  // Artefacto para el navegador: catálogo embebido como window.__COLONIAS__.
+  // Evita cualquier fetch a red (el endpoint /api/colonias no existe) y hace el
+  // autocompletado instantáneo y offline. Solo se incluye el municipio filtrado.
+  const rutaNavegador = resolve(process.cwd(), DESTINO_NAVEGADOR)
+  await mkdir(dirname(rutaNavegador), { recursive: true })
+  const contenidoNavegador = `window.__COLONIAS__ = ${JSON.stringify(catalogo)};\n`
+  await writeFile(rutaNavegador, contenidoNavegador, 'utf-8')
+  console.log(`[build:catalogo] Navegador: ${catalogo.length} colonias en ${DESTINO_NAVEGADOR}`)
 
   return catalogo.length
 }

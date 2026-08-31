@@ -13,7 +13,7 @@ import {
 } from 'docx'
 
 interface Row {
-  id: number
+  id: string
   folio: string
   origen: string
   nombre: string

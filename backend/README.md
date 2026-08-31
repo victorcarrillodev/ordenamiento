@@ -31,7 +31,6 @@ marca `needsOcr`.
   del formulario, estado
 - `attachments` – archivos subidos (PDF, DWG, JPG, SHX...) y, para los PDF
   con capa de texto, ese texto en `texto_extraido` + índice `texto_tsv`
-- `search_history` – auditoría
 
 ## Arranque
 
@@ -98,10 +97,22 @@ Configura un valor real en un archivo `.env` local (no versionado).
 | GET    | `/api/participations`                      | Listado con filtros + paginación                                      |
 | GET    | `/api/participations/:id`                  | Detalle + adjuntos                                                    |
 | POST   | `/api/participations`                      | Crear (multipart: folio autogenerado, origen, nombre, correo, pdf...) |
-| PATCH  | `/api/participations/:id/estado`           | Cambiar estado (admin)                                                |
+| POST   | `/api/participations/:id/resolucion`       | Dictaminar + notificar (admin) — flujo canónico de cambio de estado   |
 | DELETE | `/api/participations/:id`                  | Eliminar (admin)                                                      |
 | GET    | `/api/participations/:id/attachments/:aid` | Ver / descargar adjunto                                               |
-| GET    | `/api/search?q=...`                        | Búsqueda híbrida + filtros                                            |
+| GET    | `/api/participations/:id/word`             | Exportar .docx (admin)                                                |
+| POST   | `/api/participations/enviar`              | Reenviar participación por correo (admin)                             |
+| POST   | `/api/mail/test`                           | Correo de prueba SMTP (admin) — cableado a Personalización            |
+| POST   | `/api/avisos/enviar`                      | Enviar aviso por correo (admin)                                       |
+| GET/POST/DELETE | `/api/reuniones`, `/api/avisos`, `/api/poel`, `/api/export/:tabla`, `/api/users`, `/api/stats`, `/api/settings/*` | Bitácora, exportación, usuarios, stats, personalización (ver `app.ts`) |
+
+> **Nota 2026-08-28 (Arquitecto):** Se eliminaron `GET /api/search` (`searchParticipations`) y
+> `PATCH /api/participations/:id/estado` (`updateEstado`) por ser huérfanos sin consumidor en
+> `app/` y, en el caso de PATCH, por bypasear el flujo canónico de dictamen (`/resolucion` con
+> motivo/dirección/cita y auditoría). Ver `backend/src/services/search.ts` eliminado y
+> `participations.ts:updateEstado` eliminado. `POST /api/mail/test` se mantiene y ahora está
+> cableado a `app/actions/admin/personalizacion-controller.tsx` + `personalizacion-page.tsx`
+> (form `testMail`) de forma CSP-compliant.
 
 ## Env
 

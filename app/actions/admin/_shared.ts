@@ -1,7 +1,7 @@
 import { fetchJsonOr } from '../../backend.ts'
 
 export interface Reunion {
-  id: number
+  id: string
   titulo: string
   fecha: string
   hora_inicio: string | null

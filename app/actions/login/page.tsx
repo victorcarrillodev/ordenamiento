@@ -7,21 +7,23 @@ import type { Handle } from 'remix/ui'
 import { routes } from '../../routes.ts'
 import { Button } from '../../ui/button.tsx'
 import { Document } from '../document.tsx'
+import { LoginAlert } from '../../ui/login/login-alert.tsx'
 import { LoginFooter } from '../../ui/login/login-footer.tsx'
 import { LoginForm } from '../../ui/login/login-form.tsx'
 import { LoginHeader } from '../../ui/login/login-header.tsx'
 import { TextField } from '../../ui/login/text-field.tsx'
-import type { LoginErrors } from '../../ui/login/types.ts'
+import type { LoginAlert as LoginAlertType, LoginErrors } from '../../ui/login/types.ts'
 
 const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 
 export interface LoginPageProps {
   errors?: LoginErrors
+  alert?: LoginAlertType
 }
 
 export function LoginPage(handle: Handle<LoginPageProps>) {
   return () => {
-    const { errors = {} } = handle.props
+    const { errors = {}, alert } = handle.props
 
     return (
       <Document
@@ -39,6 +41,7 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
                 logoAlt="Logo Tlaquepaque"
               />
               <div class="login__body">
+                {alert ? <LoginAlert type={alert.type} message={alert.message} /> : null}
                 <LoginForm errors={errors} />
               </div>
               <div class="login__admin">

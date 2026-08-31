@@ -12,7 +12,6 @@ import { AdminPage } from './page.tsx'
 import { ExportarPage } from './exportar-page.tsx'
 import { ParticipacionesPage } from './participaciones-page.tsx'
 import { EstadisticasPage } from './estadisticas-page.tsx'
-import { CuentaPage } from './cuenta-page.tsx'
 import { DetallePage } from './detalle-page.tsx'
 import { ETAPAS } from './etapa.ts'
 
@@ -24,10 +23,33 @@ interface Stats {
   fuente: Array<[string, number]>
   genero: Array<[string, number]>
   tematica: Array<[string, number]>
+  contenido?: {
+    actividades: number
+    documentos: number
+    indicadores: number
+    poelSesiones: number
+    reuniones: number
+    avisos: number
+  }
+  participacionesPorMes?: Array<{ mes: string; total: number }>
+  proximaReunion?: {
+    id: string
+    titulo: string
+    fecha: string
+    hora_inicio: string
+    hora_fin: string
+  } | null
+  ultimosAvisos?: Array<{
+    id: string
+    titulo: string
+    descripcion: string
+    activo: boolean
+    fecha?: string
+  }>
 }
 
 interface AdminUserRow {
-  id: number
+  id: string
   email: string
   name: string
   role: string
@@ -48,6 +70,17 @@ export default createController(adminRoutes, {
         fuente: [],
         genero: [],
         tematica: [],
+        contenido: {
+          actividades: 0,
+          documentos: 0,
+          indicadores: 0,
+          poelSesiones: 0,
+          reuniones: 0,
+          avisos: 0,
+        },
+        participacionesPorMes: [],
+        proximaReunion: null,
+        ultimosAvisos: [],
       })
 
       let users: AdminUserRow[] = []
@@ -140,26 +173,42 @@ export default createController(adminRoutes, {
       const origen = params.get('origen') === 'fisica' ? 'fisica' : 'digital'
       const etapaParam = params.get('etapa')
       const etapa = ETAPAS.find((e) => e === etapaParam)
+      const rawPage = params.get('page')
+      const rawLimit = params.get('limit')
+      const page = Number.isInteger(Number(rawPage)) && Number(rawPage) > 0 ? Number(rawPage) : 1
+      const limit =
+        Number.isInteger(Number(rawLimit)) && Number(rawLimit) > 0 ? Number(rawLimit) : 10
       const data = await fetchJsonOr<{
         items: Array<{
-          id: number
+          id: string
           folio: string
           origen: string
           nombre: string
           estado: string
           fecha: string
           notificado_en: string | null
-          adjuntos: Array<{ id: number; nombre_original: string; mime: string; size: number }>
+          adjuntos: Array<{ id: string; nombre_original: string; mime: string; size: number }>
         }>
+        total: number
+        page: number
+        limit: number
       }>(
         context.request,
-        `/api/participations?origen=${origen}&limit=100&page=1` +
+        `/api/participations?origen=${origen}&limit=${limit}&page=${page}` +
           (etapa ? `&etapa=${encodeURIComponent(etapa)}` : ''),
-        { items: [] },
+        { items: [], total: 0, page, limit },
       )
 
       return context.render(
-        <ParticipacionesPage user={user} origen={origen} items={data.items ?? []} etapa={etapa} />,
+        <ParticipacionesPage
+          user={user}
+          origen={origen}
+          items={data.items ?? []}
+          etapa={etapa}
+          page={data.page ?? page}
+          limit={data.limit ?? limit}
+          total={typeof data.total === 'number' ? data.total : (data.items?.length ?? 0)}
+        />,
       )
     },
 
@@ -198,6 +247,51 @@ export default createController(adminRoutes, {
       return new Response(response.body, { headers })
     },
 
+    /** Sirve un archivo de una sesión POEL a través del panel. */
+    async poelArchivo(context) {
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
+
+      const descarga = new URL(context.request.url).searchParams.get('download') === '1'
+      const response = await backendFetch(
+        context.request,
+        `/api/poel/archivos/${context.params.aid}${descarga ? '?download=1' : ''}`,
+      )
+      if (!response.ok) return new Response('Not Found', { status: response.status })
+
+      const headers = new Headers()
+      for (const h of ['content-type', 'content-disposition', 'content-length']) {
+        const v = response.headers.get(h)
+        if (v) headers.set(h, v)
+      }
+      headers.set('x-content-type-options', 'nosniff')
+      // Igual que con los adjuntos: la CSP del backend no dejaría incrustarlo
+      // en el propio panel; se emite una que sí lo permite en mismo origen.
+      headers.set('content-security-policy', "default-src 'none'; frame-ancestors 'self'")
+
+      return new Response(response.body, { headers })
+    },
+    /** Sirve la imagen de una sesión POEL a través del panel. */
+    async poelImagen(context) {
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
+
+      const response = await backendFetch(context.request, `/api/poel/${context.params.id}/imagen`)
+      if (!response.ok) return new Response('Not Found', { status: response.status })
+
+      const headers = new Headers()
+      for (const h of ['content-type', 'content-disposition', 'content-length']) {
+        const v = response.headers.get(h)
+        if (v) headers.set(h, v)
+      }
+      headers.set('x-content-type-options', 'nosniff')
+      // Igual que con los adjuntos: la CSP del backend impediría incrustarla en
+      // el propio panel, así que se emite una que sí lo permite en mismo origen.
+      headers.set('content-security-policy', "default-src 'none'; frame-ancestors 'self'")
+
+      return new Response(response.body, { headers })
+    },
+
     async estadisticas(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
@@ -215,10 +309,19 @@ export default createController(adminRoutes, {
       return context.render(<EstadisticasPage user={user} origen={origen} stats={stats} />)
     },
 
-    async cuenta(context) {
+    async cuentaAvatar(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
-      return context.render(<CuentaPage user={user} />)
+      const response = await backendFetch(context.request, '/api/users/me/avatar')
+      if (!response.ok) return new Response('Not Found', { status: response.status })
+      const headers = new Headers()
+      for (const h of ['content-type', 'content-disposition', 'content-length']) {
+        const v = response.headers.get(h)
+        if (v) headers.set(h, v)
+      }
+      headers.set('x-content-type-options', 'nosniff')
+      headers.set('content-security-policy', "default-src 'none'; frame-ancestors 'self'")
+      return new Response(response.body, { headers })
     },
 
     async participacionDetalle(context) {
@@ -232,7 +335,7 @@ export default createController(adminRoutes, {
       )
       const p = raw
         ? {
-            id: raw.id as number,
+            id: raw.id as string,
             folio: raw.folio as string,
             origen: raw.origen as string,
             nombre: raw.nombre as string,
@@ -257,7 +360,7 @@ export default createController(adminRoutes, {
             notificado_a: (raw.notificado_a as string) ?? '',
             adjuntos: (
               (raw.attachments ?? []) as Array<{
-                id: number
+                id: string
                 nombre_original: string
                 mime: string
                 size: number

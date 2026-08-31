@@ -4,7 +4,7 @@ import { logoutBackend, requireAdminUser } from './backend.ts'
 
 const originalFetch = globalThis.fetch
 
-function mockAuthMeResponse(user: { id: number; name: string; role: string } | null) {
+function mockAuthMeResponse(user: { id: string; name: string; role: string } | null) {
   globalThis.fetch = (async () =>
     new Response(JSON.stringify({ user }), { status: 200 })) as unknown as typeof fetch
 }
@@ -24,17 +24,17 @@ describe('requireAdminUser', () => {
   })
 
   it('redirects a logged-in citizen account (role "user") instead of granting access', async () => {
-    mockAuthMeResponse({ id: 7, name: 'Ciudadano', role: 'user' })
+    mockAuthMeResponse({ id: '00000000-0000-4000-a000-000000000007', name: 'Ciudadano', role: 'user' })
     const result = await requireAdminUser(new Request('http://localhost/ordena/admin'))
     expect(result).toBeInstanceOf(Response)
     expect((result as Response).headers.get('location')).toContain('/login')
   })
 
   it('lets an admin session through and returns the user', async () => {
-    mockAuthMeResponse({ id: 1, name: 'Root', role: 'admin' })
+    mockAuthMeResponse({ id: '00000000-0000-4000-a000-000000000001', name: 'Root', role: 'admin' })
     const result = await requireAdminUser(new Request('http://localhost/ordena/admin'))
     expect(result).not.toBeInstanceOf(Response)
-    expect(result).toEqual({ id: 1, name: 'Root', role: 'admin' })
+    expect(result).toEqual({ id: '00000000-0000-4000-a000-000000000001', name: 'Root', role: 'admin' })
   })
 })
 
