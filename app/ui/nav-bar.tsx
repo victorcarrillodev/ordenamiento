@@ -15,9 +15,10 @@ export function NavBar(handle: Handle<NavBarProps>) {
     const c = u.colores || {}
     const img = u.imagenes || {}
 
+    const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
     const navBg = c.navbarFondo || 'rgba(255,255,255,0.98)'
     const navText = c.navbarTexto || '#1a1d26'
-    const logoUrl = img.logoNavbar || 'https://ordenamiento.tlaquepaque.gob.mx/img/image5.png'
+    const logoUrl = img.logoNavbar || `${basePath}/assets/img/logo/logo-200x60.webp`
     const primaryBtnColor = c.primario || '#0f172a'
     const accentHover = c.acento || colors.gold300
 
@@ -129,7 +130,7 @@ export function NavBar(handle: Handle<NavBarProps>) {
 
           {/* CTA */}
           <a href={routes.participation.index.href()} id="nav-participar-btn" mix={navCtaStyle}>
-            Subir participación
+            Registra tu participación
           </a>
         </div>
       </nav>

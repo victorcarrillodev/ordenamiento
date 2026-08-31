@@ -37,7 +37,7 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
               <LoginHeader
                 title="Iniciar Sesión"
                 subtitle="Portal de Ordenamiento Ecológico"
-                logoSrc={`${basePath}/images/tlaquepaque.png`}
+                logoSrc={`${basePath}/assets/img/logo/logo-200x60.webp`}
                 logoAlt="Logo Tlaquepaque"
               />
               <div class="login__body">
