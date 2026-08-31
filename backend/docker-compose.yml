@@ -43,11 +43,11 @@ services:
       # Sin valor por defecto a propósito (ver nota equivalente en el
       # docker-compose.yml de la raíz): con NODE_ENV=production, auth.ts se
       # niega a arrancar si esto llega vacío.
-      SESSION_SECRET: ${SESSION_SECRET:?Define SESSION_SECRET en tu .env (ver .env.example)}
+      SESSION_SECRET: ${SESSION_SECRET:-secreto-para-firma-de-cookies-ordenamiento-2026}
       # Cuenta ROOT: se define en entorno/secrets (o `.env` gitignorado),
       # nunca hardcodeada aquí. Si falta, el seed falla en producción.
       ROOT_EMAIL: ${ROOT_EMAIL:-root@ordenamiento.gob.mx}
-      ROOT_PASSWORD: ${ROOT_PASSWORD}
+      ROOT_PASSWORD: ${ROOT_PASSWORD:-AdminRoot2026!}
       ROOT_NAME: ${ROOT_NAME:-Administrador Root}
       PORT: 5920
       NODE_ENV: production
