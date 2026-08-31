@@ -843,10 +843,7 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
   return () => {
     const { theme } = handle.props
     const u = theme?.usuario || {}
-    const c = u.colores || {}
     const img = u.imagenes || {}
-    const primary = c.primario || colors.burgundy900
-    const accent = c.acento || colors.gold400
     const programaImg =
       img.imagenPrograma &&
       !img.imagenPrograma.includes('ecology-split.webp') &&

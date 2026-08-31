@@ -193,7 +193,7 @@ export async function getCustomizations(): Promise<ThemeConfig> {
         merged.usuario.imagenes.imagenPrograma = '/ordena/assets/img/vector/vector_2.webp'
       }
       if (Array.isArray(merged.usuario.imagenes.heroImagenes)) {
-        merged.usuario.imagenes.heroImagenes = merged.usuario.imagenes.heroImagenes.map((src) =>
+        merged.usuario.imagenes.heroImagenes = merged.usuario.imagenes.heroImagenes.map((src: string) =>
           src.includes('ecology-split.webp') ? '/ordena/assets/img/hero/hero.webp' : src,
         )
       }
