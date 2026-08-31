@@ -32,6 +32,7 @@ function getTransporter() {
     host: SMTP_HOST,
     port: SMTP_PORT,
     secure: SMTP_PORT === 465,
+    requireTLS: true,
   }
   if (SMTP_USER && SMTP_PASS) {
     options.auth = { user: SMTP_USER, pass: SMTP_PASS }
@@ -299,7 +300,7 @@ function renderPlantillaBase({
                   : ''
               }
               ${contenidoHtml}
-              ${pieExtra ? `<div style="margin-top:20px;">${pieExtra}</div>` : ''}
+              ${pieExtra ? `<div style="margin-top:20px;">${escapeHtml(pieExtra)}</div>` : ''}
             </div>
 
             <!-- Footer -->

@@ -112,9 +112,12 @@ export async function fetchJsonOr<T>(
   if (!response.ok) return fallback
   try {
     const data = (await response.json()) as T
-    // Si el backend devuelve `{}` o un shape incompleto, devolvemos el fallback
-    // en vez de dejar un `undefined` que revienta el render.
-    return data ?? fallback
+    // Si el backend devuelve `{}` o un shape incompleto, devolvemos el fallback.
+    // Un proxy, versión desalineada o error silencioso pueden dejar {} truthy.
+    if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
+      return fallback
+    }
+    return data
   } catch {
     return fallback
   }

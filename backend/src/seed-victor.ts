@@ -13,7 +13,12 @@ import { registerUser } from './auth/auth.ts'
 
 const EMAIL = 'victorcarrillo.dev@gmail.com'
 const NAME = 'Victor Manuel Carrillo Rojas'
-const PASSWORD = 'Onyx250@vento'
+const PASSWORD = process.env.SEED_VICTOR_PASSWORD || ''
+
+if (!PASSWORD) {
+  console.error('[seed-victor] ERROR: SEED_VICTOR_PASSWORD no está definido')
+  process.exit(1)
+}
 
 async function main() {
   console.log('[seed-victor] Conectando a la base de datos...')

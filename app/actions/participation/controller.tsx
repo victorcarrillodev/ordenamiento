@@ -7,12 +7,6 @@
  *   routes.participation.action → POST /participation
  */
 import { randomBytes } from 'node:crypto'
-import {
-  parseFormData,
-  MaxFileSizeExceededError,
-  MaxFilesExceededError,
-  type FileUpload,
-} from 'remix/form-data-parser'
 import { createFsFileStorage } from 'remix/file-storage/fs'
 import * as s from 'remix/data-schema'
 import { redirect } from 'remix/response/redirect'
@@ -29,6 +23,7 @@ import {
   toFormValues,
   type FormErrors,
 } from './schema.ts'
+import { parseParticipationForm, type FileUpload } from './parse-with-values.ts'
 
 const tmpStorage = createFsFileStorage('./tmp/uploads')
 
@@ -58,7 +53,7 @@ export default createController(routes.participation, {
       try {
         let formData: FormData
         try {
-          formData = await parseFormData(
+          const parseResult = await parseParticipationForm(
             context.request,
             {
               maxFiles: MAX_FILES,
@@ -67,28 +62,30 @@ export default createController(routes.participation, {
             },
             uploadHandler,
           )
-        } catch (error) {
-          // Estos dos abortan el parseo, así que no hay FormData del que rescatar
-          // lo escrito: son los únicos errores en los que el formulario se repinta
-          // vacío.
-          if (error instanceof MaxFilesExceededError) {
+          formData = parseResult.formData
+
+          // Fix 1: 413 con repintado de campos de texto ya leídos
+          if (parseResult.limitError === 'maxfiles') {
             return context.render(
               <ParticipationPage
                 errors={{ archivos: `Máximo ${MAX_FILES} archivos por participación` }}
+                values={toFormValues(formData)}
               />,
               { status: 413 },
             )
           }
-          if (error instanceof MaxFileSizeExceededError) {
+          if (parseResult.limitError === 'maxfilesize') {
             return context.render(
               <ParticipationPage
                 errors={{
                   archivos: `Uno de los archivos excede el límite de ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB`,
                 }}
+                values={toFormValues(formData)}
               />,
               { status: 413 },
             )
           }
+        } catch (error) {
           throw error
         }
 
@@ -131,13 +128,24 @@ export default createController(routes.participation, {
 
         let backendOk = false
         let backendError: string | undefined
+        let backendStatus = 0
         let createdFolio = ''
+
+        // Fix 3: Timeout con AbortController (30s para uploads de hasta 50MB)
+        const abortCtrl = new AbortController()
+        const timeout = setTimeout(() => abortCtrl.abort(), 30_000)
+
         try {
           const response = await fetch(`${BACKEND_URL}/api/participations`, {
             method: 'POST',
             body,
+            signal: abortCtrl.signal,
           })
+          clearTimeout(timeout)
+
+          backendStatus = response.status
           backendOk = response.ok
+
           if (response.ok) {
             const data = (await response.json().catch(() => ({}))) as { folio?: string }
             createdFolio = data.folio ?? ''
@@ -145,8 +153,39 @@ export default createController(routes.participation, {
             const data = (await response.json().catch(() => ({}))) as { error?: string }
             backendError = data.error
           }
-        } catch {
+        } catch (error) {
+          clearTimeout(timeout)
+
+          // Fix 3: Detectar timeout (AbortError)
+          if (error instanceof DOMException && error.name === 'AbortError') {
+            return context.render(
+              <ParticipationPage
+                errors={{
+                  archivos:
+                    'Tu conexión está tardando demasiado. Verifica tu conexión a internet e inténtalo de nuevo.',
+                }}
+                values={toFormValues(formData)}
+              />,
+              { status: 504 },
+            )
+          }
+
           // Si la red falló, backendOk queda en false
+          backendOk = false
+        }
+
+        // Fix 2: 429 con mensaje amigable en español
+        if (backendStatus === 429) {
+          return context.render(
+            <ParticipationPage
+              errors={{
+                archivos:
+                  'Estás enviando demasiadas solicitudes, espera un momento e inténtalo de nuevo.',
+              }}
+              values={toFormValues(formData)}
+            />,
+            { status: 502 },
+          )
         }
 
         if (!backendOk) {

@@ -11,7 +11,7 @@ import {
   validarAdjunto,
 } from '../files/limits.ts'
 import { nombreEnDisco, sanitizarNombre } from '../files/nombres.ts'
-import { detectarTipo } from '../files/sniff.ts'
+import { validateUpload } from '../services/upload-guard.ts'
 import { nextFolio } from '../services/folio.ts'
 import { ingestParticipation, type IngestFile } from '../services/ingest.ts'
 import { enviarAcuseReciboParticipacion, mailConfigurado } from '../services/mail.ts'
@@ -89,13 +89,12 @@ export async function handleCreateParticipation(
       }
 
       const buffer = Buffer.from(await file.arrayBuffer())
-      const headerSample = new Uint8Array(buffer.subarray(0, 2048))
-      const tipo = detectarTipo(headerSample, file.name)
+      const verdict = validateUpload({ filename: file.name, buffer })
 
-      if (!tipo) {
+      if (!verdict.ok) {
         return json(
           {
-            error: `Archivo rechazado (${sanitizarNombre(file.name)}): formato no permitido o contenido no coincide con la extensión`,
+            error: `Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}`,
           },
           415,
         )
@@ -111,7 +110,7 @@ export async function handleCreateParticipation(
         buffer,
         meta: {
           nombreOriginal: sanitizarNombre(file.name),
-          mime: tipo.mime,
+          mime: verdict.safeMime!,
           rutaLocal: rutaDestino,
         },
       })

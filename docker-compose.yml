@@ -46,7 +46,7 @@ services:
       start_period: 5s
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/ordenamiento
-      SESSION_SECRET: ${SESSION_SECRET:-ordenamiento-secret-key-change-in-production}
+      SESSION_SECRET: ${SESSION_SECRET}
       ROOT_EMAIL: ${ROOT_EMAIL:-root@ordenamiento.gob.mx}
       ROOT_PASSWORD: ${ROOT_PASSWORD:-}
       ROOT_NAME: ${ROOT_NAME:-Administrador Root}

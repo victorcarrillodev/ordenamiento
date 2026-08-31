@@ -12,9 +12,11 @@ import {
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
+import * as s from 'remix/data-schema'
 import { backendFetch, requireAdminUser } from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
 import { MAX_FILE_BYTES, MAX_FILE_MB } from '../../utils/uploads.ts'
+import { adminSchema, toAdminFormErrors } from './schema.ts'
 import { NuevaPage, type NuevaValues } from './nueva-page.tsx'
 
 /** La captura física adjunta un solo expediente escaneado, a diferencia del formulario ciudadano. */
@@ -111,6 +113,20 @@ export default createController(adminRoutes.participacionNueva, {
       for (const nombre of CAMPOS_DEL_FORMULARIO) {
         const valor = campo(nombre)
         if (valor) values[nombre] = valor
+      }
+
+      // Validar contra schema antes de enviar al backend
+      const parsed = s.parseSafe(adminSchema, formData)
+      if (!parsed.success) {
+        const errors = toAdminFormErrors(parsed.issues)
+        return context.render(
+          <NuevaPage
+            user={user}
+            error={Object.values(errors)[0] ?? 'Revisa los campos marcados'}
+            values={values}
+          />,
+          { status: 422 },
+        )
       }
 
       const body = new FormData()

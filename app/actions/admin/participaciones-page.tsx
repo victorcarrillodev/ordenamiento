@@ -49,13 +49,41 @@ function fmtSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+/**
+ * Ventana de páginas a mostrar: las dos extremas siempre, el rango alrededor de
+ * la página actual y "…" para los huecos (nunca más de 7 enlaces).
+ */
+function paginasVisibles(page: number, totalPages: number): Array<number | '…'> {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1)
+  }
+  const resultado: Array<number | '…'> = [1]
+  const inicio = Math.max(2, page - 1)
+  const fin = Math.min(totalPages - 1, page + 1)
+  if (inicio > 2) resultado.push('…')
+  for (let i = inicio; i <= fin; i++) resultado.push(i)
+  if (fin < totalPages - 1) resultado.push('…')
+  resultado.push(totalPages)
+  return resultado
+}
+
 export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
   return () => {
-    const { user, origen, items, etapa } = handle.props
+    const { user, origen, items, etapa, page, limit, total } = handle.props
     const titulo =
       origen === 'fisica'
         ? 'Gestión de participaciones físicas'
         : 'Gestión de participaciones digitales'
+
+    const totalPages = Math.max(1, Math.ceil(total / limit))
+    const desde = total === 0 ? 0 : (page - 1) * limit + 1
+    const hasta = Math.min(total, page * limit)
+
+    // El enlace conserva los filtros activos (origen/etapa) junto a la página.
+    const paginaHref = (p: number) =>
+      `${adminRoutes.participaciones.href()}?origen=${origen}` +
+      (etapa ? `&etapa=${encodeURIComponent(etapa)}` : '') +
+      `&limit=${limit}&page=${p}`
 
     return (
       <AdminLayout user={user} active="participaciones" title={titulo}>
@@ -177,6 +205,54 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
               </tbody>
             </table>
           </div>
+
+          {total > 0 ? (
+            <div class="paginacion">
+              <span class="paginacion__meta">
+                Mostrando {desde}–{hasta} de {total} registros
+              </span>
+              {totalPages > 1 ? (
+                <nav class="paginacion__nav" aria-label="Paginación">
+                  {page > 1 ? (
+                    <a class="paginacion__link" href={paginaHref(page - 1)}>
+                      ← Anterior
+                    </a>
+                  ) : (
+                    <span class="paginacion__link paginacion__link--disabled" aria-hidden="true">
+                      ← Anterior
+                    </span>
+                  )}
+                  {paginasVisibles(page, totalPages).map((p, i) =>
+                    p === '…' ? (
+                      <span key={`e${i}`} class="paginacion__ellipsis" aria-hidden="true">
+                        …
+                      </span>
+                    ) : (
+                      <a
+                        key={p}
+                        class={
+                          'paginacion__link' + (p === page ? ' paginacion__link--activo' : '')
+                        }
+                        href={paginaHref(p)}
+                        aria-current={p === page ? 'page' : undefined}
+                      >
+                        {p}
+                      </a>
+                    ),
+                  )}
+                  {page < totalPages ? (
+                    <a class="paginacion__link" href={paginaHref(page + 1)}>
+                      Siguiente →
+                    </a>
+                  ) : (
+                    <span class="paginacion__link paginacion__link--disabled" aria-hidden="true">
+                      Siguiente →
+                    </span>
+                  )}
+                </nav>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </AdminLayout>
     )

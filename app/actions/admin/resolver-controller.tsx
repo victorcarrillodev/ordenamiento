@@ -30,6 +30,11 @@ export default createController(adminRoutes.participacionResolver, {
         return redirect(`${base}?dictamen=estado`)
       }
 
+      const motivo = String(formData.get('motivo') ?? '').trim()
+      if (!motivo) {
+        return redirect(`${base}?dictamen=motivo`)
+      }
+
       const response = await backendFetch(
         context.request,
         `/api/participations/${context.params.id}/resolucion`,
@@ -38,7 +43,7 @@ export default createController(adminRoutes.participacionResolver, {
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             estado,
-            motivo: String(formData.get('motivo') ?? ''),
+            motivo,
             direccion: String(formData.get('direccion') ?? ''),
             cita: String(formData.get('cita') ?? ''),
             notificar: formData.get('notificar') === '1',
