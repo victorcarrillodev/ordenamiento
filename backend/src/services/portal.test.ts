@@ -127,4 +127,41 @@ describe('portal · rutas públicas no requieren auth', () => {
     expect(res.status).toBe(400)
     fnSpy.mockRestore()
   })
+
+  it('GET /api/poel/sesiones sin auth → 200 (público)', async () => {
+    const fnSpy = spyOn(pool as { sql: typeof pool.sql }, 'sql').mockImplementation((() => Promise.resolve([])) as never)
+    const res = await handleRequest(new Request('http://localhost/api/poel/sesiones'))
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { sesiones: unknown[] }
+    expect(Array.isArray(body.sesiones)).toBe(true)
+    fnSpy.mockRestore()
+  })
+
+  it('GET /api/poel/sesiones shape público sin campos sensibles', async () => {
+    const fila = {
+      id: '00000000-0000-0000-0000-000000000001',
+      categoria: 'Talleres Sectoriales',
+      orden: 1,
+      titulo: 'Sesión pública',
+      descripcion: 'desc',
+      fecha: '2026-01-15',
+      ubicacion: 'Sala A',
+      latitud: '20.6',
+      longitud: '-103.3',
+    }
+    const fnSpy = spyOn(pool as { sql: typeof pool.sql }, 'sql').mockImplementation((() => Promise.resolve([fila])) as never)
+    const res = await handleRequest(new Request('http://localhost/api/poel/sesiones'))
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { sesiones: Record<string, unknown>[] }
+    expect(body.sesiones).toHaveLength(1)
+    const keys = Object.keys(body.sesiones[0]).sort()
+    expect(keys).toEqual(
+      ['categoria', 'descripcion', 'fecha', 'id', 'latitud', 'longitud', 'orden', 'titulo', 'ubicacion'].sort(),
+    )
+    // Campos sensibles no deben aparecer
+    expect(body.sesiones[0]).not.toHaveProperty('imagen_ruta')
+    expect(body.sesiones[0]).not.toHaveProperty('activo')
+    expect(body.sesiones[0]).not.toHaveProperty('imagen_mime')
+    fnSpy.mockRestore()
+  })
 })

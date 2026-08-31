@@ -43,3 +43,11 @@ export async function deleteReunion(id: string): Promise<boolean> {
   `
   return rows.length > 0
 }
+
+export async function getProximaReunion(): Promise<Reunion | null> {
+  const rows = await sql<Reunion[]>`
+    SELECT id::text AS id, titulo, fecha::text AS fecha, hora_inicio, hora_fin
+    FROM reuniones WHERE fecha >= CURRENT_DATE ORDER BY fecha ASC, id ASC LIMIT 1
+  `
+  return rows[0] ?? null
+}

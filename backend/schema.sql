@@ -18,6 +18,11 @@ CREATE TABLE IF NOT EXISTS users (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Avatar de perfil (subido desde Mi Cuenta)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_ruta   TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_nombre TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_mime   TEXT NOT NULL DEFAULT '';
+
 -- ---------------------------------------------------------------------------
 -- Participaciones (física y digital son la MISMA entidad; origen distinto)
 -- ---------------------------------------------------------------------------
@@ -198,6 +203,35 @@ ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS latitud  TEXT NOT NULL DEFAUL
 ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS longitud TEXT NOT NULL DEFAULT '';
 
 ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
+-- Archivos de la sesión: varios por sesión y de cualquier tipo permitido. Las
+-- columnas `imagen_*` de arriba solo admitían UNA imagen; el sitio público
+-- necesita separar "Documentos de la sesión" de "Imágenes de la sesión", así
+-- que cada archivo lleva su `tipo` y se clasifica al subirlo por su extensión.
+CREATE TABLE IF NOT EXISTS poel_archivos (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  sesion_id       UUID NOT NULL REFERENCES poel_sesiones(id) ON DELETE CASCADE,
+  tipo            TEXT NOT NULL DEFAULT 'documento'
+                  CHECK (tipo IN ('imagen','documento')),
+  nombre_original TEXT NOT NULL,
+  mime            TEXT NOT NULL,
+  size            BIGINT NOT NULL DEFAULT 0,
+  ruta_local      TEXT NOT NULL,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_poel_archivos_sesion ON poel_archivos (sesion_id);
+
+-- Traslada la imagen única que ya estuviera guardada. Idempotente: el NOT
+-- EXISTS evita duplicarla si el schema se aplica varias veces.
+INSERT INTO poel_archivos (sesion_id, tipo, nombre_original, mime, ruta_local)
+SELECT s.id, 'imagen', s.imagen_nombre, s.imagen_mime, s.imagen_ruta
+FROM poel_sesiones s
+WHERE s.imagen_ruta <> ''
+  AND NOT EXISTS (
+    SELECT 1 FROM poel_archivos a
+    WHERE a.sesion_id = s.id AND a.ruta_local = s.imagen_ruta
+  );
 
 -- ---------------------------------------------------------------------------
 -- Personalización Visual y Marca (Site Customizations & Theming)

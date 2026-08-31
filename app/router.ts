@@ -19,6 +19,7 @@ import personalizacionController from './actions/admin/personalizacion-controlle
 import portalActividadesController from './actions/admin/portal-actividades-controller.tsx'
 import portalDocumentosController from './actions/admin/portal-documentos-controller.tsx'
 import portalIndicadoresController from './actions/admin/portal-indicadores-controller.tsx'
+import cuentaController from './actions/admin/cuenta-controller.tsx'
 import { render } from './middleware/render.tsx'
 import { adminRoutes, routes } from './routes.ts'
 
@@ -97,4 +98,5 @@ router.map(adminRoutes.personalizacion, personalizacionController)
 router.map(adminRoutes.actividades, portalActividadesController)
 router.map(adminRoutes.documentos, portalDocumentosController)
 router.map(adminRoutes.indicadores, portalIndicadoresController)
+router.map(adminRoutes.cuenta, cuentaController)
 router.map(adminRoutes, adminController)

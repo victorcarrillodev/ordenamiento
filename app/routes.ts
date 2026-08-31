@@ -13,6 +13,7 @@ export const routes = route({
   participation: form(`${basePath}/participation`),
   poetdum: {
     show: get(`${basePath}/poetdum`),
+    sesionImagen: get(`${basePath}/poetdum/sesiones/:id/imagen`),
     actividades: {
       show: get(`${basePath}/poetdum/actividades`),
       // Proxy de la foto servida por el backend (el navegador no accede al
@@ -50,10 +51,12 @@ export const adminRoutes = route({
   avisos: form(`${basePath}/admin/avisos`),
   poel: form(`${basePath}/admin/poel`),
   poelImagen: get(`${basePath}/admin/poel/:id/imagen`),
+  poelArchivo: get(`${basePath}/admin/poel/archivos/:aid`),
   actividades: form(`${basePath}/admin/actividades`),
   documentos: form(`${basePath}/admin/documentos`),
   indicadores: form(`${basePath}/admin/indicadores`),
   estadisticas: get(`${basePath}/admin/estadisticas`),
-  cuenta: get(`${basePath}/admin/cuenta`),
+  cuenta: form(`${basePath}/admin/cuenta`),
+  cuentaAvatar: get(`${basePath}/admin/cuenta/avatar`),
   personalizacion: form(`${basePath}/admin/personalizacion`),
 })

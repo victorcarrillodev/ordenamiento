@@ -34,15 +34,25 @@ import {
   type Etapa,
   type Origen,
 } from './services/participations.ts'
-import { createReunion, deleteReunion, listReuniones } from './services/reuniones.ts'
+import {
+  createReunion,
+  deleteReunion,
+  getProximaReunion,
+  listReuniones,
+} from './services/reuniones.ts'
 import { listAvisos, createAviso, deleteAviso } from './services/avisos.ts'
 import {
   listPoel,
+  listPoelPublicas,
   createPoelSesion,
   deletePoelSesion,
   updatePoelSesion,
   setPoelImagen,
   getPoelImagen,
+  listPoelArchivos,
+  addPoelArchivo,
+  getPoelArchivo,
+  deletePoelArchivo,
   isCategoriaPoel,
 } from './services/poel.ts'
 import { subirArchivosDesdeForm } from './services/upload.ts'
@@ -650,6 +660,96 @@ export async function handleRequest(request: Request): Promise<Response> {
     })
   }
 
+  // ── Mi cuenta — avatar (auth) ANTES de /api/users exacto para que no colisione ──
+  if (method === 'GET' && pathname === '/api/users/me/avatar') {
+    const authError = requireAuth()
+    if (authError) return authError
+    const { getUserAvatar } = await import('./services/users.ts')
+    const img = await getUserAvatar(user!.id)
+    if (!img) return json({ error: 'Sin avatar' }, 404)
+    const ruta = isAbsolute(img.ruta) ? img.ruta : join(UPLOAD_DIR, img.ruta)
+    if (!ruta.startsWith(UPLOAD_DIR) && !ruta.startsWith(BRANDING_DIR)) {
+      return json({ error: 'Acceso a archivo no autorizado' }, 403)
+    }
+    let file: Buffer
+    try {
+      file = await readFile(ruta)
+    } catch {
+      return json({ error: 'Archivo en disco no disponible' }, 404)
+    }
+    const ext = getExtension(img.nombre)
+    return new Response(new Uint8Array(file), {
+      headers: {
+        'content-type': canonicalMimeFor(ext) ?? 'application/octet-stream',
+        'content-disposition': contentDispositionHeader('inline', img.nombre),
+        'x-content-type-options': 'nosniff',
+        'content-security-policy': "default-src 'none'; frame-ancestors 'self'",
+      },
+    })
+  }
+
+  if (method === 'POST' && pathname === '/api/users/me/avatar') {
+    const authError = requireAuth()
+    if (authError) return authError
+    let escritos: string[] = []
+    try {
+      // Validación 5MB inline antes de validateUpload (validarAdjunto usa 50MB por defecto)
+      const form = await request.formData()
+      const raw = form.get('avatar') as unknown as File | null
+      if (!(raw instanceof File) || raw.size === 0) {
+        return json({ error: 'No se recibió ninguna imagen' }, 400)
+      }
+      if (raw.size > 5 * 1024 * 1024) {
+        return json({ error: 'Archivo demasiado grande (máx 5 MB)' }, 413)
+      }
+      const buf = Buffer.from(await raw.arrayBuffer())
+      const verdict = validateUpload({ filename: String(raw.name), buffer: buf })
+      if (!verdict.ok) {
+        return json(
+          { error: `Archivo rechazado (${sanitizarNombre(String(raw.name))}): ${verdict.reason}` },
+          415,
+        )
+      }
+      if (!isImageExtension(getExtension(String(raw.name)))) {
+        return json({ error: 'El archivo debe ser una imagen (JPG, PNG, WEBP o GIF)' }, 415)
+      }
+      // Escribir a disco (reusando helpers de nombres)
+      const { mkdir, writeFile } = await import('node:fs/promises')
+      await mkdir(UPLOAD_DIR, { recursive: true })
+      const disco = nombreEnDisco(String(raw.name))
+      const ruta = join(UPLOAD_DIR, disco)
+      await writeFile(ruta, buf)
+      escritos = [ruta]
+      const archivo = {
+        nombreOriginal: sanitizarNombre(String(raw.name)),
+        mime: verdict.safeMime!,
+        size: raw.size,
+        rutaLocal: ruta,
+      }
+      const { setUserAvatar } = await import('./services/users.ts')
+      const saved = await setUserAvatar(user!.id, archivo)
+      if (!saved) {
+        await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
+        return json({ error: 'No encontrado' }, 404)
+      }
+      return json({ ok: true, avatar_ruta: saved.avatar_ruta })
+    } catch (e) {
+      await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
+      const status = (e as { status?: number }).status
+      if (status) return json({ error: (e as Error).message }, status)
+      throw e
+    }
+  }
+
+  if (method === 'GET' && pathname === '/api/users/me') {
+    const authError = requireAuth()
+    if (authError) return authError
+    const { getUserProfile } = await import('./services/users.ts')
+    const profile = await getUserProfile(user!.id)
+    if (!profile) return json({ error: 'No encontrado' }, 404)
+    return json({ user: profile })
+  }
+
   // ── Usuarios (solo root/admin) ────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/users') {
     const authError = requireAdmin()
@@ -694,7 +794,24 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (method === 'GET' && pathname === '/api/stats') {
     const authError = requireAdmin()
     if (authError) return authError
-    const [users, digital, fisica, estados, fuente, genero, tematica] = await Promise.all([
+    const [
+      users,
+      digital,
+      fisica,
+      estados,
+      fuente,
+      genero,
+      tematica,
+      cntActividades,
+      cntDocumentos,
+      cntIndicadores,
+      cntPoel,
+      cntReuniones,
+      cntAvisos,
+      partMes,
+      proxima,
+      ultAvisos,
+    ] = await Promise.all([
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM users`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM participations WHERE origen = 'digital'`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM participations WHERE origen = 'fisica'`,
@@ -710,6 +827,17 @@ export async function handleRequest(request: Request): Promise<Response> {
       sql<{ k: string; n: string }[]>`
         SELECT tematica AS k, count(*)::text AS n FROM participations GROUP BY tematica ORDER BY count(*) DESC
       `,
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM actividades`,
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM documentos`,
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM indicadores`,
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM poel_sesiones`,
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM reuniones`,
+      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM avisos`,
+      sql<{ mes: string; n: string }[]>`
+        SELECT to_char(date_trunc('month', created_at),'YYYY-MM') AS mes, count(*)::text AS n FROM participations GROUP BY 1 ORDER BY 1 ASC
+      `,
+      getProximaReunion(),
+      listAvisos().then((a) => a.slice(0, 5)),
     ])
     const tu: Array<[string, number]> = fuente.filter((r) => r.k).map((r) => [r.k, Number(r.n)])
     const tg: Array<[string, number]> = genero.filter((r) => r.k).map((r) => [r.k, Number(r.n)])
@@ -722,6 +850,17 @@ export async function handleRequest(request: Request): Promise<Response> {
       fuente: tu,
       genero: tg,
       tematica: tt,
+      contenido: {
+        actividades: Number(cntActividades[0].n),
+        documentos: Number(cntDocumentos[0].n),
+        indicadores: Number(cntIndicadores[0].n),
+        poelSesiones: Number(cntPoel[0].n),
+        reuniones: Number(cntReuniones[0].n),
+        avisos: Number(cntAvisos[0].n),
+      },
+      participacionesPorMes: partMes.map((r) => ({ mes: r.mes, total: Number(r.n) })),
+      proximaReunion: proxima,
+      ultimosAvisos: ultAvisos,
     })
   }
 
@@ -753,6 +892,11 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (err) return err
     if (!(await deleteAviso(avisoDeleteMatch.id))) return json({ error: 'No encontrado' }, 404)
     return json({ ok: true })
+  }
+
+  // ── Sesiones POEL públicas (sin auth, solo activas, sin campos sensibles) ──
+  if (method === 'GET' && pathname === '/api/poel/sesiones') {
+    return json({ sesiones: await listPoelPublicas() })
   }
 
   // ── Sesiones POEL (solo admin) ─────────────────────────────────────
@@ -834,6 +978,100 @@ export async function handleRequest(request: Request): Promise<Response> {
 
   // Subir la imagen de una sesión (multipart). Reutiliza el mismo guard de
   // archivos que los adjuntos ciudadanos: límites, magic bytes y nombre saneado.
+  // ── Archivos de una sesión POEL ────────────────────────────────────
+  // Acepta cualquier tipo permitido por el guard, no solo imágenes: la
+  // sesión necesita colgar tanto fotos como actas, minutas o convocatorias.
+  const poelArchivosGet = method === 'GET' ? matchPath(pathname, '/api/poel/:id/archivos') : null
+  if (poelArchivosGet) {
+    const err = requireUuidParam(poelArchivosGet.id)
+    if (err) return err
+    return json({ archivos: await listPoelArchivos(poelArchivosGet.id) })
+  }
+
+  const poelArchivoPost = method === 'POST' ? matchPath(pathname, '/api/poel/:id/archivos') : null
+  if (poelArchivoPost) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(poelArchivoPost.id)
+    if (err) return err
+
+    let escritos: string[] = []
+    try {
+      const subida = await subirArchivosDesdeForm(request, ['archivo'])
+      escritos = subida.escritos
+      if (subida.archivos.length === 0) return json({ error: 'No se recibió ningún archivo' }, 400)
+
+      const guardados = []
+      for (const archivo of subida.archivos) {
+        // El tipo sale de la extensión, no de lo que declare el cliente: es
+        // lo que separa "Imágenes" de "Documentos" en el sitio público.
+        const tipo = isImageExtension(getExtension(archivo.nombreOriginal)) ? 'imagen' : 'documento'
+        const fila = await addPoelArchivo(poelArchivoPost.id, tipo, archivo)
+        if (!fila) {
+          await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
+          return json({ error: 'No encontrado' }, 404)
+        }
+        guardados.push(fila)
+      }
+      return json({ ok: true, archivos: guardados }, 201)
+    } catch (e) {
+      await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
+      const status = (e as { status?: number }).status
+      if (status) return json({ error: (e as Error).message }, status)
+      throw e
+    }
+  }
+
+  // Servir un archivo. Público como la imagen: son actas y fotos de sesiones,
+  // contenido institucional sin datos personales.
+  const poelArchivoGet = method === 'GET' ? matchPath(pathname, '/api/poel/archivos/:aid') : null
+  if (poelArchivoGet) {
+    const err = requireUuidParam(poelArchivoGet.aid)
+    if (err) return err
+    const arch = await getPoelArchivo(poelArchivoGet.aid)
+    if (!arch) return json({ error: 'No encontrado' }, 404)
+
+    const ruta = isAbsolute(arch.ruta) ? arch.ruta : join(UPLOAD_DIR, arch.ruta)
+    if (!ruta.startsWith(UPLOAD_DIR)) {
+      return json({ error: 'Acceso a archivo no autorizado' }, 403)
+    }
+    let file: Buffer
+    try {
+      file = await readFile(ruta)
+    } catch {
+      return json({ error: 'Archivo en disco no disponible' }, 404)
+    }
+    const ext = getExtension(arch.nombre)
+    const descarga = url.searchParams.get('download') === '1'
+    // Solo se muestran en línea los formatos inertes; el resto se descarga.
+    const modo = descarga || !shouldServeInline(ext) ? 'attachment' : 'inline'
+    return new Response(new Uint8Array(file), {
+      headers: {
+        'content-type': canonicalMimeFor(ext) ?? 'application/octet-stream',
+        'content-disposition': contentDispositionHeader(modo, arch.nombre),
+        'x-content-type-options': 'nosniff',
+        'content-security-policy': "default-src 'none'; frame-ancestors 'self'",
+      },
+    })
+  }
+
+  const poelArchivoDelete =
+    method === 'DELETE' ? matchPath(pathname, '/api/poel/archivos/:aid') : null
+  if (poelArchivoDelete) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const err = requireUuidParam(poelArchivoDelete.aid)
+    if (err) return err
+
+    const ruta = await deletePoelArchivo(poelArchivoDelete.aid)
+    if (!ruta) return json({ error: 'No encontrado' }, 404)
+    // El registro ya no está; si el fichero no se puede borrar no se falla la
+    // petición, solo quedaría un huérfano en disco.
+    const abs = isAbsolute(ruta) ? ruta : join(UPLOAD_DIR, ruta)
+    if (abs.startsWith(UPLOAD_DIR)) await rm(abs, { force: true }).catch(() => {})
+    return json({ ok: true })
+  }
+
   const poelImagenPost = method === 'POST' ? matchPath(pathname, '/api/poel/:id/imagen') : null
   if (poelImagenPost) {
     const authError = requireAdmin()

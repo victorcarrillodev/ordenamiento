@@ -2057,3 +2057,89 @@ a.cal__mas:hover {
   margin-top: 4px;
   line-height: 1.4;
 }
+/* Archivos de la sesión: galería para imágenes, lista para documentos. */
+.poel-archivos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border: 1px dashed var(--a-border);
+  border-radius: 10px;
+  align-self: start;
+}
+.poel-galeria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+.poel-galeria__item {
+  margin: 0;
+  position: relative;
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+.poel-galeria__item img {
+  width: 100%;
+  height: 72px;
+  object-fit: cover;
+  display: block;
+}
+.poel-galeria__item figcaption {
+  font-size: 10px;
+  padding: 4px 6px;
+  color: var(--a-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* El botón de quitar flota sobre la miniatura para no robar altura. */
+.poel-galeria__item .poel-inline {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+}
+.poel-docs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.poel-docs li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  background: #fff;
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.poel-docs a {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--a-text);
+  text-decoration: none;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.poel-docs a:hover {
+  color: var(--a-blue);
+  text-decoration: underline;
+}
+.poel-docs__peso {
+  font-size: 10.5px;
+  color: var(--a-muted);
+  white-space: nowrap;
+}
+.poel-archivos input[type='file'] {
+  font-size: 11.5px;
+}

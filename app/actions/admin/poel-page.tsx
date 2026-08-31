@@ -21,11 +21,21 @@ interface Sesion {
   imagen_nombre: string
 }
 
-export type PoelFeedback = 'creada' | 'editada' | 'imagen' | 'estado' | 'error'
+export interface ArchivoPoel {
+  id: string
+  tipo: 'imagen' | 'documento'
+  nombre_original: string
+  mime: string
+  size: number
+}
+
+export type PoelFeedback = 'creada' | 'editada' | 'imagen' | 'archivo' | 'estado' | 'error'
 
 export interface PoelPageProps {
   user: { name: string; role: string }
   sesiones: Sesion[]
+  /** Archivos por sesión, indexados por id de sesión. */
+  archivos: Record<string, ArchivoPoel[]>
   feedback?: PoelFeedback
   error?: string
 }
@@ -34,6 +44,7 @@ const AVISOS: Record<PoelFeedback, { clase: string; texto: string }> = {
   creada: { clase: 'form-ok', texto: '✓ Sesión añadida.' },
   editada: { clase: 'form-ok', texto: '✓ Cambios guardados.' },
   imagen: { clase: 'form-ok', texto: '✓ Imagen actualizada.' },
+  archivo: { clase: 'form-ok', texto: '✓ Archivos actualizados.' },
   estado: { clase: 'form-ok', texto: '✓ Visibilidad actualizada.' },
   error: {
     clase: 'form-error',
@@ -45,6 +56,13 @@ const AVISOS: Record<PoelFeedback, { clase: string; texto: string }> = {
 function esEnlace(v: string): boolean {
   const t = v.trim()
   return t.startsWith('http://') || t.startsWith('https://')
+}
+
+function fmtPeso(bytes: number): string {
+  if (!bytes) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 function fmtFecha(v: string | null): string {
@@ -126,10 +144,12 @@ function CamposUbicacion(
 }
 
 /** Ficha de una sesión: resumen siempre visible y edición desplegable. */
-function FichaSesion(handle: Handle<{ s: Sesion }>) {
+function FichaSesion(handle: Handle<{ s: Sesion; archivos: ArchivoPoel[] }>) {
   return () => {
-    const { s } = handle.props
+    const { s, archivos } = handle.props
     const tieneMapa = Boolean(s.latitud && s.longitud)
+    const imagenes = archivos.filter((a) => a.tipo === 'imagen')
+    const documentos = archivos.filter((a) => a.tipo === 'documento')
 
     return (
       <article class={'poel-card' + (s.activo ? '' : ' poel-card--inactiva')}>
@@ -205,9 +225,11 @@ function FichaSesion(handle: Handle<{ s: Sesion }>) {
               <Icon name="mdi:open-in-new" size={14} /> Ver en el mapa
             </a>
           ) : null}
-          {s.imagen_nombre ? (
+          {archivos.length > 0 ? (
             <span>
-              <Icon name="mdi:image-outline" size={14} /> {s.imagen_nombre}
+              <Icon name="mdi:paperclip" size={14} /> {imagenes.length} imagen
+              {imagenes.length === 1 ? '' : 'es'} · {documentos.length} documento
+              {documentos.length === 1 ? '' : 's'}
             </span>
           ) : null}
         </div>
@@ -278,43 +300,93 @@ function FichaSesion(handle: Handle<{ s: Sesion }>) {
               </Button>
             </form>
 
-            {/* La imagen va en su propio formulario porque necesita multipart. */}
-            <form method="post" enctype="multipart/form-data" class="poel-imagen">
-              <input type="hidden" name="intent" value="imagen" />
-              <input type="hidden" name="id" value={s.id} />
-
+            {/* Los archivos van en su propio formulario porque necesita multipart. */}
+            <div class="poel-archivos">
               <h4 class="poel-imagen__titulo">
-                <Icon name="mdi:image-plus-outline" /> Imagen de la sesión
+                <Icon name="mdi:paperclip" /> Archivos de la sesión
               </h4>
 
-              {s.imagen_nombre ? (
-                <img
-                  class="poel-imagen__vista"
-                  src={adminRoutes.poelImagen.href({ id: s.id })}
-                  alt={`Imagen de ${s.titulo}`}
-                />
-              ) : (
+              {imagenes.length > 0 ? (
+                <div class="poel-galeria">
+                  {imagenes.map((a) => (
+                    <figure key={a.id} class="poel-galeria__item">
+                      <img
+                        src={adminRoutes.poelArchivo.href({ aid: a.id })}
+                        alt={a.nombre_original}
+                      />
+                      <figcaption title={a.nombre_original}>{a.nombre_original}</figcaption>
+                      <form method="post" class="poel-inline">
+                        <input type="hidden" name="intent" value="archivo_eliminar" />
+                        <input type="hidden" name="aid" value={a.id} />
+                        <Button
+                          buttonType="submit"
+                          variant="danger"
+                          size="sm"
+                          title={`Quitar ${a.nombre_original}`}
+                        >
+                          <Icon name="mdi:close" size={12} />
+                        </Button>
+                      </form>
+                    </figure>
+                  ))}
+                </div>
+              ) : null}
+
+              {documentos.length > 0 ? (
+                <ul class="poel-docs">
+                  {documentos.map((a) => (
+                    <li key={a.id}>
+                      <a
+                        href={`${adminRoutes.poelArchivo.href({ aid: a.id })}?download=1`}
+                        title={`Descargar ${a.nombre_original}`}
+                      >
+                        <Icon name="mdi:file-document-outline" size={14} /> {a.nombre_original}
+                      </a>
+                      <span class="poel-docs__peso">{fmtPeso(a.size)}</span>
+                      <form method="post" class="poel-inline">
+                        <input type="hidden" name="intent" value="archivo_eliminar" />
+                        <input type="hidden" name="aid" value={a.id} />
+                        <Button
+                          buttonType="submit"
+                          variant="danger"
+                          size="sm"
+                          title={`Quitar ${a.nombre_original}`}
+                        >
+                          <Icon name="mdi:close" size={12} />
+                        </Button>
+                      </form>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+
+              {archivos.length === 0 ? (
                 <p class="empty" style="margin:0 0 10px;">
-                  Esta sesión todavía no tiene imagen.
+                  Esta sesión todavía no tiene archivos.
                 </p>
-              )}
+              ) : null}
 
-              <div class="form-field">
-                <label for={`imagen_${s.id}`}>Subir desde tu computadora</label>
-                <input
-                  id={`imagen_${s.id}`}
-                  name="imagen"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  required
-                />
-                <small class="breadcrumb">JPG, PNG, WEBP o GIF. Sustituye a la anterior.</small>
-              </div>
+              <form method="post" enctype="multipart/form-data">
+                <input type="hidden" name="intent" value="archivo" />
+                <input type="hidden" name="id" value={s.id} />
 
-              <Button buttonType="submit" variant="primary">
-                Subir imagen
-              </Button>
-            </form>
+                <div class="form-field">
+                  <label for={`archivo_${s.id}`}>Subir desde tu computadora</label>
+                  {/* Sin `accept`: se admite lo mismo que en los adjuntos
+                      ciudadanos y el backend valida por firma binaria. Las
+                      imágenes se separan de los documentos por su extensión. */}
+                  <input id={`archivo_${s.id}`} name="archivo" type="file" multiple required />
+                  <small class="breadcrumb">
+                    Imágenes (JPG, PNG, WEBP, GIF) y documentos (PDF, Word, Excel…). Puedes
+                    seleccionar varios a la vez; se añaden a los que ya hay.
+                  </small>
+                </div>
+
+                <Button buttonType="submit" variant="primary">
+                  Subir archivos
+                </Button>
+              </form>
+            </div>
           </div>
         </details>
       </article>
@@ -324,7 +396,7 @@ function FichaSesion(handle: Handle<{ s: Sesion }>) {
 
 export function PoelPage(handle: Handle<PoelPageProps>) {
   return () => {
-    const { user, sesiones, feedback, error } = handle.props
+    const { user, sesiones, archivos, feedback, error } = handle.props
     const visibles = sesiones.filter((s) => s.activo).length
 
     return (
@@ -409,7 +481,7 @@ export function PoelPage(handle: Handle<PoelPageProps>) {
           ) : (
             <div class="poel-lista">
               {sesiones.map((s) => (
-                <FichaSesion key={s.id} s={s} />
+                <FichaSesion key={s.id} s={s} archivos={archivos[s.id] ?? []} />
               ))}
             </div>
           )}

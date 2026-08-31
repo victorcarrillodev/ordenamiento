@@ -18,6 +18,14 @@ interface SesionAvisos {
   ubicacion?: string
 }
 
+export interface ArchivoPoel {
+  id: string
+  tipo: 'imagen' | 'documento'
+  nombre_original: string
+  mime: string
+  size: number
+}
+
 interface SesionPoel {
   id: string
   categoria: string
@@ -135,12 +143,27 @@ export const poelController = createController(adminRoutes.poel, {
       if (user instanceof Response) return user
 
       const fb = new URL(context.request.url).searchParams.get('ok')
-      const feedback = (['creada', 'editada', 'imagen', 'estado', 'error'] as const).find(
-        (v) => v === fb,
+      const feedback = (
+        ['creada', 'editada', 'imagen', 'archivo', 'estado', 'error'] as const
+      ).find((v) => v === fb)
+
+      const sesiones = await poelDe(context.request)
+      // Los archivos se piden por sesión. Son pocas (una decena a lo sumo),
+      // así que en paralelo sale más simple que añadir un endpoint agregado.
+      const listas = await Promise.all(
+        sesiones.map((s) =>
+          fetchJsonOr<{ archivos: ArchivoPoel[] }>(context.request, `/api/poel/${s.id}/archivos`, {
+            archivos: [],
+          }),
+        ),
       )
+      const archivos: Record<string, ArchivoPoel[]> = {}
+      sesiones.forEach((s, i) => {
+        archivos[s.id] = listas[i].archivos ?? []
+      })
 
       return context.render(
-        <PoelPage user={user} sesiones={await poelDe(context.request)} feedback={feedback} />,
+        <PoelPage user={user} sesiones={sesiones} archivos={archivos} feedback={feedback} />,
       )
     },
 
@@ -168,6 +191,33 @@ export const poelController = createController(adminRoutes.poel, {
           body: JSON.stringify({ activo: texto('activo') === '1' }),
         })
         return volver(res.ok ? 'estado' : 'error')
+      }
+
+      if (intent === 'archivo') {
+        const entradas = formData
+          .getAll('archivo')
+          .filter((f): f is File => f instanceof File && f.size > 0)
+        if (entradas.length === 0) return volver('error')
+
+        let ok = true
+        for (const archivo of entradas) {
+          const cuerpo = new FormData()
+          cuerpo.append('archivo', archivo, archivo.name)
+          const res = await backendFetch(context.request, `/api/poel/${id}/archivos`, {
+            method: 'POST',
+            body: cuerpo,
+          })
+          if (!res.ok) ok = false
+        }
+        return volver(ok ? 'archivo' : 'error')
+      }
+
+      if (intent === 'archivo_eliminar') {
+        const aid = String(formData.get('aid') ?? '')
+        const res = await backendFetch(context.request, `/api/poel/archivos/${aid}`, {
+          method: 'DELETE',
+        })
+        return volver(res.ok ? 'archivo' : 'error')
       }
 
       if (intent === 'imagen') {

@@ -1,42 +1,13 @@
 import { createController } from 'remix/router'
 
-import { backendFetch, fetchJsonOr, getPublicTheme } from '../../../backend.ts'
+import { backendFetch } from '../../../backend.ts'
 import { routes } from '../../../routes.ts'
-import { DocumentosPage } from './show-page.tsx'
-
-interface Documento {
-  id: string
-  titulo: string
-  tipo: string
-  etapa: string
-  fecha: string
-  descripcion: string
-}
+import { hubRedirect } from '../hub-redirect.ts'
 
 export default createController(routes.poetdum.documentos, {
   actions: {
     async show(context) {
-      const theme = await getPublicTheme(context.request)
-      const url = new URL(context.request.url)
-      const tipo = url.searchParams.get('tipo') ?? ''
-      const etapa = url.searchParams.get('etapa') ?? ''
-      const qp = new URLSearchParams()
-      if (tipo) qp.set('tipo', tipo)
-      if (etapa) qp.set('etapa', etapa)
-      const qs = qp.toString() ? `?${qp.toString()}` : ''
-      const data = await fetchJsonOr<{ documentos: Documento[] }>(
-        context.request,
-        `/api/documentos${qs}`,
-        { documentos: [] },
-      )
-      return context.render(
-        <DocumentosPage
-          theme={theme}
-          documentos={data.documentos ?? []}
-          tipo={tipo}
-          etapa={etapa}
-        />,
-      )
+      return hubRedirect('documentos', context.request, ['tipo', 'etapa'])
     },
     /**
      * Proxy de descarga del archivo del documento: mismo patrón que el proxy

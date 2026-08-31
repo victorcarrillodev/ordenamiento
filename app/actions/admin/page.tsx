@@ -11,6 +11,20 @@ export interface AdminPageProps {
     digitales: number
     fisicas: number
     resultado: Array<{ estado: string; total: number }>
+    fuente?: Array<[string, number]>
+    genero?: Array<[string, number]>
+    tematica?: Array<[string, number]>
+    contenido?: {
+      actividades: number
+      documentos: number
+      indicadores: number
+      poelSesiones: number
+      reuniones: number
+      avisos: number
+    }
+    participacionesPorMes?: Array<{ mes: string; total: number }>
+    proximaReunion?: { id: string; titulo: string; fecha: string; hora_inicio: string; hora_fin: string } | null
+    ultimosAvisos?: Array<{ id: string; titulo: string; descripcion: string; activo: boolean; fecha?: string }>
   }
   users: Array<{ id: string; email: string; name: string; role: string; created_at: string }>
   ahora: { dia: string; saludo?: string; fecha: string; hora: string }
@@ -20,6 +34,59 @@ const COLORS: Record<string, string> = {
   Procedente: '#16a34a',
   'En proceso': '#d97706',
   'No procedente': '#dc2626',
+}
+
+const BAR_COLORS = ['#6cb2d6', '#1f4d6e', '#a06cd5', '#e8a54f', '#4fb286', '#d67f7f', '#9aa5b1']
+
+/** Barras verticales SVG server-side (espejo estadisticas-page.tsx). */
+function Bars(handle: Handle<{ data?: Array<{ mes: string; total: number }> }>) {
+  return () => {
+    const data = handle.props.data ?? []
+    if (data.length === 0) return <p class="empty">Sin datos</p>
+    const max = Math.max(1, ...data.map((d) => d.total))
+    const w = 20
+    const gap = 18
+    const baseH = 120
+    const dark = data.length <= 1
+    return (
+      <svg
+        width={data.length * (w + gap)}
+        height={baseH + 40}
+        viewBox={`0 0 ${data.length * (w + gap)} ${baseH + 40}`}
+      >
+        {data.map((d, i) => {
+          const h = (d.total / max) * baseH
+          const x = i * (w + gap) + 6
+          const y = baseH - h + 10
+          return (
+            <g key={d.mes}>
+              <rect
+                x={x}
+                y={y}
+                width={w}
+                height={h}
+                rx="3"
+                fill={dark ? '#2b3445' : BAR_COLORS[i % BAR_COLORS.length]}
+              />
+              <text x={x + w / 2} y={y - 4} text-anchor="middle" font-size="10" fill="#2b3445">
+                {d.total}
+              </text>
+              <text
+                x={x + w / 2}
+                y={baseH + 24}
+                text-anchor="middle"
+                font-size="10"
+                fill="#7a8699"
+                transform={`rotate(-20 ${x + w / 2} ${baseH + 24})`}
+              >
+                {d.mes}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+    )
+  }
 }
 
 /** Dona SVG server-rendered: cero JavaScript de cliente. */
@@ -202,11 +269,121 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
           `}
         />
 
+        {/* Segunda fila: 6 cards de contenido */}
+        <div class="cards" style="margin-top:16px;">
+          <a href={adminRoutes.actividades.index.href()} class="card card--link" title="Actividades">
+            <div class="card__icon blue">📅</div>
+            <div>
+              <div class="card__label">Actividades <span>| Total</span></div>
+              <div class="card__value">{stats.contenido?.actividades ?? 0}</div>
+              <div class="card__action green">Ver →</div>
+            </div>
+          </a>
+          <a href={adminRoutes.documentos.index.href()} class="card card--link" title="Documentos">
+            <div class="card__icon violet">📄</div>
+            <div>
+              <div class="card__label">Documentos <span>| Total</span></div>
+              <div class="card__value">{stats.contenido?.documentos ?? 0}</div>
+              <div class="card__action green">Ver →</div>
+            </div>
+          </a>
+          <a href={adminRoutes.indicadores.index.href()} class="card card--link" title="Indicadores">
+            <div class="card__icon green">📊</div>
+            <div>
+              <div class="card__label">Indicadores <span>| Total</span></div>
+              <div class="card__value">{stats.contenido?.indicadores ?? 0}</div>
+              <div class="card__action green">Ver →</div>
+            </div>
+          </a>
+          <a href={adminRoutes.poel.index.href()} class="card card--link" title="Sesiones POEL">
+            <div class="card__icon amber">🗂️</div>
+            <div>
+              <div class="card__label">Sesiones POEL <span>| Total</span></div>
+              <div class="card__value">{stats.contenido?.poelSesiones ?? 0}</div>
+              <div class="card__action green">Ver →</div>
+            </div>
+          </a>
+          <a href={adminRoutes.reuniones.index.href()} class="card card--link" title="Reuniones">
+            <div class="card__icon blue">🗓️</div>
+            <div>
+              <div class="card__label">Reuniones <span>| Total</span></div>
+              <div class="card__value">{stats.contenido?.reuniones ?? 0}</div>
+              <div class="card__action green">Ver →</div>
+            </div>
+          </a>
+          <a href={adminRoutes.avisos.index.href()} class="card card--link" title="Avisos">
+            <div class="card__icon violet">🔔</div>
+            <div>
+              <div class="card__label">Avisos <span>| Total</span></div>
+              <div class="card__value">{stats.contenido?.avisos ?? 0}</div>
+              <div class="card__action green">Ver →</div>
+            </div>
+          </a>
+        </div>
+
         <div class="panel">
           <h2 class="panel__title" style="text-align: center;">
             Resultado
           </h2>
           <Donut data={stats.resultado} />
+        </div>
+
+        <div class="panel">
+          <h2 class="panel__title">Participaciones por mes</h2>
+          <Bars data={stats.participacionesPorMes ?? []} />
+        </div>
+
+        <div class="panel">
+          <h2 class="panel__title">Próxima reunión</h2>
+          {(stats.proximaReunion ?? null) ? (
+            <div>
+              <p>
+                <strong>{(stats.proximaReunion as { titulo: string }).titulo}</strong>
+              </p>
+              <p>
+                {(() => {
+                  const f = (stats.proximaReunion as { fecha: string }).fecha
+                  try {
+                    // Evita TZ shifts: parsea YYYY-MM-DD como UTC
+                    const parts = f.split('-')
+                    if (parts.length === 3) {
+                      const d = new Date(Date.UTC(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])))
+                      return d.toLocaleDateString('es-MX', { timeZone: 'UTC' })
+                    }
+                    return new Date(f).toLocaleDateString('es-MX', { timeZone: 'UTC' })
+                  } catch {
+                    return f
+                  }
+                })()}
+                {(stats.proximaReunion as { hora_inicio: string; hora_fin: string }).hora_inicio
+                  ? ` · ${(stats.proximaReunion as { hora_inicio: string }).hora_inicio} - ${(stats.proximaReunion as { hora_fin: string }).hora_fin}`
+                  : ''}
+              </p>
+            </div>
+          ) : (
+            <p class="empty">Sin reuniones próximas</p>
+          )}
+        </div>
+
+        <div class="panel">
+          <h2 class="panel__title">Últimos avisos</h2>
+          {(stats.ultimosAvisos ?? []).length === 0 ? (
+            <p class="empty">Sin avisos</p>
+          ) : (
+            <ul style="list-style:none; padding:0; margin:0;">
+              {(stats.ultimosAvisos ?? []).map((a) => (
+                <li key={a.id} style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #e2e8f0;">
+                  <span>
+                    <strong>{a.titulo}</strong>{' '}
+                    <span class="breadcrumb" style="margin:0;">
+                      {a.fecha ? new Date(a.fecha).toLocaleDateString('es-MX') : ''}
+                    </span>
+                  </span>
+                  {a.activo ? <span class="badge procedente">Activo</span> : null}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div class="panel">

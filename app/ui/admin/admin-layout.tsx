@@ -57,7 +57,7 @@ const MENU: Array<{
   },
   {
     key: 'cuenta',
-    href: adminRoutes.cuenta.href(),
+    href: adminRoutes.cuenta.index.href(),
     label: 'Mi cuenta',
     icon: <Icon name="mdi:account" />,
   },
