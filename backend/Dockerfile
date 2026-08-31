@@ -6,7 +6,11 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 
 # Copiar código
+# `migrations/` no es opcional: sin él, una base creada con el esquema viejo
+# (PKs BIGINT) nunca se convierte y schema.sql revienta al crear cualquier
+# tabla que la referencie con una FK UUID.
 COPY schema.sql ./
+COPY migrations ./migrations
 COPY src ./src
 
 # Directorio de uploads con permisos para bun
