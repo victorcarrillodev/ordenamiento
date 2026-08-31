@@ -14,6 +14,9 @@ export interface AdminLayoutProps {
     | 'avisos'
     | 'reuniones'
     | 'poel'
+    | 'actividades'
+    | 'documentos'
+    | 'indicadores'
     | 'participaciones-digital'
     | 'participaciones-fisica'
     | 'estadisticas-digital'
@@ -54,7 +57,7 @@ const MENU: Array<{
   },
   {
     key: 'cuenta',
-    href: adminRoutes.cuenta.href(),
+    href: adminRoutes.cuenta.index.href(),
     label: 'Mi cuenta',
     icon: <Icon name="mdi:account" />,
   },
@@ -75,6 +78,24 @@ const MENU: Array<{
     href: adminRoutes.poel.index.href(),
     label: 'POEL – Sesiones',
     icon: <Icon name="mdi:book-open-page-variant-outline" />,
+  },
+  {
+    key: 'actividades',
+    href: adminRoutes.actividades.index.href(),
+    label: 'Actividades',
+    icon: <Icon name="mdi:calendar-check-outline" />,
+  },
+  {
+    key: 'documentos',
+    href: adminRoutes.documentos.index.href(),
+    label: 'Documentos',
+    icon: <Icon name="mdi:file-document-outline" />,
+  },
+  {
+    key: 'indicadores',
+    href: adminRoutes.indicadores.index.href(),
+    label: 'Indicadores',
+    icon: <Icon name="mdi:chart-line" />,
   },
   {
     key: 'participaciones-digital',
