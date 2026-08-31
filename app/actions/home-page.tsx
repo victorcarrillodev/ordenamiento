@@ -517,7 +517,7 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
     const p2 =
       txt.queEsParrafo2 ||
       'Aquí encontrarás documentos técnicos, calendarios de actividades, las fases del proceso y un mecanismo directo para registrar tus observaciones y participar en la toma de decisiones sobre el territorio que habitamos.'
-    const ecoImg = img.imagenEcologia || `${basePath}/images/ecology-split.jpg`
+    const ecoImg = img.imagenEcologia || `${basePath}/assets/img/ecology-split.webp`
 
     return (
       <section
@@ -843,7 +843,7 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
     const img = u.imagenes || {}
     const primary = c.primario || colors.burgundy900
     const accent = c.acento || colors.gold400
-    const programaImg = img.imagenPrograma || `${basePath}/images/ecology-split.jpg`
+    const programaImg = img.imagenPrograma || `${basePath}/assets/img/ecology-split.webp`
 
     const preguntas = [
       '¿Qué zonas deben conservarse o protegerse por su valor ambiental?',

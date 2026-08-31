@@ -119,7 +119,7 @@ const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 export function AdminLayout(handle: Handle<AdminLayoutProps>) {
   return () => {
     const { children, user, active, title, theme } = handle.props
-    const customLogo = theme?.adminLogo || `${basePath}/images/tlaquepaque.png`
+    const customLogo = theme?.adminLogo || `${basePath}/assets/img/logo/logo-200x60.webp`
     const customTitle = theme?.adminTitulo || 'ADMINISTRADOR BITÁCORA AMBIENTAL'
     // Estos valores vienen del formulario de Personalización y se insertan
     // como texto crudo de <style> (sin escapar), así que se validan primero:

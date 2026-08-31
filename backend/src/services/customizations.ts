@@ -85,13 +85,13 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
       heroGradienteFin: 'rgba(15,17,23,0.75)',
     },
     imagenes: {
-      logoNavbar: 'https://ordenamiento.tlaquepaque.gob.mx/img/image5.png',
+      logoNavbar: '/ordena/assets/img/logo/logo-200x60.webp',
       logoFooter: '',
       heroImagenes: [
         'https://imgs.search.brave.com/8f1SgJygGgIrQH2BcZXess4TRcaOtm3FXVfawE9VxRE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTEy/NTUyNzc3Mi9lcy9m/b3RvL3RsYXF1ZXBh/cXVlLmpwZz9zPTYx/Mng2MTImdz0wJms9/MjAmYz1VU3FwdjNw/OEJxbG9LY0JaY01q/YUdPNkpQWW1Va0xl/N1FYUGx5YVREM1Zz/PQ',
       ],
-      imagenEcologia: '/ordena/images/ecology-split.jpg',
-      imagenPrograma: '/ordena/images/ecology-split.jpg',
+      imagenEcologia: '/ordena/assets/img/ecology-split.webp',
+      imagenPrograma: '/ordena/assets/img/ecology-split.webp',
     },
     iconos: {
       cardPrograma: '🏛️',
@@ -143,7 +143,7 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
     topbarTexto: '#ffffff',
     colorAcento: '#2563eb',
     adminBg: '#f4f6fb',
-    adminLogo: '/ordena/images/tlaquepaque.png',
+    adminLogo: '/ordena/assets/img/logo/logo-200x60.webp',
     adminTitulo: 'ADMINISTRADOR BITÁCORA AMBIENTAL',
   },
 }
