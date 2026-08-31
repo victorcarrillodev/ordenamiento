@@ -10,7 +10,7 @@ const DEFAULT_DESTINO = 'app/data/colonias.json'
 const DESTINO_NAVEGADOR = 'public/colonias-data.js'
 
 /**
- * Descarga y procesa el catálogo SEPOMEX para generar el artefacto de build en JSON.
+ * Descarga y procesa el catálogo SEPOMEX para generar el artefacto de build en JSON y el bundle de cliente.
  */
 export async function construirCatalogo({
   origen = process.env.CATALOGO_ORIGEN ?? DEFAULT_ORIGEN,

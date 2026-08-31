@@ -4,7 +4,7 @@ import { createRequestListener } from 'remix/node-fetch-server'
 import { router } from './app/router.ts'
 import { cargarCatalogo } from './app/data/colonias.ts'
 
-// Servidor principal de Ordenamiento Territorial – San Pedro Tlaquepaque
+// Servidor principal de Ordenamiento Territorial – San Pedro Tlaquepaque (Jalisco)
 
 // Precalentar catálogo SEPOMEX de Jalisco en memoria RAM en el arranque
 cargarCatalogo()
