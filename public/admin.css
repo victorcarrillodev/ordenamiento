@@ -782,6 +782,21 @@ tr:hover td {
   box-sizing: border-box;
 }
 
+.office-viewer {
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+  background: #fbfcfe;
+  padding: 8px;
+  margin-top: 8px;
+}
+.office-viewer iframe {
+  border: none;
+  background: #fff;
+}
+.office-viewer p {
+  margin: 6px 0 0;
+}
+
 /* Formulario crear participación */
 .form-grid {
   display: grid;
