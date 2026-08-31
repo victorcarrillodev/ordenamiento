@@ -14,6 +14,8 @@ import { ParticipationForm } from './participation-form.tsx'
 import type { FormErrors, FormValues } from './schema.ts'
 import { SuccessDialog } from './success-dialog.tsx'
 
+const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
+
 export type { FormErrors }
 
 export interface ParticipationPageProps {
@@ -37,7 +39,7 @@ const imagePanelStyle = css({
   position: 'relative',
   flex: '1 1 40%',
   minHeight: '100vh',
-  backgroundImage: 'url(/images/hero-landscape.jpg)',
+  backgroundImage: `url(${basePath}/assets/img/ecology-split.webp)`,
   backgroundSize: 'cover',
   backgroundPosition: 'center 35%',
   '@media (max-width: 860px)': { display: 'none' },

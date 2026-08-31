@@ -31,6 +31,7 @@ export function Document(handle: Handle<DocumentProps>) {
           <meta charSet="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <meta name="description" content={description} />
+          <link rel="icon" type="image/x-icon" href={`${basePath}/assets/img/icon/favicon.ico`} />
           <link rel="icon" type="image/svg+xml" href={`${basePath}/favicon.svg`} />
           {/* Montserrat – primary institutional typeface */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />

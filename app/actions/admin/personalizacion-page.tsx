@@ -468,7 +468,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                         type="text"
                         name="hero_imagenes[]"
                         value={imgUrl}
-                        placeholder="https://ejemplo.com/foto.jpg o /ordena/images/foto.jpg"
+                        placeholder="https://ejemplo.com/foto.jpg o /ordena/assets/img/foto.webp"
                         style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
                       />
                       {idx > 0 && (
