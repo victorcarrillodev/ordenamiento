@@ -86,10 +86,10 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
     },
     imagenes: {
       logoNavbar: '/ordena/assets/img/logo/logo-200x60.webp',
-      logoFooter: '',
-      heroImagenes: ['/ordena/assets/img/ecology-split.webp'],
-      imagenEcologia: '/ordena/assets/img/ecology-split.webp',
-      imagenPrograma: '/ordena/assets/img/ecology-split.webp',
+      logoFooter: '/ordena/assets/img/logo/logo-200x60.webp',
+      heroImagenes: ['/ordena/assets/img/hero/hero.webp'],
+      imagenEcologia: '/ordena/assets/img/vector/vector_1.webp',
+      imagenPrograma: '/ordena/assets/img/vector/vector_2.webp',
     },
     iconos: {
       cardPrograma: '🏛️',
@@ -184,7 +184,21 @@ export async function getCustomizations(): Promise<ThemeConfig> {
     if (rows.length === 0 || !rows[0].config || Object.keys(rows[0].config).length === 0) {
       return DEFAULT_THEME_CONFIG
     }
-    return deepMerge(DEFAULT_THEME_CONFIG, rows[0].config)
+    const merged = deepMerge(DEFAULT_THEME_CONFIG, rows[0].config)
+    if (merged.usuario?.imagenes) {
+      if (!merged.usuario.imagenes.imagenEcologia || merged.usuario.imagenes.imagenEcologia.includes('ecology-split.webp')) {
+        merged.usuario.imagenes.imagenEcologia = '/ordena/assets/img/vector/vector_1.webp'
+      }
+      if (!merged.usuario.imagenes.imagenPrograma || merged.usuario.imagenes.imagenPrograma.includes('ecology-split.webp') || merged.usuario.imagenes.imagenPrograma.includes('vector_1.webp')) {
+        merged.usuario.imagenes.imagenPrograma = '/ordena/assets/img/vector/vector_2.webp'
+      }
+      if (Array.isArray(merged.usuario.imagenes.heroImagenes)) {
+        merged.usuario.imagenes.heroImagenes = merged.usuario.imagenes.heroImagenes.map((src) =>
+          src.includes('ecology-split.webp') ? '/ordena/assets/img/hero/hero.webp' : src,
+        )
+      }
+    }
+    return merged
   } catch (err) {
     // M3: el error es visible (logger), pero se mantiene el fallback para que
     // el sitio siga renderizando con el tema por defecto en vez de caer 500.

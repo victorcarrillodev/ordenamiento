@@ -518,7 +518,10 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
     const p2 =
       txt.queEsParrafo2 ||
       'La Bitácora permite conocer y dar seguimiento a la elaboración, actualización, aplicación y evaluación del Programa; consultar los acuerdos, avances, resultados y documentos técnicos generados, así como conocer las actividades relacionadas con la planeación del territorio municipal. También facilita la participación de la ciudadanía, al permitir la presentación de observaciones, propuestas y documentos durante los mecanismos de consulta pública establecidos.'
-    const ecoImg = img.imagenEcologia || `${basePath}/assets/img/ecology-split.webp`
+    const ecoImg =
+      img.imagenEcologia && !img.imagenEcologia.includes('ecology-split.webp')
+        ? img.imagenEcologia
+        : `${basePath}/assets/img/vector/vector_1.webp`
 
     return (
       <section
@@ -844,21 +847,18 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
     const img = u.imagenes || {}
     const primary = c.primario || colors.burgundy900
     const accent = c.acento || colors.gold400
-    const programaImg = img.imagenPrograma || `${basePath}/assets/img/ecology-split.webp`
+    const programaImg =
+      img.imagenPrograma &&
+      !img.imagenPrograma.includes('ecology-split.webp') &&
+      !img.imagenPrograma.includes('vector_1.webp')
+        ? img.imagenPrograma
+        : `${basePath}/assets/img/vector/vector_2.webp`
 
     const preguntas = [
       '¿Qué zonas deben conservarse o protegerse por su valor ambiental?',
-      '¿En qué lugares es adecuado el crecimiento y el desarrollo urbano?',
-      '¿Qué actividades pueden realizarse en las distintas zonas del municipio?',
-      '¿Qué condiciones deben cumplirse para prevenir impactos negativos en el medio ambiente y el entorno urbano?',
-    ]
-
-    const paraQueItems = [
-      'Establecer criterios claros sobre cómo puede utilizarse el territorio.',
-      'Proteger las zonas que requieren conservación y cuidado ambiental.',
-      'Orientar el crecimiento urbano de manera ordenada y sustentable.',
-      'Prevenir conflictos entre actividades y usos del suelo.',
-      'Tomar decisiones mejor informadas sobre el desarrollo futuro del municipio.',
+      '¿Dónde es adecuado el crecimiento y desarrollo urbano del municipio?',
+      '¿Qué tipo de actividades pueden desarrollarse en las distintas zonas del territorio?',
+      '¿En qué condiciones deben realizarse estas actividades para evitar impactos negativos en el ambiente y en el entorno urbano? Una vez aprobado, el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano establece los criterios y lineamientos que orientan el uso, ocupación y aprovechamiento del territorio, así como las reglas que guiarán el desarrollo urbano del municipio.',
     ]
 
     return (
@@ -867,189 +867,131 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
         aria-labelledby="programa-heading"
         mix={css({
           ...sectionPaddingProps,
-          background: `linear-gradient(135deg, ${colors.gray900} 0%, ${primary} 100%)`,
-          position: 'relative',
-          overflow: 'hidden',
+          background: colors.gray50,
         })}
       >
-        {/* Decorative circles */}
-        <div
-          aria-hidden="true"
-          mix={css({
-            position: 'absolute',
-            top: '-120px',
-            right: '-120px',
-            width: '400px',
-            height: '400px',
-            borderRadius: '50%',
-            background: `radial-gradient(circle, rgba(201,162,39,0.15) 0%, transparent 70%)`,
-            pointerEvents: 'none',
-          })}
-        />
-        <div
-          aria-hidden="true"
-          mix={css({
-            position: 'absolute',
-            bottom: '-80px',
-            left: '-80px',
-            width: '300px',
-            height: '300px',
-            borderRadius: '50%',
-            background: `radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)`,
-            pointerEvents: 'none',
-          })}
-        />
-
-        <div mix={css({ ...sectionContainerProps, position: 'relative', zIndex: 1 })}>
-          <span
-            mix={css({ ...eyebrowProps, color: accent, display: 'block', marginBottom: '16px' })}
-          >
-            ¿Qué es el Programa?
-          </span>
-          <h2
-            id="programa-heading"
-            mix={css({
-              ...headingLProps,
-              color: colors.white,
-              margin: '0 0 40px',
-              maxWidth: '820px',
-            })}
-          >
-            ¿Qué es el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano?
-          </h2>
-
+        <div mix={css({ ...sectionContainerProps })}>
+          {/* Tarjeta contenedora blanca redondeada */}
           <div
             mix={css({
-              display: 'grid',
-              gridTemplateColumns: '1.1fr 0.9fr',
-              gap: '64px',
-              alignItems: 'start',
+              background: '#ffffff',
+              borderRadius: '32px',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.04)',
+              border: '1px solid rgba(0, 0, 0, 0.04)',
+              padding: '56px 64px',
               '@media (max-width: 900px)': {
-                gridTemplateColumns: '1fr',
-                gap: '40px',
+                padding: '36px 24px',
               },
             })}
           >
-            {/* Left: descripción + preguntas que resuelve */}
-            <div mix={css({ display: 'flex', flexDirection: 'column', gap: '20px' })}>
-              <p
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '17px',
-                  lineHeight: 1.75,
-                  color: 'rgba(255,255,255,0.78)',
-                  margin: 0,
-                })}
-              >
-                Es un instrumento que permite organizar y planear el territorio del municipio, al
-                establecer qué actividades pueden realizarse en cada zona y en qué condiciones, con
-                el propósito de proteger el medio ambiente y orientar el desarrollo urbano de manera
-                ordenada.
-              </p>
-              <p
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '16px',
-                  lineHeight: 1.75,
-                  color: 'rgba(255,255,255,0.72)',
-                  margin: 0,
-                })}
-              >
-                Para elaborarlo se analizan las características del territorio, sus recursos
-                naturales, la población y las actividades que se desarrollan en él. Con esta
-                información se busca responder preguntas como:
-              </p>
+            {/* Título Centrado */}
+            <h2
+              id="programa-heading"
+              mix={css({
+                fontFamily: FONT_STACK,
+                fontSize: '32px',
+                fontWeight: 800,
+                lineHeight: 1.3,
+                color: '#1e293b',
+                textAlign: 'center',
+                margin: '0 0 40px',
+                width: '100%',
+                '@media (max-width: 768px)': {
+                  fontSize: '24px',
+                  margin: '0 0 28px',
+                },
+              })}
+            >
+              ¿Qué es el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano?
+            </h2>
 
-              <div mix={css({ marginTop: '4px' })}>
-                <CheckBulletList
-                  items={preguntas}
-                  dotColor={accent}
-                  checkColor={colors.gray900}
-                  textColor="rgba(255,255,255,0.85)"
-                  gap="14px"
-                />
+            {/* Grid 2 Columnas: Texto izquierda / Ilustración vector derecha */}
+            <div
+              mix={css({
+                display: 'grid',
+                gridTemplateColumns: '1.4fr 1fr',
+                gap: '48px',
+                alignItems: 'center',
+                '@media (max-width: 900px)': {
+                  gridTemplateColumns: '1fr',
+                  gap: '36px',
+                },
+              })}
+            >
+              {/* Columna Izquierda: Párrafos + Viñetas */}
+              <div mix={css({ display: 'flex', flexDirection: 'column', gap: '20px' })}>
+                <p
+                  mix={css({
+                    fontFamily: FONT_STACK,
+                    fontSize: '15px',
+                    lineHeight: 1.7,
+                    color: '#475569',
+                    margin: 0,
+                  })}
+                >
+                  Es una herramienta que permite organizar el territorio del municipio, definiendo qué
+                  actividades pueden realizarse en cada zona y en qué condiciones, con el objetivo de
+                  proteger el medio ambiente y orientar el desarrollo urbano de manera ordenada.
+                </p>
+                <p
+                  mix={css({
+                    fontFamily: FONT_STACK,
+                    fontSize: '15px',
+                    lineHeight: 1.7,
+                    color: '#475569',
+                    margin: 0,
+                  })}
+                >
+                  Para elaborarlo se analizan las características del territorio, sus recursos
+                  naturales y las actividades que se desarrollan en él, con el propósito de encontrar
+                  un equilibrio entre la protección del medio ambiente y el desarrollo urbano del
+                  municipio. A partir de estos análisis se busca responder preguntas como:
+                </p>
+
+                <ul
+                  mix={css({
+                    margin: '4px 0 0',
+                    paddingLeft: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                  })}
+                >
+                  {preguntas.map((item) => (
+                    <li
+                      key={item}
+                      mix={css({
+                        fontFamily: FONT_STACK,
+                        fontSize: '15px',
+                        lineHeight: 1.7,
+                        color: '#475569',
+                      })}
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
               </div>
 
-              <p
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '15px',
-                  lineHeight: 1.75,
-                  color: 'rgba(255,255,255,0.7)',
-                  margin: 0,
-                })}
-              >
-                Una vez aprobado, el Programa establece los criterios y lineamientos que orientan
-                el uso, la ocupación y el aprovechamiento del territorio, así como las reglas que
-                guían el desarrollo urbano del municipio.
-              </p>
-            </div>
-
-            {/* Right: imagen + ¿Para qué ordenar? */}
-            <div mix={css({ display: 'flex', flexDirection: 'column', gap: '32px' })}>
+              {/* Columna Derecha: Ilustración vectorial integrada */}
               <div
                 mix={css({
-                  position: 'relative',
-                  borderRadius: '16px',
-                  overflow: 'hidden',
-                  aspectRatio: '4/3',
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  width: '100%',
                 })}
               >
                 <img
                   src={programaImg}
-                  alt="Equipo de trabajo planeando el ordenamiento del territorio"
+                  alt="Ilustración del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano"
                   mix={css({
                     width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
+                    maxWidth: '440px',
+                    height: 'auto',
                     display: 'block',
+                    objectFit: 'contain',
                   })}
-                />
-              </div>
-
-              {/* ¿Para qué ordenar el territorio? */}
-              <div
-                mix={css({
-                  background: 'rgba(255,255,255,0.06)',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  padding: '24px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px',
-                })}
-              >
-                <h3
-                  mix={css({
-                    fontFamily: FONT_STACK,
-                    fontSize: '16px',
-                    fontWeight: 700,
-                    color: accent,
-                    margin: 0,
-                  })}
-                >
-                  ¿Para qué ordenar el territorio?
-                </h3>
-                <p
-                  mix={css({
-                    fontFamily: FONT_STACK,
-                    fontSize: '14px',
-                    lineHeight: 1.7,
-                    color: 'rgba(255,255,255,0.72)',
-                    margin: 0,
-                  })}
-                >
-                  Ordenar el territorio permite planear responsablemente cómo se utilizan los
-                  espacios del municipio, procurando que el desarrollo ocurra de manera equilibrada
-                  y sin afectar los recursos naturales. Esto permite:
-                </p>
-                <CheckBulletList
-                  items={paraQueItems}
-                  dotColor={accent}
-                  checkColor={colors.gray900}
-                  textColor="rgba(255,255,255,0.8)"
-                  gap="10px"
                 />
               </div>
             </div>
@@ -1466,7 +1408,7 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
     const footerBg = c.footerFondo || colors.gray950
     const footerText = c.footerTexto || '#ffffff'
     const accent = c.acento || colors.gold400
-    const footerLogo = img.logoFooter || ''
+    const footerLogo = img.logoFooter || `${basePath}/assets/img/logo/logo-200x60.webp`
     const entidad = txt.footerEntidad || 'Municipio de San Pedro Tlaquepaque'
     const desc =
       txt.footerDesc ||
@@ -1511,35 +1453,37 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
                     style="max-height: 44px; max-width: 120px; object-fit: contain;"
                   />
                 ) : (
-                  <div
-                    style={`
-                      width: 40px;
-                      height: 40px;
-                      border-radius: 50%;
-                      background: linear-gradient(135deg, ${accent} 0%, #c9a227 100%);
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      font-size: 12px;
-                      font-weight: 900;
-                      color: #0f1117;
-                      flex-shrink: 0;
-                    `}
-                    aria-hidden="true"
-                  >
-                    SPT
-                  </div>
+                  <>
+                    <div
+                      style={`
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        background: linear-gradient(135deg, ${accent} 0%, #c9a227 100%);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 12px;
+                        font-weight: 900;
+                        color: #0f1117;
+                        flex-shrink: 0;
+                      `}
+                      aria-hidden="true"
+                    >
+                      SPT
+                    </div>
+                    <span
+                      style={`
+                        font-family: ${FONT_STACK};
+                        font-size: 15px;
+                        font-weight: 700;
+                        color: ${footerText};
+                      `}
+                    >
+                      {entidad}
+                    </span>
+                  </>
                 )}
-                <span
-                  style={`
-                    font-family: ${FONT_STACK};
-                    font-size: 15px;
-                    font-weight: 700;
-                    color: ${footerText};
-                  `}
-                >
-                  {entidad}
-                </span>
               </div>
               <p
                 style={`

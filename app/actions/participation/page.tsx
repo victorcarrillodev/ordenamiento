@@ -39,7 +39,7 @@ const imagePanelStyle = css({
   position: 'relative',
   flex: '1 1 40%',
   minHeight: '100vh',
-  backgroundImage: `url(${basePath}/assets/img/ecology-split.webp)`,
+  backgroundImage: `url(${basePath}/assets/img/participacion/participacion.webp)`,
   backgroundSize: 'cover',
   backgroundPosition: 'center 35%',
   '@media (max-width: 860px)': { display: 'none' },

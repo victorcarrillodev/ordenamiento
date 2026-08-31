@@ -68,7 +68,7 @@ export function isSafeImageUrl(value: unknown): value is string {
  * Imagen del hero cuando el panel de Personalización no tiene ninguna cargada.
  * La usan tanto la portada pública como la vista previa del panel.
  */
-export const HERO_IMAGEN_POR_DEFECTO = `${(process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')}/assets/img/ecology-split.webp`
+export const HERO_IMAGEN_POR_DEFECTO = `${(process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')}/assets/img/hero/hero.webp`
 
 // ---------------------------------------------------------------------------
 // Color Palette
