@@ -130,7 +130,7 @@ export function NavBar(handle: Handle<NavBarProps>) {
 
           {/* CTA */}
           <a href={routes.participation.index.href()} id="nav-participar-btn" mix={navCtaStyle}>
-            Subir participación
+            Registra tu participación
           </a>
         </div>
       </nav>
