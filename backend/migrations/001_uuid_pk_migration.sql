@@ -16,7 +16,7 @@
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-BEGIN;
+-- BEGIN; (manejado por sql.begin en migrate.ts)
 
 -- `search_history` se retiró en la auditoría H3 (tabla muerta: ni lecturas ni
 -- escrituras en el código). `schema.sql` ya no la crea; se elimina aquí de las
@@ -206,4 +206,4 @@ BEGIN
   END LOOP;
 END $$;
 
-COMMIT;
+-- COMMIT; (manejado por sql.begin en migrate.ts)

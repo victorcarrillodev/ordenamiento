@@ -1,7 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import { sql } from './pool.ts'
+import { sql, type Db } from './pool.ts'
 
 const SCHEMA_PATH = join(process.cwd(), 'schema.sql')
 const MIGRATIONS_DIR = join(process.cwd(), 'migrations')
@@ -42,8 +42,10 @@ async function runPendingMigrations(): Promise<void> {
   for (const name of files) {
     if (applied.has(name)) continue
     const body = await readFile(join(MIGRATIONS_DIR, name), 'utf8')
-    await sql.unsafe(body)
-    await sql`INSERT INTO schema_migrations (name) VALUES (${name})`
+    await sql.begin(async (tx: Db) => {
+      await tx.unsafe(body)
+      await tx`INSERT INTO schema_migrations (name) VALUES (${name})`
+    })
     console.log(`[db] migración aplicada: ${name}`)
   }
 }
