@@ -14,8 +14,14 @@ export const routes = route({
   poetdum: {
     show: get(`${basePath}/poetdum`),
   },
+<<<<<<< HEAD
   error: get(`${basePath}/error/:code`),
   errorDefault: get(`${basePath}/error`),
+=======
+  test:{
+    show:get(`${basePath}/poetdum`)
+  }
+>>>>>>> 4a4b3d3 (sombras)
 })
 
 /**
