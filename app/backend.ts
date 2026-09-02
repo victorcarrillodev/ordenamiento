@@ -168,7 +168,17 @@ export async function getPublicTheme(request: Request): Promise<ThemeData> {
     const res = await backendFetch(request, '/api/settings/theme')
     if (res.ok) {
       const data = await res.json()
-      themeCache = { data: data.theme ?? null, expires: now + THEME_TTL_MS }
+      const t = data.theme
+      const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
+      if (t?.usuario?.imagenes) {
+        if (!t.usuario.imagenes.imagenEcologia || t.usuario.imagenes.imagenEcologia.includes('ecology-split.webp')) {
+          t.usuario.imagenes.imagenEcologia = `${basePath}/assets/img/vector/vector_1.webp`
+        }
+        if (!t.usuario.imagenes.imagenPrograma || t.usuario.imagenes.imagenPrograma.includes('ecology-split.webp') || t.usuario.imagenes.imagenPrograma.includes('vector_1.webp')) {
+          t.usuario.imagenes.imagenPrograma = `${basePath}/assets/img/vector/vector_2.webp`
+        }
+      }
+      themeCache = { data: t ?? null, expires: now + THEME_TTL_MS }
       return themeCache.data as ThemeData
     }
   } catch (err) {

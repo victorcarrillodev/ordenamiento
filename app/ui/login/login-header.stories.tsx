@@ -10,7 +10,7 @@ const meta: Meta<LoginHeaderProps> = {
   args: {
     title: 'Bitácora Ambiental',
     subtitle: 'Portal de administración',
-    logoSrc: '/images/tlaquepaque.png',
+    logoSrc: '/assets/img/logo/logo-200x60.webp',
     logoAlt: 'Tlaquepaque',
   },
 }

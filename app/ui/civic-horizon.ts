@@ -68,8 +68,7 @@ export function isSafeImageUrl(value: unknown): value is string {
  * Imagen del hero cuando el panel de Personalización no tiene ninguna cargada.
  * La usan tanto la portada pública como la vista previa del panel.
  */
-export const HERO_IMAGEN_POR_DEFECTO =
-  'https://imgs.search.brave.com/8f1SgJygGgIrQH2BcZXess4TRcaOtm3FXVfawE9VxRE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvMTEy/NTUyNzc3Mi9lcy9m/b3RvL3RsYXF1ZXBh/cXVlLmpwZz9zPTYx/Mng2MTImdz0wJms9/MjAmYz1VU3FwdjNw/OEJxbG9LY0JaY01q/YUdPNkpQWW1Va0xl/N1FYUGx5YVREM1Zz/PQ'
+export const HERO_IMAGEN_POR_DEFECTO = `${(process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')}/assets/img/hero/hero.webp`
 
 // ---------------------------------------------------------------------------
 // Color Palette

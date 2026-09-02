@@ -95,6 +95,10 @@ function VistaAdjunto(handle: Handle<{ participacionId: string; adjunto: Adjunto
     const href = adminRoutes.adjunto.href({ id: participacionId, aid: adjunto.id })
     const ext = extensionDe(adjunto.nombre_original)
     const esPdf = ext === 'pdf' || adjunto.mime === 'application/pdf'
+    const esOffice =
+      ['doc', 'docx'].includes(ext) ||
+      adjunto.mime?.startsWith('application/vnd.openxmlformats-officedocument.wordprocessingml') ||
+      adjunto.mime?.startsWith('application/msword')
     const esImagen = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(ext)
 
     if (esImagen) {
@@ -108,22 +112,120 @@ function VistaAdjunto(handle: Handle<{ participacionId: string; adjunto: Adjunto
       )
     }
 
-    if (!esPdf) {
+    if (esPdf) {
       return (
-        <p class="empty">
-          Este adjunto ({adjunto.nombre_original}) no se puede previsualizar en el navegador.
-          Descárgalo para abrirlo.
-        </p>
+        <object class="pdf-frame" type="application/pdf" data={href}>
+          <p class="empty">
+            Tu navegador no puede mostrar el PDF aquí. <a href={`${href}?download=1`}>Descárgalo</a>{' '}
+            para verlo.
+          </p>
+        </object>
+      )
+    }
+
+    if (esOffice) {
+      return (
+        <div class="office-viewer">
+          <iframe
+            class="pdf-frame"
+            src={href}
+            title={adjunto.nombre_original}
+            style="width:100%; height:70vh; border:none;"
+          />
+          <p class="breadcrumb" style="margin-top:8px;">
+            Si no se renderiza, <a href={`${href}?download=1`}>descárgalo</a> y ábrelo con Office.
+          </p>
+        </div>
       )
     }
 
     return (
-      <object class="pdf-frame" type="application/pdf" data={href}>
-        <p class="empty">
-          Tu navegador no puede mostrar el PDF aquí. <a href={`${href}?download=1`}>Descárgalo</a>{' '}
-          para verlo.
-        </p>
-      </object>
+      <p class="empty adjunto__sin-vista">
+        Este archivo no se puede previsualizar en el navegador.{' '}
+        <a href={`${href}?download=1`}>Descárgalo</a> para abrirlo.
+      </p>
+    )
+  }
+}
+
+function iconoDe(nombre: string, mime: string): string {
+  const ext = extensionDe(nombre)
+  if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(ext) || mime?.startsWith('image/'))
+    return '\u{1F5BC}'
+  if (ext === 'pdf' || mime === 'application/pdf') return '\u{1F4D5}'
+  if (['doc', 'docx'].includes(ext)) return '\u{1F4D8}'
+  if (['xls', 'xlsx', 'csv'].includes(ext)) return '\u{1F4D7}'
+  return '\u{1F4C4}'
+}
+
+/**
+ * Panel de adjuntos: cabecera con el conteo, lista de archivos con sus
+ * acciones, vista previa del primero y, al pie, la descarga del acta .docx.
+ * La lista vive fuera de `.panel__head` a propósito: meterla ahí aplastaba el
+ * título y partía las etiquetas de los botones.
+ */
+function PanelAdjuntos(handle: Handle<{ p: Detalle }>) {
+  return () => {
+    const { p } = handle.props
+    const total = p.adjuntos.length
+    const primero = p.adjuntos[0]
+
+    return (
+      <div class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">Adjuntos</h2>
+          <span class="badge en-proceso">
+            {total === 0 ? 'Sin archivos' : total === 1 ? '1 archivo' : `${total} archivos`}
+          </span>
+        </div>
+
+        {total === 0 ? (
+          <p class="empty">Esta participación no tiene documento adjunto.</p>
+        ) : (
+          <>
+            <ul class="adjuntos">
+              {p.adjuntos.map((a) => {
+                const href = adminRoutes.adjunto.href({ id: p.id, aid: a.id })
+                return (
+                  <li key={a.id} class="adjunto">
+                    <span class="adjunto__icono" aria-hidden="true">
+                      {iconoDe(a.nombre_original, a.mime)}
+                    </span>
+                    <span class="adjunto__info">
+                      <span class="adjunto__nombre" title={a.nombre_original}>
+                        {a.nombre_original}
+                      </span>
+                      <span class="adjunto__meta">{fmtSize(a.size)}</span>
+                    </span>
+                    <span class="adjunto__acciones">
+                      <a class="btn btn--white btn--sm" href={href} target="_blank" rel="noopener">
+                        Ver
+                      </a>
+                      <a class="btn btn--green btn--sm" href={`${href}?download=1`}>
+                        Descargar
+                      </a>
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+            {primero ? (
+              <div class="adjunto__vista">
+                <p class="meta-label">
+                  {total > 1 ? `Vista previa de ${primero.nombre_original}` : 'Vista previa'}
+                </p>
+                <VistaAdjunto participacionId={p.id} adjunto={primero} />
+              </div>
+            ) : null}
+          </>
+        )}
+
+        <div class="adjuntos__pie">
+          <a class="btn btn--excel" href={adminRoutes.word.href({ id: p.id })}>
+            ⬇ Descargar datos (.docx)
+          </a>
+        </div>
+      </div>
     )
   }
 }
@@ -175,9 +277,7 @@ function PanelDictamen(handle: Handle<{ p: Detalle }>) {
     return (
       <div class="panel">
         <div class="panel__head">
-          <h2 class="panel__title" style="margin:0;">
-            ⚖ Dictamen y notificación
-          </h2>
+          <h2 class="panel__title">⚖ Dictamen y notificación</h2>
           <span class={'badge ' + (ESTADO_BADGE[p.estado] ?? 'en-proceso')}>{p.estado}</span>
         </div>
 
@@ -280,8 +380,14 @@ function PanelDictamen(handle: Handle<{ p: Detalle }>) {
           </div>
 
           <div class="form-field">
-            <label for="para">Correo del ciudadano</label>
-            <input id="para" name="para" type="email" value={p.correo} placeholder={p.correo} />
+            <label for="dictamen-para">Correo del ciudadano</label>
+            <input
+              id="dictamen-para"
+              name="para"
+              type="email"
+              value={p.correo}
+              placeholder={p.correo}
+            />
             <small class="breadcrumb">
               Se toma el correo con el que se registró. Cámbialo solo si dio uno equivocado.
             </small>
@@ -358,10 +464,10 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
             <div class="detalle-split">
               <div class="panel">
                 <div class="panel__head">
-                  <h2 class="panel__title" style="margin:0;">
-                    Datos de la participación
-                  </h2>
-                  <span class={'badge ' + (ESTADO_BADGE[p.estado] ?? 'en-proceso')}>{p.estado}</span>
+                  <h2 class="panel__title">Datos de la participación</h2>
+                  <span class={'badge ' + (ESTADO_BADGE[p.estado] ?? 'en-proceso')}>
+                    {p.estado}
+                  </span>
                 </div>
                 <div class="detalle-grid">
                   <Campo label="Folio" value={p.folio} />
@@ -384,42 +490,7 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
                 </div>
               </div>
 
-              <div class="panel">
-                <div class="panel__head">
-                  <h2 class="panel__title" style="margin:0;">
-                    Adjuntos
-                  </h2>
-                  {p.adjuntos.map((a) => (
-                    <span key={a.id} style="display:flex; gap:8px; align-items:center;">
-                      <span class="meta-label">
-                        {a.nombre_original} · {fmtSize(a.size)}
-                      </span>
-                      <a
-                        class="btn btn--green"
-                        href={adminRoutes.adjunto.href({ id: p.id, aid: a.id })}
-                        target="_blank"
-                        rel="noopener"
-                      >
-                        👁 Ver
-                      </a>
-                      <a
-                        class="btn btn--excel"
-                        href={`${adminRoutes.adjunto.href({ id: p.id, aid: a.id })}?download=1`}
-                      >
-                        ⬇ Descargar
-                      </a>
-                    </span>
-                  ))}
-                  <a class="btn btn--excel" href={adminRoutes.word.href({ id: p.id })}>
-                    ⬇ Descargar datos (.docx)
-                  </a>
-                </div>
-                {p.adjuntos.length === 0 ? (
-                  <p class="empty">Esta participación no tiene documento adjunto.</p>
-                ) : (
-                  <VistaAdjunto participacionId={p.id} adjunto={p.adjuntos[0]} />
-                )}
-              </div>
+              <PanelAdjuntos p={p} />
             </div>
 
             <PanelDictamen p={p} />
@@ -431,9 +502,9 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
                 class="form-row"
               >
                 <div class="form-field">
-                  <label for="para">Enviar a (correo)</label>
+                  <label for="envio-para">Enviar a (correo)</label>
                   <input
-                    id="para"
+                    id="envio-para"
                     name="para"
                     type="email"
                     placeholder="destinatario@ejemplo.com"

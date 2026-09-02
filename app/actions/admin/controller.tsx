@@ -1,7 +1,7 @@
 /**
- * Admin Controller Â· rutas GET de la BitÃ¡cora Ambiental
+ * Admin Controller · rutas GET de la Bitácora Ambiental
  *   adminRoutes.index     â†’ GET /admin            (vista general)
- *   adminRoutes.exportar  â†’ GET /admin/exportar   (pÃ¡gina o descarga .xlsx)
+ *   adminRoutes.exportar  â†’ GET /admin/exportar   (pígina o descarga .xlsx)
  * La ruta form() de reuniones se mapea por separado (reuniones-controller.tsx).
  */
 import { createController } from 'remix/router'

@@ -123,14 +123,14 @@ function HeroSection(handle: Handle<{ theme?: ThemeData }>) {
       ${colorDelTema(c.heroGradienteFin, 'rgba(15,17,23,0.75)')} 100%
     )`
 
-    const cintillo = txt.heroCintillo || 'Bitácora Ambiental · San Pedro Tlaquepaque'
-    const titulo =
-      txt.heroTitulo || 'Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano'
-    const tituloResaltado = txt.heroTituloResaltado || 'Ecológico Territorial'
+    const cintillo =
+      txt.heroCintillo || 'Bitácora Ambiental y Ordenamiento Territorial · San Pedro Tlaquepaque'
+    const titulo = txt.heroTitulo || 'Bitácora Ambiental y Ordenamiento Territorial'
+    const tituloResaltado = txt.heroTituloResaltado || 'Ordenamiento Territorial'
     const subtitulo =
       txt.heroSubtitulo ||
-      'Un proceso participativo para planificar el territorio de forma sustentable, preservando nuestro patrimonio natural y construyendo el municipio que merecemos.'
-    const btn1Text = txt.heroBtn1 || 'Conoce el programa'
+      'Un espacio público y transparente que reúne información, facilita la participación ciudadana y permite dar seguimiento a la elaboración y aplicación del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.'
+    const btn1Text = txt.heroBtn1 || 'Conoce la Bitácora'
     const btn2Text = txt.heroBtn2 || 'Registra tu participación'
 
     return (
@@ -509,15 +509,19 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
     const txt = u.textos || {}
 
     const primary = c.primario || colors.burgundy900
-    const cintillo = txt.queEsCintillo || '¿Qué es este sitio?'
-    const titulo = txt.queEsTitulo || 'Tu ventana al ordenamiento territorial del municipio'
+    const cintillo = txt.queEsCintillo || '¿QUÉ ES ESTE SITIO?'
+    const titulo =
+      txt.queEsTitulo || 'Conoce la Bitácora Ambiental y de Ordenamiento Territorial'
     const p1 =
       txt.queEsParrafo1 ||
-      'Este portal es la Bitácora Ambiental del Municipio de San Pedro Tlaquepaque — un espacio oficial y transparente donde los ciudadanos, investigadores y funcionarios pueden dar seguimiento al avance del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.'
+      'Este sitio forma parte de la Bitácora Ambiental y de Ordenamiento Territorial del Municipio de San Pedro Tlaquepaque, un espacio público y transparente en el que se registra, organiza y difunde la información relacionada con el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.'
     const p2 =
       txt.queEsParrafo2 ||
-      'Aquí encontrarás documentos técnicos, calendarios de actividades, las fases del proceso y un mecanismo directo para registrar tus observaciones y participar en la toma de decisiones sobre el territorio que habitamos.'
-    const ecoImg = img.imagenEcologia || `${basePath}/images/ecology-split.jpg`
+      'La Bitácora permite conocer y dar seguimiento a la elaboración, actualización, aplicación y evaluación del Programa; consultar los acuerdos, avances, resultados y documentos técnicos generados, así como conocer las actividades relacionadas con la planeación del territorio municipal. También facilita la participación de la ciudadanía, al permitir la presentación de observaciones, propuestas y documentos durante los mecanismos de consulta pública establecidos.'
+    const ecoImg =
+      img.imagenEcologia && !img.imagenEcologia.includes('ecology-split.webp')
+        ? img.imagenEcologia
+        : `${basePath}/assets/img/vector/vector_1.webp`
 
     return (
       <section
@@ -558,10 +562,10 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
             <div mix={css({ marginTop: '8px' })}>
               <CheckBulletList
                 items={[
-                  'Acceso a documentos técnicos oficiales',
-                  'Seguimiento de fases y avances del programa',
-                  'Participación ciudadana directa y simplificada',
-                  'Consulta del calendario de actividades',
+                  'Consulta de documentos técnicos, acuerdos, avances y resultados.',
+                  'Seguimiento a la elaboración, actualización y aplicación del Programa.',
+                  'Acceso al calendario de actividades y mecanismos de consulta pública.',
+                  'Registro de observaciones, propuestas y documentos de la ciudadanía (durante los tiempos oficiales de consulta pública).',
                 ]}
                 dotColor={primary}
                 checkColor="white"
@@ -637,51 +641,51 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
 
     const cards = [
       {
-        id: 'card-programa',
-        icon: ico.cardPrograma || '🏛️',
-        eyebrow: 'Marco normativo',
-        title: txt.card1Titulo || 'Conoce el Programa',
+        id: 'card-elaboracion',
+        icon: ico.cardPrograma || '📋',
+        eyebrow: 'Proceso de elaboración',
+        title: txt.card1Titulo || 'Proceso de Elaboración',
         description:
           txt.card1Desc ||
-          'Explora los fundamentos legales, objetivos y alcances del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano, y entiende por qué es la base para el uso responsable del territorio municipal.',
-        href: '#que-es-el-programa',
-        cta: 'Ver programa',
+          'Consulta las etapas del proceso de elaboración del Programa, su estado de avance, actividades realizadas, productos obtenidos y documentos relacionados.',
+        href: '#proceso',
+        cta: 'Ver proceso',
         accent: primary,
       },
       {
         id: 'card-proceso',
-        icon: ico.cardProceso || '⚙️',
-        eyebrow: 'Metodología',
-        title: txt.card2Titulo || 'Conoce el Proceso',
+        icon: ico.cardProceso || '🗓️',
+        eyebrow: 'Actividades y participación',
+        title: txt.card2Titulo || 'Actividades y Participación',
         description:
           txt.card2Desc ||
-          'Conoce paso a paso las cinco fases del proceso —diagnóstico, formulación, aprobación, ejecución y evaluación— y cómo se articulan para dar seguimiento continuo al ordenamiento territorial.',
-        href: '#proceso',
-        cta: 'Ver fases',
+          'Consulta las actividades próximas y realizadas: talleres, mesas de trabajo, consultas públicas y sesiones técnicas, con sus resultados y documentos.',
+        href: '#actividades',
+        cta: 'Ver actividades',
         accent: secondary,
-      },
-      {
-        id: 'card-calendario',
-        icon: ico.cardCalendario || '📅',
-        eyebrow: 'Agenda de participación',
-        title: txt.card3Titulo || 'Calendario de Actividades',
-        description:
-          txt.card3Desc ||
-          'Consulta las fechas de talleres, mesas de trabajo, consultas públicas y sesiones técnicas, y entérate con anticipación de cada oportunidad para participar.',
-        href: '#calendario',
-        cta: 'Ver calendario',
-        accent: accent,
       },
       {
         id: 'card-documentos',
         icon: ico.cardDocumentos || '📄',
         eyebrow: 'Repositorio técnico',
-        title: txt.card4Titulo || 'Consulta Documentos',
+        title: txt.card3Titulo || 'Documentos del Proceso',
         description:
-          txt.card4Desc ||
-          'Accede a la memoria técnica, estudios de diagnóstico, cartografía y acuerdos oficiales, y descarga la documentación completa que respalda cada etapa del proceso.',
+          txt.card3Desc ||
+          'Accede al repositorio de convenios, actas, acuerdos, documentos técnicos, cartografía y avances generados durante el proceso.',
         href: '#documentos',
         cta: 'Ver documentos',
+        accent: accent,
+      },
+      {
+        id: 'card-seguimiento',
+        icon: ico.cardCalendario || '📊',
+        eyebrow: 'Seguimiento y evaluación',
+        title: txt.card4Titulo || 'Seguimiento y Evaluación',
+        description:
+          txt.card4Desc ||
+          'Consulta los indicadores ambientales y los resultados de la evaluación del cumplimiento y efectividad del Programa.',
+        href: '#seguimiento',
+        cta: 'Ver indicadores',
         accent: colors.burgundy700,
       },
     ]
@@ -839,17 +843,19 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
   return () => {
     const { theme } = handle.props
     const u = theme?.usuario || {}
-    const c = u.colores || {}
     const img = u.imagenes || {}
-    const primary = c.primario || colors.burgundy900
-    const accent = c.acento || colors.gold400
-    const programaImg = img.imagenPrograma || `${basePath}/images/ecology-split.jpg`
+    const programaImg =
+      img.imagenPrograma &&
+      !img.imagenPrograma.includes('ecology-split.webp') &&
+      !img.imagenPrograma.includes('vector_1.webp')
+        ? img.imagenPrograma
+        : `${basePath}/assets/img/vector/vector_2.webp`
 
     const preguntas = [
       '¿Qué zonas deben conservarse o protegerse por su valor ambiental?',
       '¿Dónde es adecuado el crecimiento y desarrollo urbano del municipio?',
       '¿Qué tipo de actividades pueden desarrollarse en las distintas zonas del territorio?',
-      '¿En qué condiciones deben realizarse estas actividades para evitar impactos negativos en el ambiente y el entorno urbano?',
+      '¿En qué condiciones deben realizarse estas actividades para evitar impactos negativos en el ambiente y en el entorno urbano? Una vez aprobado, el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano establece los criterios y lineamientos que orientan el uso, ocupación y aprovechamiento del territorio, así como las reglas que guiarán el desarrollo urbano del municipio.',
     ]
 
     return (
@@ -858,145 +864,133 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
         aria-labelledby="programa-heading"
         mix={css({
           ...sectionPaddingProps,
-          background: `linear-gradient(135deg, ${colors.gray900} 0%, ${primary} 100%)`,
-          position: 'relative',
-          overflow: 'hidden',
+          background: colors.gray50,
         })}
       >
-        {/* Decorative circles */}
-        <div
-          aria-hidden="true"
-          mix={css({
-            position: 'absolute',
-            top: '-120px',
-            right: '-120px',
-            width: '400px',
-            height: '400px',
-            borderRadius: '50%',
-            background: `radial-gradient(circle, rgba(201,162,39,0.15) 0%, transparent 70%)`,
-            pointerEvents: 'none',
-          })}
-        />
-        <div
-          aria-hidden="true"
-          mix={css({
-            position: 'absolute',
-            bottom: '-80px',
-            left: '-80px',
-            width: '300px',
-            height: '300px',
-            borderRadius: '50%',
-            background: `radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)`,
-            pointerEvents: 'none',
-          })}
-        />
-
-        <div mix={css({ ...sectionContainerProps, position: 'relative', zIndex: 1 })}>
-          <span
-            mix={css({ ...eyebrowProps, color: accent, display: 'block', marginBottom: '16px' })}
-          >
-            ¿Qué es el Programa?
-          </span>
-          <h2
-            id="programa-heading"
-            mix={css({
-              ...headingLProps,
-              color: colors.white,
-              margin: '0 0 40px',
-              maxWidth: '820px',
-            })}
-          >
-            ¿Qué es el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano?
-          </h2>
-
+        <div mix={css({ ...sectionContainerProps })}>
+          {/* Tarjeta contenedora blanca redondeada */}
           <div
             mix={css({
-              display: 'grid',
-              gridTemplateColumns: '1.1fr 0.9fr',
-              gap: '64px',
-              alignItems: 'start',
+              background: '#ffffff',
+              borderRadius: '32px',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.04)',
+              border: '1px solid rgba(0, 0, 0, 0.04)',
+              padding: '56px 64px',
               '@media (max-width: 900px)': {
-                gridTemplateColumns: '1fr',
-                gap: '40px',
+                padding: '36px 24px',
               },
             })}
           >
-            {/* Left: descripción + preguntas que resuelve */}
-            <div mix={css({ display: 'flex', flexDirection: 'column', gap: '20px' })}>
-              <p
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '17px',
-                  lineHeight: 1.75,
-                  color: 'rgba(255,255,255,0.78)',
-                  margin: 0,
-                })}
-              >
-                Es una herramienta que permite organizar el territorio del municipio, definiendo qué
-                actividades pueden realizarse en cada zona y en qué condiciones, con el objetivo de
-                proteger el medio ambiente y orientar el desarrollo urbano de manera ordenada.
-              </p>
-              <p
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '16px',
-                  lineHeight: 1.75,
-                  color: 'rgba(255,255,255,0.72)',
-                  margin: 0,
-                })}
-              >
-                Para elaborarlo se analizan las características del territorio, sus recursos
-                naturales y las actividades que se desarrollan en él, con el propósito de encontrar
-                un equilibrio entre la protección del medio ambiente y el desarrollo urbano del
-                municipio. A partir de este análisis se busca responder preguntas como:
-              </p>
+            {/* Título Centrado */}
+            <h2
+              id="programa-heading"
+              mix={css({
+                fontFamily: FONT_STACK,
+                fontSize: '32px',
+                fontWeight: 800,
+                lineHeight: 1.3,
+                color: '#1e293b',
+                textAlign: 'center',
+                margin: '0 0 40px',
+                width: '100%',
+                '@media (max-width: 768px)': {
+                  fontSize: '24px',
+                  margin: '0 0 28px',
+                },
+              })}
+            >
+              ¿Qué es el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano?
+            </h2>
 
-              <div mix={css({ marginTop: '4px' })}>
-                <CheckBulletList
-                  items={preguntas}
-                  dotColor={accent}
-                  checkColor={colors.gray900}
-                  textColor="rgba(255,255,255,0.85)"
-                  gap="14px"
-                />
+            {/* Grid 2 Columnas: Texto izquierda / Ilustración vector derecha */}
+            <div
+              mix={css({
+                display: 'grid',
+                gridTemplateColumns: '1.4fr 1fr',
+                gap: '48px',
+                alignItems: 'center',
+                '@media (max-width: 900px)': {
+                  gridTemplateColumns: '1fr',
+                  gap: '36px',
+                },
+              })}
+            >
+              {/* Columna Izquierda: Párrafos + Viñetas */}
+              <div mix={css({ display: 'flex', flexDirection: 'column', gap: '20px' })}>
+                <p
+                  mix={css({
+                    fontFamily: FONT_STACK,
+                    fontSize: '15px',
+                    lineHeight: 1.7,
+                    color: '#475569',
+                    margin: 0,
+                  })}
+                >
+                  Es una herramienta que permite organizar el territorio del municipio, definiendo qué
+                  actividades pueden realizarse en cada zona y en qué condiciones, con el objetivo de
+                  proteger el medio ambiente y orientar el desarrollo urbano de manera ordenada.
+                </p>
+                <p
+                  mix={css({
+                    fontFamily: FONT_STACK,
+                    fontSize: '15px',
+                    lineHeight: 1.7,
+                    color: '#475569',
+                    margin: 0,
+                  })}
+                >
+                  Para elaborarlo se analizan las características del territorio, sus recursos
+                  naturales y las actividades que se desarrollan en él, con el propósito de encontrar
+                  un equilibrio entre la protección del medio ambiente y el desarrollo urbano del
+                  municipio. A partir de estos análisis se busca responder preguntas como:
+                </p>
+
+                <ul
+                  mix={css({
+                    margin: '4px 0 0',
+                    paddingLeft: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                  })}
+                >
+                  {preguntas.map((item) => (
+                    <li
+                      key={item}
+                      mix={css({
+                        fontFamily: FONT_STACK,
+                        fontSize: '15px',
+                        lineHeight: 1.7,
+                        color: '#475569',
+                      })}
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
 
-            {/* Right: imagen + cierre */}
-            <div mix={css({ display: 'flex', flexDirection: 'column', gap: '24px' })}>
+              {/* Columna Derecha: Ilustración vectorial integrada */}
               <div
                 mix={css({
-                  position: 'relative',
-                  borderRadius: '16px',
-                  overflow: 'hidden',
-                  aspectRatio: '4/3',
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  width: '100%',
                 })}
               >
                 <img
                   src={programaImg}
-                  alt="Equipo de trabajo planeando el ordenamiento del territorio"
+                  alt="Ilustración del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano"
                   mix={css({
                     width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
+                    maxWidth: '440px',
+                    height: 'auto',
                     display: 'block',
+                    objectFit: 'contain',
                   })}
                 />
               </div>
-              <p
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '15px',
-                  lineHeight: 1.75,
-                  color: 'rgba(255,255,255,0.7)',
-                  margin: 0,
-                })}
-              >
-                Una vez aprobado, el Programa establece los criterios y lineamientos que orientan el
-                uso, ocupación y aprovechamiento del territorio, así como las reglas que guiarán el
-                desarrollo urbano del municipio.
-              </p>
             </div>
           </div>
         </div>
@@ -1004,6 +998,7 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
     )
   }
 }
+
 
 // ---------------------------------------------------------------------------
 // Process Timeline
@@ -1410,7 +1405,7 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
     const footerBg = c.footerFondo || colors.gray950
     const footerText = c.footerTexto || '#ffffff'
     const accent = c.acento || colors.gold400
-    const footerLogo = img.logoFooter || ''
+    const footerLogo = img.logoFooter || `${basePath}/assets/img/logo/logo-200x60.webp`
     const entidad = txt.footerEntidad || 'Municipio de San Pedro Tlaquepaque'
     const desc =
       txt.footerDesc ||
@@ -1455,35 +1450,37 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
                     style="max-height: 44px; max-width: 120px; object-fit: contain;"
                   />
                 ) : (
-                  <div
-                    style={`
-                      width: 40px;
-                      height: 40px;
-                      border-radius: 50%;
-                      background: linear-gradient(135deg, ${accent} 0%, #c9a227 100%);
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                      font-size: 12px;
-                      font-weight: 900;
-                      color: #0f1117;
-                      flex-shrink: 0;
-                    `}
-                    aria-hidden="true"
-                  >
-                    SPT
-                  </div>
+                  <>
+                    <div
+                      style={`
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        background: linear-gradient(135deg, ${accent} 0%, #c9a227 100%);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 12px;
+                        font-weight: 900;
+                        color: #0f1117;
+                        flex-shrink: 0;
+                      `}
+                      aria-hidden="true"
+                    >
+                      SPT
+                    </div>
+                    <span
+                      style={`
+                        font-family: ${FONT_STACK};
+                        font-size: 15px;
+                        font-weight: 700;
+                        color: ${footerText};
+                      `}
+                    >
+                      {entidad}
+                    </span>
+                  </>
                 )}
-                <span
-                  style={`
-                    font-family: ${FONT_STACK};
-                    font-size: 15px;
-                    font-weight: 700;
-                    color: ${footerText};
-                  `}
-                >
-                  {entidad}
-                </span>
               </div>
               <p
                 style={`

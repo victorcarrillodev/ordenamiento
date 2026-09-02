@@ -33,7 +33,7 @@ export const ERROR_CATALOG: Record<number, ErrorInfo> = {
     title: 'No pudimos procesar tu solicitud',
     description:
       'La petición enviada contiene parámetros no válidos, incompletos o con un formato que el servidor no puede interpretar. Por favor verifica la información ingresada.',
-    image: `${basePath}/image/errores/401.png`,
+    image: `${basePath}/assets/img/vector/vector_2.webp`,
     primaryAction: {
       label: 'Volver al inicio',
       href: `${basePath}`,
@@ -51,7 +51,7 @@ export const ERROR_CATALOG: Record<number, ErrorInfo> = {
     title: 'Acceso no autorizado',
     description:
       'Para consultar este módulo necesitas contar con una sesión activa en el portal de administración del Programa de Ordenamiento Territorial.',
-    image: `${basePath}/image/errores/401.png`,
+    image: `${basePath}/assets/img/vector/vector_3.webp`,
     primaryAction: {
       label: 'Iniciar sesión',
       href: `${basePath}/login`,
@@ -69,7 +69,7 @@ export const ERROR_CATALOG: Record<number, ErrorInfo> = {
     title: 'Permisos insuficientes',
     description:
       'Tu cuenta no cuenta con los privilegios administrativos requeridos para ver o modificar esta sección. Si consideras que se trata de un error, contacta al administrador del sistema.',
-    image: `${basePath}/image/errores/403.png`,
+    image: `${basePath}/assets/img/vector/vector_3.webp`,
     primaryAction: {
       label: 'Ir a mi cuenta',
       href: `${basePath}/admin/cuenta`,
@@ -87,7 +87,7 @@ export const ERROR_CATALOG: Record<number, ErrorInfo> = {
     title: 'El territorio que buscas no está en el mapa',
     description:
       'La dirección o recurso que intentas consultar no existe, fue movido o el enlace está desactualizado. Puedes explorar el portal desde la página principal o consultar el POETDUM.',
-    image: `${basePath}/image/vectores/vector_1.png`,
+    image: `${basePath}/assets/img/vector/vector_1.webp`,
     primaryAction: {
       label: 'Volver al inicio',
       href: `${basePath}`,
@@ -105,7 +105,7 @@ export const ERROR_CATALOG: Record<number, ErrorInfo> = {
     title: 'Demasiadas solicitudes en poco tiempo',
     description:
       'Hemos detectado una cantidad inusual de peticiones desde tu conexión. Por motivos de seguridad y estabilidad del servicio, por favor espera unos segundos antes de volver a intentar.',
-    image: `${basePath}/image/errores/429.png`,
+    image: `${basePath}/assets/img/vector/vector_5.webp`,
     primaryAction: {
       label: 'Reintentar ahora',
       href: `${basePath}`,
@@ -123,7 +123,7 @@ export const ERROR_CATALOG: Record<number, ErrorInfo> = {
     title: 'Ocurrió un problema inesperado',
     description:
       'El servidor experimentó un error interno mientras procesaba tu petición. Nuestro equipo de soporte técnico ha sido notificado para resolverlo lo antes posible.',
-    image: `${basePath}/image/errores/500.png`,
+    image: `${basePath}/assets/img/vector/vector_4.webp`,
     primaryAction: {
       label: 'Volver a la portada',
       href: `${basePath}`,
@@ -141,7 +141,7 @@ export const ERROR_CATALOG: Record<number, ErrorInfo> = {
     title: 'Error de comunicación con el backend',
     description:
       'El servidor intermedio no recibió una respuesta válida del servicio principal de base de datos o autenticación. Por favor intenta nuevamente en unos momentos.',
-    image: `${basePath}/image/errores/503.png`,
+    image: `${basePath}/assets/img/vector/vector_4.webp`,
     primaryAction: {
       label: 'Reintentar',
       href: `${basePath}`,
@@ -159,7 +159,7 @@ export const ERROR_CATALOG: Record<number, ErrorInfo> = {
     title: 'Sistema en mantenimiento programado',
     description:
       'Estamos realizando labores de optimización o actualización en el portal de Ordenamiento Territorial de San Pedro Tlaquepaque. Estaremos de vuelta muy pronto.',
-    image: `${basePath}/image/errores/503.png`,
+    image: `${basePath}/assets/img/vector/vector_4.webp`,
     primaryAction: {
       label: 'Comprobar disponibilidad',
       href: `${basePath}`,
@@ -177,7 +177,7 @@ export const ERROR_CATALOG: Record<number, ErrorInfo> = {
     title: 'El servidor tardó demasiado en responder',
     description:
       'La solicitud tardó más tiempo del esperado en procesarse. Te sugerimos revisar tu conexión a internet o intentar de nuevo en un momento.',
-    image: `${basePath}/image/errores/503.png`,
+    image: `${basePath}/assets/img/vector/vector_4.webp`,
     primaryAction: {
       label: 'Reintentar',
       href: `${basePath}`,
