@@ -1,0 +1,27 @@
+# Que NO entra al grafo de conocimiento del proyecto.
+#
+# El codigo (187 archivos) se extrae por AST: deterministico, sin LLM y gratis.
+# Todo lo que aparece aqui es material que iba a la extraccion semantica, la
+# unica parte que gasta tokens. Cada imagen ademas se lleva un subagente entero
+# para ella sola (la vision necesita contexto aparte), asi que 17 imagenes
+# decorativas eran 17 subagentes que no aportaban una sola arista util.
+
+# --- Imagenes: son assets de maquetacion, no arquitectura ---
+*.webp
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+
+# --- Documentacion de terceros y config de herramientas ---
+# .agents/skills/remix/ es el manual de Remix, no es codigo de este proyecto.
+# Meterlo al grafo se paga en tokens y devuelve nodos sobre un framework que
+# ya esta documentado fuera.
+.agents/
+.claude/
+.hermes/
+
+# --- Salida propia de graphify ---
+graphify-out/
