@@ -794,6 +794,9 @@ export async function handleRequest(request: Request): Promise<Response> {
   if (method === 'GET' && pathname === '/api/stats') {
     const authError = requireAdmin()
     if (authError) return authError
+    const origenParam = url.searchParams.get('origen')
+    if (origenParam && !isOrigen(origenParam)) return json({ error: 'origen inválido' }, 400)
+    const filtroOrigen = origenParam as Origen | null
     const [
       users,
       digital,
@@ -815,18 +818,18 @@ export async function handleRequest(request: Request): Promise<Response> {
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM users`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM participations WHERE origen = 'digital'`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM participations WHERE origen = 'fisica'`,
-      sql<{ estado: string; n: string }[]>`
-        SELECT estado, count(*)::text AS n FROM participations GROUP BY estado
-      `,
-      sql<{ k: string; n: string }[]>`
-        SELECT fuente AS k, count(*)::text AS n FROM participations GROUP BY fuente ORDER BY count(*) DESC
-      `,
-      sql<{ k: string; n: string }[]>`
-        SELECT genero AS k, count(*)::text AS n FROM participations GROUP BY genero ORDER BY count(*) DESC
-      `,
-      sql<{ k: string; n: string }[]>`
-        SELECT tematica AS k, count(*)::text AS n FROM participations GROUP BY tematica ORDER BY count(*) DESC
-      `,
+      filtroOrigen
+        ? sql<{ estado: string; n: string }[]>`SELECT estado, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY estado`
+        : sql<{ estado: string; n: string }[]>`SELECT estado, count(*)::text AS n FROM participations GROUP BY estado`,
+      filtroOrigen
+        ? sql<{ k: string; n: string }[]>`SELECT fuente AS k, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY fuente ORDER BY count(*) DESC`
+        : sql<{ k: string; n: string }[]>`SELECT fuente AS k, count(*)::text AS n FROM participations GROUP BY fuente ORDER BY count(*) DESC`,
+      filtroOrigen
+        ? sql<{ k: string; n: string }[]>`SELECT genero AS k, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY genero ORDER BY count(*) DESC`
+        : sql<{ k: string; n: string }[]>`SELECT genero AS k, count(*)::text AS n FROM participations GROUP BY genero ORDER BY count(*) DESC`,
+      filtroOrigen
+        ? sql<{ k: string; n: string }[]>`SELECT tematica AS k, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY tematica ORDER BY count(*) DESC`
+        : sql<{ k: string; n: string }[]>`SELECT tematica AS k, count(*)::text AS n FROM participations GROUP BY tematica ORDER BY count(*) DESC`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM actividades`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM documentos`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM indicadores`,

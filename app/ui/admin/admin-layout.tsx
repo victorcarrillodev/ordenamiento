@@ -19,8 +19,7 @@ export interface AdminLayoutProps {
     | 'indicadores'
     | 'participaciones-digital'
     | 'participaciones-fisica'
-    | 'estadisticas-digital'
-    | 'estadisticas-fisica'
+    | 'estadisticas'
     | 'usuarios'
     | 'exportar'
     | 'personalizacion'
@@ -104,26 +103,20 @@ const MENU: Array<{
     icon: <Icon name="mdi:laptop" />,
   },
   {
-    key: 'estadisticas-digital',
-    href: adminRoutes.estadisticas.href() + '?origen=digital',
-    label: 'Estadísticas Digitales',
-    icon: <Icon name="mdi:chart-bar" />,
-  },
-  {
     key: 'participaciones-fisica',
     href: adminRoutes.participaciones.href() + '?origen=fisica',
     label: 'Participaciones Físicas',
     icon: <Icon name="mdi:file-document-outline" />,
   },
   {
-    key: 'estadisticas-fisica',
-    href: adminRoutes.estadisticas.href() + '?origen=fisica',
-    label: 'Estadísticas Físicas',
-    icon: <Icon name="mdi:chart-box-outline" />,
+    key: 'estadisticas',
+    href: adminRoutes.estadisticas.href(),
+    label: 'Estadísticas',
+    icon: <Icon name="mdi:chart-bar" />,
   },
   {
     key: 'usuarios',
-    href: adminRoutes.index.href() + '#usuarios',
+    href: adminRoutes.usuarios.index.href(),
     label: 'Usuarios',
     icon: <Icon name="mdi:account-group-outline" />,
   },

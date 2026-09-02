@@ -3,18 +3,18 @@ import type { Handle } from 'remix/ui'
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 
+export interface DatosOrigen {
+  total: number
+  resultado: Array<[string, number]>
+  fuente: Array<[string, number]>
+  genero: Array<[string, number]>
+  tematica: Array<[string, number]>
+}
+
 export interface EstadisticasPageProps {
   user: { name: string; role: string }
-  origen: 'digital' | 'fisica'
-  stats: {
-    usuarios: number
-    digitales: number
-    fisicas: number
-    resultado: Array<{ estado: string; total: number }>
-    fuente: Array<[string, number]>
-    genero: Array<[string, number]>
-    tematica: Array<[string, number]>
-  }
+  digital: DatosOrigen
+  fisica: DatosOrigen
 }
 
 const COLORES = ['#6cb2d6', '#1f4d6e', '#a06cd5', '#e8a54f', '#4fb286', '#d67f7f', '#9aa5b1']
@@ -23,7 +23,6 @@ function totalDe(data: Array<[string, number]> | undefined | null): number {
   return (data || []).reduce((a, [, n]) => a + n, 0)
 }
 
-/** Dona SVG server-side. */
 function Donut(handle: Handle<{ data?: Array<[string, number]> }>) {
   return () => {
     const data = handle.props.data || []
@@ -75,7 +74,6 @@ function Donut(handle: Handle<{ data?: Array<[string, number]> }>) {
   }
 }
 
-/** Barras verticales SVG server-side. */
 function Bars(handle: Handle<{ data?: Array<[string, number]> }>) {
   return () => {
     const data = handle.props.data || []
@@ -126,50 +124,40 @@ function Bars(handle: Handle<{ data?: Array<[string, number]> }>) {
   }
 }
 
-export function EstadisticasPage(handle: Handle<EstadisticasPageProps>) {
+function Seccion(handle: Handle<{ titulo: string; icono: string; accent: string; datos: DatosOrigen }>) {
   return () => {
-    const { user, origen, stats } = handle.props
-    const total = origen === 'fisica' ? (stats?.fisicas ?? 0) : (stats?.digitales ?? 0)
-    const titulo =
-      origen === 'fisica' ? 'Gestión de estadísticas físicas' : 'Gestión de estadísticas digitales'
-
-    const resultado = (stats?.resultado ?? []).map((r) => [r.estado, r.total] as [string, number])
-    const fuente = stats?.fuente ?? []
-    const genero = stats?.genero ?? []
-    const tematica = stats?.tematica ?? []
-
+    const { titulo, icono, accent, datos } = handle.props
     return (
-      <AdminLayout
-        user={user}
-        active={origen === 'fisica' ? 'estadisticas-fisica' : 'estadisticas-digital'}
-        title={titulo}
-      >
-        <h1 class="page-title">{titulo}</h1>
-        <p class="breadcrumb">
-          <a href={adminRoutes.index.href()}>Vista general</a> / {titulo}
-        </p>
+      <section class="stats-section">
+        <div class={`panel stats-section__head stats-section__head--${accent}`}>
+          <div class="stats-section__title">
+            <span class={`card__icon ${accent === 'blue' ? 'blue' : 'amber'}`}>{icono}</span>
+            <h2 style="margin:0; font-size:16px; font-weight:800;">{titulo}</h2>
+          </div>
+          <span class="conteo">{datos.total}</span>
+        </div>
 
         <div class="charts-row">
           <div class="panel chart-panel">
             <h3 class="panel__title" style="text-align:center;">
               Resultado
             </h3>
-            <p class="meta-label">Total: {total}</p>
-            <Donut data={resultado} />
+            <p class="meta-label">Total: {totalDe(datos.resultado)}</p>
+            <Donut data={datos.resultado} />
           </div>
           <div class="panel chart-panel">
             <h3 class="panel__title" style="text-align:center;">
               Fuente
             </h3>
-            <p class="meta-label">Total: {totalDe(fuente)}</p>
-            <Bars data={fuente} />
+            <p class="meta-label">Total: {totalDe(datos.fuente)}</p>
+            <Bars data={datos.fuente} />
           </div>
           <div class="panel chart-panel">
             <h3 class="panel__title" style="text-align:center;">
               Género
             </h3>
-            <p class="meta-label">Total: {totalDe(genero)}</p>
-            <Bars data={genero} />
+            <p class="meta-label">Total: {totalDe(datos.genero)}</p>
+            <Bars data={datos.genero} />
           </div>
         </div>
 
@@ -177,9 +165,26 @@ export function EstadisticasPage(handle: Handle<EstadisticasPageProps>) {
           <h3 class="panel__title" style="text-align:center;">
             Temática
           </h3>
-          <p class="meta-label">Total: {totalDe(tematica)}</p>
-          <Donut data={tematica} />
+          <p class="meta-label">Total: {totalDe(datos.tematica)}</p>
+          <Donut data={datos.tematica} />
         </div>
+      </section>
+    )
+  }
+}
+
+export function EstadisticasPage(handle: Handle<EstadisticasPageProps>) {
+  return () => {
+    const { user, digital, fisica } = handle.props
+    return (
+      <AdminLayout user={user} active="estadisticas" title="Estadísticas">
+        <h1 class="page-title">Estadísticas</h1>
+        <p class="breadcrumb">
+          <a href={adminRoutes.index.href()}>Vista general</a> / Estadísticas
+        </p>
+
+        <Seccion titulo="Estadísticas Digitales" icono="🖥️" accent="blue" datos={digital} />
+        <Seccion titulo="Estadísticas Físicas" icono="📋" accent="amber" datos={fisica} />
       </AdminLayout>
     )
   }

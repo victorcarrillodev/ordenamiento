@@ -188,6 +188,7 @@ describe('Admin Routes Protection & Navigation', () => {
       { path: '/ordena/admin/avisos', name: 'Avisos' },
       { path: '/ordena/admin/poel', name: 'POEL' },
       { path: '/ordena/admin/estadisticas', name: 'Estadísticas' },
+      { path: '/ordena/admin/usuarios', name: 'Usuarios' },
       { path: '/ordena/admin/cuenta', name: 'Cuenta' },
       { path: '/ordena/admin/personalizacion', name: 'Personalización' },
     ]
@@ -198,6 +199,24 @@ describe('Admin Routes Protection & Navigation', () => {
         expect(response?.status).toBe(200)
       })
     }
+
+    it('GET /ordena/admin/usuarios contiene "Crear usuario" y Vista General no', async () => {
+      const usuariosRes = await router.fetch(new Request('http://localhost/ordena/admin/usuarios'))
+      expect(usuariosRes?.status).toBe(200)
+      expect(await usuariosRes?.text()).toContain('Crear usuario')
+
+      const indexRes = await router.fetch(new Request('http://localhost/ordena/admin'))
+      expect(indexRes?.status).toBe(200)
+      expect(await indexRes?.text()).not.toContain('Crear usuario')
+    })
+
+    it('GET /ordena/admin/estadisticas contiene ambas secciones', async () => {
+      const res = await router.fetch(new Request('http://localhost/ordena/admin/estadisticas'))
+      expect(res?.status).toBe(200)
+      const html = await res?.text()
+      expect(html).toContain('Estadísticas Digitales')
+      expect(html).toContain('Estadísticas Físicas')
+    })
 
     it('POST /ordena/admin/participaciones/nueva guarda participación física y redirige con folio', async () => {
       globalThis.fetch = vi.fn().mockImplementation((url: string | URL | Request) => {

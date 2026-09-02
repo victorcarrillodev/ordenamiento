@@ -48,14 +48,6 @@ interface Stats {
   }>
 }
 
-interface AdminUserRow {
-  id: string
-  email: string
-  name: string
-  role: string
-  created_at: string
-}
-
 export default createController(adminRoutes, {
   actions: {
     async index(context) {
@@ -82,16 +74,6 @@ export default createController(adminRoutes, {
         proximaReunion: null,
         ultimosAvisos: [],
       })
-
-      let users: AdminUserRow[] = []
-      if (user.role === 'admin') {
-        const usersData = await fetchJsonOr<{ users: AdminUserRow[] }>(
-          context.request,
-          '/api/users',
-          { users: [] },
-        )
-        users = usersData.users
-      }
 
       // Obtener hora y fecha real de MÃ©xico (America/Mexico_City)
       const parts = new Intl.DateTimeFormat('es-MX', {
@@ -128,7 +110,6 @@ export default createController(adminRoutes, {
         <AdminPage
           user={user}
           stats={stats}
-          users={users}
           ahora={{
             dia: diaCapitalizado,
             saludo,
@@ -295,18 +276,33 @@ export default createController(adminRoutes, {
     async estadisticas(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
-      const origen =
-        new URL(context.request.url).searchParams.get('origen') === 'fisica' ? 'fisica' : 'digital'
-      const stats = await fetchJsonOr(context.request, '/api/stats', {
-        usuarios: 0,
+      const defaults = {
         digitales: 0,
         fisicas: 0,
-        resultado: [],
-        fuente: [],
-        genero: [],
-        tematica: [],
-      })
-      return context.render(<EstadisticasPage user={user} origen={origen} stats={stats} />)
+        resultado: [] as Array<{ estado: string; total: number }>,
+        fuente: [] as Array<[string, number]>,
+        genero: [] as Array<[string, number]>,
+        tematica: [] as Array<[string, number]>,
+      }
+      const [digitalRaw, fisicaRaw] = await Promise.all([
+        fetchJsonOr<typeof defaults>(context.request, '/api/stats?origen=digital', defaults),
+        fetchJsonOr<typeof defaults>(context.request, '/api/stats?origen=fisica', defaults),
+      ])
+      const digital = {
+        total: digitalRaw.digitales,
+        resultado: digitalRaw.resultado.map((r) => [r.estado, r.total] as [string, number]),
+        fuente: digitalRaw.fuente ?? [],
+        genero: digitalRaw.genero ?? [],
+        tematica: digitalRaw.tematica ?? [],
+      }
+      const fisica = {
+        total: fisicaRaw.fisicas,
+        resultado: fisicaRaw.resultado.map((r) => [r.estado, r.total] as [string, number]),
+        fuente: fisicaRaw.fuente ?? [],
+        genero: fisicaRaw.genero ?? [],
+        tematica: fisicaRaw.tematica ?? [],
+      }
+      return context.render(<EstadisticasPage user={user} digital={digital} fisica={fisica} />)
     },
 
     async cuentaAvatar(context) {
