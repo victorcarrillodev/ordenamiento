@@ -1,5 +1,5 @@
 import { sql } from '../db/pool.ts'
-import { updateUserPassword } from './auth.ts'
+import { longitudDeContrasenaValida, PASSWORD_MIN_LENGTH, updateUserPassword } from './auth.ts'
 import { formaValida, generarToken, hashToken, hashesIguales } from './tokens.ts'
 
 /**
@@ -10,9 +10,6 @@ import { formaValida, generarToken, hashToken, hashesIguales } from './tokens.ts
 
 /** Minutos de validez del enlace. Corto a propósito: es un poder total sobre la cuenta. */
 export const RESET_TTL_MINUTOS = 60
-
-/** Longitud mínima de contraseña, alineada con el login y el alta de usuarios. */
-export const PASSWORD_MIN_LENGTH = 8
 
 export interface UsuarioRecuperacion {
   id: string
@@ -120,7 +117,9 @@ export async function restablecerConToken(
   token: string,
   nuevaPassword: string,
 ): Promise<ResultadoReset> {
-  if (typeof nuevaPassword !== 'string' || nuevaPassword.length < PASSWORD_MIN_LENGTH) {
+  // Cubre la mínima y también la máxima: sin tope, restablecer con una
+  // contraseña gigante fuerza un hash argon2id de coste arbitrario.
+  if (!longitudDeContrasenaValida(nuevaPassword)) {
     return { ok: false, motivo: 'password_corta' }
   }
 
@@ -145,3 +144,6 @@ export async function restablecerConToken(
     usuario: { id: fila.user_id, name: fila.name, email: fila.email },
   }
 }
+
+/** Reexportada para los callers que ya la importaban desde este módulo. */
+export { PASSWORD_MIN_LENGTH }

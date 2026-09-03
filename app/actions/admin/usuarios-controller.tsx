@@ -9,6 +9,7 @@ import { createController } from 'remix/router'
 
 import { backendFetch, fetchJsonOr, requireAdminUser } from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
+import { PASSWORD_MAX, PASSWORD_MIN } from '../../ui/login/types.ts'
 import { UsuariosPage, type UsuarioFeedback, type UsuarioRow } from './usuarios-page.tsx'
 
 /**
@@ -19,7 +20,7 @@ const FEEDBACK: Record<string, UsuarioFeedback> = {
   ok: { type: 'success', message: 'La cuenta se creó correctamente.' },
   datos: {
     type: 'error',
-    message: 'Faltan datos: nombre, correo y una contraseña de al menos 8 caracteres.',
+    message: `Faltan datos: nombre, correo y una contraseña de entre ${PASSWORD_MIN} y ${PASSWORD_MAX} caracteres.`,
   },
   duplicado: { type: 'error', message: 'Ese correo ya tiene una cuenta en el portal.' },
   backend: {
@@ -67,7 +68,7 @@ export default createController(adminRoutes.usuarios, {
       const volver = (estado: string) =>
         redirect(`${adminRoutes.usuarios.index.href()}?estado=${estado}`)
 
-      if (!name || !email || password.length < 8) {
+      if (!name || !email || password.length < PASSWORD_MIN || password.length > PASSWORD_MAX) {
         return volver('datos')
       }
 

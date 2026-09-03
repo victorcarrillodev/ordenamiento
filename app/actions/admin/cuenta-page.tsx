@@ -5,6 +5,7 @@ import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
+import { PASSWORD_MAX } from '../../ui/login/types.ts'
 import { formatearDuracion, formatearFecha, formatearFechaHora } from '../../ui/admin/formato.ts'
 import type { SesionRegistrada } from './sesiones-page.tsx'
 
@@ -195,6 +196,7 @@ export function CuentaPage(handle: Handle<CuentaPageProps>) {
                   name="password"
                   type="password"
                   autocomplete="current-password"
+                  maxLength={PASSWORD_MAX}
                   aria-describedby="perfil-password-hint"
                   required
                 />

@@ -265,3 +265,70 @@ describe('Corte de sesiones al cambiar la contraseña', () => {
     expect(corte.getTime()).toBeGreaterThanOrEqual(antes)
   })
 })
+
+describe('No hay alta pública de cuentas', () => {
+  it('POST /api/auth/register ya no existe', async () => {
+    // Participar no requiere cuenta y las del panel las crea un administrador.
+    // Un alta abierta dejaba a cualquiera llenar de cuentas el sistema, y cada
+    // una cuesta un hash argon2id, que es caro a propósito.
+    const res = await handleRequest(
+      req('/api/auth/register', 'POST', {
+        email: 'intruso@ejemplo.com',
+        name: 'Intruso',
+        password: 'contrasena-larga',
+      }),
+    )
+
+    expect(res.status).toBe(404)
+    expect(res.headers.get('set-cookie')).toBeNull()
+  })
+
+  it('tampoco acepta un rol enviado por el cliente', async () => {
+    const res = await handleRequest(
+      req('/api/auth/register', 'POST', {
+        email: 'intruso@ejemplo.com',
+        name: 'Intruso',
+        password: 'contrasena-larga',
+        role: 'admin',
+      }),
+    )
+
+    expect(res.status).toBe(404)
+  })
+})
+
+describe('Defensas contra abuso de los endpoints de contraseña', () => {
+  /** Petición con un `content-length` declarado enorme. */
+  function peticionGrande(path: string, bytes: number) {
+    return new Request(`http://localhost${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'content-length': String(bytes) },
+      body: JSON.stringify({ email: 'a@b.mx', password: 'x'.repeat(50) }),
+    })
+  }
+
+  it('corta un cuerpo desmesurado antes de bufferizarlo', async () => {
+    // Sin este tope, `request.json()` traga lo que llegue y, con una
+    // contraseña de megabytes detrás, cada petición cuesta un hash argon2id.
+    for (const ruta of [
+      '/api/auth/login',
+      '/api/auth/forgot-password',
+      '/api/auth/reset-password',
+      '/api/auth/confirm-email',
+    ]) {
+      const res = await handleRequest(peticionGrande(ruta, 5 * 1024 * 1024))
+      expect(res.status, ruta).toBe(413)
+    }
+  })
+
+  it('restablecer con una contraseña desmesurada no llega a hashearse', async () => {
+    restablecerSpy.mockResolvedValue({ ok: false, motivo: 'password_corta' })
+    const res = await handleRequest(
+      req('/api/auth/reset-password', 'POST', {
+        token: 'a'.repeat(43),
+        password: 'x'.repeat(5000),
+      }),
+    )
+    expect(res.status).toBe(422)
+  })
+})

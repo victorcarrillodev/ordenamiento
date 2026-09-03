@@ -5,6 +5,7 @@ import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
+import { PASSWORD_MAX, PASSWORD_MIN } from '../../ui/login/types.ts'
 
 export interface UsuarioRow {
   id: string
@@ -124,13 +125,14 @@ export function UsuariosPage(handle: Handle<UsuariosPageProps>) {
                 id="u-pass"
                 name="password"
                 type="password"
-                minlength={8}
+                minLength={PASSWORD_MIN}
+                maxLength={PASSWORD_MAX}
                 autocomplete="new-password"
                 aria-describedby="u-pass-hint"
                 required
               />
               <span class="form-hint" id="u-pass-hint">
-                Mínimo 8 caracteres
+                Entre {String(PASSWORD_MIN)} y {String(PASSWORD_MAX)} caracteres
               </span>
             </div>
             <div class="form-field">

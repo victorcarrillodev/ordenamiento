@@ -349,32 +349,6 @@
   }
 }
 
-/* Admin account creation */
-.login__admin {
-  margin-top: 1rem;
-}
-.login__admin-details summary {
-  cursor: pointer;
-  text-align: center;
-  font-size: 0.85rem;
-  color: #6b7280;
-  padding: 0.5rem;
-  border-radius: 8px;
-}
-.login__admin-details summary:hover {
-  color: #111827;
-  background: #f3f4f6;
-}
-.login__register {
-  margin-top: 0.75rem;
-}
-.login__submit--accent {
-  background: #1f2937;
-}
-.login__submit--accent:hover {
-  background: #374151;
-}
-
 /* ---------------------------------------------------------------------------
    Alert (Material UI style)
    -------------------------------------------------------------------------- */
@@ -575,11 +549,6 @@
   outline: 2px solid var(--login-primary-container);
   outline-offset: 2px;
   border-radius: 0.25rem;
-}
-
-.login__admin-details summary:focus-visible {
-  outline: 2px solid var(--login-primary-container);
-  outline-offset: 2px;
 }
 
 /* La animación de la alerta es decorativa: se desactiva para quien pide menos

@@ -101,12 +101,50 @@ export interface SessionUser {
 }
 
 /**
+ * Longitud máxima de contraseña.
+ *
+ * argon2id no tiene límite propio, y ahí está el problema: cada hash cuesta 64
+ * MB de memoria y tres pasadas, a propósito. Sin tope, una petición de login
+ * con una contraseña de varios megabytes obliga al servidor a hacer ese
+ * trabajo, y un puñado de peticiones simultáneas se lo lleva por delante. 128
+ * caracteres sobran para cualquier contraseña real, incluidas las de gestor.
+ */
+export const PASSWORD_MAX_LENGTH = 128
+
+/** Longitud mínima, la misma en el login, el alta y el restablecimiento. */
+export const PASSWORD_MIN_LENGTH = 8
+
+/** ¿Tiene esta contraseña una longitud que valga la pena procesar? */
+export function longitudDeContrasenaValida(password: unknown): password is string {
+  return (
+    typeof password === 'string' &&
+    password.length >= PASSWORD_MIN_LENGTH &&
+    password.length <= PASSWORD_MAX_LENGTH
+  )
+}
+
+/**
+ * Hash de una contraseña que no existe, para gastar el mismo tiempo cuando la
+ * cuenta no está. Se calcula una sola vez al arrancar.
+ */
+const HASH_SENUELO = await Bun.password.hash('contrasena-inexistente-para-igualar-tiempos', {
+  algorithm: 'argon2id',
+  memoryCost: 65536,
+  timeCost: 3,
+})
+
+/**
  * Único punto donde se derivan hashes de contraseña: alta de usuario y
  * restablecimiento por correo deben usar exactamente los mismos parámetros
  * de argon2id, o una contraseña restablecida quedaría peor protegida que
  * la original sin que nada lo delate.
  */
-export function hashPassword(password: string): Promise<string> {
+// `async` a propósito: si lanzara de forma síncrona, un `hashPassword(x).catch(...)`
+// no atraparía el error, que es justo como la llaman los sitios de más abajo.
+export async function hashPassword(password: string): Promise<string> {
+  if (!longitudDeContrasenaValida(password)) {
+    throw new Error('PASSWORD_LONGITUD_INVALIDA')
+  }
   return Bun.password.hash(password, {
     algorithm: 'argon2id',
     memoryCost: 65536,
@@ -140,17 +178,22 @@ export async function verifyCredentials(
   email: string,
   password: string,
 ): Promise<SessionUser | null> {
+  if (!longitudDeContrasenaValida(password)) return null
+
   const rows = await sql<
     Array<{ id: string; name: string; email: string; role: string; password_hash: string }>
   >`--sql
     SELECT id::text AS id, name, email, role, password_hash FROM users WHERE email = ${email.toLowerCase()}
   `
 
-  if (rows.length === 0) return null
-
   const user = rows[0]
-  const ok = await Bun.password.verify(password, user.password_hash)
-  if (!ok) return null
+
+  // Si la cuenta no existe se verifica igual, contra un hash señuelo. Sin
+  // esto, un correo sin cuenta respondía al instante y uno con cuenta tardaba
+  // lo que cuesta argon2: esa diferencia de tiempo basta para averiguar qué
+  // correos están registrados, aunque el mensaje de error sea el mismo.
+  const ok = await Bun.password.verify(password, user?.password_hash ?? HASH_SENUELO)
+  if (!user || !ok) return null
 
   return { id: user.id, name: user.name, email: user.email, role: user.role }
 }
@@ -161,7 +204,7 @@ export async function verifyCredentials(
  * sesión abierta no basta para reasignar la cuenta a otra dirección.
  */
 export async function verifyPasswordById(id: string, password: string): Promise<boolean> {
-  if (!password) return false
+  if (!longitudDeContrasenaValida(password)) return false
   const rows = await sql<Array<{ password_hash: string }>>`--sql
     SELECT password_hash FROM users WHERE id = ${id}
   `

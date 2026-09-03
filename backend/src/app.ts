@@ -306,42 +306,27 @@ export async function handleRequest(request: Request): Promise<Response> {
     return json({ ok: true, service: 'ordenamiento-backend' })
   }
 
+  /**
+   * Los endpoints de autenticación reciben JSON pequeño (un correo, una
+   * contraseña, un token). Se corta antes de bufferizarlo: sin este tope,
+   * `request.json()` traga lo que llegue, y con una contraseña de megabytes
+   * detrás cada petición cuesta un hash argon2id de 64 MB.
+   */
+  const AUTH_BODY_MAX = 8 * 1024
+  const cuerpoDeAuthExcedido = (): Response | null =>
+    bodyTooLarge(request, AUTH_BODY_MAX) ? json({ error: 'Petición demasiado grande' }, 413) : null
+
   // ── Auth ─────────────────────────────────────────────────────────────
-  // Registro público (autoservicio). NUNCA confiar en un rol enviado por el
-  // cliente aquí: esta ruta no exige sesión, así que aceptar `role` del body
-  // permitiría que cualquiera se cree una cuenta admin. Crear administradores
-  // solo es posible ya autenticado como admin, vía POST /api/users.
-  if (method === 'POST' && pathname === '/api/auth/register') {
-    const body = (await request.json()) as {
-      email?: string
-      name?: string
-      password?: string
-    }
-    if (!body.email || !body.name || !body.password) {
-      return json({ error: 'Faltan datos: email, name, password' }, 400)
-    }
-    try {
-      const user = await registerUser({
-        email: body.email,
-        name: body.name,
-        password: body.password,
-        role: 'user',
-      })
-      const token = await createSessionToken(user.id)
-      return json(
-        { user: { id: user.id, name: body.name }, message: 'Registrado' },
-        { headers: { 'set-cookie': sessionCookie(token) } },
-      )
-    } catch (err) {
-      if (err instanceof Error && err.message === 'EMAIL_TAKEN') {
-        return json({ error: 'El correo ya está registrado' }, 409)
-      }
-      throw err
-    }
-  }
+  // No hay alta pública de cuentas. Participar en la consulta no requiere
+  // cuenta (ver handleCreateParticipation) y las del panel las crea un
+  // administrador vía POST /api/users. Un registro abierto solo permitía a
+  // cualquiera llenar de cuentas el sistema del municipio, y cada alta cuesta
+  // un hash argon2id, que es caro a propósito.
 
   if (method === 'POST' && pathname === '/api/auth/login') {
-    const body = (await request.json()) as { email?: string; password?: string }
+    const excedido = cuerpoDeAuthExcedido()
+    if (excedido) return excedido
+    const body = (await request.json().catch(() => ({}))) as { email?: string; password?: string }
     if (!body.email || !body.password) {
       return json({ error: 'Faltan datos: email, password' }, 400)
     }
@@ -375,6 +360,8 @@ export async function handleRequest(request: Request): Promise<Response> {
   // que ambos van ANTES del guard `currentUser` de más abajo.
 
   if (method === 'POST' && pathname === '/api/auth/forgot-password') {
+    const excedido = cuerpoDeAuthExcedido()
+    if (excedido) return excedido
     const body = (await request.json().catch(() => ({}))) as { email?: string }
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
     if (!email || !EMAIL_RE.test(email)) {
@@ -434,6 +421,8 @@ export async function handleRequest(request: Request): Promise<Response> {
   }
 
   if (method === 'POST' && pathname === '/api/auth/reset-password') {
+    const excedido = cuerpoDeAuthExcedido()
+    if (excedido) return excedido
     const body = (await request.json().catch(() => ({}))) as { token?: string; password?: string }
     const token = typeof body.token === 'string' ? body.token : ''
     const password = typeof body.password === 'string' ? body.password : ''
@@ -463,6 +452,11 @@ export async function handleRequest(request: Request): Promise<Response> {
       return json({ error: mensaje, motivo: resultado.motivo }, 410)
     }
 
+    // Quien acaba de demostrar que controla el buzón no debe seguir bloqueado
+    // por los intentos fallidos de otro: si no, un atacante puede dejar una
+    // cuenta inaccesible durante 15 minutos aunque su dueño la recupere.
+    clearLoginAttempts(resultado.usuario.email)
+
     // Sin `set-cookie`: restablecer la contraseña NO inicia sesión. Quien
     // llegue al enlace debe volver a autenticarse con la contraseña nueva.
     return json({ ok: true, email: resultado.usuario.email })
@@ -473,6 +467,8 @@ export async function handleRequest(request: Request): Promise<Response> {
   // visitan las URL de los mensajes, y con un GET quemarían el enlace antes de
   // que el destinatario lo abriera. La página del portal muestra un botón.
   if (method === 'POST' && pathname === '/api/auth/confirm-email') {
+    const excedido = cuerpoDeAuthExcedido()
+    if (excedido) return excedido
     const body = (await request.json().catch(() => ({}))) as { token?: string }
     const token = typeof body.token === 'string' ? body.token : ''
     if (!token) return json({ error: 'Enlace inválido', motivo: 'invalido' }, 400)

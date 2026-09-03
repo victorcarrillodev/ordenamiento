@@ -11,9 +11,11 @@ import { routes } from '../../routes.ts'
 import { Button } from '../../ui/button.tsx'
 import { AuthShell } from '../../ui/login/auth-shell.tsx'
 import { TextField } from '../../ui/login/text-field.tsx'
-import type { LoginAlert as LoginAlertType } from '../../ui/login/types.ts'
-
-export const PASSWORD_MIN = 8
+import {
+  PASSWORD_MAX,
+  PASSWORD_MIN,
+  type LoginAlert as LoginAlertType,
+} from '../../ui/login/types.ts'
 
 export interface RestablecerPageProps {
   /** Token del correo. Ausente cuando el enlace ya no sirve. */
@@ -72,7 +74,8 @@ export function RestablecerPage(handle: Handle<RestablecerPageProps>) {
               placeholder="••••••••"
               autoComplete="new-password"
               minLength={PASSWORD_MIN}
-              hint={`Mínimo ${PASSWORD_MIN} caracteres. Evita datos fáciles de adivinar.`}
+              maxLength={PASSWORD_MAX}
+              hint={`Entre ${PASSWORD_MIN} y ${PASSWORD_MAX} caracteres. Evita datos fáciles de adivinar.`}
               reveal
               autoFocus
               error={errors.password}
@@ -86,6 +89,7 @@ export function RestablecerPage(handle: Handle<RestablecerPageProps>) {
               placeholder="••••••••"
               autoComplete="new-password"
               minLength={PASSWORD_MIN}
+              maxLength={PASSWORD_MAX}
               reveal
               error={errors.confirmacion}
             />

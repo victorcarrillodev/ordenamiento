@@ -10,6 +10,7 @@ import { createController } from 'remix/router'
 
 import { backendFetch, fetchJsonOr, requireAdminUser } from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
+import { PASSWORD_MAX } from '../../ui/login/types.ts'
 import { CuentaPage, type CuentaFeedback, type UserProfile } from './cuenta-page.tsx'
 import type { SesionRegistrada } from './sesiones-page.tsx'
 
@@ -123,7 +124,9 @@ export default createController(adminRoutes.cuenta, {
         const email = String(formData.get('email') ?? '').trim()
         const password = String(formData.get('password') ?? '')
         if (!EMAIL_RE.test(email)) return volver('correo-invalido')
-        if (!password) return volver('correo-password')
+        // El tope evita mandar al backend una contraseña de tamaño arbitrario
+        // solo para que la rechace tras haberla procesado.
+        if (!password || password.length > PASSWORD_MAX) return volver('correo-password')
 
         const res = await backendFetch(context.request, '/api/users/me/email', {
           method: 'POST',

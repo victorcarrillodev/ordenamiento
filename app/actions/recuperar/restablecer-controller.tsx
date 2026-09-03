@@ -10,7 +10,8 @@ import { createController } from 'remix/router'
 
 import { restablecerPassword, validarTokenRecuperacion } from '../../backend.ts'
 import { routes } from '../../routes.ts'
-import { PASSWORD_MIN, RestablecerPage } from './restablecer-page.tsx'
+import { PASSWORD_MAX, PASSWORD_MIN } from '../../ui/login/types.ts'
+import { RestablecerPage } from './restablecer-page.tsx'
 
 const MENSAJE_ENLACE_MUERTO =
   'El enlace de recuperación no es válido o ya venció. Solicita uno nuevo.'
@@ -53,11 +54,15 @@ export default createController(routes.restablecer, {
         return context.render(<RestablecerPage invalido />, { status: 400 })
       }
 
-      if (password.length < PASSWORD_MIN) {
+      // El máximo no es cosmético: sin él, una contraseña de megabytes obliga
+      // al backend a un hash argon2id de coste arbitrario.
+      if (password.length < PASSWORD_MIN || password.length > PASSWORD_MAX) {
         return context.render(
           <RestablecerPage
             token={token}
-            errors={{ password: `La contraseña debe tener al menos ${PASSWORD_MIN} caracteres` }}
+            errors={{
+              password: `La contraseña debe tener entre ${PASSWORD_MIN} y ${PASSWORD_MAX} caracteres`,
+            }}
           />,
           { status: 422 },
         )

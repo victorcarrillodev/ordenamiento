@@ -164,7 +164,25 @@ describe('POST /ordena/restablecer', () => {
 
     expect(response?.status).toBe(422)
     expect(spy).not.toHaveBeenCalled()
-    expect(await response!.text()).toContain('al menos 8 caracteres')
+    expect(await response!.text()).toContain('entre 8 y 128 caracteres')
+  })
+
+  it('rechaza una contraseña desmesurada sin llamar al backend', async () => {
+    // Cada hash argon2id cuesta 64 MB de memoria a propósito: sin tope, una
+    // contraseña de megabytes convierte el formulario en una forma barata de
+    // tumbar el servidor.
+    const spy = vi.fn()
+    globalThis.fetch = spy
+
+    const enorme = 'a'.repeat(200_000)
+    const response = await post('/ordena/restablecer', {
+      token,
+      password: enorme,
+      confirmacion: enorme,
+    })
+
+    expect(response?.status).toBe(422)
+    expect(spy).not.toHaveBeenCalled()
   })
 
   it('rechaza cuando la confirmación no coincide', async () => {

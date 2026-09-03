@@ -6,20 +6,20 @@
  *   routes.login.index  → GET  /login
  *   routes.login.action → POST /login
  */
-import { email, minLength } from 'remix/data-schema/checks'
+import { email, maxLength, minLength } from 'remix/data-schema/checks'
 import * as s from 'remix/data-schema'
 import * as f from 'remix/data-schema/form-data'
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { BACKEND_URL, loginBackend } from '../../backend.ts'
+import { loginBackend } from '../../backend.ts'
 import { adminRoutes, routes } from '../../routes.ts'
 import { LoginPage } from './page.tsx'
-import type { LoginErrors } from '../../ui/login/types.ts'
+import { PASSWORD_MAX, PASSWORD_MIN, type LoginErrors } from '../../ui/login/types.ts'
 
 const loginSchema = f.object({
   email: f.field(s.string().pipe(email())),
-  password: f.field(s.string().pipe(minLength(8))),
+  password: f.field(s.string().pipe(minLength(PASSWORD_MIN), maxLength(PASSWORD_MAX))),
 })
 
 export default createController(routes.login, {
@@ -43,43 +43,7 @@ export default createController(routes.login, {
     },
 
     async action(context) {
-      // Añadir nombre al manejo de registro admin + campos
       const formData = await context.request.formData()
-      const intent = String(formData.get('intent') ?? 'login')
-
-      // ── Registro de nuevo administrador (por si se olvida la cuenta) ──
-      if (intent === 'registro') {
-        const name = String(formData.get('name') ?? '').trim()
-        const email = String(formData.get('email') ?? '').trim()
-        const password = String(formData.get('password') ?? '')
-
-        if (!name || !email || password.length < 8) {
-          return context.render(
-            <LoginPage errors={{ name: 'Completa nombre, correo y contraseña (mín. 8)' }} />,
-            { status: 422 },
-          )
-        }
-
-        const regResponse = await fetch(`${BACKEND_URL}/api/auth/register`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ email, name, password, role: 'user' }),
-        })
-
-        if (!regResponse.ok) {
-          const data = (await regResponse.json().catch(() => ({}))) as { error?: string }
-          return context.render(
-            <LoginPage errors={{ email: data.error ?? 'No se pudo crear la cuenta' }} />,
-            { status: regResponse.status },
-          )
-        }
-
-        const token = regResponse.headers.get('set-cookie')
-        // Usuario creado: entra como ciudadano a "haz tu participación"
-        return redirect(routes.participation.index.href() + '?success=1', {
-          headers: token ? { 'set-cookie': token } : undefined,
-        })
-      }
 
       const parsed = s.parseSafe(loginSchema, formData, {
         errorMap(ctx) {
@@ -88,7 +52,10 @@ export default createController(routes.login, {
             return 'Ingresa un correo electrónico válido'
           }
           if (ctx.code === 'string.min_length') {
-            return 'La contraseña debe tener al menos 8 caracteres'
+            return `La contraseña debe tener al menos ${PASSWORD_MIN} caracteres`
+          }
+          if (ctx.code === 'string.max_length') {
+            return `La contraseña no puede pasar de ${PASSWORD_MAX} caracteres`
           }
           if (ctx.code === 'type.string') {
             return field === 'email' ? 'Ingresa tu correo electrónico' : 'Ingresa tu contraseña'

@@ -16,6 +16,7 @@ export interface TextFieldProps {
   value?: string
   autoFocus?: boolean
   minLength?: number
+  maxLength?: number
   /** Texto de ayuda permanente bajo el campo (p. ej. requisitos de contraseña). */
   hint?: string
   /**
@@ -116,6 +117,7 @@ export function TextField(handle: Handle<TextFieldProps>) {
       value,
       autoFocus,
       minLength,
+      maxLength,
       hint,
       reveal,
     } = handle.props
@@ -135,6 +137,7 @@ export function TextField(handle: Handle<TextFieldProps>) {
         autoComplete,
         value,
         minLength,
+        maxLength,
         autofocus: autoFocus ? true : undefined,
         'aria-invalid': error ? true : undefined,
         'aria-describedby': describedBy,
