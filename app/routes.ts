@@ -71,4 +71,5 @@ export const adminRoutes = route({
   cuenta: form(`${basePath}/admin/cuenta`),
   cuentaAvatar: get(`${basePath}/admin/cuenta/avatar`),
   personalizacion: form(`${basePath}/admin/personalizacion`),
+  personalizacionTextos: form(`${basePath}/admin/personalizacion/textos`),
 })

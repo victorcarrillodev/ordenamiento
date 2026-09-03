@@ -27,6 +27,7 @@ describe('Admin Routes Protection & Navigation', () => {
       '/ordena/admin/sesiones',
       '/ordena/admin/cuenta',
       '/ordena/admin/personalizacion',
+      '/ordena/admin/personalizacion/textos',
     ]
 
     for (const path of protectedRoutes) {
@@ -192,6 +193,7 @@ describe('Admin Routes Protection & Navigation', () => {
       { path: '/ordena/admin/usuarios', name: 'Usuarios' },
       { path: '/ordena/admin/cuenta', name: 'Cuenta' },
       { path: '/ordena/admin/personalizacion', name: 'Personalización' },
+      { path: '/ordena/admin/personalizacion/textos', name: 'Textos del portal' },
     ]
 
     for (const page of adminPages) {

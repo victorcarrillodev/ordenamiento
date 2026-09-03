@@ -3219,3 +3219,19 @@ a.user-cell:hover .user-cell__name {
     width: 100%;
   }
 }
+
+.textos__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+/* Auto-grow de los textareas de la mini-página de textos: el JS ajusta la
+   altura al scrollHeight en cada input, así que el tirador manual sobra
+   (pelearía con el recálculo). overflow-y auto (no hidden) para que, si
+   admin.js no cargara, el contenido largo quede navegable con scroll.
+   El min-height conserva el alto inicial de las cajas más pequeñas (rows=2). */
+.textos textarea {
+  resize: none;
+  overflow-y: auto;
+  min-height: 60px;
+}

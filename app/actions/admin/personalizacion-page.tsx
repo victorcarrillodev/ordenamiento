@@ -68,6 +68,13 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
             >
               Previsualizar
             </Button>
+            <Button
+              href={adminRoutes.personalizacionTextos.index.href()}
+              variant="secondary"
+              icon={<Icon name="mdi:text-box-edit-outline" size={16} />}
+            >
+              Editar textos
+            </Button>
           </>
         }
       >
@@ -623,84 +630,26 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                 </div>
               </div>
 
-              {/* SECCION TEXTOS E ICONOS */}
+              {/* SECCION TEXTOS */}
               <div class="panel">
-                <h3 class="panel__title">4. Textos del Portal e Íconos de Tarjetas</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px;">
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Cintillo del Hero (Texto pequeño superior)
-                    </label>
-                    <input
-                      type="text"
-                      name="txt_hero_cintillo"
-                      value={txt.heroCintillo || ''}
-                      style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
-                    />
-                  </div>
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Título Principal del Hero
-                    </label>
-                    <input
-                      type="text"
-                      name="txt_hero_titulo"
-                      value={txt.heroTitulo || ''}
-                      style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
-                    />
-                  </div>
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Frase Resaltada en Oro (Hero)
-                    </label>
-                    <input
-                      type="text"
-                      name="txt_hero_resaltado"
-                      value={txt.heroTituloResaltado || ''}
-                      style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
-                    />
-                  </div>
-                  <div class="form-field" style="grid-column: 1 / -1;">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Subtítulo Descriptivo del Hero
-                    </label>
-                    <textarea
-                      name="txt_hero_subtitulo"
-                      rows={2}
-                      style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px; resize: vertical;"
-                    >
-                      {txt.heroSubtitulo || ''}
-                    </textarea>
-                  </div>
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Texto Botón Principal (Hero 1)
-                    </label>
-                    <input
-                      type="text"
-                      name="txt_hero_btn1"
-                      value={txt.heroBtn1 || 'Conoce el programa'}
-                      style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
-                    />
-                  </div>
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Texto Botón Participar (Hero 2)
-                    </label>
-                    <input
-                      type="text"
-                      name="txt_hero_btn2"
-                      value={txt.heroBtn2 || 'Registra tu participación'}
-                      style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
-                    />
-                  </div>
-                </div>
+                <h3 class="panel__title">4. Textos del Portal</h3>
+                <p style="font-size: 13px; color: #64748b; margin: 0 0 12px;">
+                  Todos los textos visibles del portal ciudadano (navegación, portada, secciones,
+                  tarjetas, proceso, llamado a participar y pie de página) se editan en una página
+                  dedicada, agrupados por sección.
+                </p>
+                <Button
+                  href={adminRoutes.personalizacionTextos.index.href()}
+                  variant="secondary"
+                  icon={<Icon name="mdi:text-box-edit-outline" size={16} />}
+                >
+                  Editar textos del portal
+                </Button>
+              </div>
 
-                {/* ÍCONOS Y TÍTULOS DE LAS 4 TARJETAS */}
-                <div style="border-top: 1px solid #e2e8f0; padding-top: 16px;">
-                  <h4 style="font-size: 14px; font-weight: 800; color: #334155; margin: 0 0 12px;">
-                    Íconos y Títulos de las 4 Tarjetas de Acción
-                  </h4>
+              {/* SECCION ICONOS */}
+              <div class="panel">
+                <h3 class="panel__title">5. Íconos de Tarjetas</h3>
                   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
                     {/* Tarjeta 1 */}
                     <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
@@ -711,20 +660,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                           value={ico.cardPrograma || '🏛️'}
                           style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
                         />
-                        <input
-                          type="text"
-                          name="txt_card1_titulo"
-                          value={txt.card1Titulo || 'Conoce el Programa'}
-                          style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 12px; font-weight: 700;"
-                        />
                       </div>
-                      <textarea
-                        name="txt_card1_desc"
-                        rows={2}
-                        style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 11px; resize: vertical;"
-                      >
-                        {txt.card1Desc || ''}
-                      </textarea>
                     </div>
 
                     {/* Tarjeta 2 */}
@@ -736,20 +672,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                           value={ico.cardProceso || '⚙️'}
                           style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
                         />
-                        <input
-                          type="text"
-                          name="txt_card2_titulo"
-                          value={txt.card2Titulo || 'Conoce el Proceso'}
-                          style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 12px; font-weight: 700;"
-                        />
                       </div>
-                      <textarea
-                        name="txt_card2_desc"
-                        rows={2}
-                        style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 11px; resize: vertical;"
-                      >
-                        {txt.card2Desc || ''}
-                      </textarea>
                     </div>
 
                     {/* Tarjeta 3 */}
@@ -761,20 +684,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                           value={ico.cardCalendario || '📅'}
                           style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
                         />
-                        <input
-                          type="text"
-                          name="txt_card3_titulo"
-                          value={txt.card3Titulo || 'Calendario de Actividades'}
-                          style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 12px; font-weight: 700;"
-                        />
                       </div>
-                      <textarea
-                        name="txt_card3_desc"
-                        rows={2}
-                        style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 11px; resize: vertical;"
-                      >
-                        {txt.card3Desc || ''}
-                      </textarea>
                     </div>
 
                     {/* Tarjeta 4 */}
@@ -786,67 +696,10 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                           value={ico.cardDocumentos || '📄'}
                           style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
                         />
-                        <input
-                          type="text"
-                          name="txt_card4_titulo"
-                          value={txt.card4Titulo || 'Consulta Documentos'}
-                          style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 12px; font-weight: 700;"
-                        />
                       </div>
-                      <textarea
-                        name="txt_card4_desc"
-                        rows={2}
-                        style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 11px; resize: vertical;"
-                      >
-                        {txt.card4Desc || ''}
-                      </textarea>
                     </div>
                   </div>
                 </div>
-
-                {/* FOOTER INFORMACIÓN */}
-                <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 16px;">
-                  <h4 style="font-size: 14px; font-weight: 800; color: #334155; margin: 0 0 12px;">
-                    Información del Pie de Página (Footer)
-                  </h4>
-                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
-                    <div class="form-field">
-                      <label style="font-weight: 700; font-size: 11px; color: #475569;">
-                        Nombre de la Entidad / Municipio
-                      </label>
-                      <input
-                        type="text"
-                        name="txt_footer_entidad"
-                        value={txt.footerEntidad || 'Municipio de San Pedro Tlaquepaque'}
-                        style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 12px;"
-                      />
-                    </div>
-                    <div class="form-field">
-                      <label style="font-weight: 700; font-size: 11px; color: #475569;">
-                        Correo de Contacto Oficial
-                      </label>
-                      <input
-                        type="text"
-                        name="txt_footer_email"
-                        value={txt.footerEmail || 'ordenamiento@tlaquepaque.gob.mx'}
-                        style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 12px;"
-                      />
-                    </div>
-                    <div class="form-field" style="grid-column: 1 / -1;">
-                      <label style="font-weight: 700; font-size: 11px; color: #475569;">
-                        Dirección y Datos de Contacto
-                      </label>
-                      <textarea
-                        name="txt_footer_contacto"
-                        rows={2}
-                        style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 12px; resize: vertical;"
-                      >
-                        {txt.footerContacto || ''}
-                      </textarea>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               {/* MOTIVO OBLIGATORIO Y BOTON GUARDAR */}
               <div class="panel panel--destacado">

@@ -88,29 +88,72 @@ export interface ThemeConfig {
     }
     textos: {
       navbarTitulo: string
+      navEnlaceInicio: string
+      navEnlacePoetdum: string
+      navCtaRegistrar: string
       heroCintillo: string
       heroTitulo: string
       heroTituloResaltado: string
       heroSubtitulo: string
       heroBtn1: string
       heroBtn2: string
+      heroScrollIndicador: string
       queEsCintillo: string
       queEsTitulo: string
       queEsParrafo1: string
       queEsParrafo2: string
+      queEsBullet1: string
+      queEsBullet2: string
+      queEsBullet3: string
+      queEsBullet4: string
+      queEsPieImagen: string
+      tarjetasEyebrow: string
+      tarjetasTitulo: string
       card1Titulo: string
       card1Desc: string
+      card1Eyebrow: string
+      card1Cta: string
       card2Titulo: string
       card2Desc: string
+      card2Eyebrow: string
+      card2Cta: string
       card3Titulo: string
       card3Desc: string
+      card3Eyebrow: string
+      card3Cta: string
       card4Titulo: string
       card4Desc: string
+      card4Eyebrow: string
+      card4Cta: string
+      programaTitulo: string
+      programaParrafo1: string
+      programaParrafo2: string
+      programaPregunta1: string
+      programaPregunta2: string
+      programaPregunta3: string
+      programaPregunta4: string
+      timelineEyebrow: string
+      timelineTitulo: string
+      timelinePaso1Titulo: string
+      timelinePaso1Desc: string
+      timelinePaso2Titulo: string
+      timelinePaso2Desc: string
+      timelinePaso3Titulo: string
+      timelinePaso3Desc: string
+      timelinePaso4Titulo: string
+      timelinePaso4Desc: string
+      timelinePaso5Titulo: string
+      timelinePaso5Desc: string
+      ctaEyebrow: string
+      ctaTitulo: string
+      ctaParrafo: string
+      ctaBoton: string
       footerEntidad: string
       footerDesc: string
       footerContacto: string
       footerEmail: string
       footerCopyright: string
+      footerFirma: string
     }
   }
   panel: {
@@ -153,7 +196,10 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
       cardDocumentos: '📄',
     },
     textos: {
-      navbarTitulo: 'Portal de Ordenamiento Territorial',
+      navbarTitulo: 'Inicio – Portal de Ordenamiento Territorial',
+      navEnlaceInicio: 'Inicio y proceso',
+      navEnlacePoetdum: 'Elaboración del POETDUM',
+      navCtaRegistrar: 'Registra tu participación',
       heroCintillo: 'BITÁCORA AMBIENTAL Y ORDENAMIENTO TERRITORIAL · SAN PEDRO TLAQUEPAQUE',
       heroTitulo: 'Bitácora Ambiental y Ordenamiento Territorial',
       heroTituloResaltado: 'Ordenamiento Territorial',
@@ -161,24 +207,75 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
         'Un espacio público y transparente que reúne información, facilita la participación ciudadana y permite dar seguimiento a la elaboración y aplicación del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
       heroBtn1: 'Conoce la Bitácora',
       heroBtn2: 'Registra tu participación',
+      heroScrollIndicador: 'Explorar',
       queEsCintillo: '¿QUÉ ES ESTE SITIO?',
       queEsTitulo: 'Conoce la Bitácora Ambiental y de Ordenamiento Territorial',
       queEsParrafo1:
         'Este sitio forma parte de la Bitácora Ambiental y de Ordenamiento Territorial del Municipio de San Pedro Tlaquepaque, un espacio público y transparente en el que se registra, organiza y difunde la información relacionada con el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
       queEsParrafo2:
         'La Bitácora permite conocer y dar seguimiento a la elaboración, actualización, aplicación y evaluación del Programa; consultar los acuerdos, avances, resultados y documentos técnicos generados, así como conocer las actividades relacionadas con la planeación del territorio municipal. También facilita la participación de la ciudadanía, al permitir la presentación de observaciones, propuestas y documentos durante los mecanismos de consulta pública establecidos.',
+      queEsBullet1: 'Consulta de documentos técnicos, acuerdos, avances y resultados.',
+      queEsBullet2: 'Seguimiento a la elaboración, actualización y aplicación del Programa.',
+      queEsBullet3: 'Acceso al calendario de actividades y mecanismos de consulta pública.',
+      queEsBullet4:
+        'Registro de observaciones, propuestas y documentos de la ciudadanía (durante los tiempos oficiales de consulta pública).',
+      queEsPieImagen: 'Equilibrio ecológico • Jalisco, México',
+      tarjetasEyebrow: 'Explora lo que puedes hacer aquí',
+      tarjetasTitulo: 'Todo lo que necesitas para estar informado y participar',
       card1Titulo: 'Proceso de Elaboración',
       card1Desc:
         'Consulta las etapas del proceso de elaboración del Programa, su estado de avance, actividades realizadas, productos obtenidos y documentos relacionados.',
+      card1Eyebrow: 'Proceso de elaboración',
+      card1Cta: 'Ver proceso',
       card2Titulo: 'Actividades y Participación',
       card2Desc:
         'Consulta las actividades próximas y realizadas: talleres, mesas de trabajo, consultas públicas y sesiones técnicas, con sus resultados y documentos.',
+      card2Eyebrow: 'Actividades y participación',
+      card2Cta: 'Ver actividades',
       card3Titulo: 'Documentos del Proceso',
       card3Desc:
         'Accede al repositorio de convenios, actas, acuerdos, documentos técnicos, cartografía y avances generados durante el proceso.',
+      card3Eyebrow: 'Repositorio técnico',
+      card3Cta: 'Ver documentos',
       card4Titulo: 'Seguimiento y Evaluación',
       card4Desc:
         'Consulta los indicadores ambientales y los resultados de la evaluación del cumplimiento y efectividad del Programa.',
+      card4Eyebrow: 'Seguimiento y evaluación',
+      card4Cta: 'Ver indicadores',
+      programaTitulo:
+        '¿Qué es el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano?',
+      programaParrafo1:
+        'Es una herramienta que permite organizar el territorio del municipio, definiendo qué actividades pueden realizarse en cada zona y en qué condiciones, con el objetivo de proteger el medio ambiente y orientar el desarrollo urbano de manera ordenada.',
+      programaParrafo2:
+        'Para elaborarlo se analizan las características del territorio, sus recursos naturales y las actividades que se desarrollan en él, con el propósito de encontrar un equilibrio entre la protección del medio ambiente y el desarrollo urbano del municipio. A partir de estos análisis se busca responder preguntas como:',
+      programaPregunta1: '¿Qué zonas deben conservarse o protegerse por su valor ambiental?',
+      programaPregunta2: '¿Dónde es adecuado el crecimiento y desarrollo urbano del municipio?',
+      programaPregunta3:
+        '¿Qué tipo de actividades pueden desarrollarse en las distintas zonas del territorio?',
+      programaPregunta4:
+        '¿En qué condiciones deben realizarse estas actividades para evitar impactos negativos en el ambiente y en el entorno urbano? Una vez aprobado, el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano establece los criterios y lineamientos que orientan el uso, ocupación y aprovechamiento del territorio, así como las reglas que guiarán el desarrollo urbano del municipio.',
+      timelineEyebrow: 'Fases del proceso',
+      timelineTitulo: 'Cinco etapas hacia un territorio ordenado y sustentable',
+      timelinePaso1Titulo: 'Formulación',
+      timelinePaso1Desc:
+        'Diagnóstico territorial, caracterización del área y elaboración de la propuesta inicial del programa con participación ciudadana.',
+      timelinePaso2Titulo: 'Expedición',
+      timelinePaso2Desc:
+        'Consulta pública, revisión técnica, aprobación por el Ayuntamiento y publicación oficial del programa en el Periódico Oficial.',
+      timelinePaso3Titulo: 'Ejecución',
+      timelinePaso3Desc:
+        'Implementación de acciones, programas e instrumentos para materializar los lineamientos del ordenamiento territorial.',
+      timelinePaso4Titulo: 'Evaluación',
+      timelinePaso4Desc:
+        'Monitoreo de indicadores, revisión periódica de avances y verificación del cumplimiento de metas establecidas.',
+      timelinePaso5Titulo: 'Modificación',
+      timelinePaso5Desc:
+        'Actualización del programa con base en nuevas condiciones territoriales, ambientales o socioeconómicas del municipio.',
+      ctaEyebrow: 'Participación ciudadana',
+      ctaTitulo: 'Tu voz transforma el territorio de Tlaquepaque',
+      ctaParrafo:
+        'Registra tus observaciones, propuestas y documentos técnicos. Tu participación es fundamental para construir el Programa de Ordenamiento que refleje las necesidades reales del municipio.',
+      ctaBoton: 'Registra tu participación',
       footerEntidad: 'Municipio de San Pedro Tlaquepaque',
       footerDesc:
         'Portal oficial de la Bitácora Ambiental del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
@@ -187,6 +284,7 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
       footerEmail: 'ordenamiento@tlaquepaque.gob.mx',
       footerCopyright:
         '© 2026 H. Ayuntamiento de San Pedro Tlaquepaque. Todos los derechos reservados.',
+      footerFirma: 'Portal de Ordenamiento Territorial · Bitácora Ambiental',
     },
   },
   panel: {

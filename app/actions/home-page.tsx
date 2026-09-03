@@ -361,7 +361,7 @@ function HeroSection(handle: Handle<{ theme?: ThemeData }>) {
                 color: rgba(255,255,255,0.7);
               `}
             >
-              Explorar
+              {txt.heroScrollIndicador || 'Explorar'}
             </span>
           </div>
         </div>
@@ -562,10 +562,10 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
             <div mix={css({ marginTop: '8px' })}>
               <CheckBulletList
                 items={[
-                  'Consulta de documentos técnicos, acuerdos, avances y resultados.',
-                  'Seguimiento a la elaboración, actualización y aplicación del Programa.',
-                  'Acceso al calendario de actividades y mecanismos de consulta pública.',
-                  'Registro de observaciones, propuestas y documentos de la ciudadanía (durante los tiempos oficiales de consulta pública).',
+                  txt.queEsBullet1 || 'Consulta de documentos técnicos, acuerdos, avances y resultados.',
+                  txt.queEsBullet2 || 'Seguimiento a la elaboración, actualización y aplicación del Programa.',
+                  txt.queEsBullet3 || 'Acceso al calendario de actividades y mecanismos de consulta pública.',
+                  txt.queEsBullet4 || 'Registro de observaciones, propuestas y documentos de la ciudadanía (durante los tiempos oficiales de consulta pública).',
                 ]}
                 dotColor={primary}
                 checkColor="white"
@@ -614,7 +614,7 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
                   letterSpacing: '0.05em',
                 })}
               >
-                Equilibrio ecológico • Jalisco, México
+                {txt.queEsPieImagen || 'Equilibrio ecológico • Jalisco, México'}
               </p>
             </div>
           </div>
@@ -644,49 +644,49 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
       {
         id: 'card-elaboracion',
         icon: ico.cardPrograma || '📋',
-        eyebrow: 'Proceso de elaboración',
+        eyebrow: txt.card1Eyebrow || 'Proceso de elaboración',
         title: txt.card1Titulo || 'Proceso de Elaboración',
         description:
           txt.card1Desc ||
           'Consulta las etapas del proceso de elaboración del Programa, su estado de avance, actividades realizadas, productos obtenidos y documentos relacionados.',
         href: '#proceso',
-        cta: 'Ver proceso',
+        cta: txt.card1Cta || 'Ver proceso',
         accent: primary,
       },
       {
         id: 'card-proceso',
         icon: ico.cardProceso || '🗓️',
-        eyebrow: 'Actividades y participación',
+        eyebrow: txt.card2Eyebrow || 'Actividades y participación',
         title: txt.card2Titulo || 'Actividades y Participación',
         description:
           txt.card2Desc ||
           'Consulta las actividades próximas y realizadas: talleres, mesas de trabajo, consultas públicas y sesiones técnicas, con sus resultados y documentos.',
         href: '#actividades',
-        cta: 'Ver actividades',
+        cta: txt.card2Cta || 'Ver actividades',
         accent: secondary,
       },
       {
         id: 'card-documentos',
         icon: ico.cardDocumentos || '📄',
-        eyebrow: 'Repositorio técnico',
+        eyebrow: txt.card3Eyebrow || 'Repositorio técnico',
         title: txt.card3Titulo || 'Documentos del Proceso',
         description:
           txt.card3Desc ||
           'Accede al repositorio de convenios, actas, acuerdos, documentos técnicos, cartografía y avances generados durante el proceso.',
         href: '#documentos',
-        cta: 'Ver documentos',
+        cta: txt.card3Cta || 'Ver documentos',
         accent: accent,
       },
       {
         id: 'card-seguimiento',
         icon: ico.cardCalendario || '📊',
-        eyebrow: 'Seguimiento y evaluación',
+        eyebrow: txt.card4Eyebrow || 'Seguimiento y evaluación',
         title: txt.card4Titulo || 'Seguimiento y Evaluación',
         description:
           txt.card4Desc ||
           'Consulta los indicadores ambientales y los resultados de la evaluación del cumplimiento y efectividad del Programa.',
         href: '#seguimiento',
-        cta: 'Ver indicadores',
+        cta: txt.card4Cta || 'Ver indicadores',
         accent: colors.burgundy700,
       },
     ]
@@ -710,10 +710,10 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
             <span
               style={`font-family: ${FONT_STACK}; font-size: 12px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: ${primary};`}
             >
-              Explora lo que puedes hacer aquí
+              {txt.tarjetasEyebrow || 'Explora lo que puedes hacer aquí'}
             </span>
             <h2 id="acciones-heading" mix={css({ ...headingLProps, margin: 0, maxWidth: '600px' })}>
-              Todo lo que necesitas para estar informado y participar
+              {txt.tarjetasTitulo || 'Todo lo que necesitas para estar informado y participar'}
             </h2>
           </div>
 
@@ -845,13 +845,14 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
     const { theme } = handle.props
     const u = theme?.usuario || {}
     const img = u.imagenes || {}
+    const txt = u.textos || {}
     const programaImg = img.imagenPrograma || IMAGEN_POR_DEFECTO.programa
 
     const preguntas = [
-      '¿Qué zonas deben conservarse o protegerse por su valor ambiental?',
-      '¿Dónde es adecuado el crecimiento y desarrollo urbano del municipio?',
-      '¿Qué tipo de actividades pueden desarrollarse en las distintas zonas del territorio?',
-      '¿En qué condiciones deben realizarse estas actividades para evitar impactos negativos en el ambiente y en el entorno urbano? Una vez aprobado, el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano establece los criterios y lineamientos que orientan el uso, ocupación y aprovechamiento del territorio, así como las reglas que guiarán el desarrollo urbano del municipio.',
+      txt.programaPregunta1 || '¿Qué zonas deben conservarse o protegerse por su valor ambiental?',
+      txt.programaPregunta2 || '¿Dónde es adecuado el crecimiento y desarrollo urbano del municipio?',
+      txt.programaPregunta3 || '¿Qué tipo de actividades pueden desarrollarse en las distintas zonas del territorio?',
+      txt.programaPregunta4 || '¿En qué condiciones deben realizarse estas actividades para evitar impactos negativos en el ambiente y en el entorno urbano? Una vez aprobado, el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano establece los criterios y lineamientos que orientan el uso, ocupación y aprovechamiento del territorio, así como las reglas que guiarán el desarrollo urbano del municipio.',
     ]
 
     return (
@@ -895,7 +896,7 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
                 },
               })}
             >
-              ¿Qué es el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano?
+              {txt.programaTitulo || '¿Qué es el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano?'}
             </h2>
 
             {/* Grid 2 Columnas: Texto izquierda / Ilustración vector derecha */}
@@ -922,10 +923,7 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
                     margin: 0,
                   })}
                 >
-                  Es una herramienta que permite organizar el territorio del municipio, definiendo
-                  qué actividades pueden realizarse en cada zona y en qué condiciones, con el
-                  objetivo de proteger el medio ambiente y orientar el desarrollo urbano de manera
-                  ordenada.
+                  {txt.programaParrafo1 || 'Es una herramienta que permite organizar el territorio del municipio, definiendo qué actividades pueden realizarse en cada zona y en qué condiciones, con el objetivo de proteger el medio ambiente y orientar el desarrollo urbano de manera ordenada.'}
                 </p>
                 <p
                   mix={css({
@@ -936,11 +934,7 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
                     margin: 0,
                   })}
                 >
-                  Para elaborarlo se analizan las características del territorio, sus recursos
-                  naturales y las actividades que se desarrollan en él, con el propósito de
-                  encontrar un equilibrio entre la protección del medio ambiente y el desarrollo
-                  urbano del municipio. A partir de estos análisis se busca responder preguntas
-                  como:
+                  {txt.programaParrafo2 || 'Para elaborarlo se analizan las características del territorio, sus recursos naturales y las actividades que se desarrollan en él, con el propósito de encontrar un equilibrio entre la protección del medio ambiente y el desarrollo urbano del municipio. A partir de estos análisis se busca responder preguntas como:'}
                 </p>
 
                 <ul
@@ -1009,41 +1003,41 @@ interface TimelineStep {
   color: string
 }
 
-function getTimelineSteps(primary: string, accent: string, secondary: string): TimelineStep[] {
+function getTimelineSteps(primary: string, accent: string, secondary: string, txt: Record<string, any> = {}): TimelineStep[] {
   return [
     {
       number: '01',
-      title: 'Formulación',
+      title: txt.timelinePaso1Titulo || 'Formulación',
       description:
-        'Diagnóstico territorial, caracterización del área y elaboración de la propuesta inicial del programa con participación ciudadana.',
+        txt.timelinePaso1Desc || 'Diagnóstico territorial, caracterización del área y elaboración de la propuesta inicial del programa con participación ciudadana.',
       color: primary,
     },
     {
       number: '02',
-      title: 'Expedición',
+      title: txt.timelinePaso2Titulo || 'Expedición',
       description:
-        'Consulta pública, revisión técnica, aprobación por el Ayuntamiento y publicación oficial del programa en el Periódico Oficial.',
+        txt.timelinePaso2Desc || 'Consulta pública, revisión técnica, aprobación por el Ayuntamiento y publicación oficial del programa en el Periódico Oficial.',
       color: accent,
     },
     {
       number: '03',
-      title: 'Ejecución',
+      title: txt.timelinePaso3Titulo || 'Ejecución',
       description:
-        'Implementación de acciones, programas e instrumentos para materializar los lineamientos del ordenamiento territorial.',
+        txt.timelinePaso3Desc || 'Implementación de acciones, programas e instrumentos para materializar los lineamientos del ordenamiento territorial.',
       color: secondary,
     },
     {
       number: '04',
-      title: 'Evaluación',
+      title: txt.timelinePaso4Titulo || 'Evaluación',
       description:
-        'Monitoreo de indicadores, revisión periódica de avances y verificación del cumplimiento de metas establecidas.',
+        txt.timelinePaso4Desc || 'Monitoreo de indicadores, revisión periódica de avances y verificación del cumplimiento de metas establecidas.',
       color: colors.gray700,
     },
     {
       number: '05',
-      title: 'Modificación',
+      title: txt.timelinePaso5Titulo || 'Modificación',
       description:
-        'Actualización del programa con base en nuevas condiciones territoriales, ambientales o socioeconómicas del municipio.',
+        txt.timelinePaso5Desc || 'Actualización del programa con base en nuevas condiciones territoriales, ambientales o socioeconómicas del municipio.',
       color: primary,
     },
   ]
@@ -1057,7 +1051,8 @@ function ProcessTimeline(handle: Handle<{ theme?: ThemeData }>) {
     const primary = c.primario || colors.burgundy900
     const accent = c.acento || colors.gold500
     const secondary = c.secundario || colors.green700
-    const steps = getTimelineSteps(primary, accent, secondary)
+    const txt = u.textos || {}
+    const steps = getTimelineSteps(primary, accent, secondary, txt)
 
     return (
       <section
@@ -1076,9 +1071,9 @@ function ProcessTimeline(handle: Handle<{ theme?: ThemeData }>) {
               gap: '16px',
             })}
           >
-            <span mix={css({ ...eyebrowProps, color: primary })}>Fases del proceso</span>
+            <span mix={css({ ...eyebrowProps, color: primary })}>{txt.timelineEyebrow || 'Fases del proceso'}</span>
             <h2 id="proceso-heading" mix={css({ ...headingLProps, margin: 0, maxWidth: '560px' })}>
-              Cinco etapas hacia un territorio ordenado y sustentable
+              {txt.timelineTitulo || 'Cinco etapas hacia un territorio ordenado y sustentable'}
             </h2>
           </div>
 
@@ -1228,6 +1223,7 @@ function ParticipationCta(handle: Handle<{ theme?: ThemeData }>) {
     const { theme } = handle.props
     const u = theme?.usuario || {}
     const c = u.colores || {}
+    const txt = u.textos || {}
     const primary = c.primario || colors.burgundy900
     const accent = c.acento || colors.gold400
 
@@ -1291,7 +1287,7 @@ function ParticipationCta(handle: Handle<{ theme?: ThemeData }>) {
             ✍️
           </div>
 
-          <span mix={css({ ...eyebrowProps, color: accent })}>Participación ciudadana</span>
+          <span mix={css({ ...eyebrowProps, color: accent })}>{txt.ctaEyebrow || 'Participación ciudadana'}</span>
 
           <h2
             id="participa-heading"
@@ -1302,7 +1298,7 @@ function ParticipationCta(handle: Handle<{ theme?: ThemeData }>) {
               maxWidth: '640px',
             })}
           >
-            Tu voz transforma el territorio de Tlaquepaque
+            {txt.ctaTitulo || 'Tu voz transforma el territorio de Tlaquepaque'}
           </h2>
 
           <p
@@ -1315,9 +1311,7 @@ function ParticipationCta(handle: Handle<{ theme?: ThemeData }>) {
               margin: 0,
             })}
           >
-            Registra tus observaciones, propuestas y documentos técnicos. Tu participación es
-            fundamental para construir el Programa de Ordenamiento que refleje las necesidades
-            reales del municipio.
+            {txt.ctaParrafo || 'Registra tus observaciones, propuestas y documentos técnicos. Tu participación es fundamental para construir el Programa de Ordenamiento que refleje las necesidades reales del municipio.'}
           </p>
 
           <div
@@ -1380,7 +1374,7 @@ function ParticipationCta(handle: Handle<{ theme?: ThemeData }>) {
               </svg>
             }
           >
-            Registra tu participación
+            {txt.ctaBoton || 'Registra tu participación'}
           </Button>
         </div>
       </section>
@@ -1603,7 +1597,7 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
                 margin: 0;
               `}
             >
-              Portal de Ordenamiento Territorial · Bitácora Ambiental
+              {txt.footerFirma || 'Portal de Ordenamiento Territorial · Bitácora Ambiental'}
             </p>
           </div>
         </div>

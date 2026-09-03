@@ -13,6 +13,7 @@ export function NavBar(handle: Handle<NavBarProps>) {
     const u = theme?.usuario || {}
     const c = u.colores || {}
     const img = u.imagenes || {}
+    const txt = u.textos || {}
 
     const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
     const navBg = c.navbarFondo || 'rgba(255,255,255,0.98)'
@@ -112,7 +113,7 @@ export function NavBar(handle: Handle<NavBarProps>) {
           {/* Brand */}
           <a
             href={routes.home.href()}
-            aria-label="Inicio – Portal de Ordenamiento Territorial"
+            aria-label={txt.navbarTitulo || 'Inicio – Portal de Ordenamiento Territorial'}
             mix={navBrandStyle}
           >
             <div mix={imgLogoStyle} role="img" aria-label="Logotipo Portal" />
@@ -121,16 +122,16 @@ export function NavBar(handle: Handle<NavBarProps>) {
           {/* Nav links */}
           <div mix={navLinksStyle}>
             <a href={routes.home.href()} mix={navLinkStyle}>
-              Inicio y proceso
+              {txt.navEnlaceInicio || 'Inicio y proceso'}
             </a>
             <a href={routes.poetdum.show.href()} mix={navLinkStyle}>
-              Elaboración del POETDUM
+              {txt.navEnlacePoetdum || 'Elaboración del POETDUM'}
             </a>
           </div>
 
           {/* CTA */}
           <a href={routes.participation.index.href()} id="nav-participar-btn" mix={navCtaStyle}>
-            Registra tu participación
+            {txt.navCtaRegistrar || 'Registra tu participación'}
           </a>
         </div>
       </nav>

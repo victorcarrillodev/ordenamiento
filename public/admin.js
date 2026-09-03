@@ -175,6 +175,7 @@
 
   // ── Personalización y Marca (CSP-compliant, sin onclick inline) ──────────
   function initPersonalizacion() {
+    initTextosAutoGrow()
     // Mini preview modal
     var btnOpenPreview = document.getElementById('btn-open-preview')
     var btnClosePreview = document.getElementById('btn-close-preview')
@@ -416,6 +417,32 @@
     row.appendChild(input)
     row.appendChild(btn)
     container.appendChild(row)
+  }
+
+  /**
+   * Auto-grow de los textareas de la mini-página de textos (`.textos`).
+   *
+   * Cada caja arranca con la altura justa de su contenido pre-guardado y se
+   * expande/contrae en cada `input` a su `scrollHeight`: el admin siempre ve
+   * todo lo que escribe, sin scroll interno ni tirador manual (ver
+   * `.textos textarea` en admin.css). Alcance limitado a `.textos textarea`
+   * para no tocar los textareas de otras páginas del panel.
+   */
+  function initTextosAutoGrow() {
+    var cajas = document.querySelectorAll('.textos textarea')
+    if (!cajas || cajas.length === 0) return
+
+    function ajustar(caja) {
+      caja.style.height = 'auto'
+      caja.style.height = caja.scrollHeight + 'px'
+    }
+
+    cajas.forEach(function (caja) {
+      ajustar(caja)
+      caja.addEventListener('input', function () {
+        ajustar(caja)
+      })
+    })
   }
 
   /**

@@ -19,6 +19,7 @@ import nuevaController from './actions/admin/nueva-controller.tsx'
 import enviarController from './actions/admin/enviar-controller.tsx'
 import resolverController from './actions/admin/resolver-controller.tsx'
 import personalizacionController from './actions/admin/personalizacion-controller.tsx'
+import personalizacionTextosController from './actions/admin/personalizacion-textos-controller.tsx'
 import portalActividadesController from './actions/admin/portal-actividades-controller.tsx'
 import portalDocumentosController from './actions/admin/portal-documentos-controller.tsx'
 import portalIndicadoresController from './actions/admin/portal-indicadores-controller.tsx'
@@ -113,6 +114,7 @@ router.map(adminRoutes.participacionNueva, nuevaController)
 router.map(adminRoutes.participacionEnviar, enviarController)
 router.map(adminRoutes.participacionResolver, resolverController)
 router.map(adminRoutes.personalizacion, personalizacionController)
+router.map(adminRoutes.personalizacionTextos, personalizacionTextosController)
 router.map(adminRoutes.actividades, portalActividadesController)
 router.map(adminRoutes.documentos, portalDocumentosController)
 router.map(adminRoutes.indicadores, portalIndicadoresController)
