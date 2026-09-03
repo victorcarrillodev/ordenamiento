@@ -3118,3 +3118,13 @@ a.user-cell:hover .user-cell__name {
   border: 2px solid var(--a-blue);
   box-shadow: 0 4px 16px rgba(59, 130, 246, 0.1);
 }
+
+/* Cuarta variante del acuse: advertencia (ni error ni confirmación). */
+.admin-alert--warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+.admin-alert iconify-icon {
+  flex: none;
+}

@@ -30,7 +30,12 @@ export function ExportarPage(handle: Handle<ExportarPageProps>) {
     const { user } = handle.props
 
     return (
-      <AdminLayout user={user} active="exportar" title="Exportar tablas">
+      <AdminLayout
+        user={user}
+        active="exportar"
+        title="Exportar tablas"
+        subtitle="Descarga cualquier tabla de la Bitácora en formato .xlsx para trabajarla fuera del panel."
+      >
         <div class="export-grid">
           {TABLAS.map((t) => (
             <div class="export-card" key={t.slug}>

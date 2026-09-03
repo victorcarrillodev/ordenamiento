@@ -1,6 +1,7 @@
 import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
+import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
@@ -54,29 +55,14 @@ export function CuentaPage(handle: Handle<CuentaPageProps>) {
         title="Mi cuenta"
         subtitle="Tu foto, tu nombre y el correo con el que entras al panel."
       >
-        {feedback ? (
-          <div class={`admin-alert admin-alert--${feedback.type}`} role="alert">
-            <Icon
-              name={
-                feedback.type === 'success'
-                  ? 'mdi:check-circle-outline'
-                  : 'mdi:alert-circle-outline'
-              }
-              size={18}
-            />
-            <span>{feedback.message}</span>
-          </div>
-        ) : null}
+        {feedback ? <AdminAlert type={feedback.type} message={feedback.message} /> : null}
 
         {correoPendiente ? (
-          <div class="admin-alert admin-alert--info" role="status">
-            <Icon name="mdi:email-fast-outline" size={18} />
-            <span>
-              Enviamos un enlace de confirmación a <strong>{correoPendiente}</strong>. Tu correo de
-              acceso <strong>seguirá siendo el actual</strong> hasta que abras ese enlace. Vence en
-              una hora.
-            </span>
-          </div>
+          <AdminAlert type="info">
+            Enviamos un enlace de confirmación a <strong>{correoPendiente}</strong>. Tu correo de
+            acceso <strong>seguirá siendo el actual</strong> hasta que abras ese enlace. Vence en
+            una hora.
+          </AdminAlert>
         ) : null}
 
         {/* Identidad: foto grande, datos a un lado */}

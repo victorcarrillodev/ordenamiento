@@ -1,7 +1,8 @@
 import type { Handle } from 'remix/ui'
 
 import { CATEGORIAS_POEL } from '../../data/poetdum.ts'
-import { adminRoutes } from '../../routes.ts'
+import { adminRoutes, routes } from '../../routes.ts'
+import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
@@ -400,8 +401,23 @@ export function PoelPage(handle: Handle<PoelPageProps>) {
     const visibles = sesiones.filter((s) => s.activo).length
 
     return (
-      <AdminLayout user={user} active="poel" title="Gestión de sesiones POEL">
-        {error ? <p class="form-error">{error}</p> : null}
+      <AdminLayout
+        user={user}
+        active="poel"
+        title="Sesiones POEL"
+        subtitle="Sesiones del Programa de Ordenamiento Ecológico Local, con su acta, imagen y anexos."
+        actions={
+          <a
+            class="btn btn--white"
+            href={`${routes.poetdum.show.href()}#sesiones`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Icon name="mdi:open-in-new" size={16} /> Ver en el portal
+          </a>
+        }
+      >
+        {error ? <AdminAlert type="error" message={error} /> : null}
         {feedback ? <p class={AVISOS[feedback].clase}>{AVISOS[feedback].texto}</p> : null}
 
         <section class="panel panel--suave">

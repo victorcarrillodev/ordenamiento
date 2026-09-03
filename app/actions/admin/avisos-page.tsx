@@ -1,6 +1,7 @@
 import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
+import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
@@ -190,8 +191,13 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
     const totalEventosMes = Object.values(eventosPorDia).reduce((n, e) => n + e.length, 0)
 
     return (
-      <AdminLayout user={user} active="avisos" title="Gestión de Avisos y Calendario">
-        {error ? <p class="form-error">{error}</p> : null}
+      <AdminLayout
+        user={user}
+        active="avisos"
+        title="Avisos y calendario"
+        subtitle="Comunicados para la ciudadanía y vista de mes con reuniones, sesiones y avisos."
+      >
+        {error ? <AdminAlert type="error" message={error} /> : null}
 
         {/* ── Publicar ────────────────────────────────────────────────── */}
         <section class="panel panel--suave">

@@ -1,7 +1,10 @@
 import type { Handle } from 'remix/ui'
 
 import { ESTADOS_ACTIVIDAD } from '../../data/poetdum.ts'
+import { routes } from '../../routes.ts'
+import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Icon } from '../../ui/admin/icon.tsx'
 import { Button } from '../../ui/button.tsx'
 
 export interface PortalActividadesPageProps {
@@ -25,8 +28,23 @@ export function PortalActividadesPage(handle: Handle<PortalActividadesPageProps>
   return () => {
     const { user, actividades, documentos, error } = handle.props
     return (
-      <AdminLayout user={user} active="actividades" title="Actividades POETDUM">
-        {error ? <p class="form-error">{error}</p> : null}
+      <AdminLayout
+        user={user}
+        active="actividades"
+        title="Actividades"
+        subtitle="Talleres, recorridos y jornadas del proceso participativo, con sus fotos y anexos."
+        actions={
+          <a
+            class="btn btn--white"
+            href={`${routes.poetdum.show.href()}#actividades`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Icon name="mdi:open-in-new" size={16} /> Ver en el portal
+          </a>
+        }
+      >
+        {error ? <AdminAlert type="error" message={error} /> : null}
 
         <div class="panel">
           <h2 class="panel__title">Nueva actividad</h2>

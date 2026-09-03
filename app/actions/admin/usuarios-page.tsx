@@ -1,6 +1,7 @@
 import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
+import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
@@ -51,20 +52,18 @@ export function UsuariosPage(handle: Handle<UsuariosPageProps>) {
     const ciudadanos = users.length - admins
 
     return (
-      <AdminLayout user={user} active="usuarios" title="Usuarios">
-        {feedback ? (
-          <div class={`admin-alert admin-alert--${feedback.type}`} role="alert">
-            <Icon
-              name={
-                feedback.type === 'success'
-                  ? 'mdi:check-circle-outline'
-                  : 'mdi:alert-circle-outline'
-              }
-              size={18}
-            />
-            <span>{feedback.message}</span>
-          </div>
-        ) : null}
+      <AdminLayout
+        user={user}
+        active="usuarios"
+        title="Usuarios"
+        subtitle="Cuentas con acceso al portal. Solo las de rol administrador entran a este panel."
+        actions={
+          <a class="btn btn--white" href={adminRoutes.sesiones.href()}>
+            <Icon name="mdi:account-clock-outline" size={16} /> Registro de sesiones
+          </a>
+        }
+      >
+        {feedback ? <AdminAlert type={feedback.type} message={feedback.message} /> : null}
 
         <div class="cards">
           <div class="card">

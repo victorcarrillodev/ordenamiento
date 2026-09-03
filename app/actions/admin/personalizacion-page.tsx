@@ -1,4 +1,5 @@
 import type { Handle } from 'remix/ui'
+import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { adminRoutes, routes } from '../../routes.ts'
 import { Button } from '../../ui/button.tsx'
@@ -72,16 +73,8 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
       >
         <div class="personalizacion">
           {/* Feedback messages */}
-          {mensaje && (
-            <div class="admin-alert admin-alert--success" role="status">
-              <Icon name="mdi:check-circle-outline" size={18} /> <span>{mensaje}</span>
-            </div>
-          )}
-          {error && (
-            <div class="admin-alert admin-alert--error" role="alert">
-              <Icon name="mdi:alert-circle-outline" size={18} /> <span>{error}</span>
-            </div>
-          )}
+          {mensaje && <AdminAlert type="success" message={mensaje} />}
+          {error && <AdminAlert type="error" message={error} />}
 
           {/* Las pestañas son enlaces con su propia URL, igual que en
               Estadísticas: se pueden compartir y sobreviven a una recarga. */}

@@ -1,6 +1,7 @@
 import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
+import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
 
@@ -28,9 +29,14 @@ export function ReunionesPage(handle: Handle<ReunionesPageProps>) {
     const { user, reuniones, error, ok } = handle.props
 
     return (
-      <AdminLayout user={user} active="reuniones" title="Gestión de Reuniones">
-        {error ? <p class="form-error">{error}</p> : null}
-        {ok ? <p class="form-ok">{ok}</p> : null}
+      <AdminLayout
+        user={user}
+        active="reuniones"
+        title="Reuniones"
+        subtitle="Sesiones de trabajo del Comité Técnico. Aparecen en el calendario del panel."
+      >
+        {error ? <AdminAlert type="error" message={error} /> : null}
+        {ok ? <AdminAlert type="success" message={ok} /> : null}
 
         <div class="panel">
           <h2 class="panel__title">Nueva reunión</h2>

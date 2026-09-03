@@ -1,6 +1,9 @@
 import type { Handle } from 'remix/ui'
 
+import { routes } from '../../routes.ts'
+import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Icon } from '../../ui/admin/icon.tsx'
 import { Button } from '../../ui/button.tsx'
 
 export interface PortalIndicadoresPageProps {
@@ -23,8 +26,23 @@ export function PortalIndicadoresPage(handle: Handle<PortalIndicadoresPageProps>
   return () => {
     const { user, indicadores, documentos, error } = handle.props
     return (
-      <AdminLayout user={user} active="indicadores" title="Indicadores POETDUM">
-        {error ? <p class="form-error">{error}</p> : null}
+      <AdminLayout
+        user={user}
+        active="indicadores"
+        title="Indicadores"
+        subtitle="Indicadores de seguimiento del programa y sus mediciones por periodo."
+        actions={
+          <a
+            class="btn btn--white"
+            href={`${routes.poetdum.show.href()}#seguimiento`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Icon name="mdi:open-in-new" size={16} /> Ver en el portal
+          </a>
+        }
+      >
+        {error ? <AdminAlert type="error" message={error} /> : null}
 
         <div class="panel">
           <h2 class="panel__title">Nuevo indicador</h2>

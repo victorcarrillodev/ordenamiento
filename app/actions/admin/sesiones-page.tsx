@@ -1,6 +1,7 @@
 import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
+import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
 import {
@@ -118,15 +119,21 @@ export function SesionesPage(handle: Handle<SesionesPageProps>) {
       resumen.sesiones > 0 ? Math.round(resumen.segundos_totales / resumen.sesiones) : 0
 
     return (
-      <AdminLayout user={user} active="sesiones" title="Registro de sesiones">
-        <div class="admin-alert admin-alert--info" role="note">
-          <Icon name="mdi:shield-lock-outline" size={18} />
-          <span>
-            Esta bitácora registra accesos de personas identificadas. Solo la consultan las cuentas
-            con rol administrador, y se usa para control de acceso, no para supervisar
-            productividad.
-          </span>
-        </div>
+      <AdminLayout
+        user={user}
+        active="sesiones"
+        title="Registro de sesiones"
+        subtitle="Quién entró al panel, cuándo y cuánto tiempo estuvo dentro."
+        actions={
+          <a class="btn btn--white" href={adminRoutes.usuarios.index.href()}>
+            <Icon name="mdi:account-group-outline" size={16} /> Gestionar usuarios
+          </a>
+        }
+      >
+        <AdminAlert type="info">
+          Esta bitácora registra accesos de personas identificadas. Solo la consultan las cuentas
+          con rol administrador, y se usa para control de acceso, no para supervisar productividad.
+        </AdminAlert>
 
         <div class="cards">
           <div class="card">

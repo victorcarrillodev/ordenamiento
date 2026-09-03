@@ -1,6 +1,7 @@
 import type { Handle } from 'remix/ui'
 
 import { adminRoutes, routes } from '../../routes.ts'
+import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
 import { DireccionFields } from '../../ui/form/direccion-fields.tsx'
@@ -87,6 +88,7 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
         user={user}
         active="participaciones-fisica"
         title="Nueva participación física"
+        subtitle="Captura una participación recibida en ventanilla. Se le asigna folio al guardarla."
         breadcrumb={
           <>
             <a href={`${adminRoutes.participaciones.href()}?origen=fisica`}>
@@ -99,7 +101,7 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
           </>
         }
       >
-        {error ? <p class="form-error">{error}</p> : null}
+        {error ? <AdminAlert type="error" message={error} /> : null}
 
         {folioRegistrado ? (
           <dialog open class="dialog-success">

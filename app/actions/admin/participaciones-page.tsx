@@ -2,6 +2,7 @@ import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Icon } from '../../ui/admin/icon.tsx'
 import { ETAPAS, infoEtapa, INFO_ETAPA, type Etapa } from './etapa.ts'
 
 interface Adjunto {
@@ -73,10 +74,9 @@ function paginasVisibles(page: number, totalPages: number): Array<number | '…'
 export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
   return () => {
     const { user, origen, items, etapa, page, limit, total } = handle.props
-    const titulo =
-      origen === 'fisica'
-        ? 'Gestión de participaciones físicas'
-        : 'Gestión de participaciones digitales'
+    // El título va corto, como el del resto de las pantallas: qué se hace ahí
+    // ya lo dice el subtítulo, y «Gestión de…» solo alarga la barra superior.
+    const titulo = origen === 'fisica' ? 'Participaciones físicas' : 'Participaciones digitales'
 
     const totalPages = Math.max(1, Math.ceil(total / limit))
     const desde = total === 0 ? 0 : (page - 1) * limit + 1
@@ -93,18 +93,23 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
         user={user}
         active={origen === 'fisica' ? 'participaciones-fisica' : 'participaciones-digital'}
         title={titulo}
+        subtitle={
+          origen === 'fisica'
+            ? 'Participaciones capturadas en ventanilla u oficialía de partes.'
+            : 'Participaciones que la ciudadanía envió desde el portal web.'
+        }
+        actions={
+          origen === 'fisica' ? (
+            <a
+              class="btn btn--green"
+              href={`${adminRoutes.participacionNueva.index.href()}?origen=fisica`}
+            >
+              <Icon name="mdi:plus" size={16} /> Capturar participación
+            </a>
+          ) : null
+        }
       >
         <div class="panel">
-          {origen === 'fisica' ? (
-            <div class="panel__head">
-              <a
-                class="btn btn--green"
-                href={`${adminRoutes.participacionNueva.index.href()}?origen=fisica`}
-              >
-                ＋ Ingresa aquí tu participación
-              </a>
-            </div>
-          ) : null}
           <div class="etapa-filtros">
             <span class="meta-label">Seguimiento</span>
             <a

@@ -241,6 +241,38 @@ describe('Admin Routes Protection & Navigation', () => {
       expect(await res?.text()).toContain('aria-selected="true" href="/ordena/admin/estadisticas"')
     })
 
+    it('cada pantalla del panel trae un solo título y su subtítulo', async () => {
+      // El encabezado lo dibuja AdminLayout. Si una página vuelve a poner el
+      // suyo, aparecen dos títulos; si olvida el subtítulo, se pierde la única
+      // frase que explica para qué sirve esa pantalla.
+      const rutas = [
+        '/ordena/admin/estadisticas',
+        '/ordena/admin/usuarios',
+        '/ordena/admin/sesiones',
+        '/ordena/admin/cuenta',
+        '/ordena/admin/exportar',
+        '/ordena/admin/reuniones',
+        '/ordena/admin/avisos',
+        '/ordena/admin/poel',
+        '/ordena/admin/actividades',
+        '/ordena/admin/documentos',
+        '/ordena/admin/indicadores',
+        '/ordena/admin/participaciones?origen=fisica',
+        '/ordena/admin/participaciones/nueva',
+        '/ordena/admin/personalizacion',
+      ]
+
+      for (const ruta of rutas) {
+        const res = await router.fetch(new Request(`http://localhost${ruta}`))
+        expect(res?.status, ruta).toBe(200)
+        const html = (await res?.text()) ?? ''
+        expect(html.match(/class="page-title"/g)?.length ?? 0, ruta).toBe(1)
+        expect(html.includes('class="page-subtitle"'), ruta).toBe(true)
+        // Y ningún enlace prometiendo algo que no lleva a ningún lado.
+        expect(html.includes('href="#"'), ruta).toBe(false)
+      }
+    })
+
     it('GET /ordena/admin/sesiones muestra la bitácora de accesos', async () => {
       const res = await router.fetch(new Request('http://localhost/ordena/admin/sesiones'))
       expect(res?.status).toBe(200)

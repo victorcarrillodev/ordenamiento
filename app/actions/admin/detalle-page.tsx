@@ -1,6 +1,7 @@
 import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
+import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
 import { etapaDe, PASOS } from './etapa.ts'
@@ -283,10 +284,10 @@ function PanelDictamen(handle: Handle<{ p: Detalle }>) {
 
         {yaNotificada ? (
           <div class="dictamen-acta">
-            <p class="form-ok" style="margin-top:0;">
-              ✓ Resolución notificada el {fmtFechaHora(p.notificado_en)} a{' '}
+            <AdminAlert type="success">
+              Resolución notificada el {fmtFechaHora(p.notificado_en)} a{' '}
               <strong>{p.notificado_a || p.correo}</strong>.
-            </p>
+            </AdminAlert>
             <div class="campo campo--full">
               <span class="meta-label">Motivo comunicado</span>
               <p class="campo__value">{p.resolucion_motivo || '—'}</p>
@@ -422,6 +423,9 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
         user={user}
         active={p?.origen === 'digital' ? 'participaciones-digital' : 'participaciones-fisica'}
         title={titulo}
+        subtitle={
+          p ? `Recibida el ${fmtFecha(p.fecha)} · ${p.tematica || 'Sin eje temático'}` : undefined
+        }
         breadcrumb={
           <>
             <a href={`${adminRoutes.participaciones.href()}?origen=${p?.origen ?? 'fisica'}`}>
@@ -440,29 +444,33 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
           </div>
         ) : (
           <>
-            {mail === 'ok' ? <p class="form-ok">📨 Participación enviada por correo.</p> : null}
+            {mail === 'ok' ? (
+              <AdminAlert type="success">Participación enviada por correo.</AdminAlert>
+            ) : null}
             {mail === 'error' ? (
-              <p class="form-error">
-                ⚠️ No se pudo enviar. Revisa la dirección o la configuración de correo.
-              </p>
+              <AdminAlert type="error">
+                No se pudo enviar. Revisa la dirección o la configuración de correo.
+              </AdminAlert>
             ) : null}
 
             {dictamen === 'notificado' ? (
-              <p class="form-ok">
-                ⚖ Dictamen guardado y correo de resolución enviado al ciudadano.
-              </p>
+              <AdminAlert type="success">
+                Dictamen guardado y correo de resolución enviado al ciudadano.
+              </AdminAlert>
             ) : null}
             {dictamen === 'guardado' ? (
-              <p class="form-error">
-                ⚠️ El dictamen quedó guardado, pero <strong>no se pudo enviar el correo</strong>.
+              <AdminAlert type="warning">
+                El dictamen quedó guardado, pero <strong>no se pudo enviar el correo</strong>.
                 Revisa la configuración SMTP o el correo del ciudadano y vuelve a emitirlo.
-              </p>
+              </AdminAlert>
             ) : null}
             {dictamen === 'error' ? (
-              <p class="form-error">⚠️ No se pudo guardar el dictamen. Inténtalo de nuevo.</p>
+              <AdminAlert type="error">
+                No se pudo guardar el dictamen. Inténtalo de nuevo.
+              </AdminAlert>
             ) : null}
             {dictamen === 'estado' ? (
-              <p class="form-error">⚠️ Elige si la participación es procedente o no.</p>
+              <AdminAlert type="warning">Elige si la participación es procedente o no.</AdminAlert>
             ) : null}
             <LineaEtapas p={p} />
             <div class="detalle-split">
