@@ -3,21 +3,26 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { sql } from './db/pool.ts'
-import { registerUser } from './auth/auth.ts'
+import { hashPassword, registerUser } from './auth/auth.ts'
+import { comoRol } from './auth/roles.ts'
 
 /**
- * Siembra la cuenta ROOT única y permanente.
- * Idempotente: solo inserta si no existe; en cada arranque queda garantizada.
+ * Siembra la cuenta ROOT: la dueña del sistema.
  *
- * Seguridad: el password NUNCA va hardcodeado ni en el repo. Se lee de
- * variables de entorno (ROOT_PASSWORD / ROOT_EMAIL / ROOT_NAME). En
- * producción, si falta ROOT_PASSWORD, el server NO arranca (fail-fast).
- * En desarrollo, si falta, se genera uno aleatorio y se muestra en consola
- * una sola vez (no queda en ningún archivo).
+ * Idempotente y correctiva: en cada arranque garantiza que la cuenta exista y
+ * que tenga rango `root`. Lo segundo importa para las instalaciones que ya
+ * venían de antes, donde esta misma cuenta era un `admin` más: sin esta
+ * corrección, el sistema arrancaría sin ninguna cuenta root y nadie podría
+ * gestionar a los administradores.
+ *
+ * Seguridad: la contraseña NUNCA va escrita en el repositorio. Se lee de
+ * variables de entorno (ROOT_PASSWORD / ROOT_EMAIL / ROOT_NAME). En producción,
+ * si falta ROOT_PASSWORD, el servidor NO arranca. En desarrollo se genera una
+ * aleatoria y se enseña una sola vez en consola, sin dejarla en ningún archivo.
  */
-const ROOT_EMAIL = process.env.ROOT_EMAIL?.toLowerCase() ?? 'root@ordenamiento.gob.mx'
+const ROOT_EMAIL = process.env.ROOT_EMAIL?.toLowerCase() ?? 'victorcarrillo.dev@gmail.com'
 const ROOT_PASSWORD = process.env.ROOT_PASSWORD ?? ''
-const ROOT_NAME = process.env.ROOT_NAME ?? 'Administrador Root'
+const ROOT_NAME = process.env.ROOT_NAME ?? 'Victor Carrillo Rojas'
 
 export async function seedRootAdmin(): Promise<void> {
   const isProd = process.env.NODE_ENV === 'production'
@@ -29,43 +34,45 @@ export async function seedRootAdmin(): Promise<void> {
         '[seed] ROOT_PASSWORD es obligatorio en producción. Defínela vía variable de entorno (Docker).',
       )
     }
-    // Dev: password aleatorio temporal, solo visible en esta consola.
+    // Dev: contraseña temporal, visible solo en esta consola.
     password = 'R_' + randomBytes(12).toString('base64url')
-    console.log(
-      `[seed] ROOT creado con password temporal: ${password} (cámbialo con ROOT_PASSWORD)`,
-    )
+    console.log(`[seed] ROOT creado con contraseña temporal: ${password} (cámbiala con ROOT_PASSWORD)`)
   }
 
-  const existing = await sql<{ id: string }[]>`SELECT id::text AS id FROM users WHERE email = ${ROOT_EMAIL}`
+  const existente = await sql<{ id: string; role: string }[]>`--sql
+    SELECT id::text AS id, role FROM users WHERE email = ${ROOT_EMAIL}
+  `
 
-  if (existing.length > 0) {
-    // Si hay ROOT_PASSWORD en .env, sincroniza la contraseña en cada arranque.
-    // Así cambiar la contraseña del .env surte efecto inmediato sin tener que
-    // borrar el usuario manualmente.
-    if (ROOT_PASSWORD) {
-      const password_hash = await Bun.password.hash(ROOT_PASSWORD, {
-        algorithm: 'argon2id',
-        memoryCost: 65536,
-        timeCost: 3,
-      })
-      await sql`UPDATE users SET password_hash = ${password_hash} WHERE email = ${ROOT_EMAIL}`
-      console.log(`[seed] ROOT (${ROOT_EMAIL}): contraseña sincronizada desde .env`)
-    } else {
-      console.log(
-        `[seed] ROOT ya existe (${ROOT_EMAIL}); para cambiar la contraseña define ROOT_PASSWORD en .env`,
-      )
-    }
+  if (existente.length === 0) {
+    const { id } = await registerUser({
+      email: ROOT_EMAIL,
+      name: ROOT_NAME,
+      password,
+      role: 'root',
+    })
+    console.log(`[seed] cuenta ROOT creada: ${ROOT_EMAIL} (id ${id})`)
     return
   }
 
-  const { id } = await registerUser({
-    email: ROOT_EMAIL,
-    name: ROOT_NAME,
-    password,
-    role: 'admin',
-  })
+  // La cuenta ya estaba. Se asegura el rango, y la contraseña solo se
+  // sincroniza si hay ROOT_PASSWORD definida: si no, pisaríamos en cada
+  // arranque la que su dueño haya cambiado desde el panel.
+  if (comoRol(existente[0].role) !== 'root') {
+    await sql`UPDATE users SET role = 'root' WHERE email = ${ROOT_EMAIL}`
+    console.log(`[seed] ROOT (${ROOT_EMAIL}): rango elevado a root`)
+  }
 
-  console.log(`[seed] cuenta ROOT creada: ${ROOT_EMAIL} (id ${id})`)
+  if (ROOT_PASSWORD) {
+    await sql`--sql
+      UPDATE users SET password_hash = ${await hashPassword(ROOT_PASSWORD)}
+      WHERE email = ${ROOT_EMAIL}
+    `
+    console.log(`[seed] ROOT (${ROOT_EMAIL}): contraseña sincronizada desde .env`)
+  } else {
+    console.log(
+      `[seed] ROOT ya existe (${ROOT_EMAIL}); para cambiar la contraseña define ROOT_PASSWORD en .env`,
+    )
+  }
 }
 
 const SEED_ADMINS_PATH = process.env.SEED_ADMINS_FILE ?? join(process.cwd(), 'seed-admins.json')
@@ -74,7 +81,7 @@ interface SeedAdminEntry {
   email: string
   name: string
   password: string
-  role?: 'admin' | 'user'
+  role?: 'root' | 'admin' | 'user'
 }
 
 /**
@@ -99,7 +106,7 @@ export async function seedExtraAdmins(): Promise<void> {
         email: entry.email,
         name: entry.name,
         password: entry.password,
-        role: entry.role ?? 'admin',
+        role: comoRol(entry.role ?? 'admin'),
       })
       console.log(`[seed] cuenta creada desde seed-admins.json: ${entry.email} (id ${id})`)
     } catch (err) {

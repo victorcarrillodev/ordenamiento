@@ -464,6 +464,22 @@
   }
 
   /**
+   * Confirmación antes de dar de baja una cuenta.
+   *
+   * Es una acción que no se deshace y el botón está a un clic dentro de un
+   * desplegable, justo al lado de los de cambiar rango y contraseña.
+   */
+  function initEliminarCuenta() {
+    document.addEventListener('submit', function (e) {
+      var form = e.target
+      if (!form || !form.classList || !form.classList.contains('eliminar-cuenta')) return
+      if (!confirm('¿Eliminar esta cuenta? La persona perderá el acceso de inmediato.')) {
+        e.preventDefault()
+      }
+    })
+  }
+
+  /**
    * Foto de perfil: vista previa antes de guardar y arrastrar-y-soltar.
    *
    * El botón «Guardar foto» nace deshabilitado y solo se activa cuando hay un
@@ -564,10 +580,12 @@
     document.addEventListener('DOMContentLoaded', initPersonalizacion)
     document.addEventListener('DOMContentLoaded', initTableFilter)
     document.addEventListener('DOMContentLoaded', initAvatar)
+    document.addEventListener('DOMContentLoaded', initEliminarCuenta)
   } else {
     initPersonalizacion()
     initTableFilter()
     initAvatar()
+    initEliminarCuenta()
   }
 
   // Inicializar reloj

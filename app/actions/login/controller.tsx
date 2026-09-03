@@ -13,6 +13,7 @@ import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
 import { loginBackend } from '../../backend.ts'
+import { puedeEntrarAlPanel } from '../../ui/admin/roles.ts'
 import { adminRoutes, routes } from '../../routes.ts'
 import { LoginPage } from './page.tsx'
 import { PASSWORD_MAX, PASSWORD_MIN, type LoginErrors } from '../../ui/login/types.ts'
@@ -109,8 +110,9 @@ export default createController(routes.login, {
       }
 
       // Redirigir por rol: admin → dashboard, ciudadano → participación
-      const dest =
-        result.user?.role === 'admin' ? adminRoutes.index.href() : routes.participation.index.href()
+      const dest = puedeEntrarAlPanel(result.user?.role)
+        ? adminRoutes.index.href()
+        : routes.participation.index.href()
       return redirect(dest, {
         headers: result.setCookie ? { 'set-cookie': result.setCookie } : undefined,
       })

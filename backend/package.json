@@ -5,9 +5,9 @@
   "scripts": {
     "dev": "bun --watch src/server.ts",
     "start": "bun src/server.ts",
-    "seed:victor": "bun src/seed-victor.ts",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "root": "bun src/root-cli.ts"
   },
   "dependencies": {
     "docx": "^9.7.1",

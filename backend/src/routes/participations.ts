@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { Buffer } from 'node:buffer'
 
 import { type SessionUser } from '../auth/auth.ts'
+import { puedeEntrarAlPanel } from '../auth/roles.ts'
 import { sql } from '../db/pool.ts'
 import {
   MAX_FILE_BYTES,
@@ -47,7 +48,7 @@ export async function handleCreateParticipation(
   }
 
   // La participación física solo la crea un admin autenticado
-  if (origin === 'fisica' && user?.role !== 'admin') {
+  if (origin === 'fisica' && !puedeEntrarAlPanel(user?.role)) {
     return json({ error: 'Requiere rol admin' }, 403)
   }
 

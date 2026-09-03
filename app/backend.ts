@@ -6,6 +6,7 @@
 import { redirect } from 'remix/response/redirect'
 
 import { routes } from './routes.ts'
+import { puedeEntrarAlPanel } from './ui/admin/roles.ts'
 import { IMAGEN_POR_DEFECTO, imagenUsable, type ThemeData } from './ui/civic-horizon.ts'
 
 export const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:5920'
@@ -252,7 +253,8 @@ export async function backendUser(request: Request): Promise<AdminUser | null> {
 }
 
 /**
- * Exige sesión de ADMIN: devuelve el usuario, o un redirect a /login listo
+ * Exige sesión con acceso al panel (admin o root): devuelve el usuario, o un
+ * redirect a /login listo
  * para retornar directamente desde la action (`if (user instanceof Response) return user`).
  *
  * Antes solo comprobaba "hay sesión", sin importar el rol: cualquier cuenta
@@ -262,7 +264,7 @@ export async function backendUser(request: Request): Promise<AdminUser | null> {
  */
 export async function requireAdminUser(request: Request): Promise<AdminUser | Response> {
   const user = await backendUser(request)
-  return user?.role === 'admin' ? user : redirect(routes.login.index.href())
+  return user && puedeEntrarAlPanel(user.role) ? user : redirect(routes.login.index.href())
 }
 
 /**

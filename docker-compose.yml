@@ -47,9 +47,10 @@ services:
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/ordenamiento
       SESSION_SECRET: ${SESSION_SECRET:-secreto-para-firma-de-cookies-ordenamiento-2026}
-      ROOT_EMAIL: ${ROOT_EMAIL:-root@ordenamiento.gob.mx}
+      # Cuenta root: la dueña del sistema (ver DEPLOY.md).
+      ROOT_EMAIL: ${ROOT_EMAIL:-victorcarrillo.dev@gmail.com}
       ROOT_PASSWORD: ${ROOT_PASSWORD:-AdminRoot2026!}
-      ROOT_NAME: ${ROOT_NAME:-Administrador Root}
+      ROOT_NAME: ${ROOT_NAME:-Victor Carrillo Rojas}
       PORT: 5920
       NODE_ENV: production
       SMTP_HOST: ${SMTP_HOST:-}

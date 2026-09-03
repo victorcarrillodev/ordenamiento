@@ -140,6 +140,13 @@ export function sanitizeText(text: unknown, maxLength: number = 500): string {
  * No silencia: el error se escribe con nivel, marca de tiempo y contexto.
  */
 export const logger = {
+  /**
+   * Acciones que conviene poder rastrear después aunque no sean errores:
+   * quién restableció la contraseña de quién, quién borró qué cuenta.
+   */
+  info(context: string, msg: string): void {
+    console.log(`[${new Date().toISOString()}] INFO ${context}: ${msg}`)
+  },
   error(context: string, err: unknown): void {
     const msg = err instanceof Error ? `${err.message}\n${err.stack ?? ''}` : String(err)
     console.error(`[${new Date().toISOString()}] ERROR ${context}: ${msg}`)

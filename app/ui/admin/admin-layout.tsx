@@ -4,6 +4,7 @@ import { Document } from '../../actions/document.tsx'
 import { adminRoutes, routes } from '../../routes.ts'
 import { isSafeCssColor } from '../civic-horizon.ts'
 import { Icon } from './icon.tsx'
+import { etiquetaDeRol } from './roles.ts'
 
 export type AdminSection =
   | 'general'
@@ -285,9 +286,7 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
                 </span>
                 <span class="topbar__user-text">
                   <span class="topbar__user-name">{user.name}</span>
-                  <span class="topbar__user-role">
-                    {user.role === 'admin' ? 'Administrador' : 'Ciudadano'}
-                  </span>
+                  <span class="topbar__user-role">{etiquetaDeRol(user.role)}</span>
                 </span>
               </a>
             </header>

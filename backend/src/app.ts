@@ -20,6 +20,7 @@ import {
   sessionCookie,
   sessionIssuedAt,
   updateUserName,
+  updateUserPassword,
   verifyCredentials,
   verifyPasswordById,
   verifySessionToken,
@@ -37,6 +38,16 @@ import {
   PASSWORD_MIN_LENGTH,
   RESET_TTL_MINUTOS,
 } from './auth/password-reset.ts'
+import {
+  comoRol,
+  esRolValido,
+  puedeCambiarPassword,
+  puedeCambiarRol,
+  puedeCrearConRol,
+  puedeEliminar,
+  puedeEntrarAlPanel,
+  type Veredicto,
+} from './auth/roles.ts'
 import { migrate } from './db/migrate.ts'
 import { handleCreateParticipation } from './routes/participations.ts'
 import {
@@ -107,6 +118,14 @@ import {
   mailConfigurado,
 } from './services/mail.ts'
 import {
+  actualizarCuenta,
+  cambiarRol,
+  contarRoots,
+  eliminarUsuario,
+  listarUsuarios,
+  obtenerCuenta,
+} from './services/users.ts'
+import {
   listarSesiones,
   registrarActividad,
   registrarCierreSesion,
@@ -131,7 +150,8 @@ export function participationRateLimited(
   nowMs?: number,
 ): boolean {
   // Los admins están exentos
-  if (role === 'admin') {
+  // Exentos quienes capturan desde el panel (admin y root).
+  if (puedeEntrarAlPanel(role)) {
     return false
   }
 
@@ -523,8 +543,9 @@ export async function handleRequest(request: Request): Promise<Response> {
   // ── Rutas protegidas ─────────────────────────────────────────────────
   const user = await currentUser(request)
   const requireAuth = (): Response | null => (user ? null : json({ error: 'No autenticado' }, 401))
+  // `root` está por encima de `admin`: donde entra un administrador, entra él.
   const requireAdmin = (): Response | null =>
-    user?.role === 'admin' ? null : json({ error: 'Requiere rol admin' }, 403)
+    puedeEntrarAlPanel(user?.role) ? null : json({ error: 'Requiere rol admin' }, 403)
 
   // Listado con filtros + paginación — expone PII de participantes: solo admin.
   if (method === 'GET' && pathname === '/api/participations') {
@@ -1098,44 +1119,167 @@ export async function handleRequest(request: Request): Promise<Response> {
     return json({ items: pagina.items, total: pagina.total, page, limit, resumen })
   }
 
-  // ── Usuarios (solo root/admin) ────────────────────────────────────────
+  // ── Cuentas de usuario (root y admin) ────────────────────────────────
+  // Quién puede hacer qué sobre quién está en auth/roles.ts. Aquí solo se
+  // traduce el veredicto a una respuesta HTTP.
+
+  /** Traduce un veredicto denegado al status y mensaje que le corresponde. */
+  const denegado = (veredicto: Veredicto): Response | null => {
+    if (veredicto.permitido) return null
+    const mensajes: Record<string, [string, number]> = {
+      sin_permiso: ['No tienes permiso para gestionar cuentas', 403],
+      solo_root_sobre_root: ['Solo una cuenta root puede modificar a otra cuenta root', 403],
+      solo_root_asigna_root: ['Solo una cuenta root puede otorgar el rango root', 403],
+      ultimo_root: ['No se puede dejar el sistema sin ninguna cuenta root', 409],
+      no_puede_autodegradarse: [
+        'No puedes quitarte a ti mismo el rango root: nombra antes a otra cuenta',
+        409,
+      ],
+    }
+    const [mensaje, status] = mensajes[veredicto.motivo] ?? ['Operación no permitida', 403]
+    return json({ error: mensaje, motivo: veredicto.motivo }, status)
+  }
+
   if (method === 'GET' && pathname === '/api/users') {
     const authError = requireAdmin()
     if (authError) return authError
-    const users = await sql<
-      Array<{ id: string; email: string; name: string; role: string; created_at: string }>
-    >`
-      SELECT id::text AS id, email, name, role, created_at::text AS created_at FROM users ORDER BY id
-    `
-    return json({ users })
+    return json({ users: await listarUsuarios() })
   }
 
   if (method === 'POST' && pathname === '/api/users') {
     const authError = requireAdmin()
     if (authError) return authError
-    const body = (await request.json()) as {
+    const body = (await request.json().catch(() => ({}))) as {
       email?: string
       name?: string
       password?: string
-      role?: 'admin' | 'user'
+      role?: string
     }
     if (!body.email || !body.name || !body.password) {
       return json({ error: 'Faltan datos: email, name, password' }, 400)
     }
+
+    // `comoRol` descarta cualquier valor que no sea un rango conocido: el rol
+    // no puede salir tal cual de un formulario.
+    const rol = comoRol(body.role)
+    const veredicto = denegado(puedeCrearConRol(user!, rol))
+    if (veredicto) return veredicto
+
     try {
       const { id } = await registerUser({
         email: body.email,
         name: body.name,
         password: body.password,
-        role: body.role ?? 'user',
+        role: rol,
       })
       return json({ ok: true, id }, 201)
     } catch (err) {
       if (err instanceof Error && err.message === 'EMAIL_TAKEN') {
         return json({ error: 'El correo ya está registrado' }, 409)
       }
+      if (err instanceof Error && err.message === 'PASSWORD_LONGITUD_INVALIDA') {
+        return json({ error: 'La contraseña no tiene una longitud válida' }, 422)
+      }
       throw err
     }
+  }
+
+  // Restablecer la contraseña de otra cuenta sin conocer la anterior. Es lo
+  // que hace un administrador cuando alguien perdió el acceso y ni siquiera
+  // puede usar el correo de recuperación.
+  const passwordMatch = method === 'POST' ? matchPath(pathname, '/api/users/:id/password') : null
+  if (passwordMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const idError = requireUuidParam(passwordMatch.id)
+    if (idError) return idError
+
+    const objetivo = await obtenerCuenta(passwordMatch.id)
+    if (!objetivo) return json({ error: 'Cuenta no encontrada' }, 404)
+
+    const veredicto = denegado(puedeCambiarPassword(user!, objetivo))
+    if (veredicto) return veredicto
+
+    const body = (await request.json().catch(() => ({}))) as { password?: string }
+    try {
+      // `updateUserPassword` adelanta también el corte de sesiones: cambiar la
+      // contraseña de alguien lo saca de las sesiones que tuviera abiertas,
+      // que es justo lo que se quiere si la cuenta estaba comprometida.
+      const ok = await updateUserPassword(passwordMatch.id, String(body.password ?? ''))
+      if (!ok) return json({ error: 'Cuenta no encontrada' }, 404)
+    } catch (err) {
+      if (err instanceof Error && err.message === 'PASSWORD_LONGITUD_INVALIDA') {
+        return json({ error: 'La contraseña no tiene una longitud válida' }, 422)
+      }
+      throw err
+    }
+
+    logger.info('users.password.reset', `${user!.email} restableció la de ${objetivo.email}`)
+    return json({ ok: true, email: objetivo.email })
+  }
+
+  const usuarioPatchMatch = method === 'PATCH' ? matchPath(pathname, '/api/users/:id') : null
+  if (usuarioPatchMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const idError = requireUuidParam(usuarioPatchMatch.id)
+    if (idError) return idError
+
+    const objetivo = await obtenerCuenta(usuarioPatchMatch.id)
+    if (!objetivo) return json({ error: 'Cuenta no encontrada' }, 404)
+
+    const body = (await request.json().catch(() => ({}))) as {
+      name?: string
+      email?: string
+      role?: string
+    }
+
+    if (body.role !== undefined) {
+      if (!esRolValido(body.role)) return json({ error: 'Rol inválido' }, 422)
+      const veredicto = denegado(puedeCambiarRol(user!, objetivo, body.role, await contarRoots()))
+      if (veredicto) return veredicto
+      await cambiarRol(usuarioPatchMatch.id, body.role)
+    }
+
+    if (body.name !== undefined || body.email !== undefined) {
+      // Cambiar los datos de una cuenta root exige ser root, igual que su
+      // contraseña: si no, un admin le cambia el correo y se la queda.
+      const veredicto = denegado(puedeCambiarPassword(user!, objetivo))
+      if (veredicto) return veredicto
+
+      if (body.name !== undefined && body.name.trim().length < 2) {
+        return json({ error: 'El nombre debe tener al menos 2 caracteres' }, 422)
+      }
+      const resultado = await actualizarCuenta(usuarioPatchMatch.id, {
+        name: body.name,
+        email: body.email,
+      })
+      if (!resultado.ok) {
+        return resultado.motivo === 'email_ocupado'
+          ? json({ error: 'Ese correo ya está registrado por otra cuenta' }, 409)
+          : json({ error: 'Cuenta no encontrada' }, 404)
+      }
+    }
+
+    return json({ ok: true })
+  }
+
+  const usuarioDeleteMatch = method === 'DELETE' ? matchPath(pathname, '/api/users/:id') : null
+  if (usuarioDeleteMatch) {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const idError = requireUuidParam(usuarioDeleteMatch.id)
+    if (idError) return idError
+
+    const objetivo = await obtenerCuenta(usuarioDeleteMatch.id)
+    if (!objetivo) return json({ error: 'Cuenta no encontrada' }, 404)
+
+    const veredicto = denegado(puedeEliminar(user!, objetivo, await contarRoots()))
+    if (veredicto) return veredicto
+
+    await eliminarUsuario(usuarioDeleteMatch.id)
+    logger.info('users.delete', `${user!.email} eliminó la cuenta ${objetivo.email}`)
+    return json({ ok: true })
   }
 
   // ── Stats para el dashboard — solo admin ─────────────────────────────

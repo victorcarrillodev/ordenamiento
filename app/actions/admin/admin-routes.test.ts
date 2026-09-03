@@ -204,11 +204,11 @@ describe('Admin Routes Protection & Navigation', () => {
     it('GET /ordena/admin/usuarios contiene "Crear usuario" y Vista General no', async () => {
       const usuariosRes = await router.fetch(new Request('http://localhost/ordena/admin/usuarios'))
       expect(usuariosRes?.status).toBe(200)
-      expect(await usuariosRes?.text()).toContain('Crear usuario')
+      expect(await usuariosRes?.text()).toContain('Crear cuenta')
 
       const indexRes = await router.fetch(new Request('http://localhost/ordena/admin'))
       expect(indexRes?.status).toBe(200)
-      expect(await indexRes?.text()).not.toContain('Crear usuario')
+      expect(await indexRes?.text()).not.toContain('Crear cuenta')
     })
 
     it('GET /ordena/admin/estadisticas ofrece las tres vistas y abre en Totales', async () => {

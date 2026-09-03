@@ -9,6 +9,39 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+### La cuenta root
+
+El sistema tiene una cuenta **root**: manda sobre todas las demás, incluidas
+las de otros root, y es la única que puede repartir ese rango. Por omisión es
+**Victor Carrillo Rojas** (`victorcarrillo.dev@gmail.com`); se cambia con
+`ROOT_EMAIL` y `ROOT_NAME` en `.env`.
+
+El servidor la siembra en cada arranque y, si ya existía con otro rango, la
+eleva a root. Así una instalación anterior no queda sin dueño al actualizar.
+
+Desde el panel, en **Usuarios**, root puede crear cuentas, cambiar rangos, dar
+de baja y **restablecer la contraseña de cualquiera sin conocer la anterior**.
+Un administrador puede lo mismo salvo tocar una cuenta root o repartir ese
+rango; y nadie puede dejar el sistema sin ninguna cuenta root.
+
+#### Si te quedas fuera del panel
+
+Hay una herramienta de consola que no requiere iniciar sesión. Ejecutarla exige
+acceso a la shell del servidor, y ese acceso **es** la autenticación:
+
+```sh
+docker compose exec backend bun run root -- listar
+docker compose exec backend bun run root -- password correo@ejemplo.mx nueva-clave
+docker compose exec backend bun run root -- promover correo@ejemplo.mx
+```
+
+Cambiar una contraseña por esta vía también cierra las sesiones abiertas de esa
+cuenta, que es lo que se quiere si estaba comprometida.
+
+> No existe —ni debe existir— una URL que cambie contraseñas sin iniciar
+> sesión: quien la encontrara se quedaría con el sistema entero y con los datos
+> personales de todas las participaciones.
+
 ### Recuperación de contraseña
 
 «¿Olvidaste tu contraseña?» manda un enlace de un solo uso por correo, así que

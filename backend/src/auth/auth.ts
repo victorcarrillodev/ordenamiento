@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 
 import { sql } from '../db/pool.ts'
+import type { Rol } from './roles.ts'
 
 /**
  * SESSION_SECRET firma las cookies de sesión con HMAC. Si su valor fuera
@@ -156,7 +157,7 @@ export async function registerUser(input: {
   email: string
   name: string
   password: string
-  role?: 'admin' | 'user'
+  role?: Rol
 }): Promise<{ id: string }> {
   const password_hash = await hashPassword(input.password)
 
