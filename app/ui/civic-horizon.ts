@@ -64,11 +64,56 @@ export function isSafeImageUrl(value: unknown): value is string {
   return url.startsWith('/') || /^https:\/\//i.test(url)
 }
 
+const basePathImagenes = (process.env.BASE_PATH ?? '/ordena').replace(/\/+$/, '')
+
 /**
- * Imagen del hero cuando el panel de Personalización no tiene ninguna cargada.
- * La usan tanto la portada pública como la vista previa del panel.
+ * Imágenes que vienen con el proyecto. Se usan cuando Personalización no tiene
+ * ninguna cargada y cuando la que tiene guardada ya no resuelve.
  */
-export const HERO_IMAGEN_POR_DEFECTO = `${(process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')}/assets/img/hero/hero.webp`
+export const IMAGEN_POR_DEFECTO = {
+  logo: `${basePathImagenes}/assets/img/logo/logo-200x60.webp`,
+  hero: `${basePathImagenes}/assets/img/hero/hero.webp`,
+  ecologia: `${basePathImagenes}/assets/img/vector/vector_1.webp`,
+  programa: `${basePathImagenes}/assets/img/vector/vector_2.webp`,
+} as const
+
+/** Alias histórico; la portada y la vista previa del panel lo siguen usando. */
+export const HERO_IMAGEN_POR_DEFECTO = IMAGEN_POR_DEFECTO.hero
+
+/**
+ * Rutas guardadas por versiones anteriores del proyecto que hoy ya no
+ * resuelven y dejan el icono de imagen rota:
+ *
+ *  · `/ordena/images/...`  → la carpeta se llama `assets/img`, no `images`
+ *  · `ecology-split.*`     → ilustración retirada del repositorio
+ */
+function esRutaMuerta(src: string): boolean {
+  return /\/images\//.test(src) || /ecology-split\./.test(src)
+}
+
+/**
+ * Devuelve una imagen utilizable a partir de lo que hay guardado en el tema.
+ *
+ * El backend ya hace esta misma normalización al leer la configuración; aquí
+ * se repite porque el servidor web y el backend se despliegan por separado y
+ * la portada no debe depender de que ambos vayan a la misma versión.
+ */
+export function imagenUsable(src: unknown, porDefecto: string): string {
+  if (!isSafeImageUrl(src)) return porDefecto
+  const limpio = src.trim()
+  if (esRutaMuerta(limpio)) return porDefecto
+
+  // Ruta interna del backend: el navegador no llega ahí, se traduce al proxy
+  // público. Ver app/actions/marca-controller.tsx.
+  if (limpio.startsWith('/api/')) {
+    const subida = limpio.match(/^\/api\/settings\/assets\/([A-Za-z0-9_.-]+)$/)
+    // Cualquier otra ruta de /api/ es inalcanzable desde el navegador: no vale
+    // la pena dejarla puesta para que acabe en un icono de imagen rota.
+    return subida ? `${basePathImagenes}/marca/${subida[1]}` : porDefecto
+  }
+
+  return limpio
+}
 
 // ---------------------------------------------------------------------------
 // Color Palette

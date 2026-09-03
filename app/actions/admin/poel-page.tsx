@@ -311,10 +311,7 @@ function FichaSesion(handle: Handle<{ s: Sesion; archivos: ArchivoPoel[] }>) {
                 <div class="poel-galeria">
                   {imagenes.map((a) => (
                     <figure key={a.id} class="poel-galeria__item">
-                      <img
-                        src={adminRoutes.poelArchivo.href({ aid: a.id })}
-                        alt={a.nombre_original}
-                      />
+                      <img src={adminRoutes.poelArchivo.href({ aid: a.id })} alt="" />
                       <figcaption title={a.nombre_original}>{a.nombre_original}</figcaption>
                       <form method="post" class="poel-inline">
                         <input type="hidden" name="intent" value="archivo_eliminar" />

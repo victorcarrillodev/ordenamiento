@@ -6,6 +6,7 @@ import { getPublicTheme, logoutBackend } from '../backend.ts'
 import { sugerirColonias, sugerirMunicipios } from '../data/colonias.ts'
 import { routes } from '../routes.ts'
 import { HomePage } from './home-page.tsx'
+import { marcaAction } from './marca-controller.tsx'
 import { ErrorPage } from './error-page.tsx'
 
 /** Cuántas sugerencias devuelve el autocompletado por consulta. */
@@ -28,6 +29,10 @@ export default createController(routes, {
     },
     participationLogin() {
       return redirect(routes.login.index.href())
+    },
+    /** Imágenes subidas en Personalización (ver marca-controller.tsx). */
+    marca(context) {
+      return marcaAction(context.request, context.params.path)
     },
     /** Endpoint de búsqueda y sugerencias de colonias y municipios de Jalisco para autocomplete */
     async colonias(context) {

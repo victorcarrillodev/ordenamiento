@@ -392,7 +392,7 @@ export function ErrorPage(handle: Handle<ErrorPageProps>) {
               <div mix={imageSectionStyle}>
                 <img
                   src={info.image}
-                  alt={`Error ${info.code}`}
+                  alt=""
                   style="max-width: 100%; max-height: 280px; object-fit: contain; filter: drop-shadow(0 12px 24px rgba(140, 29, 61, 0.12)); border-radius: 12px;"
                 />
               </div>

@@ -131,7 +131,12 @@ export function ActividadesSection(handle: Handle<ActividadesSectionProps>) {
             {actividades.map((a) => (
               <article key={a.id} mix={card}>
                 <div
-                  mix={css({ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' })}
+                  mix={css({
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    flexWrap: 'wrap',
+                  })}
                 >
                   <h3
                     mix={css({
@@ -229,7 +234,7 @@ export function ActividadesSection(handle: Handle<ActividadesSectionProps>) {
                       <img
                         key={f.id}
                         src={routes.poetdum.actividades.foto.href({ id: a.id, fid: f.id })}
-                        alt={f.nombre_original}
+                        alt={`Fotografía de la actividad «${a.titulo}»`}
                         loading="lazy"
                         mix={css({
                           width: '100%',

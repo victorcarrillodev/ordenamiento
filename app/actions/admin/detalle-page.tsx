@@ -107,7 +107,7 @@ function VistaAdjunto(handle: Handle<{ participacionId: string; adjunto: Adjunto
         <img
           class="pdf-frame"
           src={href}
-          alt={adjunto.nombre_original}
+          alt={`Adjunto «${adjunto.nombre_original}»`}
           style="object-fit:contain;"
         />
       )

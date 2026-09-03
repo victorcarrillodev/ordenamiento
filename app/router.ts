@@ -44,6 +44,18 @@ function staticWithPrefix() {
   // wrapper puede seguir con el `next` real de la cadena de middleware.
   const noStaticFile = async () => null as unknown as Response
 
+  /**
+   * ¿Sirvió realmente un archivo?
+   *
+   * Para una ruta cuyo último segmento parece un archivo (`/marca/foto.jpg`),
+   * `publicStatic` no llama al `next` que se le pasa: responde 404 por su
+   * cuenta. Si ese 404 se devolviera tal cual, ninguna ruta de la aplicación
+   * podría servir una URL con extensión — que es justo lo que necesita el
+   * proxy de imágenes de marca. Un 404 del middleware estático significa
+   * «este archivo no está en public/», no «esta URL no existe».
+   */
+  const sirvioArchivo = (res: Response | null) => Boolean(res) && res!.status !== 404
+
   // `context` es RequestContext (clase con estado privado). Este wrapper
   // necesita una copia temporal con `request`/`url` distintos solo para la
   // consulta a `publicStatic`, sin tocar el `context` real que sigue por el
@@ -63,10 +75,10 @@ function staticWithPrefix() {
         { ...context, request: new Request(strippedUrl, context.request), url: strippedUrl },
         noStaticFile,
       )
-      if (res) return res
+      if (sirvioArchivo(res)) return res
     } else {
       const res = await publicStatic(context, noStaticFile)
-      if (res) return res
+      if (sirvioArchivo(res)) return res
       if (basePath && !url.pathname.startsWith(basePath)) {
         const targetUrl = new URL(context.request.url)
         targetUrl.pathname = `${basePath}${url.pathname.startsWith('/') ? '' : '/'}${url.pathname}`

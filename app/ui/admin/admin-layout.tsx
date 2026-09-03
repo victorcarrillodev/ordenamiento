@@ -169,6 +169,9 @@ const GRUPOS: Array<{ titulo: string; items: ItemMenu[] }> = [
 
 const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 
+/** Se usa como respaldo si el logotipo configurado deja de resolver. */
+const LOGO_POR_DEFECTO = `${basePath}/assets/img/logo/logo-200x60.webp`
+
 /** Primera y última inicial, para el avatar de la barra superior. */
 function iniciales(nombre: string): string {
   const partes = (nombre || '').trim().split(/\s+/).filter(Boolean)
@@ -181,7 +184,7 @@ function iniciales(nombre: string): string {
 export function AdminLayout(handle: Handle<AdminLayoutProps>) {
   return () => {
     const { children, user, active, title, actions, subtitle, breadcrumb, theme } = handle.props
-    const customLogo = theme?.adminLogo || `${basePath}/assets/img/logo/logo-200x60.webp`
+    const customLogo = theme?.adminLogo || LOGO_POR_DEFECTO
     const customTitle = theme?.adminTitulo || 'ADMINISTRADOR BITÁCORA AMBIENTAL'
     // Estos valores vienen del formulario de Personalización y se insertan
     // como texto crudo de <style> (sin escapar), así que se validan primero:
@@ -219,7 +222,11 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
 
           <aside class="sidebar" id="sidebar">
             <div class="sidebar__brand">
-              <img src={customLogo} alt="Logo" />
+              <img
+                src={customLogo}
+                data-imagen-alterna={LOGO_POR_DEFECTO}
+                alt="Escudo del Municipio de San Pedro Tlaquepaque"
+              />
               <div class="sidebar__brand-text" style="white-space: pre-line;">
                 {customTitle}
               </div>

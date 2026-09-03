@@ -16,6 +16,7 @@ import {
   headingLProps,
   headingXLProps,
   HERO_IMAGEN_POR_DEFECTO,
+  IMAGEN_POR_DEFECTO,
   isSafeCssColor,
   isSafeImageUrl,
   sectionContainerProps,
@@ -141,6 +142,7 @@ function HeroSection(handle: Handle<{ theme?: ThemeData }>) {
             <div
               key={idx}
               class={`hero-slide slide-${idx}`}
+              data-fondo-alterna={HERO_IMAGEN_POR_DEFECTO}
               style={`
                 position: absolute;
                 inset: 0;
@@ -510,18 +512,16 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
 
     const primary = c.primario || colors.burgundy900
     const cintillo = txt.queEsCintillo || '¿QUÉ ES ESTE SITIO?'
-    const titulo =
-      txt.queEsTitulo || 'Conoce la Bitácora Ambiental y de Ordenamiento Territorial'
+    const titulo = txt.queEsTitulo || 'Conoce la Bitácora Ambiental y de Ordenamiento Territorial'
     const p1 =
       txt.queEsParrafo1 ||
       'Este sitio forma parte de la Bitácora Ambiental y de Ordenamiento Territorial del Municipio de San Pedro Tlaquepaque, un espacio público y transparente en el que se registra, organiza y difunde la información relacionada con el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.'
     const p2 =
       txt.queEsParrafo2 ||
       'La Bitácora permite conocer y dar seguimiento a la elaboración, actualización, aplicación y evaluación del Programa; consultar los acuerdos, avances, resultados y documentos técnicos generados, así como conocer las actividades relacionadas con la planeación del territorio municipal. También facilita la participación de la ciudadanía, al permitir la presentación de observaciones, propuestas y documentos durante los mecanismos de consulta pública establecidos.'
-    const ecoImg =
-      img.imagenEcologia && !img.imagenEcologia.includes('ecology-split.webp')
-        ? img.imagenEcologia
-        : `${basePath}/assets/img/vector/vector_1.webp`
+    // Ya viene normalizada desde getPublicTheme: aquí solo se cubre el caso
+    // de que no haya tema guardado todavía.
+    const ecoImg = img.imagenEcologia || IMAGEN_POR_DEFECTO.ecologia
 
     return (
       <section
@@ -586,6 +586,7 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
           >
             <img
               src={ecoImg}
+              data-imagen-alterna={IMAGEN_POR_DEFECTO.ecologia}
               alt="Equilibrio ecológico y territorial"
               mix={css({
                 width: '100%',
@@ -844,12 +845,7 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
     const { theme } = handle.props
     const u = theme?.usuario || {}
     const img = u.imagenes || {}
-    const programaImg =
-      img.imagenPrograma &&
-      !img.imagenPrograma.includes('ecology-split.webp') &&
-      !img.imagenPrograma.includes('vector_1.webp')
-        ? img.imagenPrograma
-        : `${basePath}/assets/img/vector/vector_2.webp`
+    const programaImg = img.imagenPrograma || IMAGEN_POR_DEFECTO.programa
 
     const preguntas = [
       '¿Qué zonas deben conservarse o protegerse por su valor ambiental?',
@@ -926,9 +922,10 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
                     margin: 0,
                   })}
                 >
-                  Es una herramienta que permite organizar el territorio del municipio, definiendo qué
-                  actividades pueden realizarse en cada zona y en qué condiciones, con el objetivo de
-                  proteger el medio ambiente y orientar el desarrollo urbano de manera ordenada.
+                  Es una herramienta que permite organizar el territorio del municipio, definiendo
+                  qué actividades pueden realizarse en cada zona y en qué condiciones, con el
+                  objetivo de proteger el medio ambiente y orientar el desarrollo urbano de manera
+                  ordenada.
                 </p>
                 <p
                   mix={css({
@@ -940,9 +937,10 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
                   })}
                 >
                   Para elaborarlo se analizan las características del territorio, sus recursos
-                  naturales y las actividades que se desarrollan en él, con el propósito de encontrar
-                  un equilibrio entre la protección del medio ambiente y el desarrollo urbano del
-                  municipio. A partir de estos análisis se busca responder preguntas como:
+                  naturales y las actividades que se desarrollan en él, con el propósito de
+                  encontrar un equilibrio entre la protección del medio ambiente y el desarrollo
+                  urbano del municipio. A partir de estos análisis se busca responder preguntas
+                  como:
                 </p>
 
                 <ul
@@ -981,6 +979,7 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
               >
                 <img
                   src={programaImg}
+                  data-imagen-alterna={IMAGEN_POR_DEFECTO.programa}
                   alt="Ilustración del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano"
                   mix={css({
                     width: '100%',
@@ -998,7 +997,6 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
     )
   }
 }
-
 
 // ---------------------------------------------------------------------------
 // Process Timeline
@@ -1446,7 +1444,8 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
                 {footerLogo ? (
                   <img
                     src={footerLogo}
-                    alt="Logo Footer"
+                    data-imagen-alterna={IMAGEN_POR_DEFECTO.logo}
+                    alt="Escudo del Municipio de San Pedro Tlaquepaque"
                     style="max-height: 44px; max-width: 120px; object-fit: contain;"
                   />
                 ) : (

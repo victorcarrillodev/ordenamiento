@@ -1,7 +1,7 @@
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { backendFetch, requireAdminUser } from '../../backend.ts'
+import { backendFetch, normalizarImagenesDelTema, requireAdminUser } from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
 import { PersonalizacionPage } from './personalizacion-page.tsx'
 
@@ -37,6 +37,11 @@ export default createController(adminRoutes.personalizacion, {
       ])
 
       const themeData = themeRes.ok ? await themeRes.json() : { theme: {} }
+      // Se normaliza igual que en la portada: las vistas previas deben enseñar
+      // lo que el portal va a mostrar de verdad, no una ruta muerta. Y como el
+      // formulario parte de estos valores, al guardar se corrige la fila de la
+      // base sin que nadie tenga que buscar cuál era la ruta buena.
+      normalizarImagenesDelTema(themeData.theme)
       const auditData = auditRes.ok ? await auditRes.json() : { logs: [] }
 
       return context.render(

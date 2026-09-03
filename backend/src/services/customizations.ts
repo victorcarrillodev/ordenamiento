@@ -1,8 +1,63 @@
 import { isSafeCssColor, isSafeImageUrl, sanitizeText } from '../utils.ts'
+
 import { logger } from '../utils.ts'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { sql } from '../db/pool.ts'
+
+/**
+ * Prefijo publico del portal. Las imagenes por defecto y las que sube el
+ * administrador se sirven bajo el, y estaba escrito a mano como '/ordena' en
+ * ocho sitios: cambiar BASE_PATH dejaba todas las imagenes rotas.
+ */
+const BASE_PATH = (process.env.BASE_PATH ?? '/ordena').replace(/\/+$/, '')
+
+/** Imagenes que vienen con el proyecto, servidas desde public/assets. */
+export const IMAGEN = {
+  logo: `${BASE_PATH}/assets/img/logo/logo-200x60.webp`,
+  hero: `${BASE_PATH}/assets/img/hero/hero.webp`,
+  ecologia: `${BASE_PATH}/assets/img/vector/vector_1.webp`,
+  programa: `${BASE_PATH}/assets/img/vector/vector_2.webp`,
+} as const
+
+/** URL publica de una imagen subida en Personalizacion. */
+export function urlImagenDeMarca(filename: string): string {
+  return `${BASE_PATH}/marca/${filename}`
+}
+
+/**
+ * Rutas heredadas que ya no resuelven y hay que reemplazar por la imagen por
+ * defecto. Son valores guardados en la base por versiones anteriores del
+ * proyecto: hoy dejan un icono de imagen rota en la portada.
+ *
+ *  · `/ordena/images/...`      → la carpeta se llama `assets/img`, no `images`
+ *  · `ecology-split.*`         → ilustracion retirada del repositorio
+ */
+function esRutaMuerta(src: string): boolean {
+  return /\/images\//.test(src) || /ecology-split\./.test(src)
+}
+
+/**
+ * Normaliza una imagen guardada en la configuracion.
+ *
+ * Cubre tres casos que dejaban imagenes rotas en produccion: el valor vacio,
+ * las rutas de versiones viejas, y las imagenes subidas cuya URL apuntaba a
+ * una ruta interna del backend (`/api/settings/assets/...`) a la que el
+ * navegador no llega.
+ */
+export function normalizarImagen(src: unknown, porDefecto: string): string {
+  if (typeof src !== 'string' || src.trim() === '') return porDefecto
+  const limpio = src.trim()
+  if (esRutaMuerta(limpio)) return porDefecto
+
+  if (limpio.startsWith('/api/')) {
+    const subida = limpio.match(/^\/api\/settings\/assets\/([A-Za-z0-9_.-]+)$/)
+    // Cualquier otra ruta de /api/ es inalcanzable desde el navegador.
+    return subida ? urlImagenDeMarca(subida[1]) : porDefecto
+  }
+
+  return limpio
+}
 
 export interface ThemeConfig {
   usuario: {
@@ -85,11 +140,11 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
       heroGradienteFin: 'rgba(15,17,23,0.75)',
     },
     imagenes: {
-      logoNavbar: '/ordena/assets/img/logo/logo-200x60.webp',
-      logoFooter: '/ordena/assets/img/logo/logo-200x60.webp',
-      heroImagenes: ['/ordena/assets/img/hero/hero.webp'],
-      imagenEcologia: '/ordena/assets/img/vector/vector_1.webp',
-      imagenPrograma: '/ordena/assets/img/vector/vector_2.webp',
+      logoNavbar: IMAGEN.logo,
+      logoFooter: IMAGEN.logo,
+      heroImagenes: [IMAGEN.hero],
+      imagenEcologia: IMAGEN.ecologia,
+      imagenPrograma: IMAGEN.programa,
     },
     iconos: {
       cardPrograma: '🏛️',
@@ -141,7 +196,7 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
     topbarTexto: '#ffffff',
     colorAcento: '#2563eb',
     adminBg: '#f4f6fb',
-    adminLogo: '/ordena/assets/img/logo/logo-200x60.webp',
+    adminLogo: IMAGEN.logo,
     adminTitulo: 'ADMINISTRADOR BITÁCORA AMBIENTAL',
   },
 }
@@ -175,6 +230,42 @@ export function deepMerge(target: any, source: any): any {
   return output
 }
 
+/**
+ * Repasa todas las imagenes del tema guardado y sustituye las que ya no
+ * resuelven. Se aplica al LEER y no al guardar porque las filas problematicas
+ * ya estan en la base: arreglarlo solo en el guardado dejaria rota la portada
+ * hasta que alguien volviera a pasar por Personalizacion.
+ *
+ * `imagenPrograma` ademas no puede quedarse con la ilustracion de ecologia:
+ * son dos secciones distintas de la portada y repetir la imagen se lee como
+ * un error de carga.
+ */
+export function normalizarImagenesDelTema(tema: ThemeConfig): ThemeConfig {
+  const img = tema.usuario?.imagenes
+  if (img) {
+    img.logoNavbar = normalizarImagen(img.logoNavbar, IMAGEN.logo)
+    img.logoFooter = normalizarImagen(img.logoFooter, IMAGEN.logo)
+    img.imagenEcologia = normalizarImagen(img.imagenEcologia, IMAGEN.ecologia)
+    img.imagenPrograma = normalizarImagen(img.imagenPrograma, IMAGEN.programa)
+    if (img.imagenPrograma === img.imagenEcologia) {
+      img.imagenPrograma = IMAGEN.programa
+    }
+
+    const hero = Array.isArray(img.heroImagenes)
+      ? img.heroImagenes.map((src) => normalizarImagen(src, IMAGEN.hero))
+      : []
+    // Sin fotos no hay carrusel; y si todas se normalizaron a la misma, basta
+    // con una: el carrusel no debe pasar tres veces por la misma imagen.
+    img.heroImagenes = hero.length > 0 ? [...new Set(hero)] : [IMAGEN.hero]
+  }
+
+  if (tema.panel) {
+    tema.panel.adminLogo = normalizarImagen(tema.panel.adminLogo, IMAGEN.logo)
+  }
+
+  return tema
+}
+
 export async function getCustomizations(): Promise<ThemeConfig> {
   try {
     // Columna JSONB de forma dinámica: el tipo en crudo es un objeto plano.
@@ -185,20 +276,7 @@ export async function getCustomizations(): Promise<ThemeConfig> {
       return DEFAULT_THEME_CONFIG
     }
     const merged = deepMerge(DEFAULT_THEME_CONFIG, rows[0].config)
-    if (merged.usuario?.imagenes) {
-      if (!merged.usuario.imagenes.imagenEcologia || merged.usuario.imagenes.imagenEcologia.includes('ecology-split.webp')) {
-        merged.usuario.imagenes.imagenEcologia = '/ordena/assets/img/vector/vector_1.webp'
-      }
-      if (!merged.usuario.imagenes.imagenPrograma || merged.usuario.imagenes.imagenPrograma.includes('ecology-split.webp') || merged.usuario.imagenes.imagenPrograma.includes('vector_1.webp')) {
-        merged.usuario.imagenes.imagenPrograma = '/ordena/assets/img/vector/vector_2.webp'
-      }
-      if (Array.isArray(merged.usuario.imagenes.heroImagenes)) {
-        merged.usuario.imagenes.heroImagenes = merged.usuario.imagenes.heroImagenes.map((src: string) =>
-          src.includes('ecology-split.webp') ? '/ordena/assets/img/hero/hero.webp' : src,
-        )
-      }
-    }
-    return merged
+    return normalizarImagenesDelTema(merged)
   } catch (err) {
     // M3: el error es visible (logger), pero se mantiene el fallback para que
     // el sitio siga renderizando con el tema por defecto en vez de caer 500.
@@ -323,8 +401,10 @@ export async function saveUploadedBrandingImage(
   const uniqueName = `brand-${Date.now()}-${cleanName}`
   const fullPath = join(BRANDING_UPLOAD_DIR, uniqueName)
   await writeFile(fullPath, fileBuffer)
+  // URL publica, no la ruta interna del backend: el navegador nunca habla
+  // directamente con el backend, asi que `/api/settings/assets/...` daba 404.
   return {
-    url: `/api/settings/assets/${uniqueName}`,
+    url: urlImagenDeMarca(uniqueName),
     filename: uniqueName,
   }
 }

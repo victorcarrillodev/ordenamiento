@@ -6,7 +6,7 @@
 import { redirect } from 'remix/response/redirect'
 
 import { routes } from './routes.ts'
-import type { ThemeData } from './ui/civic-horizon.ts'
+import { IMAGEN_POR_DEFECTO, imagenUsable, type ThemeData } from './ui/civic-horizon.ts'
 
 export const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:5920'
 
@@ -265,6 +265,40 @@ export async function requireAdminUser(request: Request): Promise<AdminUser | Re
   return user?.role === 'admin' ? user : redirect(routes.login.index.href())
 }
 
+/**
+ * Sustituye las imágenes del tema que ya no resuelven por las que trae el
+ * proyecto. Se aplica al leer, no al guardar: las filas problemáticas ya están
+ * en la base, y arreglarlo solo en el guardado dejaría la portada rota hasta
+ * que alguien volviera a pasar por Personalización.
+ */
+export function normalizarImagenesDelTema(tema: ThemeData): ThemeData {
+  if (!tema) return tema
+
+  const img = tema.usuario?.imagenes
+  if (img) {
+    img.logoNavbar = imagenUsable(img.logoNavbar, IMAGEN_POR_DEFECTO.logo)
+    img.logoFooter = imagenUsable(img.logoFooter, IMAGEN_POR_DEFECTO.logo)
+    img.imagenEcologia = imagenUsable(img.imagenEcologia, IMAGEN_POR_DEFECTO.ecologia)
+    img.imagenPrograma = imagenUsable(img.imagenPrograma, IMAGEN_POR_DEFECTO.programa)
+    // Son dos secciones distintas de la portada: repetir la misma ilustración
+    // en ambas se lee como un error de carga, no como una decisión.
+    if (img.imagenPrograma === img.imagenEcologia) {
+      img.imagenPrograma = IMAGEN_POR_DEFECTO.programa
+    }
+
+    const hero = Array.isArray(img.heroImagenes)
+      ? img.heroImagenes.map((src: unknown) => imagenUsable(src, IMAGEN_POR_DEFECTO.hero))
+      : []
+    img.heroImagenes = hero.length > 0 ? [...new Set(hero)] : [IMAGEN_POR_DEFECTO.hero]
+  }
+
+  if (tema.panel) {
+    tema.panel.adminLogo = imagenUsable(tema.panel.adminLogo, IMAGEN_POR_DEFECTO.logo)
+  }
+
+  return tema
+}
+
 // Caché del tema público (TTL corto): la portada se renderiza por cada
 // visita y, bajo picos de tráfico, no debe golpear al backend en cada render.
 // Un cambio de Personalización tarda como máximo TTL en reflejarse.
@@ -281,23 +315,7 @@ export async function getPublicTheme(request: Request): Promise<ThemeData> {
     const res = await backendFetch(request, '/api/settings/theme')
     if (res.ok) {
       const data = await res.json()
-      const t = data.theme
-      const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
-      if (t?.usuario?.imagenes) {
-        if (
-          !t.usuario.imagenes.imagenEcologia ||
-          t.usuario.imagenes.imagenEcologia.includes('ecology-split.webp')
-        ) {
-          t.usuario.imagenes.imagenEcologia = `${basePath}/assets/img/vector/vector_1.webp`
-        }
-        if (
-          !t.usuario.imagenes.imagenPrograma ||
-          t.usuario.imagenes.imagenPrograma.includes('ecology-split.webp') ||
-          t.usuario.imagenes.imagenPrograma.includes('vector_1.webp')
-        ) {
-          t.usuario.imagenes.imagenPrograma = `${basePath}/assets/img/vector/vector_2.webp`
-        }
-      }
+      const t = normalizarImagenesDelTema(data.theme)
       themeCache = { data: t ?? null, expires: now + THEME_TTL_MS }
       return themeCache.data as ThemeData
     }

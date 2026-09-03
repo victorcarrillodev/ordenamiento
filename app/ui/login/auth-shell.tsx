@@ -87,7 +87,7 @@ export function AuthShell(handle: Handle<AuthShellProps>) {
                 title={heading}
                 subtitle={subtitle}
                 logoSrc={`${basePath}/assets/img/logo/logo-200x60.webp`}
-                logoAlt="Logo Tlaquepaque"
+                logoAlt="Escudo del Municipio de San Pedro Tlaquepaque"
               />
               <div class="login__body">
                 {alert ? <LoginAlert type={alert.type} message={alert.message} /> : null}

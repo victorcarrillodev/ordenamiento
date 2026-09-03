@@ -434,7 +434,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       </span>
                       <img
                         src={imgUrl}
-                        alt={`Foto ${idx + 1}`}
+                        alt={`Vista previa de la foto ${idx + 1} del carrusel de la portada`}
                         class="hero-img-preview"
                         style="width: 50px; height: 35px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1;"
                       />
@@ -493,7 +493,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       {img.logoNavbar && (
                         <img
                           src={img.logoNavbar}
-                          alt="Logo Navbar"
+                          alt="Vista previa del logotipo de la barra superior del portal"
                           style="max-height: 40px; max-width: 100px; object-fit: contain; background: #fff; padding: 4px; border-radius: 4px; border: 1px solid #e2e8f0;"
                         />
                       )}
@@ -528,7 +528,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       {img.logoFooter && (
                         <img
                           src={img.logoFooter}
-                          alt="Logo Footer"
+                          alt="Vista previa del logotipo del pie de página del portal"
                           style="max-height: 40px; max-width: 100px; object-fit: contain; background: #fff; padding: 4px; border-radius: 4px; border: 1px solid #e2e8f0;"
                         />
                       )}
@@ -563,7 +563,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       {img.imagenEcologia && (
                         <img
                           src={img.imagenEcologia}
-                          alt="Ecología"
+                          alt="Vista previa de la ilustración de la sección «¿Qué es este sitio?»"
                           style="max-height: 40px; max-width: 80px; object-fit: cover; border-radius: 4px;"
                         />
                       )}
@@ -598,7 +598,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       {img.imagenPrograma && (
                         <img
                           src={img.imagenPrograma}
-                          alt="Programa"
+                          alt="Vista previa de la ilustración de la sección del Programa"
                           style="max-height: 40px; max-width: 80px; object-fit: cover; border-radius: 4px;"
                         />
                       )}
@@ -1049,7 +1049,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       {p.adminLogo && (
                         <img
                           src={p.adminLogo}
-                          alt="Admin Logo"
+                          alt="Vista previa del logotipo del panel administrativo"
                           style="max-height: 40px; max-width: 60px; object-fit: contain; background: #fff; padding: 2px; border: 1px solid #cbd5e1; border-radius: 4px;"
                         />
                       )}
@@ -1322,7 +1322,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                     <span class="mp__tag">✎ Menú superior</span>
                     <div class="mp__nav-brand">
                       {img.logoNavbar ? (
-                        <img id="mp-nav-logo" src={img.logoNavbar} alt="Logo" />
+                        <img id="mp-nav-logo" src={img.logoNavbar} alt="" />
                       ) : (
                         <span id="mp-nav-logo" class="mp__logo-fallback">
                           🏛️
@@ -1435,7 +1435,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                   >
                     <span class="mp__tag mp__tag--light">✎ Pie de página</span>
                     {img.logoFooter ? (
-                      <img id="mp-footer-logo" src={img.logoFooter} alt="Logo" />
+                      <img id="mp-footer-logo" src={img.logoFooter} alt="" />
                     ) : (
                       <span id="mp-footer-logo" class="mp__logo-fallback">
                         🏛️
