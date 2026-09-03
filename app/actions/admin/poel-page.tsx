@@ -401,11 +401,6 @@ export function PoelPage(handle: Handle<PoelPageProps>) {
 
     return (
       <AdminLayout user={user} active="poel" title="Gestión de sesiones POEL">
-        <h1 class="page-title">Gestión de sesiones POEL</h1>
-        <p class="breadcrumb">
-          <a href={adminRoutes.index.href()}>Vista general</a> / Sesiones POEL
-        </p>
-
         {error ? <p class="form-error">{error}</p> : null}
         {feedback ? <p class={AVISOS[feedback].clase}>{AVISOS[feedback].texto}</p> : null}
 

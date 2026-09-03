@@ -83,15 +83,22 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
     const { user, error, folioRegistrado, values = {} } = handle.props
 
     return (
-      <AdminLayout user={user} active="participaciones-fisica" title="Nueva participación física">
-        <h1 class="page-title">Ingresa aquí tu participación</h1>
-        <p class="breadcrumb">
-          <a href={`${adminRoutes.participaciones.href()}?origen=fisica`}>
-            Volver a participaciones físicas
-          </a>{' '}
-          / Formulario de participación
-        </p>
-
+      <AdminLayout
+        user={user}
+        active="participaciones-fisica"
+        title="Nueva participación física"
+        breadcrumb={
+          <>
+            <a href={`${adminRoutes.participaciones.href()}?origen=fisica`}>
+              Participaciones físicas
+            </a>
+            <span class="breadcrumb__sep" aria-hidden="true">
+              /
+            </span>
+            Nueva
+          </>
+        }
+      >
         {error ? <p class="form-error">{error}</p> : null}
 
         {folioRegistrado ? (

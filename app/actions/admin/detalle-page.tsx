@@ -422,14 +422,18 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
         user={user}
         active={p?.origen === 'digital' ? 'participaciones-digital' : 'participaciones-fisica'}
         title={titulo}
+        breadcrumb={
+          <>
+            <a href={`${adminRoutes.participaciones.href()}?origen=${p?.origen ?? 'fisica'}`}>
+              Participaciones {p?.origen === 'digital' ? 'digitales' : 'físicas'}
+            </a>
+            <span class="breadcrumb__sep" aria-hidden="true">
+              /
+            </span>
+            {titulo}
+          </>
+        }
       >
-        <h1 class="page-title">{titulo}</h1>
-        <p class="breadcrumb">
-          <a href={`${adminRoutes.participaciones.href()}?origen=${p?.origen ?? 'fisica'}`}>
-            Volver a participaciones
-          </a>
-        </p>
-
         {!p ? (
           <div class="panel">
             <p class="empty">No se encontró la participación.</p>

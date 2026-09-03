@@ -2,6 +2,7 @@ import type { Handle } from 'remix/ui'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { adminRoutes, routes } from '../../routes.ts'
 import { Button } from '../../ui/button.tsx'
+import { Icon } from '../../ui/admin/icon.tsx'
 import { HERO_IMAGEN_POR_DEFECTO, type ThemeData } from '../../ui/civic-horizon.ts'
 
 export interface AuditLogEntry {
@@ -44,81 +45,72 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
       <AdminLayout
         user={user}
         active="personalizacion"
-        title="Personalización y Marca"
+        title="Personalización y marca"
+        subtitle="Colores, logotipos, carrusel de fotos, íconos y textos del portal y del panel."
         theme={theme?.panel}
+        actions={
+          <>
+            <Button
+              href={routes.home.href()}
+              target="_blank"
+              rel="noreferrer"
+              variant="secondary"
+              icon={<Icon name="mdi:open-in-new" size={16} />}
+            >
+              Ver portal en vivo
+            </Button>
+            <Button
+              buttonType="button"
+              id="btn-open-preview"
+              variant="primary"
+              icon={<Icon name="mdi:eye-outline" size={16} />}
+            >
+              Previsualizar
+            </Button>
+          </>
+        }
       >
-        <div style="max-width: 1200px; margin: 0 auto;">
-          {/* Header */}
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
-            <div>
-              <h1
-                class="page-title"
-                style="font-size: 24px; font-weight: 800; color: #1e293b; margin: 0 0 6px;"
-              >
-                🎨 Personalización y Marca
-              </h1>
-              <p style="color: #64748b; font-size: 14px; margin: 0;">
-                Cambia fácilmente colores, logotipos, carrusel de fotos, íconos y textos del portal
-                y del panel administrativo.
-              </p>
-            </div>
-
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <Button
-                href={routes.home.href()}
-                target="_blank"
-                rel="noreferrer"
-                variant="dark"
-                icon={<span>🌐</span>}
-              >
-                Ver Portal en Vivo
-              </Button>
-              <Button
-                buttonType="button"
-                id="btn-open-preview"
-                variant="primary"
-                icon={<span>👁️</span>}
-              >
-                Previsualizar (Mini Página)
-              </Button>
-            </div>
-          </div>
-
+        <div class="personalizacion">
           {/* Feedback messages */}
           {mensaje && (
-            <div style="background: #dcfce7; border: 1px solid #86efac; color: #166534; padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
-              <span>✅</span> {mensaje}
+            <div class="admin-alert admin-alert--success" role="status">
+              <Icon name="mdi:check-circle-outline" size={18} /> <span>{mensaje}</span>
             </div>
           )}
           {error && (
-            <div style="background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
-              <span>⚠️</span> {error}
+            <div class="admin-alert admin-alert--error" role="alert">
+              <Icon name="mdi:alert-circle-outline" size={18} /> <span>{error}</span>
             </div>
           )}
 
-          {/* Tabs Navigation */}
-          <div style="display: flex; gap: 8px; border-bottom: 2px solid #e2e8f0; margin-bottom: 24px; overflow-x: auto;">
-            <a
-              href="?tab=usuario"
-              class="tab-btn"
-              style={`padding: 12px 20px; font-size: 14px; font-weight: 700; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid ${tabActiva === 'usuario' ? '#2563eb' : 'transparent'}; color: ${tabActiva === 'usuario' ? '#2563eb' : '#64748b'}; display: flex; align-items: center; gap: 8px; text-decoration: none;`}
-            >
-              <span>👤</span> Vista de Usuario (Portal Ciudadano)
-            </a>
-            <a
-              href="?tab=panel"
-              class="tab-btn"
-              style={`padding: 12px 20px; font-size: 14px; font-weight: 700; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid ${tabActiva === 'panel' ? '#2563eb' : 'transparent'}; color: ${tabActiva === 'panel' ? '#2563eb' : '#64748b'}; display: flex; align-items: center; gap: 8px; text-decoration: none;`}
-            >
-              <span>⚙️</span> Vista de Panel (Admin)
-            </a>
-            <a
-              href="?tab=historial"
-              class="tab-btn"
-              style={`padding: 12px 20px; font-size: 14px; font-weight: 700; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid ${tabActiva === 'historial' ? '#2563eb' : 'transparent'}; color: ${tabActiva === 'historial' ? '#2563eb' : '#64748b'}; display: flex; align-items: center; gap: 8px; text-decoration: none;`}
-            >
-              <span>📜</span> Historial y Auditoría ({auditLogs.length})
-            </a>
+          {/* Las pestañas son enlaces con su propia URL, igual que en
+              Estadísticas: se pueden compartir y sobreviven a una recarga. */}
+          <div class="tabs" role="tablist" aria-label="Ámbito de la personalización">
+            {(
+              [
+                { clave: 'usuario', etiqueta: 'Portal ciudadano', icono: 'mdi:web' },
+                {
+                  clave: 'panel',
+                  etiqueta: 'Panel administrativo',
+                  icono: 'mdi:view-dashboard-outline',
+                },
+                { clave: 'historial', etiqueta: 'Historial de cambios', icono: 'mdi:history' },
+              ] as const
+            ).map((t) => (
+              <a
+                key={t.clave}
+                role="tab"
+                aria-selected={tabActiva === t.clave ? 'true' : 'false'}
+                class={'tabs__item' + (tabActiva === t.clave ? ' active' : '')}
+                href={`?tab=${t.clave}`}
+              >
+                <Icon name={t.icono} size={16} />
+                {t.etiqueta}
+                {t.clave === 'historial' ? (
+                  <span class="tabs__count">{auditLogs.length}</span>
+                ) : null}
+              </a>
+            ))}
           </div>
 
           {/* TAB 1: VISTA DE USUARIO */}
@@ -133,10 +125,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
               <input type="hidden" name="tab" value="usuario" />
 
               {/* PALETAS PREDEFINIDAS */}
-              <div
-                class="panel"
-                style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;"
-              >
+              <div class="panel">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
                   <div>
                     <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 4px;">
@@ -257,13 +246,8 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
               </div>
 
               {/* SECCION COLORES DEL PORTAL */}
-              <div
-                class="panel"
-                style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;"
-              >
-                <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 16px;">
-                  1. Colores del Portal Ciudadano
-                </h3>
+              <div class="panel">
+                <h3 class="panel__title">1. Colores del Portal Ciudadano</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
                   <div class="form-field">
                     <label style="font-weight: 700; font-size: 12px; color: #475569;">
@@ -422,10 +406,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
               </div>
 
               {/* SECCION HERO CAROUSEL Y FOTOS */}
-              <div
-                class="panel"
-                style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;"
-              >
+              <div class="panel">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
                   <div>
                     <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 4px;">
@@ -504,13 +485,8 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
               </div>
 
               {/* SECCION LOGOS E IMAGENES */}
-              <div
-                class="panel"
-                style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;"
-              >
-                <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 16px;">
-                  3. Logotipos e Imágenes Secundarias
-                </h3>
+              <div class="panel">
+                <h3 class="panel__title">3. Logotipos e Imágenes Secundarias</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
                   {/* Logo Navbar */}
                   <div
@@ -655,13 +631,8 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
               </div>
 
               {/* SECCION TEXTOS E ICONOS */}
-              <div
-                class="panel"
-                style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;"
-              >
-                <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 16px;">
-                  4. Textos del Portal e Íconos de Tarjetas
-                </h3>
+              <div class="panel">
+                <h3 class="panel__title">4. Textos del Portal e Íconos de Tarjetas</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px;">
                   <div class="form-field">
                     <label style="font-weight: 700; font-size: 12px; color: #475569;">
@@ -885,10 +856,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
               </div>
 
               {/* MOTIVO OBLIGATORIO Y BOTON GUARDAR */}
-              <div
-                class="panel"
-                style="background: #f8fafc; border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; box-shadow: 0 4px 16px rgba(59,130,246,0.1);"
-              >
+              <div class="panel panel--destacado">
                 <div style="display: flex; flex-direction: column; gap: 12px;">
                   <div>
                     <label style="font-weight: 800; font-size: 14px; color: #1e293b; display: flex; align-items: center; gap: 6px;">
@@ -962,13 +930,8 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
               <input type="hidden" name="section" value="panel" />
               <input type="hidden" name="tab" value="panel" />
 
-              <div
-                class="panel"
-                style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;"
-              >
-                <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 16px;">
-                  1. Colores y Apariencia del Panel Administrador
-                </h3>
+              <div class="panel">
+                <h3 class="panel__title">1. Colores y Apariencia del Panel Administrador</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
                   <div class="form-field">
                     <label style="font-weight: 700; font-size: 12px; color: #475569;">
@@ -1082,13 +1045,8 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                 </div>
               </div>
 
-              <div
-                class="panel"
-                style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;"
-              >
-                <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 16px;">
-                  2. Logotipo y Título del Administrador
-                </h3>
+              <div class="panel">
+                <h3 class="panel__title">2. Logotipo y Título del Administrador</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
                   <div class="form-field">
                     <label style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 6px;">
@@ -1137,10 +1095,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
               </div>
 
               {/* MOTIVO Y GUARDAR PANEL */}
-              <div
-                class="panel"
-                style="background: #f8fafc; border: 2px solid #3b82f6; border-radius: 12px; padding: 20px; box-shadow: 0 4px 16px rgba(59,130,246,0.1);"
-              >
+              <div class="panel panel--destacado">
                 <div style="display: flex; flex-direction: column; gap: 12px;">
                   <div>
                     <label style="font-weight: 800; font-size: 14px; color: #1e293b; display: flex; align-items: center; gap: 6px;">
@@ -1171,10 +1126,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
 
           {/* TAB 3: HISTORIAL Y AUDITORIA ("QUIEN Y POR QUE") */}
           {tabActiva === 'historial' && (
-            <div
-              class="panel"
-              style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;"
-            >
+            <div class="panel">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <div>
                   <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 4px;">
@@ -1190,6 +1142,11 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                         type="text"
                         id="historial-search"
                         placeholder="🔍 Buscar en historial por usuario, motivo o sección..."
+                        aria-label="Buscar en el historial de personalización"
+                        data-filter-rows="historial-tbody"
+                        data-filter-empty="historial-empty"
+                        data-filter-count="historial-count"
+                        data-filter-noun="registro|registros"
                         style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 14px 10px 36px; font-size: 13px;"
                       />
                       <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8;">

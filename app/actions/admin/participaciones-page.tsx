@@ -94,11 +94,6 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
         active={origen === 'fisica' ? 'participaciones-fisica' : 'participaciones-digital'}
         title={titulo}
       >
-        <h1 class="page-title">{titulo}</h1>
-        <p class="breadcrumb">
-          <a href={adminRoutes.index.href()}>Vista general</a> / {titulo}
-        </p>
-
         <div class="panel">
           {origen === 'fisica' ? (
             <div class="panel__head">
@@ -237,9 +232,7 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
                     ) : (
                       <a
                         key={p}
-                        class={
-                          'paginacion__link' + (p === page ? ' paginacion__link--activo' : '')
-                        }
+                        class={'paginacion__link' + (p === page ? ' paginacion__link--activo' : '')}
                         href={paginaHref(p)}
                         aria-current={p === page ? 'page' : undefined}
                       >

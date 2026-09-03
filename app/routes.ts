@@ -8,6 +8,13 @@ export const routes = route({
   homeSlash: `${basePath}/`,
   colonias: get(`${basePath}/api/colonias`),
   login: form(`${basePath}/login`),
+  // Recuperación de contraseña: pedir el enlace y canjearlo. Públicas por
+  // definición — quien las usa es justo quien no puede iniciar sesión.
+  recuperar: form(`${basePath}/recuperar`),
+  restablecer: form(`${basePath}/restablecer`),
+  // Confirmación del correo nuevo. Pública porque el enlace llega por correo,
+  // y con POST propio: el GET solo muestra el botón (ver el controller).
+  confirmarCorreo: form(`${basePath}/confirmar-correo`),
   participationLogin: get(`${basePath}/participation/login`),
   logout: post(`${basePath}/logout`),
   participation: form(`${basePath}/participation`),
@@ -56,6 +63,7 @@ export const adminRoutes = route({
   documentos: form(`${basePath}/admin/documentos`),
   indicadores: form(`${basePath}/admin/indicadores`),
   estadisticas: get(`${basePath}/admin/estadisticas`),
+  sesiones: get(`${basePath}/admin/sesiones`),
   cuenta: form(`${basePath}/admin/cuenta`),
   cuentaAvatar: get(`${basePath}/admin/cuenta/avatar`),
   personalizacion: form(`${basePath}/admin/personalizacion`),

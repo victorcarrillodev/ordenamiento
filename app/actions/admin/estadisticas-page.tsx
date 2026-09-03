@@ -2,189 +2,225 @@ import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Icon } from '../../ui/admin/icon.tsx'
+import {
+  Barras,
+  BarrasMensuales,
+  Donut,
+  sumaSerie,
+  type Serie,
+  type SerieMensual,
+} from '../../ui/admin/charts.tsx'
 
 export interface DatosOrigen {
   total: number
-  resultado: Array<[string, number]>
-  fuente: Array<[string, number]>
-  genero: Array<[string, number]>
-  tematica: Array<[string, number]>
+  resultado: Serie
+  fuente: Serie
+  genero: Serie
+  tematica: Serie
+  porMes?: SerieMensual[]
 }
+
+/** Las tres vistas de la pantalla. `totales` es la que abre por omisión. */
+export type VistaEstadisticas = 'totales' | 'digital' | 'fisica'
 
 export interface EstadisticasPageProps {
   user: { name: string; role: string }
+  totales: DatosOrigen
   digital: DatosOrigen
   fisica: DatosOrigen
+  vista: VistaEstadisticas
 }
 
-const COLORES = ['#6cb2d6', '#1f4d6e', '#a06cd5', '#e8a54f', '#4fb286', '#d67f7f', '#9aa5b1']
+const VISTAS: Array<{
+  clave: VistaEstadisticas
+  etiqueta: string
+  icono: string
+  descripcion: string
+}> = [
+  {
+    clave: 'totales',
+    etiqueta: 'Totales',
+    icono: 'mdi:chart-box-outline',
+    descripcion: 'Todas las participaciones recibidas, sin importar por qué vía llegaron.',
+  },
+  {
+    clave: 'digital',
+    etiqueta: 'Digitales',
+    icono: 'mdi:laptop',
+    descripcion: 'Participaciones enviadas por la ciudadanía desde el portal web.',
+  },
+  {
+    clave: 'fisica',
+    etiqueta: 'Físicas',
+    icono: 'mdi:clipboard-text-outline',
+    descripcion: 'Participaciones capturadas en ventanilla u oficialía de partes.',
+  },
+]
 
-function totalDe(data: Array<[string, number]> | undefined | null): number {
-  return (data || []).reduce((a, [, n]) => a + n, 0)
-}
-
-function Donut(handle: Handle<{ data?: Array<[string, number]> }>) {
+function Tarjeta(
+  handle: Handle<{ titulo: string; valor: string; pie?: string; tono: string; icono: string }>,
+) {
   return () => {
-    const data = handle.props.data || []
-    const total = totalDe(data)
-    if (total === 0) return <p class="empty">Sin datos</p>
-    const r = 60
-    const c = 2 * Math.PI * r
-    let offset = 0
+    const { titulo, valor, pie, tono, icono } = handle.props
     return (
-      <div class="donut-wrap">
-        <svg width="160" height="160" viewBox="0 0 160 160">
-          <g transform="rotate(-90 80 80)">
-            {data.map(([k, n], i) => {
-              const len = (n / total) * c
-              const el = (
-                <circle
-                  key={k}
-                  cx="80"
-                  cy="80"
-                  r={r}
-                  fill="none"
-                  stroke={COLORES[i % COLORES.length]}
-                  stroke-width="28"
-                  stroke-dasharray={`${len} ${c - len}`}
-                  stroke-dashoffset={-offset}
-                />
-              )
-              offset += len
-              return el
-            })}
-          </g>
-          <text x="80" y="76" text-anchor="middle" font-size="22" font-weight="800" fill="#2b3445">
-            {total}
-          </text>
-          <text x="80" y="94" text-anchor="middle" font-size="10" fill="#7a8699">
-            Total
-          </text>
-        </svg>
-        <div class="legend">
-          {data.map(([k, n], i) => (
-            <span key={k}>
-              <span class="legend__dot" style={`background: ${COLORES[i % COLORES.length]}`} />
-              {k}: <strong>{n}</strong>
-            </span>
-          ))}
+      <div class="card">
+        <div class={`card__icon ${tono}`}>
+          <Icon name={icono} size={22} />
+        </div>
+        <div>
+          <div class="card__label">
+            {titulo} {pie ? <span>| {pie}</span> : null}
+          </div>
+          <div class="card__value">{valor}</div>
         </div>
       </div>
     )
   }
 }
 
-function Bars(handle: Handle<{ data?: Array<[string, number]> }>) {
+/** Cuerpo de una vista: cifras arriba y las cuatro gráficas debajo. */
+function Vista(
+  handle: Handle<{ datos: DatosOrigen; comparativa?: { digital: number; fisica: number } }>,
+) {
   return () => {
-    const data = handle.props.data || []
-    if (data.length === 0) return <p class="empty">Sin datos</p>
-    const max = Math.max(1, ...data.map(([, n]) => n))
-    const w = 20,
-      gap = 18,
-      baseH = 120,
-      dark = data.length <= 1
-    return (
-      <svg
-        width={data.length * (w + gap)}
-        height={baseH + 40}
-        viewBox={`0 0 ${data.length * (w + gap)} ${baseH + 40}`}
-      >
-        {data.map(([k, n], i) => {
-          const h = (n / max) * baseH
-          const x = i * (w + gap) + 6
-          const y = baseH - h + 10
-          return (
-            <g key={k}>
-              <rect
-                x={x}
-                y={y}
-                width={w}
-                height={h}
-                rx="3"
-                fill={dark ? '#2b3445' : COLORES[i % COLORES.length]}
-              />
-              <text x={x + w / 2} y={y - 4} text-anchor="middle" font-size="10" fill="#2b3445">
-                {n}
-              </text>
-              <text
-                x={x + w / 2}
-                y={baseH + 24}
-                text-anchor="middle"
-                font-size="10"
-                fill="#7a8699"
-                transform={`rotate(-20 ${x + w / 2} ${baseH + 24})`}
-              >
-                {k}
-              </text>
-            </g>
-          )
-        })}
-      </svg>
-    )
-  }
-}
+    const { datos, comparativa } = handle.props
+    const procedentes = (datos.resultado ?? []).find(([k]) => k === 'Procedente')?.[1] ?? 0
+    const enProceso = (datos.resultado ?? []).find(([k]) => k === 'En proceso')?.[1] ?? 0
+    const porcentaje = datos.total > 0 ? Math.round((procedentes / datos.total) * 100) : 0
 
-function Seccion(handle: Handle<{ titulo: string; icono: string; accent: string; datos: DatosOrigen }>) {
-  return () => {
-    const { titulo, icono, accent, datos } = handle.props
     return (
-      <section class="stats-section">
-        <div class={`panel stats-section__head stats-section__head--${accent}`}>
-          <div class="stats-section__title">
-            <span class={`card__icon ${accent === 'blue' ? 'blue' : 'amber'}`}>{icono}</span>
-            <h2 style="margin:0; font-size:16px; font-weight:800;">{titulo}</h2>
-          </div>
-          <span class="conteo">{datos.total}</span>
+      <>
+        <div class="cards">
+          <Tarjeta
+            titulo="Participaciones"
+            pie="Total del periodo"
+            valor={String(datos.total)}
+            tono="blue"
+            icono="mdi:file-document-multiple-outline"
+          />
+          <Tarjeta
+            titulo="Procedentes"
+            pie={`${porcentaje}% del total`}
+            valor={String(procedentes)}
+            tono="green"
+            icono="mdi:check-decagram-outline"
+          />
+          <Tarjeta
+            titulo="En proceso"
+            pie="Pendientes de dictamen"
+            valor={String(enProceso)}
+            tono="amber"
+            icono="mdi:progress-clock"
+          />
+          <Tarjeta
+            titulo="Ejes temáticos"
+            pie="Distintos abordados"
+            valor={String((datos.tematica ?? []).length)}
+            tono="violet"
+            icono="mdi:tag-multiple-outline"
+          />
         </div>
 
-        <div class="charts-row">
-          <div class="panel chart-panel">
-            <h3 class="panel__title" style="text-align:center;">
-              Resultado
-            </h3>
-            <p class="meta-label">Total: {totalDe(datos.resultado)}</p>
-            <Donut data={datos.resultado} />
+        {comparativa ? (
+          <div class="panel">
+            <h2 class="panel__title">Digitales frente a físicas</h2>
+            <Barras
+              titulo="Participaciones por vía de ingreso"
+              datos={[
+                ['Digitales', comparativa.digital],
+                ['Físicas', comparativa.fisica],
+              ]}
+            />
           </div>
-          <div class="panel chart-panel">
-            <h3 class="panel__title" style="text-align:center;">
-              Fuente
-            </h3>
-            <p class="meta-label">Total: {totalDe(datos.fuente)}</p>
-            <Bars data={datos.fuente} />
+        ) : null}
+
+        <div class="grid-2">
+          <div class="panel">
+            <h2 class="panel__title">Resultado del dictamen</h2>
+            <Donut datos={datos.resultado} etiqueta="Dictaminadas" />
           </div>
-          <div class="panel chart-panel">
-            <h3 class="panel__title" style="text-align:center;">
-              Género
-            </h3>
-            <p class="meta-label">Total: {totalDe(datos.genero)}</p>
-            <Bars data={datos.genero} />
+          <div class="panel">
+            <h2 class="panel__title">
+              Eje temático <span class="panel__hint">{sumaSerie(datos.tematica)} clasificadas</span>
+            </h2>
+            <Barras titulo="Participaciones por eje temático" datos={datos.tematica} />
+          </div>
+          <div class="panel">
+            <h2 class="panel__title">
+              Sector o actor <span class="panel__hint">{sumaSerie(datos.fuente)} clasificadas</span>
+            </h2>
+            <Barras titulo="Participaciones por sector" datos={datos.fuente} />
+          </div>
+          <div class="panel">
+            <h2 class="panel__title">
+              Género <span class="panel__hint">{sumaSerie(datos.genero)} clasificadas</span>
+            </h2>
+            <Barras titulo="Participaciones por género" datos={datos.genero} />
           </div>
         </div>
 
         <div class="panel">
-          <h3 class="panel__title" style="text-align:center;">
-            Temática
-          </h3>
-          <p class="meta-label">Total: {totalDe(datos.tematica)}</p>
-          <Donut data={datos.tematica} />
+          <h2 class="panel__title">Participaciones por mes</h2>
+          <BarrasMensuales datos={datos.porMes} />
         </div>
-      </section>
+      </>
     )
   }
 }
 
 export function EstadisticasPage(handle: Handle<EstadisticasPageProps>) {
   return () => {
-    const { user, digital, fisica } = handle.props
-    return (
-      <AdminLayout user={user} active="estadisticas" title="Estadísticas">
-        <h1 class="page-title">Estadísticas</h1>
-        <p class="breadcrumb">
-          <a href={adminRoutes.index.href()}>Vista general</a> / Estadísticas
-        </p>
+    const { user, totales, digital, fisica, vista } = handle.props
+    const activa = VISTAS.find((v) => v.clave === vista) ?? VISTAS[0]
+    const datos = vista === 'digital' ? digital : vista === 'fisica' ? fisica : totales
 
-        <Seccion titulo="Estadísticas Digitales" icono="🖥️" accent="blue" datos={digital} />
-        <Seccion titulo="Estadísticas Físicas" icono="📋" accent="amber" datos={fisica} />
+    return (
+      <AdminLayout
+        user={user}
+        active="estadisticas"
+        title="Estadísticas"
+        subtitle={activa.descripcion}
+        actions={
+          <a class="btn btn--excel" href={`${adminRoutes.exportar.href()}?tabla=participaciones`}>
+            <Icon name="mdi:microsoft-excel" size={16} /> Exportar a Excel
+          </a>
+        }
+      >
+        {/* Las tres vistas son enlaces, no pestañas de JavaScript: cada una
+            tiene su propia URL y se puede compartir o guardar en favoritos. */}
+        <div class="tabs" role="tablist" aria-label="Ámbito de las estadísticas">
+          {VISTAS.map((v) => (
+            <a
+              key={v.clave}
+              role="tab"
+              aria-selected={v.clave === vista ? 'true' : 'false'}
+              class={'tabs__item' + (v.clave === vista ? ' active' : '')}
+              href={
+                v.clave === 'totales'
+                  ? adminRoutes.estadisticas.href()
+                  : `${adminRoutes.estadisticas.href()}?vista=${v.clave}`
+              }
+            >
+              <Icon name={v.icono} size={16} />
+              {v.etiqueta}
+              <span class="tabs__count">
+                {v.clave === 'totales'
+                  ? totales.total
+                  : v.clave === 'digital'
+                    ? digital.total
+                    : fisica.total}
+              </span>
+            </a>
+          ))}
+        </div>
+
+        <Vista
+          datos={datos}
+          comparativa={
+            vista === 'totales' ? { digital: digital.total, fisica: fisica.total } : undefined
+          }
+        />
       </AdminLayout>
     )
   }

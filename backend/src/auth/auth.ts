@@ -51,6 +51,16 @@ export async function verifySessionToken(token: string): Promise<string | null> 
   return userId
 }
 
+/**
+ * Momento (ms epoch) en que se firmó el token, o null si no se puede leer.
+ * Se usa para descartar sesiones anteriores a un cambio de contraseña; la
+ * autenticidad del token la sigue verificando `verifySessionToken`.
+ */
+export function sessionIssuedAt(token: string): number | null {
+  const issued = Number(token.split('.')[1])
+  return Number.isInteger(issued) && issued > 0 ? issued : null
+}
+
 export function sessionCookie(token: string): string {
   const isProd = process.env.NODE_ENV === 'production'
   const isSecure = isProd && process.env.COOKIE_SECURE !== 'false'
@@ -82,6 +92,26 @@ export interface SessionUser {
   name: string
   email: string
   role: string
+  /**
+   * Corte de sesiones en ms epoch: las emitidas antes ya no valen. 0 (o
+   * ausente) significa «sin corte», que es el valor por omisión de la columna
+   * para las cuentas que nunca han restablecido su contraseña.
+   */
+  sessionsValidFrom?: number
+}
+
+/**
+ * Único punto donde se derivan hashes de contraseña: alta de usuario y
+ * restablecimiento por correo deben usar exactamente los mismos parámetros
+ * de argon2id, o una contraseña restablecida quedaría peor protegida que
+ * la original sin que nada lo delate.
+ */
+export function hashPassword(password: string): Promise<string> {
+  return Bun.password.hash(password, {
+    algorithm: 'argon2id',
+    memoryCost: 65536,
+    timeCost: 3,
+  })
 }
 
 export async function registerUser(input: {
@@ -90,11 +120,7 @@ export async function registerUser(input: {
   password: string
   role?: 'admin' | 'user'
 }): Promise<{ id: string }> {
-  const password_hash = await Bun.password.hash(input.password, {
-    algorithm: 'argon2id',
-    memoryCost: 65536,
-    timeCost: 3,
-  })
+  const password_hash = await hashPassword(input.password)
 
   const rows = await sql<{ id: string }[]>`--sql
     INSERT INTO users (email, name, password_hash, role)
@@ -129,11 +155,67 @@ export async function verifyCredentials(
   return { id: user.id, name: user.name, email: user.email, role: user.role }
 }
 
-export async function getUserById(id: string): Promise<SessionUser | null> {
-  const rows = await sql<Array<{ id: string; name: string; email: string; role: string }>>`--sql
-    SELECT id::text AS id, name, email, role FROM users WHERE id = ${id}
+/**
+ * ¿Es esta la contraseña actual de la cuenta? Se usa como segundo factor de
+ * intención en los cambios sensibles del perfil (correo, contraseña): tener la
+ * sesión abierta no basta para reasignar la cuenta a otra dirección.
+ */
+export async function verifyPasswordById(id: string, password: string): Promise<boolean> {
+  if (!password) return false
+  const rows = await sql<Array<{ password_hash: string }>>`--sql
+    SELECT password_hash FROM users WHERE id = ${id}
   `
-  return rows[0] ?? null
+  if (rows.length === 0) return false
+  return Bun.password.verify(password, rows[0].password_hash)
+}
+
+/** Renombra al usuario. Devuelve el nombre guardado, o null si el id no existe. */
+export async function updateUserName(id: string, name: string): Promise<string | null> {
+  const limpio = name.trim().replace(/\s+/g, ' ')
+  if (limpio.length === 0) return null
+  const rows = await sql<{ name: string }[]>`--sql
+    UPDATE users SET name = ${limpio} WHERE id = ${id} RETURNING name
+  `
+  return rows[0]?.name ?? null
+}
+
+/**
+ * Reemplaza la contraseña de un usuario y anula sus sesiones abiertas.
+ * Devuelve false si el id no existe.
+ *
+ * El corte se sella con el reloj de la aplicación —el mismo que firma los
+ * tokens— y no con `now()` de Postgres: si los dos relojes van desfasados, un
+ * `now()` adelantado invalidaría al instante la sesión que se cree justo
+ * después de restablecer.
+ */
+export async function updateUserPassword(id: string, password: string): Promise<boolean> {
+  const password_hash = await hashPassword(password)
+  const rows = await sql<{ id: string }[]>`--sql
+    UPDATE users
+       SET password_hash = ${password_hash},
+           sessions_valid_from = ${new Date()}
+     WHERE id = ${id}
+     RETURNING id::text AS id
+  `
+  return rows.length > 0
+}
+
+export async function getUserById(id: string): Promise<SessionUser | null> {
+  const rows = await sql<
+    Array<{ id: string; name: string; email: string; role: string; sessions_valid_from: string }>
+  >`--sql
+    SELECT id::text AS id, name, email, role, sessions_valid_from FROM users WHERE id = ${id}
+  `
+  const row = rows[0]
+  if (!row) return null
+  const corte = row.sessions_valid_from ? new Date(row.sessions_valid_from).getTime() : 0
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    role: row.role,
+    sessionsValidFrom: Number.isFinite(corte) ? corte : 0,
+  }
 }
 
 // ---------------------------------------------------------------------------

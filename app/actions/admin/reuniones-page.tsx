@@ -29,11 +29,6 @@ export function ReunionesPage(handle: Handle<ReunionesPageProps>) {
 
     return (
       <AdminLayout user={user} active="reuniones" title="Gestión de Reuniones">
-        <h1 class="page-title">Gestión de Reuniones</h1>
-        <p class="breadcrumb">
-          <a href={adminRoutes.index.href()}>Vista general</a> / Gestión de reuniones
-        </p>
-
         {error ? <p class="form-error">{error}</p> : null}
         {ok ? <p class="form-ok">{ok}</p> : null}
 

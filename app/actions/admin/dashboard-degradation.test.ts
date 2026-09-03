@@ -10,10 +10,16 @@ describe('Dashboard · degradación con shapes inesperados', () => {
     globalThis.fetch = vi.fn().mockImplementation((url: string | URL | Request) => {
       const u = typeof url === 'string' ? url : url instanceof Request ? url.url : url.toString()
       if (u.includes('/api/auth/me')) {
-        return Promise.resolve(new Response(JSON.stringify({ user: { id: 1, name: 'Admin', role: 'admin' } }), { status: 200 }))
+        return Promise.resolve(
+          new Response(JSON.stringify({ user: { id: 1, name: 'Admin', role: 'admin' } }), {
+            status: 200,
+          }),
+        )
       }
       if (u.includes('/api/stats')) {
-        return Promise.resolve(new Response(JSON.stringify(statsResponse.body), { status: statsResponse.status }))
+        return Promise.resolve(
+          new Response(JSON.stringify(statsResponse.body), { status: statsResponse.status }),
+        )
       }
       if (u.includes('/api/users')) {
         return Promise.resolve(new Response(JSON.stringify({ users: [] }), { status: 200 }))
@@ -42,20 +48,30 @@ describe('Dashboard · degradación con shapes inesperados', () => {
   it('backend 200 con JSON no parseable → fallback', async () => {
     globalThis.fetch = vi.fn().mockImplementation((url: string | URL | Request) => {
       const u = typeof url === 'string' ? url : url instanceof Request ? url.url : url.toString()
-      if (u.includes('/api/auth/me')) return Promise.resolve(new Response(JSON.stringify({ user: { id: 1, name: 'Admin', role: 'admin' } }), { status: 200 }))
+      if (u.includes('/api/auth/me'))
+        return Promise.resolve(
+          new Response(JSON.stringify({ user: { id: 1, name: 'Admin', role: 'admin' } }), {
+            status: 200,
+          }),
+        )
       if (u.includes('/api/stats')) return Promise.resolve(new Response('no-json', { status: 200 }))
-      if (u.includes('/api/users')) return Promise.resolve(new Response(JSON.stringify({ users: [] }), { status: 200 }))
+      if (u.includes('/api/users'))
+        return Promise.resolve(new Response(JSON.stringify({ users: [] }), { status: 200 }))
       return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 }))
     }) as unknown as typeof fetch
     const r = await router.fetch(new Request('http://localhost/ordena/admin'))
     expect(r?.status).toBe(200)
   })
 
-  it.fails('body con shape parcial {usuarios: 5} sin digitales/fisicas → no revienta (bug vivo: valida shape incompleto)', async () => {
+  // Antes reventaba: la dona hacía `.reduce` sobre `stats.resultado`, que en
+  // un shape parcial llega `undefined`. Las gráficas compartidas ya toleran la
+  // ausencia de cada serie, así que el panel se dibuja vacío en vez de fallar.
+  it('body con shape parcial {usuarios: 5} sin digitales/fisicas → no revienta', async () => {
     mockDashboard({ status: 200, body: { usuarios: 5 } })
     const r = await router.fetch(new Request('http://localhost/ordena/admin'))
     expect(r?.status).toBe(200)
     const html = await r?.text()
     expect(html).not.toContain('TypeError')
+    expect(html).toContain('Sin datos todavía')
   })
 })

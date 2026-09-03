@@ -42,3 +42,17 @@ export const ConError: Story = {
     error: 'Ingresa un correo electrónico válido',
   },
 }
+
+export const PasswordConOjo: Story = {
+  args: {
+    id: 'password-reveal',
+    name: 'password',
+    label: 'Nueva contraseña',
+    type: 'password',
+    placeholder: '••••••••',
+    autoComplete: 'new-password',
+    minLength: 8,
+    hint: 'Mínimo 8 caracteres. Evita datos fáciles de adivinar.',
+    reveal: true,
+  },
+}

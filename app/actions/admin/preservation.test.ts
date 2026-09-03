@@ -7,7 +7,11 @@ function mockAuth() {
   return vi.fn().mockImplementation((url: string | URL | Request) => {
     const u = typeof url === 'string' ? url : url instanceof Request ? url.url : url.toString()
     if (u.includes('/api/auth/me')) {
-      return Promise.resolve(new Response(JSON.stringify({ user: { id: 1, name: 'Admin Root', role: 'admin' } }), { status: 200 }))
+      return Promise.resolve(
+        new Response(JSON.stringify({ user: { id: 1, name: 'Admin Root', role: 'admin' } }), {
+          status: 200,
+        }),
+      )
     }
     return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 }))
   })
@@ -20,18 +24,26 @@ describe('Admin · preservación de valores tras error', () => {
 
   it('municipio del aporte vacío + datos del participante → fallback backend pero municipio_participante se repinta', async () => {
     let captured: FormData | null = null
-    globalThis.fetch = vi.fn().mockImplementation((url: string | URL | Request, init?: RequestInit) => {
-      const u = typeof url === 'string' ? url : url instanceof Request ? url.url : url.toString()
-      if (u.includes('/api/auth/me')) {
-        return Promise.resolve(new Response(JSON.stringify({ user: { id: 1, name: 'Admin', role: 'admin' } }), { status: 200 }))
-      }
-      if (u.includes('/api/participations')) {
-        captured = init?.body as FormData
-        // simula 422 del backend para forzar repintado con values
-        return Promise.resolve(new Response(JSON.stringify({ error: 'validación backend' }), { status: 422 }))
-      }
-      return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 }))
-    }) as unknown as typeof fetch
+    globalThis.fetch = vi
+      .fn()
+      .mockImplementation((url: string | URL | Request, init?: RequestInit) => {
+        const u = typeof url === 'string' ? url : url instanceof Request ? url.url : url.toString()
+        if (u.includes('/api/auth/me')) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ user: { id: 1, name: 'Admin', role: 'admin' } }), {
+              status: 200,
+            }),
+          )
+        }
+        if (u.includes('/api/participations')) {
+          captured = init?.body as FormData
+          // simula 422 del backend para forzar repintado con values
+          return Promise.resolve(
+            new Response(JSON.stringify({ error: 'validación backend' }), { status: 422 }),
+          )
+        }
+        return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+      }) as unknown as typeof fetch
 
     const fd = new FormData()
     fd.set('nombre', 'Capturista Test')
@@ -52,14 +64,22 @@ describe('Admin · preservación de valores tras error', () => {
     expect(html).toContain('Calle 123')
     // backend recibió fallback
     expect((captured as unknown as FormData)?.get('municipio')).toBe('San Pedro Tlaquepaque')
-    expect((captured as unknown as FormData)?.get('municipio_participante')).toBe('San Pedro Tlaquepaque')
+    expect((captured as unknown as FormData)?.get('municipio_participante')).toBe(
+      'San Pedro Tlaquepaque',
+    )
   })
 
   it('los 17 campos se repintan tras 502 (backend caído)', async () => {
     globalThis.fetch = vi.fn().mockImplementation((url: string | URL | Request) => {
       const u = typeof url === 'string' ? url : url instanceof Request ? url.url : url.toString()
-      if (u.includes('/api/auth/me')) return Promise.resolve(new Response(JSON.stringify({ user: { id: 1, name: 'Admin', role: 'admin' } }), { status: 200 }))
-      if (u.includes('/api/participations')) return Promise.resolve(new Response(JSON.stringify({ error: 'caído' }), { status: 502 }))
+      if (u.includes('/api/auth/me'))
+        return Promise.resolve(
+          new Response(JSON.stringify({ user: { id: 1, name: 'Admin', role: 'admin' } }), {
+            status: 200,
+          }),
+        )
+      if (u.includes('/api/participations'))
+        return Promise.resolve(new Response(JSON.stringify({ error: 'caído' }), { status: 502 }))
       return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 }))
     }) as unknown as typeof fetch
 
@@ -85,7 +105,21 @@ describe('Admin · preservación de valores tras error', () => {
     const r = await router.fetch(new Request(NUEVA_URL, { method: 'POST', body: fd }))
     expect(r?.status).toBe(502)
     const html = await r?.text()
-    for (const val of ['Nombre Largo', 'correo@ejemplo.com', 'Domicilio Part', 'San Pedro Tlaquepaque', 'Calle Aporte', 'Colonia Aporte', 'San Pedro Tlaquepaque', '45400', '20.5', '-103.3', 'Inst X', 'Ingeniero', 'Observación detallada']) {
+    for (const val of [
+      'Nombre Largo',
+      'correo@ejemplo.com',
+      'Domicilio Part',
+      'San Pedro Tlaquepaque',
+      'Calle Aporte',
+      'Colonia Aporte',
+      'San Pedro Tlaquepaque',
+      '45400',
+      '20.5',
+      '-103.3',
+      'Inst X',
+      'Ingeniero',
+      'Observación detallada',
+    ]) {
       expect(html).toContain(val)
     }
     // selects preservados
@@ -101,7 +135,10 @@ describe('Admin · preservación de valores tras error', () => {
     fd.set('colonia', 'Centro')
     fd.set('municipio', 'San Pedro Tlaquepaque')
     fd.set('observacion', 'obs larga válida')
-    fd.append('pdf', new File([new Uint8Array(51 * 1024 * 1024)], 'huge.pdf', { type: 'application/pdf' }))
+    fd.append(
+      'pdf',
+      new File([new Uint8Array(51 * 1024 * 1024)], 'huge.pdf', { type: 'application/pdf' }),
+    )
     const r = await router.fetch(new Request(NUEVA_URL, { method: 'POST', body: fd }))
     expect(r?.status).toBe(413)
     const html = await r?.text()

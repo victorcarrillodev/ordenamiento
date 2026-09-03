@@ -20,9 +20,13 @@ export default createController(adminRoutes.documentos, {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
 
-      const data = await fetchJsonOr<{ documentos: Documento[] }>(context.request, '/api/documentos', {
-        documentos: [],
-      })
+      const data = await fetchJsonOr<{ documentos: Documento[] }>(
+        context.request,
+        '/api/documentos',
+        {
+          documentos: [],
+        },
+      )
 
       return context.render(<PortalDocumentosPage user={user} documentos={data.documentos ?? []} />)
     },
@@ -40,9 +44,13 @@ export default createController(adminRoutes.documentos, {
           method: 'DELETE',
         })
         if (!response.ok) {
-          const data = await fetchJsonOr<{ documentos: Documento[] }>(context.request, '/api/documentos', {
-            documentos: [],
-          })
+          const data = await fetchJsonOr<{ documentos: Documento[] }>(
+            context.request,
+            '/api/documentos',
+            {
+              documentos: [],
+            },
+          )
           return context.render(
             <PortalDocumentosPage
               user={user}
@@ -71,9 +79,13 @@ export default createController(adminRoutes.documentos, {
 
       if (!response.ok) {
         const errData = (await response.json().catch(() => ({}))) as { error?: string }
-        const data = await fetchJsonOr<{ documentos: Documento[] }>(context.request, '/api/documentos', {
-          documentos: [],
-        })
+        const data = await fetchJsonOr<{ documentos: Documento[] }>(
+          context.request,
+          '/api/documentos',
+          {
+            documentos: [],
+          },
+        )
         return context.render(
           <PortalDocumentosPage
             user={user}

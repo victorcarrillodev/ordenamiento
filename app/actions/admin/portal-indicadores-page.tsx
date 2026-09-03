@@ -1,6 +1,5 @@
 import type { Handle } from 'remix/ui'
 
-import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
 
@@ -25,11 +24,6 @@ export function PortalIndicadoresPage(handle: Handle<PortalIndicadoresPageProps>
     const { user, indicadores, documentos, error } = handle.props
     return (
       <AdminLayout user={user} active="indicadores" title="Indicadores POETDUM">
-        <h1 class="page-title">Indicadores POETDUM</h1>
-        <p class="breadcrumb">
-          <a href={adminRoutes.index.href()}>Vista general</a> / Indicadores
-        </p>
-
         {error ? <p class="form-error">{error}</p> : null}
 
         <div class="panel">
@@ -54,7 +48,11 @@ export function PortalIndicadoresPage(handle: Handle<PortalIndicadoresPageProps>
             </div>
             <div class="form-field">
               <label for="fecha_evaluacion">Fecha evaluación</label>
-              <input id="fecha_evaluacion" name="fecha_evaluacion" placeholder="2026-06-01 o texto" />
+              <input
+                id="fecha_evaluacion"
+                name="fecha_evaluacion"
+                placeholder="2026-06-01 o texto"
+              />
             </div>
             <div class="form-field">
               <label for="resultado_texto">Resultado texto</label>
@@ -107,7 +105,9 @@ export function PortalIndicadoresPage(handle: Handle<PortalIndicadoresPageProps>
         </div>
 
         <div class="panel">
-          <h2 class="panel__title" style="margin:0;">Indicadores registrados</h2>
+          <h2 class="panel__title" style="margin:0;">
+            Indicadores registrados
+          </h2>
           <div class="table-wrap">
             <table>
               <thead>

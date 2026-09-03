@@ -47,7 +47,7 @@ textarea:focus-visible,
 
 /* Sidebar */
 .sidebar {
-  width: 230px;
+  width: 248px;
   flex: none;
   background: var(--a-sidebar);
   border-right: 1px solid var(--a-border);
@@ -81,17 +81,25 @@ textarea:focus-visible,
   color: var(--a-muted);
 }
 .sidebar__menu {
-  padding: 10px 8px;
+  padding: 10px 8px 24px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
   flex: 1;
+}
+/* Un separador entre grupos hace que el menú se lea como cuatro listas
+   cortas en vez de una lista larga de quince. */
+.sidebar__group + .sidebar__group {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--a-border);
 }
 .sidebar__label {
   font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
   color: var(--a-muted);
-  padding: 8px 10px 2px;
-  letter-spacing: 0.08em;
+  padding: 10px 12px 4px;
+  letter-spacing: 0.09em;
 }
 .sidebar__item {
   display: flex;
@@ -128,6 +136,12 @@ textarea:focus-visible,
   height: 16px;
   flex: none;
 }
+.sidebar__item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .sidebar__logo {
   width: 34px;
   height: 34px;
@@ -157,31 +171,124 @@ textarea:focus-visible,
   z-index: 10;
 }
 .topbar__title {
+  flex: 1;
+  min-width: 0;
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.03em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .topbar__user {
-  font-size: 12px;
-  opacity: 0.9;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 4px 4px;
+  border-radius: 999px;
+  color: inherit;
+  transition: background 140ms ease;
 }
+.topbar__user:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.topbar__avatar {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+.topbar__user-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.topbar__user-name {
+  font-size: 12px;
+  font-weight: 700;
+}
+.topbar__user-role {
+  font-size: 10px;
+  opacity: 0.7;
+}
+/* La hamburguesa solo existe cuando el menú se colapsa (móvil). */
+.topbar__burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-right: 4px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.topbar__burger:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .content {
-  padding: 22px 26px 40px;
+  padding: 20px 26px 40px;
 }
 
 /* Encabezado de página */
+.content__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.content__heading {
+  min-width: 0;
+}
+.content__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 .page-title {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
-  margin: 0 0 2px;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: var(--a-muted);
+  margin: 4px 0 0;
+  max-width: 68ch;
 }
 .breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   color: var(--a-muted);
-  margin-bottom: 18px;
+  margin: 0 0 6px;
+}
+.breadcrumb__sep {
+  opacity: 0.5;
 }
 .breadcrumb a:hover {
   color: var(--a-blue);
+  text-decoration: underline;
+}
+/* `.breadcrumb` se reutiliza como texto secundario dentro de los paneles;
+   ahí no debe heredar la disposición en fila del encabezado. */
+p.breadcrumb,
+small.breadcrumb,
+span.breadcrumb {
+  display: block;
 }
 
 /* Tarjetas */
@@ -2273,4 +2380,741 @@ a.cal__mas:hover {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* ---------------------------------------------------------------------------
+   Acuse de una acción del panel (alta de usuario, etc.)
+   -------------------------------------------------------------------------- */
+.admin-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.admin-alert--success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+.admin-alert--error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+/* ---------------------------------------------------------------------------
+   Cabecera de panel con herramientas (buscador + contador)
+   -------------------------------------------------------------------------- */
+.panel__tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.panel__count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--a-muted);
+  white-space: nowrap;
+}
+.admin-search {
+  min-width: 240px;
+  border: 1px solid var(--a-border-strong);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  background: #fff;
+  color: var(--a-text);
+}
+.admin-search:focus-visible {
+  outline: none;
+  border-color: var(--a-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+@media (max-width: 640px) {
+  .admin-search {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Celda de usuario: iniciales + nombre
+   -------------------------------------------------------------------------- */
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+/* ---------------------------------------------------------------------------
+   Menú colapsable en pantallas estrechas
+   El estado vive en un checkbox oculto: sin JavaScript el menú también abre.
+   -------------------------------------------------------------------------- */
+.sidebar-toggle {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .topbar__burger {
+    display: flex;
+  }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 30;
+    height: 100vh;
+    transform: translateX(-100%);
+    box-shadow: 0 0 40px rgba(15, 23, 42, 0.25);
+    transition: transform 200ms ease;
+  }
+  .sidebar-toggle:checked ~ .sidebar {
+    transform: translateX(0);
+  }
+  .content {
+    padding: 16px 14px 40px;
+  }
+  .topbar {
+    padding: 0 12px;
+  }
+  .topbar__user-text {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Paginación de tablas
+   -------------------------------------------------------------------------- */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 14px;
+  margin-top: 12px;
+  border-top: 1px solid var(--a-border);
+}
+.pager__info {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--a-muted);
+}
+.btn.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Aviso informativo (mismo patrón que admin-alert--success/--error) */
+.admin-alert--info {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+/* Celda de persona con dos líneas: nombre arriba, dato secundario abajo */
+.user-cell__name {
+  display: block;
+  font-weight: 600;
+  color: var(--a-text);
+}
+.user-cell__meta {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--a-muted);
+}
+a.user-cell:hover .user-cell__name {
+  color: var(--a-blue);
+}
+
+/* ---------------------------------------------------------------------------
+   Pestañas de ámbito (Totales / Digitales / Físicas)
+   Son enlaces, no botones: cada vista tiene su URL y se puede compartir.
+   -------------------------------------------------------------------------- */
+.tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 5px;
+  margin-bottom: 18px;
+  background: #fff;
+  border: 1px solid var(--a-border-strong);
+  border-radius: 12px;
+  box-shadow: var(--a-shadow);
+}
+.tabs__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--a-muted);
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+.tabs__item:hover {
+  background: #f1f5f9;
+  color: var(--a-text);
+}
+.tabs__item.active {
+  background: var(--a-blue);
+  color: #fff;
+}
+.tabs__count {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: var(--a-text);
+  font-size: 11px;
+  font-weight: 800;
+}
+.tabs__item.active .tabs__count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------------------
+   Gráficas (app/ui/admin/charts.tsx)
+   -------------------------------------------------------------------------- */
+.panel__hint {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--a-muted);
+  margin-left: 6px;
+}
+
+.chart {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.chart__svg {
+  flex: none;
+}
+.chart__legend {
+  flex: 1;
+  min-width: 180px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chart__legend li {
+  display: grid;
+  grid-template-columns: 10px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+.chart__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.chart__legend-key {
+  color: var(--a-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chart__legend-pct {
+  min-width: 38px;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--a-muted);
+}
+
+/* Barras horizontales: las categorías del panel son frases largas y en
+   vertical había que rotarlas hasta volverlas ilegibles. */
+.barras {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.barras__fila {
+  display: grid;
+  grid-template-columns: minmax(90px, 30%) 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+.barras__etiqueta {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--a-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.barras__pista {
+  height: 20px;
+  border-radius: 6px;
+  background: #eef2f7;
+  overflow: hidden;
+}
+.barras__valor {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  transition: width 240ms ease;
+}
+.barras__numero {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--a-text);
+  white-space: nowrap;
+}
+.barras__pct {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--a-muted);
+}
+
+/* Columnas por mes */
+.columnas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.columnas__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 46px;
+  flex: 1;
+}
+.columnas__numero {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--a-text);
+}
+.columnas__pista {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 120px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+.columnas__valor {
+  display: block;
+  width: 100%;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+}
+.columnas__mes {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--a-muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .barras__fila {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .barras__numero {
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barras__valor {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Mi cuenta
+   -------------------------------------------------------------------------- */
+.perfil {
+  display: flex;
+  gap: 26px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.perfil__avatar-col {
+  flex: none;
+}
+.perfil__datos {
+  flex: 1;
+  min-width: 260px;
+}
+.perfil__nombre {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0;
+}
+.perfil__correo {
+  font-size: 13px;
+  color: var(--a-muted);
+  margin: 2px 0 12px;
+  overflow-wrap: anywhere;
+}
+.perfil__chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid var(--a-border);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--a-muted);
+}
+.perfil__form-foto {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 16px;
+  border-top: 1px solid var(--a-border);
+}
+.perfil__form-foto .form-hint {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* Zona de la foto: acepta arrastrar y soltar además del selector de archivo. */
+.avatar-drop {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 2px dashed var(--a-border-strong);
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+.avatar-drop.is-dragging {
+  border-color: var(--a-blue);
+  background: #eff6ff;
+}
+.avatar-drop__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.avatar-drop__fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+/* Selector de archivo con aspecto de botón: el input nativo es inconsistente
+   entre navegadores y no se puede estilar. */
+.file-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 9px 14px;
+  border: 1px solid var(--a-border-strong);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--a-text);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+.file-field:hover {
+  border-color: var(--a-blue);
+  background: #f8fafc;
+}
+.file-field span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-field input[type='file'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.file-field:focus-within {
+  outline: 2px solid var(--a-blue);
+  outline-offset: 2px;
+}
+
+/* Formulario en columna (a diferencia de .form-row, que va en línea) */
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: flex-start;
+}
+.form-stack .form-field {
+  width: 100%;
+}
+.form-stack .form-field input,
+.form-stack .form-field select {
+  width: 100%;
+}
+
+/* Los títulos de panel ahora pueden llevar icono */
+.panel__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------------------------------------------------------------------------
+   Vista general: analítica ancha + columna de agenda
+   La columna estrecha evita que los paneles cortos (próxima reunión, avisos)
+   se estiren a todo el ancho quedando medio vacíos.
+   -------------------------------------------------------------------------- */
+.dash {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  align-items: start;
+}
+.dash__main,
+.dash__side {
+  min-width: 0;
+}
+.dash__main > .panel:last-child,
+.dash__side > .panel:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 1100px) {
+  .dash {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Rejilla de contenido del portal */
+.atajos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+.atajo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px 10px;
+  border: 1px solid var(--a-border);
+  border-radius: 10px;
+  background: #f8fafc;
+  color: var(--a-text);
+  text-align: center;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+.atajo:hover {
+  border-color: var(--a-blue);
+  background: #eff6ff;
+  transform: translateY(-2px);
+}
+.atajo iconify-icon {
+  color: var(--a-blue);
+}
+.atajo__valor {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.atajo__etiqueta {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--a-muted);
+}
+
+/* Próxima reunión */
+.reunion {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.reunion__titulo {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+.reunion__fecha {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--a-muted);
+  margin: 0;
+  text-transform: capitalize;
+}
+.reunion .btn {
+  margin-top: 6px;
+}
+
+/* Últimos avisos */
+.lista-avisos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.lista-avisos li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 0;
+  border-bottom: 1px solid #eef1f7;
+}
+.lista-avisos li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.lista-avisos__titulo {
+  font-size: 13px;
+  font-weight: 700;
+}
+.lista-avisos__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--a-muted);
+}
+
+/* Accesos rápidos: botones a lo ancho de la columna */
+.acciones-rapidas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.acciones-rapidas .btn {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atajo:hover,
+  .card--link:hover {
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Personalización y marca
+   -------------------------------------------------------------------------- */
+.personalizacion {
+  max-width: 1180px;
+}
+/* Los formularios de cada pestaña apilan paneles con aire entre ellos. */
+.personalizacion form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.personalizacion .palette-btn {
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    border-color 140ms ease;
+}
+.personalizacion .palette-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+.personalizacion .motivo-suggest {
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+.personalizacion .motivo-suggest:hover {
+  background: #cbd5e1 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .personalizacion .palette-btn:hover {
+    transform: none;
+  }
+}
+
+/* Panel con realce: la acción que cierra el formulario (guardar cambios). */
+.panel--destacado {
+  background: #f8fafc;
+  border: 2px solid var(--a-blue);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.1);
 }

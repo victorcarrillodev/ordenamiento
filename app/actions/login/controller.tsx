@@ -25,7 +25,21 @@ const loginSchema = f.object({
 export default createController(routes.login, {
   actions: {
     index(context) {
-      return context.render(<LoginPage />)
+      // `?reset=ok` lo pone /restablecer al terminar: el cambio de contraseña
+      // no inicia sesión, así que el acuse tiene que darse aquí.
+      const reset = new URL(context.request.url).searchParams.get('reset') === 'ok'
+      return context.render(
+        reset ? (
+          <LoginPage
+            alert={{
+              type: 'success',
+              message: 'Tu contraseña se actualizó. Inicia sesión con la nueva.',
+            }}
+          />
+        ) : (
+          <LoginPage />
+        ),
+      )
     },
 
     async action(context) {
@@ -90,11 +104,12 @@ export default createController(routes.login, {
             errors[key] = issue.message
           }
         }
-        return context.render(<LoginPage errors={errors} />, { status: 422 })
+        const emailEnviado = String(formData.get('email') ?? '').trim()
+        return context.render(<LoginPage errors={errors} email={emailEnviado} />, { status: 422 })
       }
 
       // Autenticar contra el backend (Spring de usuario/admin)
-      const result = await loginBackend(parsed.value.email, parsed.value.password)
+      const result = await loginBackend(parsed.value.email, parsed.value.password, context.request)
 
       if (!result.ok) {
         // El status se propaga tal cual (503 backend caído, 429 demasiados
@@ -118,7 +133,10 @@ export default createController(routes.login, {
         }
 
         return context.render(
-          <LoginPage alert={{ type: alertType, message: alertMessage }} errors={{ email: alertMessage }} />,
+          <LoginPage
+            alert={{ type: alertType, message: alertMessage }}
+            email={parsed.value.email}
+          />,
           { status },
         )
       }

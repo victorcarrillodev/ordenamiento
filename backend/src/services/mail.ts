@@ -682,6 +682,196 @@ export async function enviarCorreoPrueba(para: string): Promise<{ enviado: true 
   return { enviado: true }
 }
 
+/**
+ * Envía el enlace de recuperación de contraseña.
+ *
+ * El enlace lo construye quien llama a partir de `APP_PUBLIC_URL` (ver app.ts):
+ * este módulo no inventa dominios, solo escribe el correo. La URL se escapa
+ * como cualquier otro dato antes de entrar al HTML.
+ */
+export async function enviarCorreoRecuperacion(input: {
+  para: string
+  nombre: string
+  url: string
+  expiraMinutos: number
+}): Promise<{ enviado: true }> {
+  if (!mailConfigurado()) {
+    throw new Error('SMTP_NO_CONFIGURADO')
+  }
+
+  const url = escapeHtml(input.url)
+
+  const contenidoHtml = `
+    <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-top: 0;">
+      Estimado(a) <strong>${escapeHtml(input.nombre || 'usuario(a)')}</strong>:
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+      Recibimos una solicitud para restablecer la contraseña de la cuenta asociada a
+      <strong>${escapeHtml(input.para)}</strong> en la <strong>Bitácora Ambiental</strong> del
+      Municipio de San Pedro Tlaquepaque. Para elegir una contraseña nueva, use el siguiente botón:
+    </p>
+
+    <div style="text-align:center; margin: 28px 0;">
+      <a href="${url}"
+         style="display:inline-block; padding:14px 28px; background:#7A1A37; color:#FFFFFF;
+                font-size:15px; font-weight:700; text-decoration:none; border-radius:10px;
+                letter-spacing:0.3px;">
+        Restablecer mi contraseña
+      </a>
+    </div>
+
+    <p style="font-size: 12.5px; line-height: 1.6; color: #64748B; text-align:center;">
+      Si el botón no funciona, copie y pegue esta dirección en su navegador:<br>
+      <span style="word-break:break-all; color:#7A1A37;">${url}</span>
+    </p>
+
+    <div class="protocol-box" style="background-color:#FFFBEB; border-color:#FDE68A;">
+      <div class="protocol-title" style="color:#92400E;">Importante</div>
+      <div class="protocol-step" style="color:#78350F;">⏱ El enlace vence en <strong>${input.expiraMinutos} minutos</strong> y solo puede usarse una vez.</div>
+      <div class="protocol-step" style="color:#78350F;">🔒 Si usted no solicitó este cambio, ignore este mensaje: su contraseña actual sigue siendo válida.</div>
+      <div class="protocol-step" style="color:#78350F;">✉️ Nunca comparta este enlace; quien lo tenga puede entrar a su cuenta.</div>
+    </div>
+  `
+
+  const html = renderPlantillaBase({
+    titulo: 'Restablecer su contraseña',
+    subtitulo: 'Solicitud de recuperación de acceso · Bitácora Ambiental',
+    badge: 'Enlace temporal',
+    badgeColor: '#7A1A37',
+    contenidoHtml,
+  })
+
+  const transporter = getTransporter()
+  await transporter.sendMail({
+    from: MAIL_FROM,
+    to: input.para,
+    subject: '[Bitácora Ambiental] Restablecimiento de contraseña',
+    html,
+  })
+
+  return { enviado: true }
+}
+
+/**
+ * Pide confirmación en la dirección NUEVA antes de cambiar el correo de la
+ * cuenta. Va a la dirección nueva justamente porque de eso se trata: probar
+ * que quien la escribió puede leerla.
+ */
+export async function enviarConfirmacionCorreoNuevo(input: {
+  para: string
+  nombre: string
+  url: string
+  expiraMinutos: number
+  emailAnterior: string
+}): Promise<{ enviado: true }> {
+  if (!mailConfigurado()) {
+    throw new Error('SMTP_NO_CONFIGURADO')
+  }
+
+  const url = escapeHtml(input.url)
+
+  const contenidoHtml = `
+    <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-top: 0;">
+      Estimado(a) <strong>${escapeHtml(input.nombre || 'usuario(a)')}</strong>:
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+      Se solicitó cambiar el correo de acceso de la cuenta
+      <strong>${escapeHtml(input.emailAnterior)}</strong> a esta dirección, en la
+      <strong>Bitácora Ambiental</strong> del Municipio de San Pedro Tlaquepaque.
+      El cambio <strong>todavía no se ha aplicado</strong>: se aplicará cuando confirme aquí.
+    </p>
+
+    <div style="text-align:center; margin: 28px 0;">
+      <a href="${url}"
+         style="display:inline-block; padding:14px 28px; background:#7A1A37; color:#FFFFFF;
+                font-size:15px; font-weight:700; text-decoration:none; border-radius:10px;
+                letter-spacing:0.3px;">
+        Confirmar este correo
+      </a>
+    </div>
+
+    <p style="font-size: 12.5px; line-height: 1.6; color: #64748B; text-align:center;">
+      Si el botón no funciona, copie y pegue esta dirección en su navegador:<br>
+      <span style="word-break:break-all; color:#7A1A37;">${url}</span>
+    </p>
+
+    <div class="protocol-box" style="background-color:#FFFBEB; border-color:#FDE68A;">
+      <div class="protocol-title" style="color:#92400E;">Importante</div>
+      <div class="protocol-step" style="color:#78350F;">⏱ El enlace vence en <strong>${input.expiraMinutos} minutos</strong> y solo puede usarse una vez.</div>
+      <div class="protocol-step" style="color:#78350F;">✉️ Hasta que confirme, el acceso sigue siendo con <strong>${escapeHtml(input.emailAnterior)}</strong>.</div>
+      <div class="protocol-step" style="color:#78350F;">🔒 Si usted no solicitó este cambio, ignore este mensaje: sin la confirmación no ocurre nada.</div>
+    </div>
+  `
+
+  const html = renderPlantillaBase({
+    titulo: 'Confirme su nuevo correo',
+    subtitulo: 'Cambio de dirección de acceso · Bitácora Ambiental',
+    badge: 'Pendiente de confirmar',
+    badgeColor: '#7A1A37',
+    contenidoHtml,
+  })
+
+  const transporter = getTransporter()
+  await transporter.sendMail({
+    from: MAIL_FROM,
+    to: input.para,
+    subject: '[Bitácora Ambiental] Confirme su nuevo correo de acceso',
+    html,
+  })
+
+  return { enviado: true }
+}
+
+/**
+ * Avisa a la dirección ANTERIOR de que la cuenta ya usa otra. Es la red de
+ * seguridad del flujo: si el cambio no lo pidió el dueño, este mensaje llega
+ * al único buzón que el atacante ya no controla.
+ */
+export async function enviarAvisoCorreoCambiado(input: {
+  para: string
+  nombre: string
+  emailNuevo: string
+}): Promise<{ enviado: true }> {
+  if (!mailConfigurado()) {
+    throw new Error('SMTP_NO_CONFIGURADO')
+  }
+
+  const contenidoHtml = `
+    <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-top: 0;">
+      Estimado(a) <strong>${escapeHtml(input.nombre || 'usuario(a)')}</strong>:
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+      El correo de acceso de su cuenta en la <strong>Bitácora Ambiental</strong> cambió
+      de <strong>${escapeHtml(input.para)}</strong> a <strong>${escapeHtml(input.emailNuevo)}</strong>.
+      A partir de ahora deberá iniciar sesión con la dirección nueva.
+    </p>
+
+    <div class="protocol-box" style="background-color:#FEF2F2; border-color:#FECACA;">
+      <div class="protocol-title" style="color:#991B1B;">¿No fue usted?</div>
+      <div class="protocol-step" style="color:#7F1D1D;">Comuníquese de inmediato con la Dirección General de Transformación y Planeación Urbana para que se restablezca el acceso de su cuenta.</div>
+      <div class="protocol-step" style="color:#7F1D1D;">Este aviso se envía a la dirección anterior precisamente para que un cambio no autorizado no pase desapercibido.</div>
+    </div>
+  `
+
+  const html = renderPlantillaBase({
+    titulo: 'El correo de su cuenta cambió',
+    subtitulo: 'Aviso de seguridad · Bitácora Ambiental',
+    badge: 'Aviso de seguridad',
+    badgeColor: '#B91C1C',
+    contenidoHtml,
+  })
+
+  const transporter = getTransporter()
+  await transporter.sendMail({
+    from: MAIL_FROM,
+    to: input.para,
+    subject: '[Bitácora Ambiental] El correo de acceso de su cuenta cambió',
+    html,
+  })
+
+  return { enviado: true }
+}
+
 export function escapeHtml(s: string): string {
   return String(s).replace(
     /[&<>"']/g,

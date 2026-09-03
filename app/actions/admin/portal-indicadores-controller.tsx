@@ -126,12 +126,20 @@ export default createController(adminRoutes.indicadores, {
 
       if (!response.ok) {
         const errData = (await response.json().catch(() => ({}))) as { error?: string }
-        const indData = await fetchJsonOr<{ indicadores: Indicador[] }>(context.request, '/api/indicadores', {
-          indicadores: [],
-        })
-        const docsData = await fetchJsonOr<{ documentos: Documento[] }>(context.request, '/api/documentos', {
-          documentos: [],
-        })
+        const indData = await fetchJsonOr<{ indicadores: Indicador[] }>(
+          context.request,
+          '/api/indicadores',
+          {
+            indicadores: [],
+          },
+        )
+        const docsData = await fetchJsonOr<{ documentos: Documento[] }>(
+          context.request,
+          '/api/documentos',
+          {
+            documentos: [],
+          },
+        )
         return context.render(
           <PortalIndicadoresPage
             user={user}

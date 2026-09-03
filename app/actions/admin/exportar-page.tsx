@@ -31,11 +31,6 @@ export function ExportarPage(handle: Handle<ExportarPageProps>) {
 
     return (
       <AdminLayout user={user} active="exportar" title="Exportar tablas">
-        <h1 class="page-title">Exportar tablas</h1>
-        <p class="breadcrumb">
-          <a href={adminRoutes.index.href()}>Vista general</a> / Exportar tablas
-        </p>
-
         <div class="export-grid">
           {TABLAS.map((t) => (
             <div class="export-card" key={t.slug}>

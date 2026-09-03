@@ -31,21 +31,33 @@ export default createController(adminRoutes.actividades, {
       if (user instanceof Response) return user
 
       const [actividadesData, documentosData] = await Promise.all([
-        fetchJsonOr<{ actividades: Actividad[] }>(context.request, '/api/actividades?estado=proximas', {
-          actividades: [],
-        }),
+        fetchJsonOr<{ actividades: Actividad[] }>(
+          context.request,
+          '/api/actividades?estado=proximas',
+          {
+            actividades: [],
+          },
+        ),
         fetchJsonOr<{ documentos: Documento[] }>(context.request, '/api/documentos', {
           documentos: [],
         }),
       ])
       // También cargar realizadas y canceladas para tener listado completo en admin
       const [realizadasData, canceladasData] = await Promise.all([
-        fetchJsonOr<{ actividades: Actividad[] }>(context.request, '/api/actividades?estado=realizadas', {
-          actividades: [],
-        }),
-        fetchJsonOr<{ actividades: Actividad[] }>(context.request, '/api/actividades?estado=canceladas', {
-          actividades: [],
-        }),
+        fetchJsonOr<{ actividades: Actividad[] }>(
+          context.request,
+          '/api/actividades?estado=realizadas',
+          {
+            actividades: [],
+          },
+        ),
+        fetchJsonOr<{ actividades: Actividad[] }>(
+          context.request,
+          '/api/actividades?estado=canceladas',
+          {
+            actividades: [],
+          },
+        ),
       ])
       const todas = [
         ...(actividadesData.actividades ?? []),
@@ -102,7 +114,16 @@ export default createController(adminRoutes.actividades, {
         const id = String(formData.get('id') ?? '').trim()
         // Para editar reenviamos FormData como multipart (fotos opcionales)
         const fd = new FormData()
-        for (const key of ['titulo', 'fecha', 'hora_inicio', 'hora_fin', 'lugar', 'descripcion', 'estado', 'resultados']) {
+        for (const key of [
+          'titulo',
+          'fecha',
+          'hora_inicio',
+          'hora_fin',
+          'lugar',
+          'descripcion',
+          'estado',
+          'resultados',
+        ]) {
           const v = formData.get(key)
           if (v != null) fd.set(key, String(v))
         }
@@ -142,7 +163,16 @@ export default createController(adminRoutes.actividades, {
 
       // crear (default)
       const fd = new FormData()
-      for (const key of ['titulo', 'fecha', 'hora_inicio', 'hora_fin', 'lugar', 'descripcion', 'estado', 'resultados']) {
+      for (const key of [
+        'titulo',
+        'fecha',
+        'hora_inicio',
+        'hora_fin',
+        'lugar',
+        'descripcion',
+        'estado',
+        'resultados',
+      ]) {
         const v = formData.get(key)
         if (v != null) fd.set(key, String(v))
       }

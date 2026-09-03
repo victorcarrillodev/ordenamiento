@@ -23,6 +23,69 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_ruta   TEXT NOT NULL DEFAULT '
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_nombre TEXT NOT NULL DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_mime   TEXT NOT NULL DEFAULT '';
 
+-- Corte de sesiones: toda sesión emitida ANTES de esta marca deja de valer.
+-- Se adelanta al cambiar la contraseña, para que recuperar la cuenta expulse
+-- de verdad a quien hubiera entrado con la contraseña anterior (la cookie de
+-- sesión va firmada con SESSION_SECRET, no derivada del hash de la clave).
+-- El valor por omisión es la época: al aplicar el schema en una base ya
+-- desplegada, nadie pierde su sesión.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS sessions_valid_from TIMESTAMPTZ NOT NULL DEFAULT to_timestamp(0);
+
+-- ---------------------------------------------------------------------------
+-- Recuperación de contraseña (enlaces de un solo uso enviados por correo)
+-- ---------------------------------------------------------------------------
+-- Se guarda el SHA-256 del token, nunca el token en claro: si alguien lee la
+-- tabla (backup, dump, SQL injection) no puede reconstruir un enlace válido,
+-- igual que con `password_hash`.
+CREATE TABLE IF NOT EXISTS password_resets (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at    TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_password_resets_user    ON password_resets (user_id);
+CREATE INDEX IF NOT EXISTS idx_password_resets_expires ON password_resets (expires_at);
+
+-- ---------------------------------------------------------------------------
+-- Cambio de correo (verificado en la dirección NUEVA antes de aplicarse)
+-- ---------------------------------------------------------------------------
+-- Igual que en password_resets, se guarda solo el hash del token. El correo
+-- nuevo se queda aquí «en espera»: la columna `users.email` no se toca hasta
+-- que alguien demuestra que puede leer ese buzón.
+CREATE TABLE IF NOT EXISTS email_changes (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  nuevo_email TEXT NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at    TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_email_changes_user ON email_changes (user_id);
+
+-- ---------------------------------------------------------------------------
+-- Bitácora de sesiones (quién entró, cuándo y cuánto tiempo estuvo)
+-- ---------------------------------------------------------------------------
+-- Una fila por sesión iniciada. `issued_at` es la marca que lleva dentro la
+-- cookie firmada, así que identifica la sesión sin guardar el token.
+-- `last_seen_at` se refresca con la actividad; el tiempo conectado es
+-- COALESCE(ended_at, last_seen_at) - started_at.
+CREATE TABLE IF NOT EXISTS user_sessions (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  issued_at    TIMESTAMPTZ NOT NULL,
+  started_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  ended_at     TIMESTAMPTZ,
+  ip           TEXT NOT NULL DEFAULT '',
+  user_agent   TEXT NOT NULL DEFAULT '',
+  UNIQUE (user_id, issued_at)
+);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user  ON user_sessions (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_fecha ON user_sessions (started_at DESC);
+
 -- ---------------------------------------------------------------------------
 -- Participaciones (física y digital son la MISMA entidad; origen distinto)
 -- ---------------------------------------------------------------------------

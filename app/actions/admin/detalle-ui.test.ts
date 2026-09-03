@@ -15,7 +15,9 @@ describe('UI-1 · detalle-split 60/40 responsivo', () => {
   })
 
   it('colapsa a 1 columna en ≤900px sin scroll horizontal', () => {
-    expect(css).toMatch(/@media\s*\(max-width:\s*900px\)[\s\S]*?\.detalle-split[\s\S]*?grid-template-columns:\s*1fr/)
+    expect(css).toMatch(
+      /@media\s*\(max-width:\s*900px\)[\s\S]*?\.detalle-split[\s\S]*?grid-template-columns:\s*1fr/,
+    )
     // hijos con min-width:0 evitan overflow del grid
     expect(css).toMatch(/\.detalle-split\s*>\s*\.panel[\s\S]*?min-width:\s*0/)
   })
@@ -73,14 +75,20 @@ describe('UI-3 · header tintado solo con .panel__head', () => {
     expect(panelRule).not.toContain('#f7f9fc')
     // JSX: panel "No encontrado" y "Enviar por correo" no tienen panel__head
     expect(detalle).toContain('<div class="panel">\n            <p class="empty">No se encontró')
-    expect(detalle).toContain('<div class="panel">\n              <h2 class="panel__title">📨 Enviar por correo</h2>')
+    expect(detalle).toContain(
+      '<div class="panel">\n              <h2 class="panel__title">📨 Enviar por correo</h2>',
+    )
   })
 })
 
 describe('UI-4 · alcance global cal/aviso/export no pierde hover', () => {
   it('.cal/.cal-agenda/.export-card/.aviso-card usan borde fuerte + sombra sin perder background', () => {
-    expect(css).toMatch(/\.cal,\s*\.cal-agenda,\s*\.export-card,\s*\.aviso-card[\s\S]*?border-color:\s*var\(--a-border-strong\)/)
-    expect(css).toMatch(/\.cal,\s*\.cal-agenda,\s*\.export-card,\s*\.aviso-card[\s\S]*?box-shadow:\s*var\(--a-shadow\)/)
+    expect(css).toMatch(
+      /\.cal,\s*\.cal-agenda,\s*\.export-card,\s*\.aviso-card[\s\S]*?border-color:\s*var\(--a-border-strong\)/,
+    )
+    expect(css).toMatch(
+      /\.cal,\s*\.cal-agenda,\s*\.export-card,\s*\.aviso-card[\s\S]*?box-shadow:\s*var\(--a-shadow\)/,
+    )
   })
 
   it('.aviso-card:hover sigue existiendo', () => {

@@ -1,7 +1,6 @@
 import type { Handle } from 'remix/ui'
 
 import { ETAPAS_DOCUMENTO, TIPOS_DOCUMENTO } from '../../data/poetdum.ts'
-import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
 
@@ -23,16 +22,16 @@ export function PortalDocumentosPage(handle: Handle<PortalDocumentosPageProps>) 
     const { user, documentos, error } = handle.props
     return (
       <AdminLayout user={user} active="documentos" title="Documentos POETDUM">
-        <h1 class="page-title">Documentos POETDUM</h1>
-        <p class="breadcrumb">
-          <a href={adminRoutes.index.href()}>Vista general</a> / Documentos
-        </p>
-
         {error ? <p class="form-error">{error}</p> : null}
 
         <div class="panel">
           <h2 class="panel__title">Nuevo documento</h2>
-          <form method="post" encType="multipart/form-data" class="form-row" style="flex-wrap:wrap;">
+          <form
+            method="post"
+            encType="multipart/form-data"
+            class="form-row"
+            style="flex-wrap:wrap;"
+          >
             <input type="hidden" name="intent" value="crear" />
             <div class="form-field">
               <label for="titulo">Título</label>
@@ -77,7 +76,9 @@ export function PortalDocumentosPage(handle: Handle<PortalDocumentosPageProps>) 
         </div>
 
         <div class="panel">
-          <h2 class="panel__title" style="margin:0;">Documentos registrados</h2>
+          <h2 class="panel__title" style="margin:0;">
+            Documentos registrados
+          </h2>
           <div class="table-wrap">
             <table>
               <thead>

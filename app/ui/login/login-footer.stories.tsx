@@ -10,8 +10,8 @@ const meta: Meta<LoginFooterProps> = {
   render: mountRemix((args: LoginFooterProps) => <LoginFooter {...args} />),
   args: {
     links: [
-      { label: 'Ayuda', icon: <MailIcon /> },
-      { label: 'Privacidad', icon: <LockIcon /> },
+      { label: 'Volver al portal', href: '/ordena', icon: <MailIcon /> },
+      { label: '¿Problemas para entrar?', href: '/ordena/recuperar', icon: <LockIcon /> },
     ],
   },
 }

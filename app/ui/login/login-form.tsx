@@ -10,11 +10,13 @@ import { TextField } from './text-field.tsx'
 
 export interface LoginFormProps {
   errors?: LoginErrors
+  /** Correo ya escrito, para no obligar a teclearlo otra vez tras un error. */
+  email?: string
 }
 
 export function LoginForm(handle: Handle<LoginFormProps>) {
   return () => {
-    const { errors = {} } = handle.props
+    const { errors = {}, email } = handle.props
 
     return (
       <form class="login__form" method="POST" action={routes.login.action.href()} noValidate>
@@ -26,6 +28,8 @@ export function LoginForm(handle: Handle<LoginFormProps>) {
           placeholder="usuario@ejemplo.com"
           autoComplete="email"
           error={errors.email}
+          value={email}
+          autoFocus
         />
 
         <TextField
@@ -36,8 +40,9 @@ export function LoginForm(handle: Handle<LoginFormProps>) {
           placeholder="••••••••"
           autoComplete="current-password"
           error={errors.password}
+          reveal
           labelAside={
-            <a class="login__forgot" href="#">
+            <a class="login__forgot" href={routes.recuperar.index.href()}>
               ¿Olvidaste tu contraseña?
             </a>
           }

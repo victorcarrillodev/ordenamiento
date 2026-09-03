@@ -191,11 +191,6 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
 
     return (
       <AdminLayout user={user} active="avisos" title="Gestión de Avisos y Calendario">
-        <h1 class="page-title">Avisos y Calendario de Bitácora</h1>
-        <p class="breadcrumb">
-          <a href={adminRoutes.index.href()}>Vista general</a> / Avisos y Calendario
-        </p>
-
         {error ? <p class="form-error">{error}</p> : null}
 
         {/* ── Publicar ────────────────────────────────────────────────── */}
@@ -518,7 +513,9 @@ export function AvisosPage(handle: Handle<AvisosPageProps>) {
               <button id="cal-m-btn-close" type="button" class="btn btn--white">
                 Cerrar
               </button>
-              <a id="cal-m-link" href="#" class="btn btn--dark">
+              {/* El destino lo pone admin.js con los datos del evento abierto;
+                  nace oculto para no mostrar un enlace sin rumbo. */}
+              <a id="cal-m-link" class="btn btn--dark" hidden>
                 Ir a la sección →
               </a>
             </div>

@@ -1,5 +1,14 @@
 import { css } from 'remix/ui'
+import { routes } from '../../../routes.ts'
 import { btnGoldProps, btnSecondaryProps, colors, FONT_STACK } from '../../../ui/civic-horizon.ts'
+
+/**
+ * Los dos botones llevan al repositorio público de documentos, ya filtrado por
+ * el tipo que anuncia cada uno. Antes apuntaban a `#`: prometían una descarga
+ * y no hacían nada, que es peor que no ofrecerla.
+ */
+const HREF_PROGRAMA = `${routes.poetdum.documentos.show.href()}?tipo=${encodeURIComponent('Programa')}`
+const HREF_FICHAS = `${routes.poetdum.documentos.show.href()}?tipo=${encodeURIComponent('Documentos técnicos')}`
 
 export function DescargasSection() {
   return () => {
@@ -37,14 +46,22 @@ export function DescargasSection() {
             maxWidth: '640px',
           })}
         >
-          Descarga aquí el documento completo del Plan de Ordenamiento Ecológico Local (POETDUM) y las Fichas
-          de las unidades de gestión ambiental
+          Descarga aquí el documento completo del Plan de Ordenamiento Ecológico Local (POETDUM) y
+          las Fichas de las unidades de gestión ambiental
         </p>
-        <div mix={css({ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '12px' })}>
-          <a href="#" mix={css(btnGoldProps)}>
+        <div
+          mix={css({
+            display: 'flex',
+            gap: '16px',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            marginTop: '12px',
+          })}
+        >
+          <a href={HREF_PROGRAMA} mix={css(btnGoldProps)}>
             POETDUM
           </a>
-          <a href="#" mix={css(btnSecondaryProps)}>
+          <a href={HREF_FICHAS} mix={css(btnSecondaryProps)}>
             FICHAS
           </a>
         </div>

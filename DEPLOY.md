@@ -9,6 +9,23 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+### Recuperación de contraseña
+
+«¿Olvidaste tu contraseña?» manda un enlace de un solo uso por correo, así que
+depende de dos variables de `.env`:
+
+- **`SMTP_HOST`** (y `SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`MAIL_FROM`). Sin
+  `SMTP_HOST` el formulario responde «el envío de correo no está disponible»
+  en vez de fallar en silencio.
+- **`APP_PUBLIC_URL`**: origen público con el que se construye el enlace del
+  correo. En este despliegue, `https://ac.tlaquepaque.gob.mx` (sin barra final
+  y sin `/ordena`). Si se deja el valor por omisión, los correos saldrán con
+  enlaces a `localhost` que nadie podrá abrir. Se toma de aquí y nunca de la
+  cabecera `Host` de la petición, que puede falsificarse.
+
+El enlace vence en 60 minutos, solo sirve una vez, y al usarse invalida las
+sesiones abiertas de esa cuenta.
+
 Esto levanta 3 contenedores en una red interna (`db`, `backend`, `web`).
 Solo `web` publica un puerto, y solo en `127.0.0.1:44100` — no queda
 expuesto a internet directamente. Al arrancar, el backend migra el schema y
@@ -23,7 +40,7 @@ La imagen de la BD pasó de `pgvector/pgvector:pg16` a `postgres:16`.
 
 **Volumen nuevo:** nada que hacer. `docker compose up -d --build` y listo.
 
-**Volumen `pgdata` que ya existía:** hay que soltar la extensión *antes* de
+**Volumen `pgdata` que ya existía:** hay que soltar la extensión _antes_ de
 cambiar de imagen, o quedan objetos de tipo `vector` sin su librería. El
 `schema.sql` ya trae los `DROP`, solo hay que dejarlo correr una vez con la
 imagen vieja:

@@ -18,10 +18,25 @@ import {
   recordLoginFailure,
   registerUser,
   sessionCookie,
+  sessionIssuedAt,
+  updateUserName,
   verifyCredentials,
+  verifyPasswordById,
   verifySessionToken,
   type SessionUser,
 } from './auth/auth.ts'
+import {
+  confirmarCambioEmail,
+  solicitarCambioEmail,
+  EMAIL_TTL_MINUTOS,
+} from './auth/email-change.ts'
+import {
+  crearSolicitudRecuperacion,
+  restablecerConToken,
+  tokenRecuperacionValido,
+  PASSWORD_MIN_LENGTH,
+  RESET_TTL_MINUTOS,
+} from './auth/password-reset.ts'
 import { migrate } from './db/migrate.ts'
 import { handleCreateParticipation } from './routes/participations.ts'
 import {
@@ -86,8 +101,18 @@ import {
   enviarResolucionParticipacion,
   enviarAviso,
   enviarCorreoPrueba,
+  enviarCorreoRecuperacion,
+  enviarConfirmacionCorreoNuevo,
+  enviarAvisoCorreoCambiado,
   mailConfigurado,
 } from './services/mail.ts'
+import {
+  listarSesiones,
+  registrarActividad,
+  registrarCierreSesion,
+  registrarInicioSesion,
+  resumenSesiones,
+} from './services/sesiones.ts'
 import {
   getCustomizations,
   saveCustomizations,
@@ -97,7 +122,7 @@ import {
   DEFAULT_THEME_CONFIG,
 } from './services/customizations.ts'
 import { sql } from './db/pool.ts'
-import { json, bodyTooLarge, rateLimit, logger } from './utils.ts'
+import { json, bodyTooLarge, clientIp, rateLimit, logger } from './utils.ts'
 
 /** Rate limiter para participaciones. Admins están exentos, otros tienen 10 POSTs por minuto */
 export function participationRateLimited(
@@ -126,12 +151,82 @@ function readCookie(cookieHeader: string | null, name: string): string | null {
   return null
 }
 
+/**
+ * Origen público del portal para el enlace del correo de recuperación.
+ * Se toma de la configuración del servidor y NUNCA de las cabeceras de la
+ * petición (`Host`, `Origin`, `X-Forwarded-Host`): esas las controla quien
+ * llama, y un `Host` falsificado convertiría el correo de restablecimiento en
+ * un enlace de phishing hacia el dominio del atacante.
+ */
+const APP_PUBLIC_URL = (process.env.APP_PUBLIC_URL ?? 'http://localhost:44100').replace(/\/+$/, '')
+const APP_BASE_PATH = (process.env.BASE_PATH ?? '/ordena').replace(/\/+$/, '')
+
+/**
+ * Límites de la recuperación de contraseña, por ventana de 15 minutos.
+ *
+ * El control real es `POR_CORREO`: acota tanto el bombardeo a un buzón como el
+ * gasto de SMTP, porque un correo sin cuenta no envía nada. `GLOBAL` es solo un
+ * cortafuegos ante un abuso masivo, y por eso se deja holgado: si fuera
+ * estrecho, treinta peticiones bastarían para dejar sin recuperación a todo el
+ * municipio durante un cuarto de hora.
+ */
+const RESET_WINDOW_MS = 15 * 60 * 1000
+const RESET_MAX_POR_CORREO = 3
+const RESET_MAX_GLOBAL = 200
+const RESET_MAX_INTENTOS = 20
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function urlRestablecer(token: string): string {
+  return `${APP_PUBLIC_URL}${APP_BASE_PATH}/restablecer?token=${encodeURIComponent(token)}`
+}
+
+function urlConfirmarCorreo(token: string): string {
+  return `${APP_PUBLIC_URL}${APP_BASE_PATH}/confirmar-correo?token=${encodeURIComponent(token)}`
+}
+
+/**
+ * Datos del navegador para la bitácora de sesiones. El backend solo habla con
+ * el contenedor `web`, así que la IP real llega reenviada en `x-forwarded-for`
+ * (ver backendFetch en app/backend.ts); es informativa, no una credencial.
+ */
+function datosCliente(request: Request): { ip: string; userAgent: string } {
+  return {
+    ip: clientIp(request, null).slice(0, 60),
+    userAgent: (request.headers.get('user-agent') ?? '').slice(0, 300),
+  }
+}
+
+/** Anota la sesión sin bloquear la respuesta: la bitácora nunca frena el panel. */
+function anotarSesion(promesa: Promise<unknown>, etiqueta: string): void {
+  void promesa.catch((err) => logger.error(etiqueta, err))
+}
+
 async function currentUser(request: Request): Promise<SessionUser | null> {
   const token = readCookie(request.headers.get('cookie'), 'ordenamiento_session')
   if (!token) return null
   const userId = await verifySessionToken(token)
   if (!userId) return null
-  return getUserById(userId)
+
+  const user = await getUserById(userId)
+  if (!user) return null
+
+  // Sesión anterior a un cambio de contraseña: se descarta. Sin esto,
+  // recuperar la cuenta no expulsaría a quien ya estuviera dentro con la
+  // contraseña anterior, que es justo el caso para el que existe el flujo.
+  // `sessionsValidFrom` vale 0 mientras la cuenta nunca haya restablecido.
+  const emitido = sessionIssuedAt(token)
+  const corte = user.sessionsValidFrom ?? 0
+  if (corte > 0 && (emitido === null || emitido < corte)) return null
+
+  // Señal de vida para la bitácora. El servicio ya limita la frecuencia de
+  // escritura, y va sin `await` para no sumar una ida a la base a cada
+  // petición del panel.
+  if (emitido !== null) {
+    void registrarActividad(user.id, emitido).catch(() => {})
+  }
+
+  return user
 }
 
 function isEstado(v: string): v is Estado {
@@ -261,13 +356,166 @@ export async function handleRequest(request: Request): Promise<Response> {
     clearLoginAttempts(body.email)
 
     const token = await createSessionToken(user.id)
+    const emitido = sessionIssuedAt(token)
+    if (emitido !== null) {
+      anotarSesion(
+        registrarInicioSesion(user.id, emitido, datosCliente(request)),
+        'sesiones.inicio',
+      )
+    }
     return json(
       { user: { id: user.id, name: user.name, role: user.role } },
       { headers: { 'set-cookie': sessionCookie(token) } },
     )
   }
 
+  // ── Recuperación de contraseña ───────────────────────────────────────
+  // Dos pasos: pedir el enlace (`forgot-password`) y canjearlo por una
+  // contraseña nueva (`reset-password`). Ninguno de los dos exige sesión, así
+  // que ambos van ANTES del guard `currentUser` de más abajo.
+
+  if (method === 'POST' && pathname === '/api/auth/forgot-password') {
+    const body = (await request.json().catch(() => ({}))) as { email?: string }
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
+    if (!email || !EMAIL_RE.test(email)) {
+      return json({ error: 'Correo electrónico inválido' }, 400)
+    }
+
+    // Se comprueba ANTES de buscar la cuenta: es un fallo de configuración del
+    // servidor, igual para un correo que exista y para uno que no, así que
+    // decirlo no revela nada sobre la cuenta.
+    if (!mailConfigurado()) {
+      return json({ error: 'El envío de correo no está configurado en el servidor' }, 503)
+    }
+
+    // Límite por correo (evita usar el formulario para bombardear un buzón)
+    // más un tope global del endpoint (evita usarlo para quemar la cuota SMTP
+    // probando muchos correos distintos).
+    if (
+      rateLimit(`forgot:${email}`, RESET_MAX_POR_CORREO, RESET_WINDOW_MS) ||
+      rateLimit('forgot:global', RESET_MAX_GLOBAL, RESET_WINDOW_MS)
+    ) {
+      return json({ error: 'Demasiadas solicitudes. Intenta de nuevo en unos minutos.' }, 429)
+    }
+
+    const solicitud = await crearSolicitudRecuperacion(email)
+
+    // Respuesta idéntica exista o no la cuenta: si el 200 solo llegara para
+    // correos registrados, este formulario sería un buscador de cuentas
+    // válidas para cualquiera. Lo mismo vale si el envío falla: se registra en
+    // el log del servidor, pero hacia fuera la respuesta no cambia.
+    if (solicitud) {
+      // El envío NO se espera a propósito. Esperarlo haría que la respuesta
+      // tardara lo que tarda el viaje SMTP solo cuando la cuenta existe, y ese
+      // retraso sería por sí mismo la respuesta a «¿este correo está
+      // registrado?», justo lo que el cuerpo idéntico intenta ocultar.
+      // Un fallo de envío queda en el log del servidor.
+      void enviarCorreoRecuperacion({
+        para: solicitud.usuario.email,
+        nombre: solicitud.usuario.name,
+        url: urlRestablecer(solicitud.token),
+        expiraMinutos: RESET_TTL_MINUTOS,
+      }).catch((err) => logger.error('auth.forgot-password.envio', err))
+    }
+
+    return json({ ok: true, expiraMinutos: RESET_TTL_MINUTOS })
+  }
+
+  // Comprueba si un enlace sigue vivo, para decidir entre mostrar el
+  // formulario de nueva contraseña o el aviso de enlace caducado.
+  if (method === 'GET' && pathname === '/api/auth/reset-password') {
+    const token = url.searchParams.get('token') ?? ''
+    if (!token) return json({ valido: false, motivo: 'invalido' }, 400)
+    if (rateLimit(`reset-check:${token.slice(0, 16)}`, RESET_MAX_INTENTOS, RESET_WINDOW_MS)) {
+      return json({ error: 'Demasiados intentos. Intenta de nuevo en unos minutos.' }, 429)
+    }
+    const estado = await tokenRecuperacionValido(token)
+    return json(estado, estado.valido ? 200 : 410)
+  }
+
+  if (method === 'POST' && pathname === '/api/auth/reset-password') {
+    const body = (await request.json().catch(() => ({}))) as { token?: string; password?: string }
+    const token = typeof body.token === 'string' ? body.token : ''
+    const password = typeof body.password === 'string' ? body.password : ''
+    if (!token) return json({ error: 'Enlace inválido', motivo: 'invalido' }, 400)
+
+    // Acota los intentos contra un mismo enlace. El token es de 256 bits, así
+    // que no es adivinable; esto solo evita que se martillee el endpoint.
+    if (rateLimit(`reset:${token.slice(0, 16)}`, RESET_MAX_INTENTOS, RESET_WINDOW_MS)) {
+      return json({ error: 'Demasiados intentos. Intenta de nuevo en unos minutos.' }, 429)
+    }
+
+    const resultado = await restablecerConToken(token, password)
+    if (!resultado.ok) {
+      if (resultado.motivo === 'password_corta') {
+        return json(
+          {
+            error: `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres`,
+            motivo: resultado.motivo,
+          },
+          422,
+        )
+      }
+      const mensaje =
+        resultado.motivo === 'expirado'
+          ? 'El enlace de recuperación ya venció. Solicita uno nuevo.'
+          : 'El enlace de recuperación no es válido o ya se usó.'
+      return json({ error: mensaje, motivo: resultado.motivo }, 410)
+    }
+
+    // Sin `set-cookie`: restablecer la contraseña NO inicia sesión. Quien
+    // llegue al enlace debe volver a autenticarse con la contraseña nueva.
+    return json({ ok: true, email: resultado.usuario.email })
+  }
+
+  // Confirmación del cambio de correo. Es POST y no GET a propósito: los
+  // antivirus y los previsualizadores de enlaces de muchos clientes de correo
+  // visitan las URL de los mensajes, y con un GET quemarían el enlace antes de
+  // que el destinatario lo abriera. La página del portal muestra un botón.
+  if (method === 'POST' && pathname === '/api/auth/confirm-email') {
+    const body = (await request.json().catch(() => ({}))) as { token?: string }
+    const token = typeof body.token === 'string' ? body.token : ''
+    if (!token) return json({ error: 'Enlace inválido', motivo: 'invalido' }, 400)
+
+    if (rateLimit(`confirm-email:${token.slice(0, 16)}`, RESET_MAX_INTENTOS, RESET_WINDOW_MS)) {
+      return json({ error: 'Demasiados intentos. Intenta de nuevo en unos minutos.' }, 429)
+    }
+
+    const resultado = await confirmarCambioEmail(token)
+    if (!resultado.ok) {
+      const mensajes: Record<string, string> = {
+        expirado: 'El enlace de confirmación ya venció. Solicita el cambio otra vez.',
+        email_ocupado: 'Ese correo quedó registrado por otra cuenta mientras tanto.',
+        invalido: 'El enlace de confirmación no es válido o ya se usó.',
+      }
+      return json(
+        { error: mensajes[resultado.motivo], motivo: resultado.motivo },
+        resultado.motivo === 'email_ocupado' ? 409 : 410,
+      )
+    }
+
+    // Aviso a la dirección anterior: es el único buzón que un atacante que
+    // hubiera pedido el cambio ya no controla. No se espera el envío.
+    void enviarAvisoCorreoCambiado({
+      para: resultado.emailAnterior,
+      nombre: resultado.nombre,
+      emailNuevo: resultado.emailNuevo,
+    }).catch((err) => logger.error('auth.confirm-email.aviso', err))
+
+    return json({ ok: true, email: resultado.emailNuevo })
+  }
+
   if (method === 'POST' && pathname === '/api/auth/logout') {
+    // Se cierra la fila de la bitácora ANTES de invalidar la cookie: después
+    // ya no habría forma de saber qué sesión terminó.
+    const tokenSalida = readCookie(request.headers.get('cookie'), 'ordenamiento_session')
+    if (tokenSalida) {
+      const salienteId = await verifySessionToken(tokenSalida)
+      const emitido = sessionIssuedAt(tokenSalida)
+      if (salienteId && emitido !== null) {
+        anotarSesion(registrarCierreSesion(salienteId, emitido), 'sesiones.cierre')
+      }
+    }
     return json({ ok: true }, { headers: { 'set-cookie': clearSessionCookie() } })
   }
 
@@ -750,6 +998,110 @@ export async function handleRequest(request: Request): Promise<Response> {
     return json({ user: profile })
   }
 
+  // Renombrar la propia cuenta. No exige contraseña: el nombre es una
+  // etiqueta, no una credencial, y cambiarlo no da acceso a nada.
+  if (method === 'POST' && pathname === '/api/users/me') {
+    const authError = requireAuth()
+    if (authError) return authError
+    const body = (await request.json().catch(() => ({}))) as { name?: string }
+    const name = typeof body.name === 'string' ? body.name : ''
+    if (name.trim().length < 2) {
+      return json({ error: 'El nombre debe tener al menos 2 caracteres' }, 422)
+    }
+    if (name.length > 120) {
+      return json({ error: 'El nombre no puede pasar de 120 caracteres' }, 422)
+    }
+    const guardado = await updateUserName(user!.id, name)
+    if (!guardado) return json({ error: 'No se pudo guardar el nombre' }, 400)
+    return json({ ok: true, name: guardado })
+  }
+
+  // Cambiar el correo de acceso. Manda confirmación a la dirección NUEVA y no
+  // toca `users.email` hasta que se confirme.
+  if (method === 'POST' && pathname === '/api/users/me/email') {
+    const authError = requireAuth()
+    if (authError) return authError
+
+    if (!mailConfigurado()) {
+      return json(
+        {
+          error: 'El envío de correo no está configurado: no se puede verificar la dirección nueva',
+        },
+        503,
+      )
+    }
+
+    const body = (await request.json().catch(() => ({}))) as {
+      email?: string
+      password?: string
+    }
+
+    if (rateLimit(`email-change:${user!.id}`, RESET_MAX_POR_CORREO, RESET_WINDOW_MS)) {
+      return json({ error: 'Demasiadas solicitudes. Intenta de nuevo en unos minutos.' }, 429)
+    }
+
+    const resultado = await solicitarCambioEmail({
+      userId: user!.id,
+      nuevoEmail: String(body.email ?? ''),
+      passwordActual: String(body.password ?? ''),
+      verificarPassword: verifyPasswordById,
+    })
+
+    if (!resultado.ok) {
+      const mensajes: Record<string, string> = {
+        email_invalido: 'Escribe un correo electrónico válido',
+        email_igual: 'Ese ya es el correo de tu cuenta',
+        email_ocupado: 'Ese correo ya está registrado por otra cuenta',
+        password_incorrecta: 'La contraseña actual no es correcta',
+        usuario_no_encontrado: 'No se encontró la cuenta',
+      }
+      const status = resultado.motivo === 'password_incorrecta' ? 401 : 422
+      return json({ error: mensajes[resultado.motivo], motivo: resultado.motivo }, status)
+    }
+
+    try {
+      await enviarConfirmacionCorreoNuevo({
+        para: resultado.nuevoEmail,
+        nombre: resultado.nombre,
+        url: urlConfirmarCorreo(resultado.token),
+        expiraMinutos: EMAIL_TTL_MINUTOS,
+        emailAnterior: resultado.emailActual,
+      })
+    } catch (err) {
+      // Aquí sí importa avisar del fallo: quien lo pidió está autenticado y
+      // esperando el correo, así que no hay nada que ocultar y sí que corregir.
+      logger.error('users.me.email.envio', err)
+      return json({ error: 'No se pudo enviar el correo de confirmación' }, 502)
+    }
+
+    return json({ ok: true, pendiente: resultado.nuevoEmail, expiraMinutos: EMAIL_TTL_MINUTOS })
+  }
+
+  // ── Bitácora de sesiones — solo admin ────────────────────────────────
+  // Expone cuándo entró cada cuenta y desde dónde: es información de
+  // vigilancia sobre personas, no un dato operativo cualquiera.
+  if (method === 'GET' && pathname === '/api/sessions') {
+    const authError = requireAdmin()
+    if (authError) return authError
+
+    const usuarioParam = url.searchParams.get('user_id')
+    if (usuarioParam && !isUuid(usuarioParam)) {
+      return json({ error: 'user_id inválido' }, 400)
+    }
+    const rawPage = Number(url.searchParams.get('page'))
+    const rawLimit = Number(url.searchParams.get('limit'))
+    const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1
+    const limit = Number.isInteger(rawLimit) && rawLimit > 0 ? rawLimit : 25
+
+    const usuarioId = usuarioParam ?? undefined
+    const [pagina, resumen] = await Promise.all([
+      listarSesiones({ usuarioId, limit, page }),
+      resumenSesiones(usuarioId),
+    ])
+
+    return json({ items: pagina.items, total: pagina.total, page, limit, resumen })
+  }
+
   // ── Usuarios (solo root/admin) ────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/users') {
     const authError = requireAdmin()
@@ -819,26 +1171,50 @@ export async function handleRequest(request: Request): Promise<Response> {
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM participations WHERE origen = 'digital'`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM participations WHERE origen = 'fisica'`,
       filtroOrigen
-        ? sql<{ estado: string; n: string }[]>`SELECT estado, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY estado`
-        : sql<{ estado: string; n: string }[]>`SELECT estado, count(*)::text AS n FROM participations GROUP BY estado`,
+        ? sql<
+            { estado: string; n: string }[]
+          >`SELECT estado, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY estado`
+        : sql<
+            { estado: string; n: string }[]
+          >`SELECT estado, count(*)::text AS n FROM participations GROUP BY estado`,
       filtroOrigen
-        ? sql<{ k: string; n: string }[]>`SELECT fuente AS k, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY fuente ORDER BY count(*) DESC`
-        : sql<{ k: string; n: string }[]>`SELECT fuente AS k, count(*)::text AS n FROM participations GROUP BY fuente ORDER BY count(*) DESC`,
+        ? sql<
+            { k: string; n: string }[]
+          >`SELECT fuente AS k, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY fuente ORDER BY count(*) DESC`
+        : sql<
+            { k: string; n: string }[]
+          >`SELECT fuente AS k, count(*)::text AS n FROM participations GROUP BY fuente ORDER BY count(*) DESC`,
       filtroOrigen
-        ? sql<{ k: string; n: string }[]>`SELECT genero AS k, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY genero ORDER BY count(*) DESC`
-        : sql<{ k: string; n: string }[]>`SELECT genero AS k, count(*)::text AS n FROM participations GROUP BY genero ORDER BY count(*) DESC`,
+        ? sql<
+            { k: string; n: string }[]
+          >`SELECT genero AS k, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY genero ORDER BY count(*) DESC`
+        : sql<
+            { k: string; n: string }[]
+          >`SELECT genero AS k, count(*)::text AS n FROM participations GROUP BY genero ORDER BY count(*) DESC`,
       filtroOrigen
-        ? sql<{ k: string; n: string }[]>`SELECT tematica AS k, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY tematica ORDER BY count(*) DESC`
-        : sql<{ k: string; n: string }[]>`SELECT tematica AS k, count(*)::text AS n FROM participations GROUP BY tematica ORDER BY count(*) DESC`,
+        ? sql<
+            { k: string; n: string }[]
+          >`SELECT tematica AS k, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY tematica ORDER BY count(*) DESC`
+        : sql<
+            { k: string; n: string }[]
+          >`SELECT tematica AS k, count(*)::text AS n FROM participations GROUP BY tematica ORDER BY count(*) DESC`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM actividades`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM documentos`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM indicadores`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM poel_sesiones`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM reuniones`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM avisos`,
-      sql<{ mes: string; n: string }[]>`
-        SELECT to_char(date_trunc('month', created_at),'YYYY-MM') AS mes, count(*)::text AS n FROM participations GROUP BY 1 ORDER BY 1 ASC
-      `,
+      // La serie por mes también respeta `origen`: sin esto, la pestaña
+      // «Digitales» mostraba una gráfica mensual con las físicas incluidas.
+      filtroOrigen
+        ? sql<{ mes: string; n: string }[]>`
+            SELECT to_char(date_trunc('month', created_at),'YYYY-MM') AS mes, count(*)::text AS n
+            FROM participations WHERE origen = ${filtroOrigen} GROUP BY 1 ORDER BY 1 ASC
+          `
+        : sql<{ mes: string; n: string }[]>`
+            SELECT to_char(date_trunc('month', created_at),'YYYY-MM') AS mes, count(*)::text AS n
+            FROM participations GROUP BY 1 ORDER BY 1 ASC
+          `,
       getProximaReunion(),
       listAvisos().then((a) => a.slice(0, 5)),
     ])

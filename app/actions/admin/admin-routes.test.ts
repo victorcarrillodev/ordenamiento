@@ -24,6 +24,7 @@ describe('Admin Routes Protection & Navigation', () => {
       '/ordena/admin/avisos',
       '/ordena/admin/poel',
       '/ordena/admin/estadisticas',
+      '/ordena/admin/sesiones',
       '/ordena/admin/cuenta',
       '/ordena/admin/personalizacion',
     ]
@@ -210,12 +211,42 @@ describe('Admin Routes Protection & Navigation', () => {
       expect(await indexRes?.text()).not.toContain('Crear usuario')
     })
 
-    it('GET /ordena/admin/estadisticas contiene ambas secciones', async () => {
+    it('GET /ordena/admin/estadisticas ofrece las tres vistas y abre en Totales', async () => {
       const res = await router.fetch(new Request('http://localhost/ordena/admin/estadisticas'))
       expect(res?.status).toBe(200)
       const html = await res?.text()
-      expect(html).toContain('Estadísticas Digitales')
-      expect(html).toContain('Estadísticas Físicas')
+      expect(html).toContain('>Totales<')
+      expect(html).toContain('>Digitales<')
+      expect(html).toContain('>Físicas<')
+      // Sin `?vista=`, la pestaña activa es la de totales.
+      expect(html).toContain('aria-selected="true" href="/ordena/admin/estadisticas"')
+    })
+
+    it('GET /ordena/admin/estadisticas?vista=fisica activa la vista de físicas', async () => {
+      const res = await router.fetch(
+        new Request('http://localhost/ordena/admin/estadisticas?vista=fisica'),
+      )
+      expect(res?.status).toBe(200)
+      const html = await res?.text()
+      expect(html).toContain('aria-selected="true" href="/ordena/admin/estadisticas?vista=fisica"')
+      // La comparativa digital/física solo tiene sentido en la vista de totales.
+      expect(html).not.toContain('Digitales frente a físicas')
+    })
+
+    it('GET /ordena/admin/estadisticas con ?vista= inventada cae en totales', async () => {
+      const res = await router.fetch(
+        new Request('http://localhost/ordena/admin/estadisticas?vista=<script>'),
+      )
+      expect(res?.status).toBe(200)
+      expect(await res?.text()).toContain('aria-selected="true" href="/ordena/admin/estadisticas"')
+    })
+
+    it('GET /ordena/admin/sesiones muestra la bitácora de accesos', async () => {
+      const res = await router.fetch(new Request('http://localhost/ordena/admin/sesiones'))
+      expect(res?.status).toBe(200)
+      const html = await res?.text()
+      expect(html).toContain('Registro de sesiones')
+      expect(html).toContain('Tiempo conectado')
     })
 
     it('POST /ordena/admin/participaciones/nueva guarda participación física y redirige con folio', async () => {

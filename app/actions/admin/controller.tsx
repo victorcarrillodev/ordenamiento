@@ -11,9 +11,10 @@ import { adminRoutes } from '../../routes.ts'
 import { AdminPage } from './page.tsx'
 import { ExportarPage } from './exportar-page.tsx'
 import { ParticipacionesPage } from './participaciones-page.tsx'
-import { EstadisticasPage } from './estadisticas-page.tsx'
+import { EstadisticasPage, type DatosOrigen, type VistaEstadisticas } from './estadisticas-page.tsx'
 import { DetallePage } from './detalle-page.tsx'
 import { ETAPAS } from './etapa.ts'
+import { sesionesAction } from './sesiones-controller.tsx'
 
 interface Stats {
   usuarios: number
@@ -48,32 +49,50 @@ interface Stats {
   }>
 }
 
+const STATS_VACIAS: Stats = {
+  usuarios: 0,
+  digitales: 0,
+  fisicas: 0,
+  resultado: [],
+  fuente: [],
+  genero: [],
+  tematica: [],
+  contenido: {
+    actividades: 0,
+    documentos: 0,
+    indicadores: 0,
+    poelSesiones: 0,
+    reuniones: 0,
+    avisos: 0,
+  },
+  participacionesPorMes: [],
+  proximaReunion: null,
+  ultimosAvisos: [],
+}
+
+/**
+ * Adapta la respuesta de `/api/stats` a lo que dibuja la página. `total` se
+ * pasa aparte porque el backend siempre devuelve `digitales` y `fisicas` sin
+ * filtrar, y cada vista necesita el suyo.
+ */
+function aDatosOrigen(stats: Stats, total: number): DatosOrigen {
+  return {
+    total,
+    resultado: (stats.resultado ?? []).map((r) => [r.estado, r.total] as [string, number]),
+    fuente: stats.fuente ?? [],
+    genero: stats.genero ?? [],
+    tematica: stats.tematica ?? [],
+    porMes: stats.participacionesPorMes ?? [],
+  }
+}
+
 export default createController(adminRoutes, {
   actions: {
     async index(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
 
-      const stats = await fetchJsonOr<Stats>(context.request, '/api/stats', {
-        usuarios: 0,
-        digitales: 0,
-        fisicas: 0,
-        resultado: [],
-        fuente: [],
-        genero: [],
-        tematica: [],
-        contenido: {
-          actividades: 0,
-          documentos: 0,
-          indicadores: 0,
-          poelSesiones: 0,
-          reuniones: 0,
-          avisos: 0,
-        },
-        participacionesPorMes: [],
-        proximaReunion: null,
-        ultimosAvisos: [],
-      })
+      const stats = await fetchJsonOr<Stats>(context.request, '/api/stats', STATS_VACIAS)
 
       // Obtener hora y fecha real de MÃ©xico (America/Mexico_City)
       const parts = new Intl.DateTimeFormat('es-MX', {
@@ -276,33 +295,33 @@ export default createController(adminRoutes, {
     async estadisticas(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
-      const defaults = {
-        digitales: 0,
-        fisicas: 0,
-        resultado: [] as Array<{ estado: string; total: number }>,
-        fuente: [] as Array<[string, number]>,
-        genero: [] as Array<[string, number]>,
-        tematica: [] as Array<[string, number]>,
-      }
-      const [digitalRaw, fisicaRaw] = await Promise.all([
-        fetchJsonOr<typeof defaults>(context.request, '/api/stats?origen=digital', defaults),
-        fetchJsonOr<typeof defaults>(context.request, '/api/stats?origen=fisica', defaults),
+
+      const vistaParam = new URL(context.request.url).searchParams.get('vista')
+      const vista: VistaEstadisticas =
+        vistaParam === 'digital' ? 'digital' : vistaParam === 'fisica' ? 'fisica' : 'totales'
+
+      // Las tres vistas se piden siempre: los contadores de las pestañas
+      // muestran el total de cada ámbito aunque solo se dibuje una.
+      const [globalRaw, digitalRaw, fisicaRaw] = await Promise.all([
+        fetchJsonOr<Stats>(context.request, '/api/stats', STATS_VACIAS),
+        fetchJsonOr<Stats>(context.request, '/api/stats?origen=digital', STATS_VACIAS),
+        fetchJsonOr<Stats>(context.request, '/api/stats?origen=fisica', STATS_VACIAS),
       ])
-      const digital = {
-        total: digitalRaw.digitales,
-        resultado: digitalRaw.resultado.map((r) => [r.estado, r.total] as [string, number]),
-        fuente: digitalRaw.fuente ?? [],
-        genero: digitalRaw.genero ?? [],
-        tematica: digitalRaw.tematica ?? [],
-      }
-      const fisica = {
-        total: fisicaRaw.fisicas,
-        resultado: fisicaRaw.resultado.map((r) => [r.estado, r.total] as [string, number]),
-        fuente: fisicaRaw.fuente ?? [],
-        genero: fisicaRaw.genero ?? [],
-        tematica: fisicaRaw.tematica ?? [],
-      }
-      return context.render(<EstadisticasPage user={user} digital={digital} fisica={fisica} />)
+
+      return context.render(
+        <EstadisticasPage
+          user={user}
+          totales={aDatosOrigen(globalRaw, globalRaw.digitales + globalRaw.fisicas)}
+          digital={aDatosOrigen(digitalRaw, digitalRaw.digitales)}
+          fisica={aDatosOrigen(fisicaRaw, fisicaRaw.fisicas)}
+          vista={vista}
+        />,
+      )
+    },
+
+    /** Bitácora de accesos (solo admin). La lógica vive en sesiones-controller. */
+    sesiones(context) {
+      return sesionesAction(context)
     },
 
     async cuentaAvatar(context) {
