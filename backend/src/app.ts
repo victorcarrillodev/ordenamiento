@@ -65,6 +65,7 @@ import {
   deleteReunion,
   getProximaReunion,
   listReuniones,
+  listReunionesActivas,
 } from './services/reuniones.ts'
 import { listAvisos, createAviso, deleteAviso } from './services/avisos.ts'
 import {
@@ -868,6 +869,11 @@ export async function handleRequest(request: Request): Promise<Response> {
       const msg = err instanceof Error ? err.message : String(err)
       return json({ error: `No se pudo enviar prueba: ${msg}` }, 502)
     }
+  }
+
+  // ── Reuniones públicas (sin auth, solo futuras) — calendario del home ──
+  if (method === 'GET' && pathname === '/api/reuniones/activas') {
+    return json({ reuniones: await listReunionesActivas() })
   }
 
   // ── Reuniones (bitácora) ─────────────────────────────────────────────

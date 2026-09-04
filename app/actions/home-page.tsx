@@ -27,17 +27,27 @@ import { Button } from '../ui/button.tsx'
 import { Document } from './document.tsx'
 import { NavBar } from '../ui/nav-bar.tsx'
 import { routes } from '../routes.ts'
+import {
+  ReunionesCalendario,
+  type ReunionPublica,
+} from './public/reuniones-calendario.tsx'
 
 const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 
 // ---------------------------------------------------------------------------
 export interface HomePageProps {
   theme?: ThemeData
+  reuniones?: ReunionPublica[]
 }
 
 export function HomePage(handle: Handle<HomePageProps>) {
   return () => {
     const theme = handle.props.theme
+    const reuniones = handle.props.reuniones ?? []
+    const u = theme?.usuario || {}
+    const c = u.colores || {}
+    const textos = (u.textos ?? {}) as Record<string, string>
+    const accent = isSafeCssColor(c.acento) ? c.acento : colors.gold400
     return (
       <Document>
         <div
@@ -57,6 +67,9 @@ export function HomePage(handle: Handle<HomePageProps>) {
             <ProcessTimeline theme={theme} />
             <ParticipationCta theme={theme} />
           </main>
+          {reuniones.length > 0 ? (
+            <ReunionesCalendario reuniones={reuniones} textos={textos} accent={accent} />
+          ) : null}
           <SiteFooter theme={theme} />
         </div>
       </Document>

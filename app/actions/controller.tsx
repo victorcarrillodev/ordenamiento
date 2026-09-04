@@ -2,10 +2,11 @@ import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
 import { assetServer } from '../assets.ts'
-import { getPublicTheme, logoutBackend } from '../backend.ts'
+import { fetchJsonOr, getPublicTheme, logoutBackend } from '../backend.ts'
 import { sugerirColonias, sugerirMunicipios } from '../data/colonias.ts'
 import { routes } from '../routes.ts'
 import { HomePage } from './home-page.tsx'
+import type { ReunionPublica } from './public/reuniones-calendario.tsx'
 import { marcaAction } from './marca-controller.tsx'
 import { ErrorPage } from './error-page.tsx'
 
@@ -20,12 +21,26 @@ export default createController(routes, {
       )
     },
     async home(context) {
-      const theme = await getPublicTheme(context.request)
-      return context.render(<HomePage theme={theme} />)
+      const [theme, reunionesData] = await Promise.all([
+        getPublicTheme(context.request),
+        fetchJsonOr<{ reuniones: ReunionPublica[] }>(context.request, '/api/reuniones/activas', {
+          reuniones: [],
+        }),
+      ])
+      return context.render(
+        <HomePage theme={theme} reuniones={reunionesData.reuniones ?? []} />,
+      )
     },
     async homeSlash(context) {
-      const theme = await getPublicTheme(context.request)
-      return context.render(<HomePage theme={theme} />)
+      const [theme, reunionesData] = await Promise.all([
+        getPublicTheme(context.request),
+        fetchJsonOr<{ reuniones: ReunionPublica[] }>(context.request, '/api/reuniones/activas', {
+          reuniones: [],
+        }),
+      ])
+      return context.render(
+        <HomePage theme={theme} reuniones={reunionesData.reuniones ?? []} />,
+      )
     },
     participationLogin() {
       return redirect(routes.login.index.href())

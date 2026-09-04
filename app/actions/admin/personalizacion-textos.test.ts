@@ -4,7 +4,7 @@ import { router } from '../../router.ts'
 /**
  * Mini-página de textos del portal (personalizacion-textos-controller).
  * Cubre: protección auth, render con valores del tema, motivo obligatorio,
- * y guardado con las 67 claves + section==='usuario'.
+   * y guardado con las 70 claves + section==='usuario'.
  */
 
 const ORIGINAL_FETCH = globalThis.fetch
@@ -104,7 +104,7 @@ describe('Personalización · textos del portal', () => {
     expect(capture.called).toBe(false)
   })
 
-  it('POST con motivo guarda las 67 claves con section usuario', async () => {
+  it('POST con motivo guarda las 70 claves con section usuario', async () => {
     const capture = { called: false, body: null as Record<string, unknown> | null }
     mockFetch({ captureThemePost: capture })
     const fd = new FormData()
@@ -128,7 +128,7 @@ describe('Personalización · textos del portal', () => {
     expect(body.config.usuario.textos.heroTitulo).toBe('X')
     expect(body.config.usuario.textos.footerFirma).toBe('Y')
     expect(body.config.usuario.textos.card1Titulo).toBe('')
-    expect(Object.keys(body.config.usuario.textos)).toHaveLength(67)
+    expect(Object.keys(body.config.usuario.textos)).toHaveLength(70)
     expect(body.section).toBe('usuario')
   })
 })

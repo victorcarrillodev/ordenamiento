@@ -117,6 +117,15 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
     ],
   },
   {
+    id: 'reuniones',
+    titulo: 'Calendario de reuniones (portada)',
+    campos: [
+      { key: 'reunionesEyebrow', name: 'txt_reuniones_eyebrow', label: 'Antetítulo de la sección', rows: 1 },
+      { key: 'reunionesTitulo', name: 'txt_reuniones_titulo', label: 'Título de la sección', rows: 2 },
+      { key: 'reunionesPanelVacio', name: 'txt_reuniones_panel_vacio', label: 'Panel derecho · aviso «selecciona un día»', rows: 2 },
+    ],
+  },
+  {
     id: 'footer',
     titulo: 'Pie de página (Footer)',
     campos: [

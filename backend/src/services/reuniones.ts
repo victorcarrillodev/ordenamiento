@@ -51,3 +51,16 @@ export async function getProximaReunion(): Promise<Reunion | null> {
   `
   return rows[0] ?? null
 }
+
+/**
+ * Reuniones futuras (fecha >= hoy) para el calendario público, en orden
+ * cronológico. Mismo shape que `listReuniones`: no hay campos sensibles.
+ */
+export async function listReunionesActivas(): Promise<Reunion[]> {
+  return sql<Reunion[]>`
+    SELECT id::text AS id, titulo, fecha::text AS fecha, hora_inicio, hora_fin
+    FROM reuniones
+    WHERE fecha >= CURRENT_DATE
+    ORDER BY fecha ASC, id ASC
+  `
+}
