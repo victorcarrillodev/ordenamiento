@@ -51,6 +51,18 @@ describe('Menú desplegable', () => {
     expect(fuente).toMatch(/#nav-toggle:checked ~ #nav-panel \{ display: block; \}/)
   })
 
+  it('un solo corte decide la barra y el panel, sin anchura muerta entre ambos', () => {
+    // `max-width: 900px` y `min-width: 900px` incluyen los dos el propio 900:
+    // con un corte de cada lado, a esa anchura exacta se veía la hamburguesa
+    // (por el `max-width`) mientras el panel seguía apagado (por el
+    // `min-width`), así que el único control visible no abría nada y no había
+    // enlaces de escritorio que lo suplieran.
+    expect(fuente).not.toMatch(/@media \(min-width: \$\{NAVBAR_CORTE_MOVIL\}\)/)
+    expect(fuente).toMatch(
+      /@media \(max-width: \$\{NAVBAR_CORTE_MOVIL\}\) \{\s*#nav-toggle:checked ~ #nav-panel \{ display: block; \}/,
+    )
+  })
+
   it('el checkbox queda oculto a la vista pero enfocable con el tabulador', () => {
     expect(fuente).toMatch(/#nav-toggle \{[^}]*position: absolute;[^}]*opacity: 0;[^}]*\}/)
     expect(fuente).not.toMatch(/#nav-toggle \{[^}]*display: none/)
@@ -59,10 +71,12 @@ describe('Menú desplegable', () => {
     expect(fuente).toMatch(/id="nav-burger"[^>]*aria-hidden="true"/)
   })
 
-  it('el panel se apaga por encima del corte, donde los enlaces caben en la barra', () => {
-    expect(fuente).toMatch(
-      /@media \(min-width: \$\{NAVBAR_CORTE_MOVIL\}\)[\s\S]*?#nav-panel \{ display: none !important; \}/,
-    )
+  it('en escritorio el panel queda apagado por su propio estado de base', () => {
+    // Sin regla `!important` que lo apague: por encima del corte la regla de
+    // apertura ni siquiera se aplica, así que basta el `display: none` del
+    // estilo base del panel.
+    expect(fuente).not.toContain('display: none !important')
+    expect(fuente).toMatch(/const panelStyle = css\(\{\s*display: 'none'/)
   })
 
   it('los enlaces y el botón se declaran una sola vez para barra y panel', () => {

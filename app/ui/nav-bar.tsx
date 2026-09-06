@@ -25,16 +25,22 @@ export const NAVBAR_ALTURA_MOVIL = '64px'
  * de hermano (`:checked ~ …`) entre elementos con clases generadas distintas,
  * y porque el estado vive en un checkbox: así el menú abre aunque el módulo
  * de navegador no haya cargado todavía o falle.
+ *
+ * La apertura se declara dentro del mismo `max-width` que muestra la
+ * hamburguesa, y en escritorio basta el `display: none` de base del panel.
+ * Con un corte de cada lado no funcionaba: `max-width: 900px` y
+ * `min-width: 900px` incluyen ambos el propio 900, así que a esa anchura
+ * exacta convivían la hamburguesa visible y el panel apagado — el único
+ * control a la vista no abría nada y no quedaban enlaces que lo suplieran.
  */
 const ESTILOS_MENU = `
 #nav-toggle { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; }
-#nav-toggle:checked ~ #nav-panel { display: block; }
 #nav-toggle:checked ~ * .nav-burger__abrir { display: none; }
 #nav-toggle:checked ~ * .nav-burger__cerrar { display: inline; }
 #nav-burger .nav-burger__cerrar { display: none; }
 #nav-toggle:focus-visible ~ * #nav-burger { outline: 2px solid #8c1d3d; outline-offset: 2px; }
-@media (min-width: ${NAVBAR_CORTE_MOVIL}) {
-  #nav-panel { display: none !important; }
+@media (max-width: ${NAVBAR_CORTE_MOVIL}) {
+  #nav-toggle:checked ~ #nav-panel { display: block; }
 }
 `
 

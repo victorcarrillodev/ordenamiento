@@ -25,6 +25,10 @@ const dialogStyle = css({
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
   },
+  // En un teléfono de 320px, el 92% de ancho menos los 32px de margen a cada
+  // lado dejaba 230px para el folio y los botones: se recorta el margen para
+  // que el acuse respire igual que el resto de la portada.
+  '@media (max-width: 480px)': { padding: '28px 18px', width: '94%' },
 })
 
 export function SuccessDialog(handle: Handle<SuccessDialogProps>) {
