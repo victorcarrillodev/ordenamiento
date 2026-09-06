@@ -78,6 +78,11 @@ const baseButtonStyle = css({
   border: '1px solid transparent',
   cursor: 'pointer',
   boxSizing: 'border-box',
+  // En una pantalla táctil los tamaños pensados para ratón (29–31px de alto)
+  // se quedan cortos para el pulgar; 44px es el mínimo recomendado y aplica
+  // igual en teléfono que en tableta, que es donde el corte por ancho no
+  // llegaría nunca.
+  '@media (pointer: coarse)': { minHeight: '44px', minWidth: '44px' },
   transition:
     'background 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 120ms ease',
   outline: 'none',

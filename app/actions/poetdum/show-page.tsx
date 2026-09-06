@@ -1,5 +1,10 @@
 import { Document } from '../document.tsx'
-import { NavBar } from '../../ui/nav-bar.tsx'
+import {
+  NAVBAR_ALTURA,
+  NAVBAR_ALTURA_MOVIL,
+  NAVBAR_CORTE_MOVIL,
+  NavBar,
+} from '../../ui/nav-bar.tsx'
 import { css, type Handle } from 'remix/ui'
 import { Mapa } from './public/mapa.tsx'
 import {
@@ -36,7 +41,8 @@ const heroWrap = css({
 
 const subnavWrap = css({
   position: 'sticky',
-  top: '85px',
+  top: NAVBAR_ALTURA,
+  [`@media (max-width: ${NAVBAR_CORTE_MOVIL})`]: { top: NAVBAR_ALTURA_MOVIL },
   zIndex: 50,
   background: colors.white,
   borderBottom: `1px solid ${colors.gray200}`,
@@ -89,7 +95,8 @@ const chipBase = css({
 
 export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
   return () => {
-    const { theme, sesiones, actividades, estado, documentos, tipo, etapa, indicadores } = handle.props
+    const { theme, sesiones, actividades, estado, documentos, tipo, etapa, indicadores } =
+      handle.props
     return (
       <Document
         title="Elaboración del POETDUM"
@@ -100,8 +107,18 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
 
         {/* Hero */}
         <section aria-labelledby="poetdum-hero" mix={heroWrap}>
-          <div mix={css({ ...sectionContainerProps, display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' })}>
-            <span mix={css({ ...eyebrowProps, color: colors.gold400 })}>Bitácora Ambiental · Tlaquepaque</span>
+          <div
+            mix={css({
+              ...sectionContainerProps,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              alignItems: 'center',
+            })}
+          >
+            <span mix={css({ ...eyebrowProps, color: colors.gold400 })}>
+              Bitácora Ambiental · Tlaquepaque
+            </span>
             <h1 id="poetdum-hero" mix={css({ ...headingXLProps, margin: 0, color: colors.white })}>
               ELABORACIÓN DEL POETDUM
             </h1>
@@ -115,14 +132,18 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
                 margin: 0,
               })}
             >
-              Sigue el avance del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano: sesiones,
-              documentos oficiales, actividades y seguimiento de indicadores en un solo lugar.
+              Sigue el avance del Programa de Ordenamiento Ecológico Territorial y de Desarrollo
+              Urbano: sesiones, documentos oficiales, actividades y seguimiento de indicadores en un
+              solo lugar.
             </p>
           </div>
         </section>
 
         {/* Mapa + simbología */}
-        <section aria-labelledby="mapa-heading" mix={css({ background: colors.gray50, padding: '48px 0' })}>
+        <section
+          aria-labelledby="mapa-heading"
+          mix={css({ background: colors.gray50, padding: '48px 0' })}
+        >
           <div mix={css({ ...sectionContainerProps })}>
             <h2
               id="mapa-heading"
@@ -162,27 +183,71 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
                   Simbología
                 </h3>
                 <div mix={css({ display: 'flex', flexDirection: 'column', gap: '8px' })}>
-                  <span mix={[chipBase, css({ background: '#dcfce7', borderColor: '#86efac', color: '#166534' })]}>
+                  <span
+                    mix={[
+                      chipBase,
+                      css({ background: '#dcfce7', borderColor: '#86efac', color: '#166534' }),
+                    ]}
+                  >
                     <span
-                      mix={css({ width: '12px', height: '12px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' })}
+                      mix={css({
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        background: '#22c55e',
+                        display: 'inline-block',
+                      })}
                     />
                     Protección
                   </span>
-                  <span mix={[chipBase, css({ background: '#fef3c7', borderColor: '#fcd34d', color: '#92400e' })]}>
+                  <span
+                    mix={[
+                      chipBase,
+                      css({ background: '#fef3c7', borderColor: '#fcd34d', color: '#92400e' }),
+                    ]}
+                  >
                     <span
-                      mix={css({ width: '12px', height: '12px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block' })}
+                      mix={css({
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        background: '#f59e0b',
+                        display: 'inline-block',
+                      })}
                     />
                     Conservación
                   </span>
-                  <span mix={[chipBase, css({ background: '#dbeafe', borderColor: '#93c5fd', color: '#1e40af' })]}>
+                  <span
+                    mix={[
+                      chipBase,
+                      css({ background: '#dbeafe', borderColor: '#93c5fd', color: '#1e40af' }),
+                    ]}
+                  >
                     <span
-                      mix={css({ width: '12px', height: '12px', borderRadius: '50%', background: '#3b82f6', display: 'inline-block' })}
+                      mix={css({
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        background: '#3b82f6',
+                        display: 'inline-block',
+                      })}
                     />
                     Restauración
                   </span>
-                  <span mix={[chipBase, css({ background: '#fee2e2', borderColor: '#fca5a5', color: '#991b1b' })]}>
+                  <span
+                    mix={[
+                      chipBase,
+                      css({ background: '#fee2e2', borderColor: '#fca5a5', color: '#991b1b' }),
+                    ]}
+                  >
                     <span
-                      mix={css({ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' })}
+                      mix={css({
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '50%',
+                        background: '#ef4444',
+                        display: 'inline-block',
+                      })}
                     />
                     Aprovechamiento sustentable
                   </span>
@@ -229,7 +294,10 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
             <SesionesSection sesiones={sesiones} />
           </section>
 
-          <section id="descargas" mix={css({ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' })}>
+          <section
+            id="descargas"
+            mix={css({ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' })}
+          >
             <DescargasSection />
           </section>
 

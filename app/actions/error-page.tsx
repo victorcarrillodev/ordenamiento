@@ -1,7 +1,7 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { colors, FONT_STACK } from '../ui/civic-horizon.ts'
-import { NavBar } from '../ui/nav-bar.tsx'
+import { NAVBAR_ALTURA, NAVBAR_ALTURA_MOVIL, NAVBAR_CORTE_MOVIL, NavBar } from '../ui/nav-bar.tsx'
 import { Document } from './document.tsx'
 
 export type HttpErrorCode = 400 | 401 | 403 | 404 | 429 | 500 | 502 | 503 | 504
@@ -211,7 +211,8 @@ export function ErrorPage(handle: Handle<ErrorPageProps>) {
       flexDirection: 'column',
       backgroundColor: '#f8fafc',
       fontFamily: FONT_STACK,
-      paddingTop: '85px',
+      paddingTop: NAVBAR_ALTURA,
+      [`@media (max-width: ${NAVBAR_CORTE_MOVIL})`]: { paddingTop: NAVBAR_ALTURA_MOVIL },
       color: colors.gray900,
     })
 

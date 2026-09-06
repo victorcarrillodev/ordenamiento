@@ -138,7 +138,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                   </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 12px;">
                   <button
                     type="button"
                     class="palette-btn"
@@ -248,7 +248,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
               {/* SECCION COLORES DEL PORTAL */}
               <div class="panel">
                 <h3 class="panel__title">1. Colores del Portal Ciudadano</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 16px;">
                   <div class="form-field">
                     <label style="font-weight: 700; font-size: 12px; color: #475569;">
                       Color Primario (Botones / Encabezados)
@@ -487,7 +487,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
               {/* SECCION LOGOS E IMAGENES */}
               <div class="panel">
                 <h3 class="panel__title">3. Logotipos e Imágenes Secundarias</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px;">
                   {/* Logo Navbar */}
                   <div
                     class="form-field"
@@ -650,56 +650,56 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
               {/* SECCION ICONOS */}
               <div class="panel">
                 <h3 class="panel__title">5. Íconos de Tarjetas</h3>
-                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
-                    {/* Tarjeta 1 */}
-                    <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                      <div style="display: flex; gap: 8px; margin-bottom: 6px;">
-                        <input
-                          type="text"
-                          name="ico_card1"
-                          value={ico.cardPrograma || '🏛️'}
-                          style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
-                        />
-                      </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px;">
+                  {/* Tarjeta 1 */}
+                  <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                      <input
+                        type="text"
+                        name="ico_card1"
+                        value={ico.cardPrograma || '🏛️'}
+                        style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
+                      />
                     </div>
+                  </div>
 
-                    {/* Tarjeta 2 */}
-                    <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                      <div style="display: flex; gap: 8px; margin-bottom: 6px;">
-                        <input
-                          type="text"
-                          name="ico_card2"
-                          value={ico.cardProceso || '⚙️'}
-                          style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
-                        />
-                      </div>
+                  {/* Tarjeta 2 */}
+                  <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                      <input
+                        type="text"
+                        name="ico_card2"
+                        value={ico.cardProceso || '⚙️'}
+                        style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
+                      />
                     </div>
+                  </div>
 
-                    {/* Tarjeta 3 */}
-                    <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                      <div style="display: flex; gap: 8px; margin-bottom: 6px;">
-                        <input
-                          type="text"
-                          name="ico_card3"
-                          value={ico.cardCalendario || '📅'}
-                          style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
-                        />
-                      </div>
+                  {/* Tarjeta 3 */}
+                  <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                      <input
+                        type="text"
+                        name="ico_card3"
+                        value={ico.cardCalendario || '📅'}
+                        style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
+                      />
                     </div>
+                  </div>
 
-                    {/* Tarjeta 4 */}
-                    <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                      <div style="display: flex; gap: 8px; margin-bottom: 6px;">
-                        <input
-                          type="text"
-                          name="ico_card4"
-                          value={ico.cardDocumentos || '📄'}
-                          style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
-                        />
-                      </div>
+                  {/* Tarjeta 4 */}
+                  <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                      <input
+                        type="text"
+                        name="ico_card4"
+                        value={ico.cardDocumentos || '📄'}
+                        style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
+                      />
                     </div>
                   </div>
                 </div>
+              </div>
 
               {/* MOTIVO OBLIGATORIO Y BOTON GUARDAR */}
               <div class="panel panel--destacado">
@@ -778,7 +778,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
 
               <div class="panel">
                 <h3 class="panel__title">1. Colores y Apariencia del Panel Administrador</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 16px;">
                   <div class="form-field">
                     <label style="font-weight: 700; font-size: 12px; color: #475569;">
                       Fondo de la Barra Lateral (Sidebar)
@@ -893,7 +893,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
 
               <div class="panel">
                 <h3 class="panel__title">2. Logotipo y Título del Administrador</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px;">
                   <div class="form-field">
                     <label style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 6px;">
                       Logo del Menú Admin

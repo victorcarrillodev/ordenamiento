@@ -223,11 +223,13 @@ textarea:focus-visible,
   display: none;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   margin-right: 4px;
   border-radius: 8px;
   cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
 }
 .topbar__burger:hover {
   background: rgba(255, 255, 255, 0.12);
@@ -294,7 +296,7 @@ span.breadcrumb {
 /* Tarjetas */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -547,11 +549,29 @@ span.breadcrumb {
 /* Tablas */
 .table-wrap {
   overflow-x: auto;
+  /* Momento de inercia y sin arrastrar la página al llegar al borde. */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+}
+/* El `.panel` que envuelve las tablas usa `overflow-wrap: anywhere` para los
+   nombres largos, y eso deja que una columna se estreche hasta una letra por
+   renglón: en un teléfono la tabla cabía «entera», pero ilegible, en vez de
+   desplazarse. Con un ancho mínimo las columnas conservan su tamaño y es
+   `.table-wrap` quien se desplaza, que es como se lee una tabla en móvil.
+   El `min()` con `max-content` evita imponer 640px a una tabla de dos
+   columnas que ya cabía en la pantalla: ahí el mínimo es su ancho natural y
+   no aparece un desplazamiento horizontal que nadie necesita. */
+.table-wrap table {
+  min-width: min(640px, max-content);
+}
+.table-wrap td,
+.table-wrap th {
+  overflow-wrap: normal;
 }
 th {
   background: #f1f4fa;
@@ -663,32 +683,32 @@ tr:hover td {
   gap: 10px;
   flex-wrap: wrap;
   align-items: flex-end;
+  min-width: 0;
 }
 .form-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  /* Sin esto un campo dentro de un flex o un grid conserva su ancho base y
+     empuja la fila fuera del panel en lugar de encogerse. */
+  min-width: 0;
 }
 .form-field label {
   font-size: 11px;
   font-weight: 700;
   color: var(--a-muted);
 }
-.form-field input {
-  border: 1px solid var(--a-border);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-family: inherit;
-  font-size: 13px;
-  min-width: 150px;
-}
+/* `min(150px, 100%)` en vez de `150px`: el mínimo fijo impedía que el campo
+   encogiera dentro de una celda estrecha y lo dejaba recortado a 20px. */
+.form-field input,
 .form-field select {
   border: 1px solid var(--a-border);
   border-radius: 8px;
   padding: 8px 10px;
   font-family: inherit;
   font-size: 13px;
-  min-width: 150px;
+  min-width: min(150px, 100%);
+  max-width: 100%;
 }
 .form-field input:focus-visible,
 .form-field select:focus-visible,
@@ -734,7 +754,7 @@ tr:hover td {
 /* Exportar */
 .export-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
   gap: 14px;
 }
 .export-card {
@@ -756,7 +776,7 @@ tr:hover td {
 /* Estadísticas */
 .charts-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: 16px;
 }
 .chart-panel {
@@ -770,7 +790,7 @@ tr:hover td {
 /* Detalle de participación */
 .detalle-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
   gap: 12px 20px;
 }
 
@@ -907,7 +927,7 @@ tr:hover td {
 /* Formulario crear participación */
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
   gap: 14px 18px;
 }
 .form-field--wide {
@@ -924,6 +944,7 @@ tr:hover td {
 }
 .btn-row-admin {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 18px;
 }
@@ -984,6 +1005,7 @@ tr:hover td {
 }
 .form-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 18px;
 }
@@ -1203,7 +1225,7 @@ tr:hover td {
 .etapas {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 12px;
   margin: 0 0 18px;
   padding: 0;
@@ -1274,7 +1296,7 @@ tr:hover td {
 }
 .dictamen-opciones {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 10px;
   border: none;
   margin: 0;
@@ -2011,7 +2033,7 @@ a.cal__mas:hover {
 }
 .mp__cards-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
   gap: 12px;
 }
 .mp__card {
@@ -2191,15 +2213,17 @@ a.cal__mas:hover {
 .poel-editar > summary:hover {
   text-decoration: underline;
 }
+/* `minmax(0, …)`: con `1fr` a secas la columna crece hasta el contenido más
+   ancho (el mapa, un título largo) y se sale del panel en vez de encogerse. */
 .poel-editar__cuerpo {
   display: grid;
-  grid-template-columns: 1fr 260px;
+  grid-template-columns: minmax(0, 1fr) 260px;
   gap: 20px;
   margin-top: 14px;
 }
 @media (max-width: 900px) {
   .poel-editar__cuerpo {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -2212,9 +2236,12 @@ a.cal__mas:hover {
   border-radius: 10px;
   background: var(--a-bg);
 }
+/* Latitud y longitud caben en dos columnas hasta que el campo llega a su
+   ancho mínimo; por debajo se apilan, que es cuando la segunda se salía de la
+   pantalla en un teléfono. */
 .poel-coords {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
   gap: 12px;
 }
 .poel-ubicacion .form-field {
@@ -2286,7 +2313,7 @@ a.cal__mas:hover {
 }
 .poel-galeria {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(96px, 100%), 1fr));
   gap: 8px;
 }
 .poel-galeria__item {
@@ -2472,7 +2499,22 @@ a.cal__mas:hover {
    Menú colapsable en pantallas estrechas
    El estado vive en un checkbox oculto: sin JavaScript el menú también abre.
    -------------------------------------------------------------------------- */
+/* Oculto a la vista pero enfocable: con `display:none` el checkbox sale del
+   recorrido del tabulador y el menú deja de abrirse sin ratón. */
 .sidebar-toggle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+}
+.sidebar-toggle:focus-visible ~ .admin-main .topbar__burger {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Capa que cierra el menú al tocar fuera. Solo existe con el menú abierto. */
+.sidebar-backdrop {
   display: none;
 }
 
@@ -2485,13 +2527,27 @@ a.cal__mas:hover {
     top: 0;
     left: 0;
     z-index: 30;
-    height: 100vh;
+    /* `dvh` descuenta la barra del navegador móvil; con `vh` el último
+       apartado del menú quedaba debajo del borde inferior. */
+    height: 100dvh;
     transform: translateX(-100%);
     box-shadow: 0 0 40px rgba(15, 23, 42, 0.25);
     transition: transform 200ms ease;
+    overscroll-behavior: contain;
   }
   .sidebar-toggle:checked ~ .sidebar {
     transform: translateX(0);
+  }
+  .sidebar-toggle:checked ~ .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: rgba(15, 23, 42, 0.45);
+  }
+  /* La página de atrás no debe desplazarse mientras el menú está abierto. */
+  body:has(.sidebar-toggle:checked) {
+    overflow: hidden;
   }
   .content {
     padding: 16px 14px 40px;
@@ -2963,7 +3019,7 @@ a.user-cell:hover .user-cell__name {
 /* Rejilla de contenido del portal */
 .atajos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
   gap: 10px;
 }
 .atajo {
@@ -3212,17 +3268,14 @@ a.user-cell:hover .user-cell__name {
   line-height: 1.4;
 }
 
-/* En pantallas estrechas el panel no cabe anclado a la derecha de la celda. */
-@media (max-width: 700px) {
-  .acciones__panel {
-    position: static;
-    width: 100%;
-  }
-}
+/* En pantallas estrechas el panel no cabe anclado a la derecha de la celda:
+   pasa a hoja inferior, más abajo en el bloque táctil. */
 
+/* `min(320px, 100%)`: en una pantalla más estrecha que 320px la pista pedía
+   320px igualmente y el bloque desbordaba. */
 .textos__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: 16px;
 }
 /* Auto-grow de los textareas de la mini-página de textos: el JS ajusta la
@@ -3234,4 +3287,154 @@ a.user-cell:hover .user-cell__name {
   resize: none;
   overflow-y: auto;
   min-height: 60px;
+}
+
+/* ---------------------------------------------------------------------------
+   Táctil y pantallas estrechas
+
+   Dos cortes distintos a propósito:
+
+   · `(pointer: coarse)` no habla de tamaño sino de dedo. Un botón de 29px de
+     alto es cómodo con ratón y falla con el pulgar, así que los objetivos
+     crecen en cualquier pantalla que se toque — también en una tableta ancha,
+     donde el corte por ancho nunca se activaría.
+   · `max-width` sí habla de espacio: es lo que decide qué se apila, qué se
+     reordena y qué pasa a ocupar el ancho completo.
+   -------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+  .btn,
+  .btn--sm,
+  .paginacion__link,
+  .etapa-filtro,
+  .cal-nav__btn,
+  .pager a,
+  .pager button {
+    min-height: 40px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .btn--red,
+  .cal-nav__btn,
+  .paginacion__link {
+    min-width: 40px;
+  }
+  .sidebar__item {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  .breadcrumb a,
+  .cal__numero {
+    display: inline-block;
+    padding: 6px 2px;
+  }
+  .cal__evento {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+}
+
+@media (max-width: 700px) {
+  /* El desplegable «Gestionar» de una fila de usuarios vivía anclado a su
+     celda: en un teléfono la celda mide ~100px y el panel salía con los
+     campos recortados a 20px. Como hoja inferior siempre cabe y queda a la
+     vista sin depender de dónde estaba la fila. */
+  .acciones__panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: auto;
+    z-index: 40;
+    margin: 0;
+    max-height: 80vh;
+    overflow-y: auto;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -12px 32px rgba(15, 23, 42, 0.22);
+  }
+
+  /* Encabezado de página: el título y sus acciones, uno debajo del otro. */
+  .content__head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .content__actions .btn {
+    flex: 1 1 auto;
+  }
+
+  /* Formularios a una sola columna y botones de ancho completo: es más fácil
+     acertarles y se evita la fila de botones apretados. */
+  .form-row > .form-field,
+  .form-grid > .form-field {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .form-actions,
+  .btn-row-admin {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .form-actions .btn,
+  .btn-row-admin .btn,
+  .form-actions button,
+  .btn-row-admin button {
+    width: 100%;
+  }
+
+  /* Los botones de guardar de las mini-páginas (Textos, Personalización) se
+     dibujan con el componente <Button>, no con `.btn`, y traen un ancho
+     pensado para escritorio que en un teléfono se sale del panel. Se les pone
+     techo en vez de ancho fijo para no descuadrar los que van en línea con un
+     campo (Restablecer, Cambiar). */
+  .content button[type='submit'] {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .personalizacion button[type='submit'] {
+    width: 100%;
+    white-space: normal;
+  }
+}
+
+/* Personalización mezcla estilos en línea pensados para escritorio. Un
+   `<input>` sin `min-width: 0` no baja de su ancho intrínseco (unas 20
+   columnas de texto) por mucho `flex: 1` que lleve, así que la fila «color +
+   código hexadecimal» empujaba la página entera a lo ancho. */
+.personalizacion input,
+.personalizacion select,
+.personalizacion textarea,
+.personalizacion button {
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 560px) {
+  /* Calendario: con siete columnas en 320px cada celda mide ~40px y el título
+     del evento no cabe de ninguna manera. Se deja la cuadrícula como resumen
+     (un punto por evento) y el detalle sigue estando a un toque. */
+  .cal__rejilla {
+    grid-auto-rows: minmax(58px, auto);
+  }
+  .cal__evento {
+    font-size: 0;
+    height: 8px;
+    padding: 0;
+    border-radius: 999px;
+  }
+  .cal__hoy {
+    display: none;
+  }
+  .cal-nav {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Encabezado: el nombre de la pantalla no debe empujar al avatar fuera. */
+  .page-title {
+    font-size: 19px;
+  }
+  .topbar {
+    padding: 0 8px;
+  }
 }

@@ -8,7 +8,12 @@ import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { routes } from '../../routes.ts'
 import { colors, FONT_STACK } from '../../ui/civic-horizon.ts'
-import { NavBar } from '../../ui/nav-bar.tsx'
+import {
+  NAVBAR_ALTURA,
+  NAVBAR_ALTURA_MOVIL,
+  NAVBAR_CORTE_MOVIL,
+  NavBar,
+} from '../../ui/nav-bar.tsx'
 import { Document } from '../document.tsx'
 import { ParticipationForm } from './participation-form.tsx'
 import type { FormErrors, FormValues } from './schema.ts'
@@ -25,8 +30,6 @@ export interface ParticipationPageProps {
   success?: boolean
   folio?: string
 }
-
-const NAVBAR_HEIGHT = '85px'
 
 const splitStyle = css({
   display: 'flex',
@@ -65,9 +68,11 @@ const formPanelStyle = css({
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  padding: `calc(${NAVBAR_HEIGHT} + 12px) 36px 28px`,
-  '@media (max-width: 768px)': {
-    padding: `calc(${NAVBAR_HEIGHT} + 12px) 20px 24px`,
+  padding: `calc(${NAVBAR_ALTURA} + 12px) 36px 28px`,
+  // El corte es el mismo con el que la barra encoge: usar 768px dejaba, entre
+  // 769 y 900px, un hueco de 21px bajo un encabezado que ya medía 64.
+  [`@media (max-width: ${NAVBAR_CORTE_MOVIL})`]: {
+    padding: `calc(${NAVBAR_ALTURA_MOVIL} + 12px) 16px 24px`,
   },
 })
 

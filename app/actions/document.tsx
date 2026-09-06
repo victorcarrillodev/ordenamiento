@@ -16,6 +16,28 @@ const DEFAULT_DESCRIPTION =
 
 const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 
+/**
+ * Base común a todas las páginas, pública y panel.
+ *
+ * `border-box` va aquí y no en cada componente porque el modelo `content-box`
+ * del navegador sumaba el padding al `width: 100%` de los contenedores y los
+ * dejaba más anchos que la pantalla: en un teléfono de 320 px eso era barra de
+ * scroll horizontal en la portada y en el POETDUM. `max-width` en los medios
+ * cubre el otro origen del mismo problema: una imagen o un `<iframe>` que
+ * llegan con su tamaño intrínseco.
+ */
+const RESET_GLOBAL = `
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; overflow-x: clip; }
+img, svg, video, canvas, iframe, embed, object { max-width: 100%; }
+/* Correos y palabras largas («ordenamiento@tlaquepaque.gob.mx») ensanchaban
+   su columna por encima de la pantalla en lugar de partirse. */
+body { overflow-wrap: break-word; }
+img, video { height: auto; }
+`
+
+const baseStyle = css({ margin: 0, padding: 0 })
+
 export function Document(handle: Handle<DocumentProps>) {
   return () => {
     const {
@@ -31,6 +53,7 @@ export function Document(handle: Handle<DocumentProps>) {
           <meta charSet="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <meta name="description" content={description} />
+          <style>{RESET_GLOBAL}</style>
           <link rel="icon" type="image/x-icon" href={`${basePath}/assets/img/icon/favicon.ico`} />
           {/* Montserrat – primary institutional typeface */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -52,7 +75,7 @@ export function Document(handle: Handle<DocumentProps>) {
           ))}
           <script type="module" src={entryHref}></script>
         </head>
-        <body mix={css({ margin: 0, padding: 0 })}>{children}</body>
+        <body mix={baseStyle}>{children}</body>
       </html>
     )
   }

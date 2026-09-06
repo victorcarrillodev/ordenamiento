@@ -211,11 +211,20 @@ export const bodyProps: CSSProps = {
   color: colors.gray700,
 }
 
+/**
+ * Contenedor central de las secciones públicas.
+ *
+ * El margen lateral baja a 16px por debajo de 480px: con 24px a cada lado, un
+ * teléfono de 320 px se queda con 272 px útiles y los títulos largos del
+ * programa parten palabras a la mitad.
+ */
 export const sectionContainerProps: CSSProps = {
   maxWidth: '1200px',
   margin: '0 auto',
   padding: '0 24px',
   width: '100%',
+  boxSizing: 'border-box',
+  '@media (max-width: 480px)': { padding: '0 16px' },
 }
 
 export const sectionPaddingProps: CSSProps = {

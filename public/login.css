@@ -580,3 +580,14 @@
     gap: 1rem;
   }
 }
+
+/* En una pantalla táctil, 1.5rem (24px) es poco para el pulgar y este botón
+   queda pegado al borde del campo de contraseña: se amplía el área sin mover
+   el icono, que conserva su tamaño. */
+@media (pointer: coarse) {
+  .login__visibility {
+    width: 2.75rem;
+    height: 2.75rem;
+    right: 0.25rem;
+  }
+}

@@ -25,12 +25,9 @@ import {
 } from '../ui/civic-horizon.ts'
 import { Button } from '../ui/button.tsx'
 import { Document } from './document.tsx'
-import { NavBar } from '../ui/nav-bar.tsx'
+import { NAVBAR_ALTURA_MOVIL, NAVBAR_CORTE_MOVIL, NavBar } from '../ui/nav-bar.tsx'
 import { routes } from '../routes.ts'
-import {
-  ReunionesCalendario,
-  type ReunionPublica,
-} from './public/reuniones-calendario.tsx'
+import { ReunionesCalendario, type ReunionPublica } from './public/reuniones-calendario.tsx'
 
 const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 
@@ -89,6 +86,13 @@ const heroStyle = css({
   justifyContent: 'center',
   overflow: 'hidden',
   paddingTop: '70px',
+  // `svh` mide la ventana con la barra del navegador desplegada: con `vh`, la
+  // portada arrancaba más alta que la pantalla del teléfono y el botón de
+  // participar quedaba debajo del borde hasta que el usuario hacía scroll.
+  [`@media (max-width: ${NAVBAR_CORTE_MOVIL})`]: {
+    minHeight: '100svh',
+    paddingTop: NAVBAR_ALTURA_MOVIL,
+  },
 })
 
 const heroContentStyle = css({
@@ -102,6 +106,7 @@ const heroContentStyle = css({
   flexDirection: 'column',
   alignItems: 'center',
   gap: '32px',
+  '@media (max-width: 600px)': { padding: '48px 16px', gap: '22px' },
 })
 
 function HeroSection(handle: Handle<{ theme?: ThemeData }>) {
@@ -575,10 +580,14 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
             <div mix={css({ marginTop: '8px' })}>
               <CheckBulletList
                 items={[
-                  txt.queEsBullet1 || 'Consulta de documentos técnicos, acuerdos, avances y resultados.',
-                  txt.queEsBullet2 || 'Seguimiento a la elaboración, actualización y aplicación del Programa.',
-                  txt.queEsBullet3 || 'Acceso al calendario de actividades y mecanismos de consulta pública.',
-                  txt.queEsBullet4 || 'Registro de observaciones, propuestas y documentos de la ciudadanía (durante los tiempos oficiales de consulta pública).',
+                  txt.queEsBullet1 ||
+                    'Consulta de documentos técnicos, acuerdos, avances y resultados.',
+                  txt.queEsBullet2 ||
+                    'Seguimiento a la elaboración, actualización y aplicación del Programa.',
+                  txt.queEsBullet3 ||
+                    'Acceso al calendario de actividades y mecanismos de consulta pública.',
+                  txt.queEsBullet4 ||
+                    'Registro de observaciones, propuestas y documentos de la ciudadanía (durante los tiempos oficiales de consulta pública).',
                 ]}
                 dotColor={primary}
                 checkColor="white"
@@ -863,9 +872,12 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
 
     const preguntas = [
       txt.programaPregunta1 || '¿Qué zonas deben conservarse o protegerse por su valor ambiental?',
-      txt.programaPregunta2 || '¿Dónde es adecuado el crecimiento y desarrollo urbano del municipio?',
-      txt.programaPregunta3 || '¿Qué tipo de actividades pueden desarrollarse en las distintas zonas del territorio?',
-      txt.programaPregunta4 || '¿En qué condiciones deben realizarse estas actividades para evitar impactos negativos en el ambiente y en el entorno urbano? Una vez aprobado, el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano establece los criterios y lineamientos que orientan el uso, ocupación y aprovechamiento del territorio, así como las reglas que guiarán el desarrollo urbano del municipio.',
+      txt.programaPregunta2 ||
+        '¿Dónde es adecuado el crecimiento y desarrollo urbano del municipio?',
+      txt.programaPregunta3 ||
+        '¿Qué tipo de actividades pueden desarrollarse en las distintas zonas del territorio?',
+      txt.programaPregunta4 ||
+        '¿En qué condiciones deben realizarse estas actividades para evitar impactos negativos en el ambiente y en el entorno urbano? Una vez aprobado, el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano establece los criterios y lineamientos que orientan el uso, ocupación y aprovechamiento del territorio, así como las reglas que guiarán el desarrollo urbano del municipio.',
     ]
 
     return (
@@ -909,7 +921,8 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
                 },
               })}
             >
-              {txt.programaTitulo || '¿Qué es el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano?'}
+              {txt.programaTitulo ||
+                '¿Qué es el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano?'}
             </h2>
 
             {/* Grid 2 Columnas: Texto izquierda / Ilustración vector derecha */}
@@ -936,7 +949,8 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
                     margin: 0,
                   })}
                 >
-                  {txt.programaParrafo1 || 'Es una herramienta que permite organizar el territorio del municipio, definiendo qué actividades pueden realizarse en cada zona y en qué condiciones, con el objetivo de proteger el medio ambiente y orientar el desarrollo urbano de manera ordenada.'}
+                  {txt.programaParrafo1 ||
+                    'Es una herramienta que permite organizar el territorio del municipio, definiendo qué actividades pueden realizarse en cada zona y en qué condiciones, con el objetivo de proteger el medio ambiente y orientar el desarrollo urbano de manera ordenada.'}
                 </p>
                 <p
                   mix={css({
@@ -947,7 +961,8 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
                     margin: 0,
                   })}
                 >
-                  {txt.programaParrafo2 || 'Para elaborarlo se analizan las características del territorio, sus recursos naturales y las actividades que se desarrollan en él, con el propósito de encontrar un equilibrio entre la protección del medio ambiente y el desarrollo urbano del municipio. A partir de estos análisis se busca responder preguntas como:'}
+                  {txt.programaParrafo2 ||
+                    'Para elaborarlo se analizan las características del territorio, sus recursos naturales y las actividades que se desarrollan en él, con el propósito de encontrar un equilibrio entre la protección del medio ambiente y el desarrollo urbano del municipio. A partir de estos análisis se busca responder preguntas como:'}
                 </p>
 
                 <ul
@@ -1016,41 +1031,51 @@ interface TimelineStep {
   color: string
 }
 
-function getTimelineSteps(primary: string, accent: string, secondary: string, txt: Record<string, any> = {}): TimelineStep[] {
+function getTimelineSteps(
+  primary: string,
+  accent: string,
+  secondary: string,
+  txt: Record<string, any> = {},
+): TimelineStep[] {
   return [
     {
       number: '01',
       title: txt.timelinePaso1Titulo || 'Formulación',
       description:
-        txt.timelinePaso1Desc || 'Diagnóstico territorial, caracterización del área y elaboración de la propuesta inicial del programa con participación ciudadana.',
+        txt.timelinePaso1Desc ||
+        'Diagnóstico territorial, caracterización del área y elaboración de la propuesta inicial del programa con participación ciudadana.',
       color: primary,
     },
     {
       number: '02',
       title: txt.timelinePaso2Titulo || 'Expedición',
       description:
-        txt.timelinePaso2Desc || 'Consulta pública, revisión técnica, aprobación por el Ayuntamiento y publicación oficial del programa en el Periódico Oficial.',
+        txt.timelinePaso2Desc ||
+        'Consulta pública, revisión técnica, aprobación por el Ayuntamiento y publicación oficial del programa en el Periódico Oficial.',
       color: accent,
     },
     {
       number: '03',
       title: txt.timelinePaso3Titulo || 'Ejecución',
       description:
-        txt.timelinePaso3Desc || 'Implementación de acciones, programas e instrumentos para materializar los lineamientos del ordenamiento territorial.',
+        txt.timelinePaso3Desc ||
+        'Implementación de acciones, programas e instrumentos para materializar los lineamientos del ordenamiento territorial.',
       color: secondary,
     },
     {
       number: '04',
       title: txt.timelinePaso4Titulo || 'Evaluación',
       description:
-        txt.timelinePaso4Desc || 'Monitoreo de indicadores, revisión periódica de avances y verificación del cumplimiento de metas establecidas.',
+        txt.timelinePaso4Desc ||
+        'Monitoreo de indicadores, revisión periódica de avances y verificación del cumplimiento de metas establecidas.',
       color: colors.gray700,
     },
     {
       number: '05',
       title: txt.timelinePaso5Titulo || 'Modificación',
       description:
-        txt.timelinePaso5Desc || 'Actualización del programa con base en nuevas condiciones territoriales, ambientales o socioeconómicas del municipio.',
+        txt.timelinePaso5Desc ||
+        'Actualización del programa con base en nuevas condiciones territoriales, ambientales o socioeconómicas del municipio.',
       color: primary,
     },
   ]
@@ -1084,7 +1109,9 @@ function ProcessTimeline(handle: Handle<{ theme?: ThemeData }>) {
               gap: '16px',
             })}
           >
-            <span mix={css({ ...eyebrowProps, color: primary })}>{txt.timelineEyebrow || 'Fases del proceso'}</span>
+            <span mix={css({ ...eyebrowProps, color: primary })}>
+              {txt.timelineEyebrow || 'Fases del proceso'}
+            </span>
             <h2 id="proceso-heading" mix={css({ ...headingLProps, margin: 0, maxWidth: '560px' })}>
               {txt.timelineTitulo || 'Cinco etapas hacia un territorio ordenado y sustentable'}
             </h2>
@@ -1300,7 +1327,9 @@ function ParticipationCta(handle: Handle<{ theme?: ThemeData }>) {
             ✍️
           </div>
 
-          <span mix={css({ ...eyebrowProps, color: accent })}>{txt.ctaEyebrow || 'Participación ciudadana'}</span>
+          <span mix={css({ ...eyebrowProps, color: accent })}>
+            {txt.ctaEyebrow || 'Participación ciudadana'}
+          </span>
 
           <h2
             id="participa-heading"
@@ -1324,7 +1353,8 @@ function ParticipationCta(handle: Handle<{ theme?: ThemeData }>) {
               margin: 0,
             })}
           >
-            {txt.ctaParrafo || 'Registra tus observaciones, propuestas y documentos técnicos. Tu participación es fundamental para construir el Programa de Ordenamiento que refleje las necesidades reales del municipio.'}
+            {txt.ctaParrafo ||
+              'Registra tus observaciones, propuestas y documentos técnicos. Tu participación es fundamental para construir el Programa de Ordenamiento que refleje las necesidades reales del municipio.'}
           </p>
 
           <div
@@ -1399,6 +1429,22 @@ function ParticipationCta(handle: Handle<{ theme?: ThemeData }>) {
 // Footer
 // ---------------------------------------------------------------------------
 
+/**
+ * Enlaces de la columna «Navegación» del pie.
+ *
+ * El área táctil vertical se amplía en pantallas que se tocan: con solo la
+ * altura de la línea (18px) los cinco enlaces quedaban tan juntos que era
+ * fácil abrir el que no era.
+ */
+const footerLinkStyle = css({
+  fontFamily: FONT_STACK,
+  fontSize: '14px',
+  color: 'rgba(255,255,255,0.7)',
+  textDecoration: 'none',
+  transition: 'color 150ms ease',
+  '@media (pointer: coarse)': { padding: '8px 0' },
+})
+
 function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
   return () => {
     const { theme } = handle.props
@@ -1424,7 +1470,7 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
       '© 2026 H. Ayuntamiento de San Pedro Tlaquepaque. Todos los derechos reservados.'
 
     return (
-      <footer style={`background: ${footerBg}; color: ${footerText}; padding: 64px 24px 32px;`}>
+      <footer style={`background: ${footerBg}; color: ${footerText}; padding: 64px 0 32px;`}>
         <div
           mix={css({
             ...sectionContainerProps,
@@ -1523,17 +1569,7 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
                 { label: 'Documentos', href: '#documentos' },
                 { label: 'Elaboración POETDUM', href: routes.poetdum.show.href() },
               ].map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  style={`
-                    font-family: ${FONT_STACK};
-                    font-size: 14px;
-                    color: rgba(255,255,255,0.7);
-                    text-decoration: none;
-                    transition: color 150ms ease;
-                  `}
-                >
+                <a key={link.label} href={link.href} mix={footerLinkStyle}>
                   {link.label}
                 </a>
               ))}

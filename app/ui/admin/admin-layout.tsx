@@ -218,8 +218,20 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
       >
         <div class="admin">
           {/* En móvil el menú se oculta y este control lo despliega. Se marca
-              como checkbox para que funcione sin JavaScript. */}
-          <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle" hidden />
+              como checkbox para que funcione sin JavaScript. No lleva `hidden`
+              (ni `display:none`) porque eso también lo saca del recorrido con
+              el tabulador: se oculta a la vista pero sigue siendo enfocable. */}
+          <input
+            type="checkbox"
+            id="sidebar-toggle"
+            class="sidebar-toggle"
+            aria-label="Abrir o cerrar el menú"
+          />
+
+          {/* Con el menú abierto tapando la pantalla, la única salida era
+              volver a la hamburguesa (que queda debajo del panel). Esta capa
+              cierra el menú al tocar fuera, como en cualquier app móvil. */}
+          <label class="sidebar-backdrop" for="sidebar-toggle" aria-hidden="true"></label>
 
           <aside class="sidebar" id="sidebar">
             <div class="sidebar__brand">
@@ -272,12 +284,12 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
 
           <div class="admin-main">
             <header class="topbar">
-              <label
-                class="topbar__burger"
-                for="sidebar-toggle"
-                aria-label="Abrir o cerrar el menú"
-              >
-                <Icon name="mdi:menu" size={22} />
+              {/* Glifo de texto y no <Icon>: los iconos los sirve el CDN de
+                  Iconify, y si esa petición falla este control se queda como
+                  un recuadro vacío. Es el único botón que abre la navegación
+                  en un teléfono, así que no puede depender de un tercero. */}
+              <label class="topbar__burger" for="sidebar-toggle" aria-hidden="true">
+                ☰
               </label>
               <span class="topbar__title">{title}</span>
               <a class="topbar__user" href={adminRoutes.cuenta.index.href()} title="Ir a Mi cuenta">
