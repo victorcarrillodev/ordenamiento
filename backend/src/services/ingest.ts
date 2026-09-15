@@ -1,4 +1,5 @@
 import { sql, type Db } from '../db/pool.ts'
+import { readFile } from 'node:fs/promises'
 import { extractPdfText } from '../text/pdf-extract.ts'
 
 export interface IngestResult {
@@ -14,10 +15,9 @@ export interface IngestAttachmentPayload {
   rutaLocal: string
 }
 
-export interface IngestFile {
-  buffer: Buffer
-  meta: IngestAttachmentPayload
-}
+export type IngestFile = { meta: IngestAttachmentPayload } & (
+  { buffer: Buffer; size?: number } | { buffer?: undefined; size: number }
+)
 
 /**
  * Registra los adjuntos de una participación y, si son PDF con capa de texto,
@@ -54,7 +54,8 @@ export async function ingestParticipation(
     let texto = ''
     if (esPdf) {
       try {
-        texto = await extractPdfText(file.buffer)
+        // Lee un PDF a la vez; los lotes grandes no retienen una copia de cada adjunto.
+        texto = await extractPdfText(file.buffer ?? (await readFile(file.meta.rutaLocal)))
       } catch {
         // PDF escaneado o sin capa de texto: no se falla la transacción, el
         // archivo se conserva y queda marcado como pendiente de OCR.
@@ -73,7 +74,7 @@ export async function ingestParticipation(
         ${participationId},
         ${file.meta.nombreOriginal},
         ${file.meta.mime},
-        ${file.buffer.length},
+        ${file.size ?? file.buffer!.length},
         ${file.meta.rutaLocal},
         ${limpio}
       )

@@ -35,9 +35,7 @@ describe('mailConfigurado', () => {
 
 describe('escapeHtml (anti-XSS en correos)', () => {
   it('escapa < > & " \'', () => {
-    expect(escapeHtml('<script>alert(1)</script>')).toBe(
-      '&lt;script&gt;alert(1)&lt;/script&gt;',
-    )
+    expect(escapeHtml('<script>alert(1)</script>')).toBe('&lt;script&gt;alert(1)&lt;/script&gt;')
     expect(escapeHtml('a & b "c" \'d\'')).toBe('a &amp; b &quot;c&quot; &#39;d&#39;')
   })
   it('no altera texto plano', () => {
@@ -61,7 +59,9 @@ describe('enviarAcuseReciboParticipacion', () => {
 
   it('lanza si no hay SMTP configurado', async () => {
     delete process.env.SMTP_HOST
-    await expect(enviarAcuseReciboParticipacion('x', 'a@b.com')).rejects.toThrow('SMTP_NO_CONFIGURADO')
+    await expect(enviarAcuseReciboParticipacion('x', 'a@b.com')).rejects.toThrow(
+      'SMTP_NO_CONFIGURADO',
+    )
   })
 
   it('arma el correo con folio y nombre del participante', async () => {
@@ -99,6 +99,8 @@ describe('enviarAcuseReciboParticipacion', () => {
     expect(sent.to).toBe('juan@ejemplo.com')
     expect(sent.html).toContain('POE-2026-0001')
     expect(sent.html).toContain('Juan Pérez')
+    expect(sent.html).toContain('Dirección de Medio Ambiente y Ecología')
+    expect(sent.html).not.toContain('Dirección General de Transformación')
   })
 
   it('escapa HTML inyectado en campos del participante', async () => {

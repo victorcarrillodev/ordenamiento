@@ -1,3 +1,4 @@
+import { MAX_FILE_BYTES, MAX_FILE_MB } from '../../utils/uploads.ts'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { router } from '../../router.ts'
 
@@ -20,7 +21,9 @@ describe('Ciudadano · preservación de valores tras error', () => {
     // consentimiento ausente
     fd.append('archivos', new File(['hola'], 'doc.pdf', { type: 'application/pdf' }))
 
-    const r = await router.fetch(new Request('http://localhost/ordena/participation', { method: 'POST', body: fd }))
+    const r = await router.fetch(
+      new Request('http://localhost/ordena/participation', { method: 'POST', body: fd }),
+    )
     expect(r?.status).toBe(422)
     const html = await r?.text()
     // valores repintados (no 500 por backend)
@@ -40,7 +43,9 @@ describe('Ciudadano · preservación de valores tras error', () => {
   })
 
   it('502 por backend caído repinta todos los campos', async () => {
-    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ error: 'Backend caído' }), { status: 503 }))
+    globalThis.fetch = vi.fn(
+      async () => new Response(JSON.stringify({ error: 'Backend caído' }), { status: 503 }),
+    )
     const fd = new FormData()
     fd.set('nombre', 'Juan Pérez')
     fd.set('email', 'juan@ejemplo.com')
@@ -52,7 +57,9 @@ describe('Ciudadano · preservación de valores tras error', () => {
     fd.set('observacion', 'Observación suficientemente larga para pasar validación')
     fd.set('consentimiento', '1')
 
-    const r = await router.fetch(new Request('http://localhost/ordena/participation', { method: 'POST', body: fd }))
+    const r = await router.fetch(
+      new Request('http://localhost/ordena/participation', { method: 'POST', body: fd }),
+    )
     expect(r?.status).toBe(502)
     const html = await r?.text()
     expect(html).toContain('Juan Pérez')
@@ -76,7 +83,9 @@ describe('Ciudadano · preservación de valores tras error', () => {
     fd.set('observacion', 'xxx') // corta
     // sin consentimiento
     fd.append('archivos', new File(['contenido'], 'anexo.pdf', { type: 'application/pdf' }))
-    const r = await router.fetch(new Request('http://localhost/ordena/participation', { method: 'POST', body: fd }))
+    const r = await router.fetch(
+      new Request('http://localhost/ordena/participation', { method: 'POST', body: fd }),
+    )
     expect(r?.status).toBe(422)
     const html = await r?.text()
     expect(html).toContain('Ana')
@@ -119,14 +128,14 @@ describe('Ciudadano · preservación de valores tras error', () => {
     fd.set('municipio', 'San Pedro Tlaquepaque')
     fd.set('observacion', 'Archivo único que supera el tamaño máximo permitido por participacion')
     fd.set('consentimiento', '1')
-    fd.append('archivos', new File(['x'.repeat(64 * 1024 * 1024)], 'enorme.pdf'))
+    fd.append('archivos', new File([new Uint8Array(MAX_FILE_BYTES + 1)], 'enorme.pdf'))
     const r = await router.fetch(
       new Request('http://localhost/ordena/participation', { method: 'POST', body: fd }),
     )
     expect(r?.status).toBe(413)
     const html = await r?.text()
     expect(html).toContain('Archivo Grande')
-    expect(html).toContain('excede el límite de 50 MB')
+    expect(html).toContain(`excede el límite de ${MAX_FILE_MB} MB`)
   })
 
   it('429 del backend muestra un mensaje amigable de rate-limit sin tecnicismos', async () => {
@@ -153,7 +162,10 @@ describe('Ciudadano · preservación de valores tras error', () => {
 
   it('timeout del backend (AbortController) devuelve 504 y un mensaje claro', async () => {
     globalThis.fetch = vi.fn(
-      () => new Promise<Response>((_resolve, reject) => reject(new DOMException('Aborted', 'AbortError'))),
+      () =>
+        new Promise<Response>((_resolve, reject) =>
+          reject(new DOMException('Aborted', 'AbortError')),
+        ),
     )
     const fd = new FormData()
     fd.set('nombre', 'Espera Larga')

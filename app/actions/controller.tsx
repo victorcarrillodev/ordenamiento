@@ -27,9 +27,7 @@ export default createController(routes, {
           reuniones: [],
         }),
       ])
-      return context.render(
-        <HomePage theme={theme} reuniones={reunionesData.reuniones ?? []} />,
-      )
+      return context.render(<HomePage theme={theme} reuniones={reunionesData.reuniones ?? []} />)
     },
     async homeSlash(context) {
       const [theme, reunionesData] = await Promise.all([
@@ -38,9 +36,7 @@ export default createController(routes, {
           reuniones: [],
         }),
       ])
-      return context.render(
-        <HomePage theme={theme} reuniones={reunionesData.reuniones ?? []} />,
-      )
+      return context.render(<HomePage theme={theme} reuniones={reunionesData.reuniones ?? []} />)
     },
     participationLogin() {
       return redirect(routes.login.index.href())
@@ -73,12 +69,18 @@ export default createController(routes, {
     /**
      * Vistas de error institucionales (400, 401, 403, 404, 429, 500, 502, 503, 504)
      */
-    error(context) {
+    async error(context) {
       const code = Number(context.params.code) || 404
-      return context.render(<ErrorPage code={code} />, { status: code })
+      return context.render(
+        <ErrorPage code={code} theme={await getPublicTheme(context.request)} />,
+        { status: code },
+      )
     },
-    errorDefault(context) {
-      return context.render(<ErrorPage code={404} />, { status: 404 })
+    async errorDefault(context) {
+      return context.render(
+        <ErrorPage code={404} theme={await getPublicTheme(context.request)} />,
+        { status: 404 },
+      )
     },
     /**
      * El botón "Cerrar sesión" del panel admin solo enlazaba a /login sin

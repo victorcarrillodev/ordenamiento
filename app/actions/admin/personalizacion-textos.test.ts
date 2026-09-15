@@ -4,7 +4,7 @@ import { router } from '../../router.ts'
 /**
  * Mini-página de textos del portal (personalizacion-textos-controller).
  * Cubre: protección auth, render con valores del tema, motivo obligatorio,
-   * y guardado con las 70 claves + section==='usuario'.
+ * y guardado con las 71 claves + section==='usuario'.
  */
 
 const ORIGINAL_FETCH = globalThis.fetch
@@ -25,7 +25,14 @@ function mockFetch(opts: {
           new Response(
             JSON.stringify(
               authed
-                ? { user: { id: 1, name: 'Admin', role: 'admin', email: 'admin@tlaquepaque.gob.mx' } }
+                ? {
+                    user: {
+                      id: 1,
+                      name: 'Admin',
+                      role: 'admin',
+                      email: 'admin@tlaquepaque.gob.mx',
+                    },
+                  }
                 : { user: null },
             ),
             { status: authed ? 200 : 401, headers: { 'content-type': 'application/json' } },
@@ -37,10 +44,7 @@ function mockFetch(opts: {
           if (opts.captureThemePost) {
             opts.captureThemePost.called = true
             try {
-              opts.captureThemePost.body = JSON.parse(String(init?.body)) as Record<
-                string,
-                unknown
-              >
+              opts.captureThemePost.body = JSON.parse(String(init?.body)) as Record<string, unknown>
             } catch {
               opts.captureThemePost.body = null
             }
@@ -72,14 +76,18 @@ describe('Personalización · textos del portal', () => {
 
   it('GET sin sesión → 302 a login', async () => {
     mockFetch({ authed: false })
-    const res = await router.fetch(new Request('http://localhost/ordena/admin/personalizacion/textos'))
+    const res = await router.fetch(
+      new Request('http://localhost/ordena/admin/personalizacion/textos'),
+    )
     expect(res?.status).toBe(302)
     expect(res?.headers.get('location')).toContain('/login')
   })
 
   it('GET admin muestra el valor del tema y el campo de navegación', async () => {
     mockFetch({})
-    const res = await router.fetch(new Request('http://localhost/ordena/admin/personalizacion/textos'))
+    const res = await router.fetch(
+      new Request('http://localhost/ordena/admin/personalizacion/textos'),
+    )
     expect(res?.status).toBe(200)
     const html = await res?.text()
     expect(html).toContain('TÍTULO CUSTOM')
@@ -104,13 +112,14 @@ describe('Personalización · textos del portal', () => {
     expect(capture.called).toBe(false)
   })
 
-  it('POST con motivo guarda las 70 claves con section usuario', async () => {
+  it('POST con motivo guarda las 71 claves con section usuario', async () => {
     const capture = { called: false, body: null as Record<string, unknown> | null }
     mockFetch({ captureThemePost: capture })
     const fd = new FormData()
     fd.set('motivo', 'Actualización de textos del portal')
     fd.set('txt_hero_titulo', 'X')
     fd.set('txt_footer_firma', 'Y')
+    fd.set('txt_programa_parrafo3', 'Párrafo independiente')
     const res = await router.fetch(
       new Request('http://localhost/ordena/admin/personalizacion/textos', {
         method: 'POST',
@@ -128,7 +137,8 @@ describe('Personalización · textos del portal', () => {
     expect(body.config.usuario.textos.heroTitulo).toBe('X')
     expect(body.config.usuario.textos.footerFirma).toBe('Y')
     expect(body.config.usuario.textos.card1Titulo).toBe('')
-    expect(Object.keys(body.config.usuario.textos)).toHaveLength(70)
+    expect(body.config.usuario.textos.programaParrafo3).toBe('Párrafo independiente')
+    expect(Object.keys(body.config.usuario.textos)).toHaveLength(71)
     expect(body.section).toBe('usuario')
   })
 })

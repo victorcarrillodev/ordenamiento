@@ -128,6 +128,7 @@ export interface ThemeConfig {
       programaTitulo: string
       programaParrafo1: string
       programaParrafo2: string
+      programaParrafo3: string
       programaPregunta1: string
       programaPregunta2: string
       programaPregunta3: string
@@ -253,7 +254,9 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
       programaPregunta3:
         '¿Qué tipo de actividades pueden desarrollarse en las distintas zonas del territorio?',
       programaPregunta4:
-        '¿En qué condiciones deben realizarse estas actividades para evitar impactos negativos en el ambiente y en el entorno urbano? Una vez aprobado, el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano establece los criterios y lineamientos que orientan el uso, ocupación y aprovechamiento del territorio, así como las reglas que guiarán el desarrollo urbano del municipio.',
+        '¿En qué condiciones deben realizarse estas actividades para evitar impactos negativos en el ambiente y en el entorno urbano?',
+      programaParrafo3:
+        'Una vez aprobado, el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano establece los criterios y lineamientos que orientan el uso, ocupación y aprovechamiento del territorio, así como las reglas que guiarán el desarrollo urbano del municipio.',
       timelineEyebrow: 'Fases del proceso',
       timelineTitulo: 'Cinco etapas hacia un territorio ordenado y sustentable',
       timelinePaso1Titulo: 'Formulación',
@@ -374,6 +377,13 @@ export async function getCustomizations(): Promise<ThemeConfig> {
       return DEFAULT_THEME_CONFIG
     }
     const merged = deepMerge(DEFAULT_THEME_CONFIG, rows[0].config)
+    // Retira únicamente el párrafo que las versiones anteriores guardaban dentro de la pregunta.
+    if (typeof merged.usuario?.textos?.programaPregunta4 === 'string') {
+      merged.usuario.textos.programaPregunta4 = merged.usuario.textos.programaPregunta4.replace(
+        ` ${DEFAULT_THEME_CONFIG.usuario.textos.programaParrafo3}`,
+        '',
+      )
+    }
     return normalizarImagenesDelTema(merged)
   } catch (err) {
     // M3: el error es visible (logger), pero se mantiene el fallback para que

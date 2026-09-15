@@ -15,7 +15,7 @@ import { createController } from 'remix/router'
 import * as s from 'remix/data-schema'
 import { backendFetch, requireAdminUser } from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
-import { MAX_FILE_BYTES, MAX_FILE_MB } from '../../utils/uploads.ts'
+import { MAX_FILE_BYTES, MAX_FILE_MB, UPLOAD_TIMEOUT_MS } from '../../utils/uploads.ts'
 import { adminSchema, toAdminFormErrors } from './schema.ts'
 import { NuevaPage, type NuevaValues } from './nueva-page.tsx'
 
@@ -154,6 +154,7 @@ export default createController(adminRoutes.participacionNueva, {
       const response = await backendFetch(context.request, '/api/participations', {
         method: 'POST',
         body,
+        signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
       })
       if (!response.ok) {
         const data = (await response.json().catch(() => ({}))) as { error?: string }

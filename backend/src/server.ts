@@ -21,6 +21,7 @@ try {
 Bun.serve({
   port: PORT,
   maxRequestBodySize: MAX_TOTAL_BYTES + 16 * 1024 * 1024,
+  idleTimeout: 255,
   fetch(request) {
     return handleRequest(request).catch((err) => {
       logger.error('server.handleRequest', err)

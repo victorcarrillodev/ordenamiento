@@ -42,6 +42,22 @@ export async function handleCreateParticipation(
   }
 
   const form = await request.formData()
+  const complementarios: Record<string, string> = {}
+  for (const campo of [
+    'domicilio',
+    'municipio_participante',
+    'ocupacion',
+    'fuente',
+    'genero',
+    'tematica',
+  ]) {
+    const valor = form.get(campo)
+    const limite = campo === 'domicilio' ? 400 : 200
+    if (valor !== null && (typeof valor !== 'string' || valor.length > limite)) {
+      return json({ error: `El campo ${campo} debe ser texto de hasta ${limite} caracteres` }, 422)
+    }
+    complementarios[campo] = typeof valor === 'string' ? valor.trim() : ''
+  }
   const origin = String(form.get('origen') ?? 'digital') as Origen
   if (!isOrigen(origin)) {
     return json({ error: 'origen inválido' }, 400)
@@ -108,7 +124,7 @@ export async function handleCreateParticipation(
       escritos.push(rutaDestino)
 
       filesParaIngest.push({
-        buffer,
+        size: buffer.length,
         meta: {
           nombreOriginal: sanitizarNombre(file.name),
           mime: verdict.safeMime!,
@@ -125,14 +141,16 @@ export async function handleCreateParticipation(
       colonia: String(form.get('colonia') ?? ''),
       municipio: String(form.get('municipio') ?? ''),
       institucion: String(form.get('institucion') ?? ''),
-      ocupacion: String(form.get('ocupacion') ?? ''),
+      ocupacion: complementarios.ocupacion,
+      fuente: complementarios.fuente,
+      genero: complementarios.genero,
+      tematica: complementarios.tematica,
       observacion: String(form.get('observacion') ?? ''),
       codigo_postal: String(form.get('codigo_postal') ?? ''),
       direccion_origen: String(form.get('direccion_origen') ?? ''),
-      // Domicilio de quien participa: sólo lo captura el alta física desde el
-      // panel, y es independiente del lugar del aporte.
-      domicilio: String(form.get('domicilio') ?? ''),
-      municipio_participante: String(form.get('municipio_participante') ?? ''),
+      // Domicilio personal, independiente de la ubicación de la propuesta.
+      domicilio: complementarios.domicilio,
+      municipio_participante: complementarios.municipio_participante,
       folio,
     }
 
@@ -156,6 +174,9 @@ export async function handleCreateParticipation(
           consentimiento_version: origin === 'digital' ? consentimientoVersion : '',
           institucion: camposFormulario.institucion,
           ocupacion: camposFormulario.ocupacion,
+          fuente: camposFormulario.fuente,
+          genero: camposFormulario.genero,
+          tematica: camposFormulario.tematica,
           latitud: String(form.get('latitud') ?? ''),
           longitud: String(form.get('longitud') ?? ''),
           observacion: camposFormulario.observacion,

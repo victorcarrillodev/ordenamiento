@@ -7,7 +7,7 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { routes } from '../../routes.ts'
-import { colors, FONT_STACK } from '../../ui/civic-horizon.ts'
+import { colors, FONT_STACK, type ThemeData } from '../../ui/civic-horizon.ts'
 import {
   NAVBAR_ALTURA,
   NAVBAR_ALTURA_MOVIL,
@@ -24,6 +24,7 @@ const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 export type { FormErrors }
 
 export interface ParticipationPageProps {
+  theme?: ThemeData
   errors?: FormErrors
   /** Lo ya escrito, para no perderlo cuando la validación rechaza el envío. */
   values?: FormValues
@@ -86,14 +87,14 @@ const formShellStyle = css({
 
 export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
   return () => {
-    const { errors = {}, values, success = false, folio } = handle.props
+    const { errors = {}, values, success = false, folio, theme } = handle.props
 
     return (
       <Document
         title="Registra tu Participación – Portal de Ordenamiento Territorial"
         description="Formulario de participación ciudadana para el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano de San Pedro Tlaquepaque."
       >
-        <NavBar />
+        <NavBar theme={theme} />
         <div mix={splitStyle}>
           <div mix={imagePanelStyle} role="img" aria-label="Paisaje de San Pedro Tlaquepaque">
             <div mix={imageOverlayStyle} aria-hidden="true" />

@@ -13,6 +13,7 @@ import { ExportarPage } from './exportar-page.tsx'
 import { ParticipacionesPage } from './participaciones-page.tsx'
 import { EstadisticasPage, type DatosOrigen, type VistaEstadisticas } from './estadisticas-page.tsx'
 import { DetallePage } from './detalle-page.tsx'
+import { AdjuntoVistaPage } from './adjunto-vista-page.tsx'
 import { ETAPAS } from './etapa.ts'
 import { sesionesAction } from './sesiones-controller.tsx'
 
@@ -212,6 +213,34 @@ export default createController(adminRoutes, {
       )
     },
 
+    async adjuntoVista(context) {
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
+      const { id, aid } = context.params
+      const response = await backendFetch(
+        context.request,
+        `/api/participations/${id}/attachments/${aid}?preview=1`,
+      )
+      const data = (await response.json().catch(() => ({}))) as {
+        nombre?: string
+        texto?: string
+        error?: string
+        origen?: string
+      }
+      return context.render(
+        <AdjuntoVistaPage
+          user={user}
+          id={id}
+          aid={aid}
+          nombre={data.nombre}
+          texto={data.texto}
+          origen={data.origen}
+          error={response.ok ? undefined : data.error || 'No se pudo obtener la vista previa.'}
+        />,
+        { status: response.status, headers: { 'cache-control': 'private, no-store' } },
+      )
+    },
+
     async adjunto(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
@@ -221,8 +250,17 @@ export default createController(adminRoutes, {
       const response = await backendFetch(
         context.request,
         `/api/participations/${id}/attachments/${aid}${download ? '?download=1' : ''}`,
+        {
+          headers: context.request.headers.has('range')
+            ? { range: context.request.headers.get('range')! }
+            : undefined,
+        },
       )
-      if (!response.ok) return new Response('Not Found', { status: response.status })
+      if (!response.ok && response.status !== 416)
+        return new Response(
+          'No se pudo descargar el adjunto. Regresa a la participación e inténtalo de nuevo.',
+          { status: response.status, headers: { 'cache-control': 'private, no-store' } },
+        )
 
       const headers = new Headers()
       for (const h of [
@@ -232,6 +270,8 @@ export default createController(adminRoutes, {
         'cross-origin-resource-policy',
         // El visor de PDF del navegador necesita el tamaño para paginar.
         'content-length',
+        'content-range',
+        'accept-ranges',
       ]) {
         const v = response.headers.get(h)
         if (v) headers.set(h, v)
@@ -244,7 +284,8 @@ export default createController(adminRoutes, {
       // origen, manteniendo el recurso sin permiso para cargar nada más.
       headers.set('content-security-policy', "default-src 'none'; frame-ancestors 'self'")
 
-      return new Response(response.body, { headers })
+      headers.set('cache-control', 'private, no-store')
+      return new Response(response.body, { status: response.status, headers })
     },
 
     /** Sirve un archivo de una sesión POEL a través del panel. */

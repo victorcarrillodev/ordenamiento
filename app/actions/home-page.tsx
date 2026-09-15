@@ -288,7 +288,8 @@ function HeroSection(handle: Handle<{ theme?: ThemeData }>) {
               fontSize: 'clamp(16px, 2.5vw, 20px)',
               lineHeight: 1.65,
               color: 'rgba(255,255,255,0.88)',
-              maxWidth: '680px',
+              maxWidth: '760px',
+              textWrap: 'balance',
               margin: 0,
               textAlign: 'center',
             })}
@@ -862,6 +863,9 @@ function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
 // What Is The Program
 // ---------------------------------------------------------------------------
 
+const PROGRAMA_PARRAFO3 =
+  'Una vez aprobado, el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano establece los criterios y lineamientos que orientan el uso, ocupación y aprovechamiento del territorio, así como las reglas que guiarán el desarrollo urbano del municipio.'
+
 function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
   return () => {
     const { theme } = handle.props
@@ -876,8 +880,10 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
         '¿Dónde es adecuado el crecimiento y desarrollo urbano del municipio?',
       txt.programaPregunta3 ||
         '¿Qué tipo de actividades pueden desarrollarse en las distintas zonas del territorio?',
-      txt.programaPregunta4 ||
-        '¿En qué condiciones deben realizarse estas actividades para evitar impactos negativos en el ambiente y en el entorno urbano? Una vez aprobado, el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano establece los criterios y lineamientos que orientan el uso, ocupación y aprovechamiento del territorio, así como las reglas que guiarán el desarrollo urbano del municipio.',
+      (
+        txt.programaPregunta4 ||
+        '¿En qué condiciones deben realizarse estas actividades para evitar impactos negativos en el ambiente y en el entorno urbano?'
+      ).replace(` ${PROGRAMA_PARRAFO3}`, ''),
     ]
 
     return (
@@ -988,6 +994,17 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
                     </li>
                   ))}
                 </ul>
+                <p
+                  mix={css({
+                    fontFamily: FONT_STACK,
+                    fontSize: '15px',
+                    lineHeight: 1.7,
+                    color: '#475569',
+                    margin: 0,
+                  })}
+                >
+                  {txt.programaParrafo3 || PROGRAMA_PARRAFO3}
+                </p>
               </div>
 
               {/* Columna Derecha: Ilustración vectorial integrada */}
@@ -1035,7 +1052,7 @@ function getTimelineSteps(
   primary: string,
   accent: string,
   secondary: string,
-  txt: Record<string, any> = {},
+  txt: Record<string, string> = {},
 ): TimelineStep[] {
   return [
     {
@@ -1563,7 +1580,7 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
                 Navegación
               </span>
               {[
-                { label: 'Inicio', href: routes.home.href() },
+                { label: txt.navEnlaceInicio || 'Inicio y proceso', href: routes.home.href() },
                 { label: 'El Programa', href: '#que-es-el-programa' },
                 { label: 'El Proceso', href: '#proceso' },
                 { label: 'Documentos', href: '#documentos' },

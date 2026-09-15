@@ -29,7 +29,8 @@ services:
     build: ./backend
     container_name: ordenamiento-backend
     restart: unless-stopped
-    mem_limit: 1g
+    # Un lote de 5 × 100 MB requiere margen para multipart y procesamiento.
+    mem_limit: ${BACKEND_MEMORY_LIMIT:-2g}
     mem_reservation: 128m
     depends_on:
       db:
@@ -64,7 +65,7 @@ services:
       # convertiría ese correo en un enlace de phishing.
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:44100}
       BASE_PATH: /ordena
-      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-100}
       MAX_UPLOAD_FILES: ${MAX_UPLOAD_FILES:-5}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
     volumes:
@@ -78,7 +79,8 @@ services:
     build: .
     container_name: ordenamiento-web
     restart: unless-stopped
-    mem_limit: 512m
+    # El reenvío al backend materializa los archivos en FormData.
+    mem_limit: ${WEB_MEMORY_LIMIT:-2g}
     mem_reservation: 128m
     depends_on:
       backend:
@@ -103,7 +105,7 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       MAIL_FROM: ${MAIL_FROM:-}
-      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-100}
       MAX_UPLOAD_FILES: ${MAX_UPLOAD_FILES:-5}
     ports:
       # Compatible con la configuración de Apache (43100) y acceso directo (44100)

@@ -9,6 +9,25 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+### Capacidad para adjuntos
+
+El formulario admite hasta **5 archivos de 100 MB** por participación, incluido
+GeoPackage (`.gpkg`). Al actualizar una instalación, revisa que `.env` no conserve
+`MAX_UPLOAD_MB=50`: usa `MAX_UPLOAD_MB=100` y `MAX_UPLOAD_FILES=5` tanto en web como
+en backend, y aplica el fragmento actualizado de `deploy/nginx-ordena.conf`
+(cuerpo máximo de 520 MB y plazos de carga ampliados).
+
+El reenvío multipart todavía materializa los archivos en memoria. Compose permite
+2 GB para web y 2 GB para backend, además de 1 GB para Postgres; reserva margen
+adicional para el sistema y el proxy. Los topes se pueden ajustar con
+`WEB_MEMORY_LIMIT` y `BACKEND_MEMORY_LIMIT`. Antes de habilitar cargas concurrentes
+de 500 MB en producción, mide el consumo en el servidor y dimensiona memoria y
+disco temporal; las pruebas funcionales no sustituyen una prueba de carga allí.
+
+Los correos adjuntan como máximo 10 MB en total. Los archivos restantes siguen en
+el expediente y el correo informa de ello para que un adjunto grande no impida
+enviar el acuse.
+
 ### La cuenta root
 
 El sistema tiene una cuenta **root**: manda sobre todas las demás, incluidas

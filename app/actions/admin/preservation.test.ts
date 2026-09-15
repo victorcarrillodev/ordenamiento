@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { router } from '../../router.ts'
+import { MAX_FILE_BYTES } from '../../utils/uploads.ts'
 
 const NUEVA_URL = 'http://localhost/ordena/admin/participaciones/nueva'
 
@@ -127,7 +128,7 @@ describe('Admin · preservación de valores tras error', () => {
     expect(html).toContain('value="Mujer" selected')
   })
 
-  it('PDF de 51MB → 413 vacío (sin repintado, intencional)', async () => {
+  it('PDF que excede el límite → 413 vacío (sin repintado, intencional)', async () => {
     globalThis.fetch = mockAuth() as unknown as typeof fetch
     const fd = new FormData()
     fd.set('nombre', 'Con PDF grande')
@@ -137,7 +138,7 @@ describe('Admin · preservación de valores tras error', () => {
     fd.set('observacion', 'obs larga válida')
     fd.append(
       'pdf',
-      new File([new Uint8Array(51 * 1024 * 1024)], 'huge.pdf', { type: 'application/pdf' }),
+      new File([new Uint8Array(MAX_FILE_BYTES + 1)], 'huge.pdf', { type: 'application/pdf' }),
     )
     const r = await router.fetch(new Request(NUEVA_URL, { method: 'POST', body: fd }))
     expect(r?.status).toBe(413)

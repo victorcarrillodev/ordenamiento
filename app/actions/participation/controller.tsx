@@ -12,12 +12,13 @@ import * as s from 'remix/data-schema'
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { BACKEND_URL } from '../../backend.ts'
+import { BACKEND_URL, getPublicTheme } from '../../backend.ts'
 import { routes } from '../../routes.ts'
 import {
   MAX_FILE_BYTES,
   MAX_FILES,
   MAX_TOTAL_BYTES,
+  UPLOAD_TIMEOUT_MS,
   sanitizeFilename,
 } from '../../utils/uploads.ts'
 import { ParticipationPage } from './page.tsx'
@@ -35,15 +36,22 @@ const tmpStorage = createFsFileStorage('./tmp/uploads')
 export default createController(routes.participation, {
   actions: {
     /** GET /participation — render empty form or success screen with official receipt (público) */
-    index(context) {
+    async index(context) {
       const url = new URL(context.request.url)
       const success = url.searchParams.get('success') === '1'
       const folio = url.searchParams.get('folio') ?? undefined
-      return context.render(<ParticipationPage success={success} folio={folio} />)
+      return context.render(
+        <ParticipationPage
+          success={success}
+          folio={folio}
+          theme={await getPublicTheme(context.request)}
+        />,
+      )
     },
 
     /** POST /participation — streaming upload a tmp, validación y persistencia atómica */
     async action(context) {
+      const theme = await getPublicTheme(context.request)
       const storedKeys: string[] = []
 
       async function uploadHandler(fileUpload: FileUpload) {
@@ -72,6 +80,7 @@ export default createController(routes.participation, {
         if (parseResult.limitError === 'maxfiles') {
           return context.render(
             <ParticipationPage
+              theme={theme}
               errors={{ archivos: `Máximo ${MAX_FILES} archivos por participación` }}
               values={toFormValues(formData)}
             />,
@@ -81,6 +90,7 @@ export default createController(routes.participation, {
         if (parseResult.limitError === 'maxfilesize') {
           return context.render(
             <ParticipationPage
+              theme={theme}
               errors={{
                 archivos: `Uno de los archivos excede el límite de ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB`,
               }}
@@ -95,7 +105,7 @@ export default createController(routes.participation, {
         if (!parsed.success) {
           const errors: FormErrors = toFormErrors(parsed.issues)
           return context.render(
-            <ParticipationPage errors={errors} values={toFormValues(formData)} />,
+            <ParticipationPage theme={theme} errors={errors} values={toFormValues(formData)} />,
             { status: 422 },
           )
         }
@@ -112,6 +122,16 @@ export default createController(routes.participation, {
         body.set('direccion_origen', parsed.value.direccion_origen)
         body.set('institucion', parsed.value.institucion)
         body.set('observacion', parsed.value.observacion)
+        for (const campo of [
+          'domicilio',
+          'municipio_participante',
+          'ocupacion',
+          'fuente',
+          'genero',
+          'tematica',
+        ] as const) {
+          body.set(campo, parsed.value[campo])
+        }
         body.set('consentimiento', '1')
         body.set('consentimiento_version', 'lgpdppso-2026-01')
 
@@ -132,9 +152,9 @@ export default createController(routes.participation, {
         let backendStatus = 0
         let createdFolio = ''
 
-        // Fix 3: Timeout con AbortController (30s para uploads de hasta 50MB)
+        // El reenvío y procesamiento de un lote grande comparten este plazo.
         const abortCtrl = new AbortController()
-        const timeout = setTimeout(() => abortCtrl.abort(), 30_000)
+        const timeout = setTimeout(() => abortCtrl.abort(), UPLOAD_TIMEOUT_MS)
 
         try {
           const response = await fetch(`${BACKEND_URL}/api/participations`, {
@@ -161,6 +181,7 @@ export default createController(routes.participation, {
           if (error instanceof DOMException && error.name === 'AbortError') {
             return context.render(
               <ParticipationPage
+                theme={theme}
                 errors={{
                   archivos:
                     'Tu conexión está tardando demasiado. Verifica tu conexión a internet e inténtalo de nuevo.',
@@ -179,6 +200,7 @@ export default createController(routes.participation, {
         if (backendStatus === 429) {
           return context.render(
             <ParticipationPage
+              theme={theme}
               errors={{
                 archivos:
                   'Estás enviando demasiadas solicitudes, espera un momento e inténtalo de nuevo.',
@@ -192,6 +214,7 @@ export default createController(routes.participation, {
         if (!backendOk) {
           return context.render(
             <ParticipationPage
+              theme={theme}
               errors={{
                 archivos: backendError,
                 observacion: backendError

@@ -1,8 +1,14 @@
-import { email, minLength } from 'remix/data-schema/checks'
+import { email, maxLength, minLength } from 'remix/data-schema/checks'
 import * as s from 'remix/data-schema'
 import * as f from 'remix/data-schema/form-data'
 
 export interface FormErrors {
+  domicilio?: string
+  municipio_participante?: string
+  ocupacion?: string
+  fuente?: string
+  genero?: string
+  tematica?: string
   nombre?: string
   email?: string
   calle?: string
@@ -22,6 +28,12 @@ export interface FormErrors {
  * file, así que esos hay que volver a seleccionarlos.
  */
 export interface FormValues {
+  domicilio?: string
+  municipio_participante?: string
+  ocupacion?: string
+  fuente?: string
+  genero?: string
+  tematica?: string
   nombre?: string
   email?: string
   calle?: string
@@ -35,6 +47,12 @@ export interface FormValues {
 }
 
 const CAMPOS_DE_TEXTO = [
+  'domicilio',
+  'municipio_participante',
+  'ocupacion',
+  'fuente',
+  'genero',
+  'tematica',
   'nombre',
   'email',
   'calle',
@@ -58,6 +76,12 @@ export function toFormValues(formData: FormData): FormValues {
 }
 
 export const participationSchema = f.object({
+  domicilio: f.field(s.defaulted(s.string(), '').pipe(maxLength(400))),
+  municipio_participante: f.field(s.defaulted(s.string(), '').pipe(maxLength(200))),
+  ocupacion: f.field(s.defaulted(s.string(), '').pipe(maxLength(200))),
+  fuente: f.field(s.defaulted(s.string(), '').pipe(maxLength(200))),
+  genero: f.field(s.defaulted(s.string(), '').pipe(maxLength(200))),
+  tematica: f.field(s.defaulted(s.string(), '').pipe(maxLength(200))),
   nombre: f.field(s.string().pipe(minLength(2))),
   email: f.field(s.string().pipe(email())),
   calle: f.field(s.defaulted(s.string(), '')),

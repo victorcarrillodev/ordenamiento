@@ -1,6 +1,6 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
-import { colors, FONT_STACK } from '../ui/civic-horizon.ts'
+import { colors, FONT_STACK, type ThemeData } from '../ui/civic-horizon.ts'
 import { NAVBAR_ALTURA, NAVBAR_ALTURA_MOVIL, NAVBAR_CORTE_MOVIL, NavBar } from '../ui/nav-bar.tsx'
 import { Document } from './document.tsx'
 
@@ -192,6 +192,7 @@ export const ERROR_CATALOG: Record<number, ErrorInfo> = {
 }
 
 export interface ErrorPageProps {
+  theme?: ThemeData
   code?: number
   customTitle?: string
   customDescription?: string
@@ -199,7 +200,7 @@ export interface ErrorPageProps {
 
 export function ErrorPage(handle: Handle<ErrorPageProps>) {
   return () => {
-    const { code = 404, customTitle, customDescription } = handle.props
+    const { code = 404, customTitle, customDescription, theme } = handle.props
     const info = ERROR_CATALOG[code] ?? ERROR_CATALOG[404]
 
     const title = customTitle || info.title
@@ -358,7 +359,7 @@ export function ErrorPage(handle: Handle<ErrorPageProps>) {
         title={`Error ${info.code} – ${info.badge} · Portal de Ordenamiento Territorial`}
         description={description}
       >
-        <NavBar />
+        <NavBar theme={theme} />
         <div mix={pageWrapperStyle}>
           <div mix={mainContainerStyle}>
             <div mix={cardStyle}>

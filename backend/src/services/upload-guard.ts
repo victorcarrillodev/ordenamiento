@@ -150,6 +150,7 @@ const ALLOWED_MIMES: Record<string, string> = {
   dwg: 'image/vnd.dwg',
   shp: 'application/octet-stream',
   shx: 'application/octet-stream',
+  gpkg: 'application/geopackage+sqlite3',
   // Archivos comprimidos
   zip: 'application/zip',
   kmz: 'application/vnd.google-earth.kmz',
@@ -183,6 +184,7 @@ type SignatureFamily =
   | 'ole'
   | 'dwg'
   | 'shapefile'
+  | 'geopackage'
   | 'dbf'
   | 'ftyp'
   | 'mp3'
@@ -208,6 +210,7 @@ const FAMILY_EXTENSIONS: Record<SignatureFamily, string[]> = {
   ole: ['doc', 'xls', 'ppt'],
   dwg: ['dwg'],
   shapefile: ['shp', 'shx'],
+  geopackage: ['gpkg'],
   dbf: ['dbf'],
   ftyp: ['mp4', 'mov', 'heic', 'heif'],
   mp3: ['mp3'],
@@ -232,6 +235,14 @@ function asciiAt(buffer: Buffer, offset: number, text: string): boolean {
 
 /** Detecta la familia real del archivo leyendo sus primeros bytes. */
 export function detectFileFamily(buffer: Buffer): SignatureFamily {
+  // OGC GeoPackage: cabecera SQLite e identificador de aplicación (también 1.0/1.1).
+  // https://www.geopackage.org/spec140/#_file_format
+  if (
+    buffer.length >= 100 &&
+    asciiAt(buffer, 0, 'SQLite format 3\u0000') &&
+    ['GPKG', 'GP10', 'GP11'].some((id) => asciiAt(buffer, 68, id))
+  )
+    return 'geopackage'
   // ICO: 00 00 01 00 (debe ir antes de shapefile 00 00 27 0A para no colisionar)
   if (startsWith(buffer, [0x00, 0x00, 0x01, 0x00])) return 'ico'
   // MKV/WebM: EBML 1A 45 DF A3
@@ -326,12 +337,16 @@ export function sanitizeFilename(filename: string): string {
 
 /** Cabecera content-disposition segura (filename citado + RFC 5987 para Unicode). */
 export function contentDispositionHeader(kind: 'inline' | 'attachment', filename: string): string {
-  const safe = filename.replace(/["\\]/g, '_').replace(/[\r\n]/g, '')
+  const safe = Array.from(filename)
+    .filter((ch) => ch.charCodeAt(0) > 31 && ch.charCodeAt(0) !== 127)
+    .join('')
+    .replace(/["\\]/g, '_')
   const encoded = encodeURIComponent(safe).replace(
     /['()*]/g,
     (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
   )
-  return `${kind}; filename="${safe}"; filename*=UTF-8''${encoded}`
+  const ascii = Array.from(safe, (ch) => (ch.charCodeAt(0) > 126 ? '_' : ch)).join('')
+  return `${kind}; filename="${ascii}"; filename*=UTF-8''${encoded}`
 }
 
 /** ¿Debe servirse inline este tipo? Solo los formatos visualmente inertes. */

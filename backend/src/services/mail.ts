@@ -1,8 +1,9 @@
 import nodemailer from 'nodemailer'
-import { readFile } from 'node:fs/promises'
-import { isAbsolute, join } from 'node:path'
+import { readFile, stat } from 'node:fs/promises'
+import { join } from 'node:path'
 
 import { sql } from '../db/pool.ts'
+import { attachmentPath } from '../files/attachment-path.ts'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
 
@@ -318,7 +319,7 @@ function renderPlantillaBase({
 
             <!-- Footer -->
             <div class="footer">
-              <div class="footer-highlight">Dirección General de Transformación y Planeación Urbana</div>
+              <div class="footer-highlight">Dirección de Medio Ambiente y Ecología</div>
               <div>Bitácora Ambiental &bull; Programa de Ordenamiento Ecológico y Territorial de San Pedro Tlaquepaque</div>
               <div style="margin-top: 10px; font-size: 11px; color: #94A3B8;">
                 Este acuse digital tiene validez oficial de confirmación de recepción ciudadana. &copy; ${anio} San Pedro Tlaquepaque, Jalisco.
@@ -356,10 +357,16 @@ export async function enviarAcuseReciboParticipacion(
   `
 
   const attachments: Array<{ filename: string; content: Buffer }> = []
+  let bytesCorreo = 0
+  // El acuse debe llegar aunque el expediente contenga archivos de 100 MB.
+  const MAX_ADJUNTOS_CORREO = 10 * 1024 * 1024
   for (const a of adjuntos) {
-    const ruta = isAbsolute(a.ruta_local) ? a.ruta_local : join(UPLOAD_DIR, a.ruta_local)
     try {
+      const ruta = await attachmentPath(UPLOAD_DIR, a.ruta_local)
+      const { size } = await stat(ruta)
+      if (bytesCorreo + size > MAX_ADJUNTOS_CORREO) continue
       attachments.push({ filename: a.nombre_original, content: await readFile(ruta) })
+      bytesCorreo += size
     } catch {
       // Si el adjunto no se lee, se envía el resumen
     }
@@ -388,7 +395,7 @@ export async function enviarAcuseReciboParticipacion(
       Estimado(a) <strong>${escapeHtml(p.nombre || 'Ciudadano(a)')}</strong>:
     </p>
     <p style="font-size: 14px; line-height: 1.6; color: #334155;">
-      Por medio del presente documento oficial, la <strong>Dirección General de Transformación y Planeación Urbana</strong> del Municipio de San Pedro Tlaquepaque hace constar la <strong>recepción formal</strong> de su propuesta para la elaboración del <em>Programa de Ordenamiento Ecológico y Territorial (POETDUM)</em>.
+      Por medio del presente documento oficial, la <strong>Dirección de Medio Ambiente y Ecología</strong> del Municipio de San Pedro Tlaquepaque hace constar la <strong>recepción formal</strong> de su propuesta para la elaboración del <em>Programa de Ordenamiento Ecológico y Territorial (POETDUM)</em>.
     </p>
 
     <!-- Ficha de Datos Recibidos -->
@@ -420,6 +427,7 @@ export async function enviarAcuseReciboParticipacion(
     }
 
     <!-- Protocolo Oficial de Atención -->
+    ${attachments.length < adjuntos.length ? '<p>Los documentos que no se adjuntan a este correo se conservan en el expediente de la participación. El correo incluye hasta 10 MB de adjuntos.</p>' : ''}
     <div class="section-heading">${adjuntos.length > 0 ? '4' : '3'}. Protocolo de Seguimiento y Próximos Pasos</div>
     <div class="protocol-box">
       <div class="protocol-title">Etapas del Proceso de Consulta y Dictamen:</div>
@@ -518,7 +526,7 @@ export async function enviarResolucionParticipacion(
       Estimado(a) <strong>${escapeHtml(p.nombre || 'Ciudadano(a)')}</strong>:
     </p>
     <p style="font-size: 14px; line-height: 1.6; color: #334155;">
-      La <strong>Dirección General de Transformación y Planeación Urbana</strong> del Municipio de
+      La <strong>Dirección de Medio Ambiente y Ecología</strong> del Municipio de
       San Pedro Tlaquepaque le comunica que su participación, registrada con el folio
       <strong>${escapeHtml(p.folio)}</strong>, ha sido analizada por el Comité Técnico del
       <em>Programa de Ordenamiento Ecológico y Territorial (POETDUM)</em> y se ha emitido la
@@ -848,7 +856,7 @@ export async function enviarAvisoCorreoCambiado(input: {
 
     <div class="protocol-box" style="background-color:#FEF2F2; border-color:#FECACA;">
       <div class="protocol-title" style="color:#991B1B;">¿No fue usted?</div>
-      <div class="protocol-step" style="color:#7F1D1D;">Comuníquese de inmediato con la Dirección General de Transformación y Planeación Urbana para que se restablezca el acceso de su cuenta.</div>
+      <div class="protocol-step" style="color:#7F1D1D;">Comuníquese de inmediato con la Dirección de Medio Ambiente y Ecología para que se restablezca el acceso de su cuenta.</div>
       <div class="protocol-step" style="color:#7F1D1D;">Este aviso se envía a la dirección anterior precisamente para que un cambio no autorizado no pase desapercibido.</div>
     </div>
   `

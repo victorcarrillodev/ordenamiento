@@ -3,6 +3,7 @@ import { css } from 'remix/ui'
 import { routes } from '../../routes.ts'
 import { colors, FONT_STACK } from '../../ui/civic-horizon.ts'
 import { DireccionFields } from '../../ui/form/direccion-fields.tsx'
+import { ClasificacionFields } from '../../ui/form/clasificacion-fields.tsx'
 import { CheckboxField, Field, TextArea } from '../../ui/form/field.tsx'
 import { SubmitButton } from './public/submit-button.tsx'
 import type { FormErrors, FormValues } from './schema.ts'
@@ -108,6 +109,9 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
             />
           </div>
 
+          <p mix={css({ fontSize: '14px', fontWeight: 700, margin: 0 })}>
+            Ubicación de la propuesta
+          </p>
           <DireccionFields
             endpoint={routes.colonias.href()}
             values={{
@@ -146,6 +150,47 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
             error={errors.observacion}
             wide
           />
+
+          <fieldset
+            mix={css({
+              border: '1px solid #cbd5e1',
+              borderRadius: '10px',
+              padding: '16px',
+              minWidth: 0,
+              display: 'grid',
+              gap: '16px',
+            })}
+          >
+            <legend mix={css({ fontSize: '14px', fontWeight: 700 })}>
+              Datos complementarios (opcionales)
+            </legend>
+            <p mix={css({ margin: 0, fontSize: '13px', color: '#475569' })}>
+              Estos datos corresponden a quien participa y pueden ser distintos de la ubicación de
+              la propuesta.
+            </p>
+            <Field
+              name="domicilio"
+              label="Domicilio de quien participa"
+              value={values.domicilio}
+              error={errors.domicilio}
+              placeholder="Calle y número"
+            />
+            <div mix={fieldRowStyle}>
+              <Field
+                name="municipio_participante"
+                label="Municipio de quien participa"
+                value={values.municipio_participante}
+                error={errors.municipio_participante}
+              />
+              <Field
+                name="ocupacion"
+                label="Ocupación o puesto"
+                value={values.ocupacion}
+                error={errors.ocupacion}
+              />
+            </div>
+            <ClasificacionFields values={values} errors={errors} />
+          </fieldset>
 
           <UploadField error={errors.archivos} />
 

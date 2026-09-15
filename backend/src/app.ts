@@ -1,3 +1,4 @@
+import { getAttachment } from './routes/attachments.ts'
 import { readFile, rm } from 'node:fs/promises'
 import { join, isAbsolute } from 'node:path'
 import {
@@ -691,49 +692,7 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (errId) return errId
     const errAid = requireUuidParam(attachMatch.aid)
     if (errAid) return errAid
-    const rows = await sql<
-      Array<{ ruta_local: string; nombre_original: string; mime: string }>
-    >`--sql
-      SELECT ruta_local, nombre_original, mime
-      FROM attachments
-      WHERE id = ${attachMatch.aid} AND participation_id = ${attachMatch.id}
-    `
-    if (rows.length === 0) {
-      return json({ error: 'Adjunto no encontrado' }, 404)
-    }
-    // Resuelve rutas relativas contra UPLOAD_DIR (datos viejos la guardaron relativa)
-    const ruta = isAbsolute(rows[0].ruta_local)
-      ? rows[0].ruta_local
-      : join(UPLOAD_DIR, rows[0].ruta_local)
-
-    // Guard de archivos: validación estricta de ruta contra path traversal
-    if (!ruta.startsWith(UPLOAD_DIR) && !ruta.startsWith(BRANDING_DIR)) {
-      return json({ error: 'Acceso a archivo no autorizado' }, 403)
-    }
-
-    let file: Buffer
-    try {
-      file = await readFile(ruta)
-    } catch {
-      return json({ error: 'Archivo en disco no disponible' }, 404)
-    }
-    const isDownload = url.searchParams.get('download') === '1'
-    // Servido seguro: MIME derivado de la extensión whitelist (nunca el
-    // declarado en la subida), descarga forzada salvo formatos inertes,
-    // nosniff y filename saneado contra inyección de cabeceras (incluye
-    // CR/LF y comillas, cubriendo el cleanFilename del guard previo).
-    const ext = getExtension(rows[0].nombre_original || rows[0].ruta_local)
-    const mime = canonicalMimeFor(ext) ?? 'application/octet-stream'
-    const disposition = isDownload || !shouldServeInline(ext) ? 'attachment' : 'inline'
-    return new Response(new Uint8Array(file), {
-      headers: {
-        'content-type': mime,
-        'content-disposition': contentDispositionHeader(disposition, rows[0].nombre_original),
-        'x-content-type-options': 'nosniff',
-        'content-security-policy': "default-src 'none'; sandbox; frame-ancestors 'none'",
-        'cross-origin-resource-policy': 'same-origin',
-      },
-    })
+    return getAttachment(request, { id: attachMatch.id, aid: attachMatch.aid }, UPLOAD_DIR)
   }
 
   // Descargar Word (.docx) con los datos — autenticado
@@ -964,7 +923,7 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (authError) return authError
     let escritos: string[] = []
     try {
-      // Validación 5MB inline antes de validateUpload (validarAdjunto usa 50MB por defecto)
+      // Validación 5MB inline antes de validateUpload (el límite general de adjuntos es mayor).
       const form = await request.formData()
       const raw = form.get('avatar') as unknown as File | null
       if (!(raw instanceof File) || raw.size === 0) {

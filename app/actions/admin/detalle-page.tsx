@@ -96,10 +96,6 @@ function VistaAdjunto(handle: Handle<{ participacionId: string; adjunto: Adjunto
     const href = adminRoutes.adjunto.href({ id: participacionId, aid: adjunto.id })
     const ext = extensionDe(adjunto.nombre_original)
     const esPdf = ext === 'pdf' || adjunto.mime === 'application/pdf'
-    const esOffice =
-      ['doc', 'docx'].includes(ext) ||
-      adjunto.mime?.startsWith('application/vnd.openxmlformats-officedocument.wordprocessingml') ||
-      adjunto.mime?.startsWith('application/msword')
     const esImagen = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(ext)
 
     if (esImagen) {
@@ -124,19 +120,13 @@ function VistaAdjunto(handle: Handle<{ participacionId: string; adjunto: Adjunto
       )
     }
 
-    if (esOffice) {
+    if (ext === 'docx') {
       return (
-        <div class="office-viewer">
-          <iframe
-            class="pdf-frame"
-            src={href}
-            title={adjunto.nombre_original}
-            style="width:100%; height:70vh; border:none;"
-          />
-          <p class="breadcrumb" style="margin-top:8px;">
-            Si no se renderiza, <a href={`${href}?download=1`}>descárgalo</a> y ábrelo con Office.
-          </p>
-        </div>
+        <p class="empty adjunto__sin-vista">
+          <a href={adminRoutes.adjuntoVista.href({ id: participacionId, aid: adjunto.id })}>
+            Abrir vista de texto del Word
+          </a>
+        </p>
       )
     }
 
@@ -187,6 +177,10 @@ function PanelAdjuntos(handle: Handle<{ p: Detalle }>) {
             <ul class="adjuntos">
               {p.adjuntos.map((a) => {
                 const href = adminRoutes.adjunto.href({ id: p.id, aid: a.id })
+                const ext = extensionDe(a.nombre_original)
+                const puedeVer = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'docx'].includes(ext)
+                const vistaHref =
+                  ext === 'docx' ? adminRoutes.adjuntoVista.href({ id: p.id, aid: a.id }) : href
                 return (
                   <li key={a.id} class="adjunto">
                     <span class="adjunto__icono" aria-hidden="true">
@@ -199,10 +193,25 @@ function PanelAdjuntos(handle: Handle<{ p: Detalle }>) {
                       <span class="adjunto__meta">{fmtSize(a.size)}</span>
                     </span>
                     <span class="adjunto__acciones">
-                      <a class="btn btn--white btn--sm" href={href} target="_blank" rel="noopener">
-                        Ver
-                      </a>
-                      <a class="btn btn--green btn--sm" href={`${href}?download=1`}>
+                      <>
+                        {puedeVer ? (
+                          <a
+                            class="btn btn--white btn--sm"
+                            href={vistaHref}
+                            target="_blank"
+                            rel="noopener"
+                          >
+                            Ver
+                          </a>
+                        ) : (
+                          <span class="breadcrumb">Sin vista previa</span>
+                        )}
+                      </>
+                      <a
+                        class="btn btn--green btn--sm"
+                        href={`${href}?download=1`}
+                        download={a.nombre_original}
+                      >
                         Descargar
                       </a>
                     </span>
@@ -222,7 +231,7 @@ function PanelAdjuntos(handle: Handle<{ p: Detalle }>) {
         )}
 
         <div class="adjuntos__pie">
-          <a class="btn btn--excel" href={adminRoutes.word.href({ id: p.id })}>
+          <a class="btn btn--excel" href={adminRoutes.word.href({ id: p.id })} download>
             ⬇ Descargar datos (.docx)
           </a>
         </div>
@@ -489,7 +498,7 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
                   <Campo label="Colonia" value={p.colonia} />
                   <Campo label="Domicilio" value={p.domicilio} />
                   <Campo label="Municipio de participante" value={p.municipio_participante} />
-                  <Campo label="Fuente" value={p.fuente} />
+                  <Campo label="Tipo de participante" value={p.fuente} />
                   <Campo label="Género" value={p.genero} />
                   <Campo label="Temática" value={p.tematica} />
                   <Campo label="Institución" value={p.institucion} />

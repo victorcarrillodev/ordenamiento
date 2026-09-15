@@ -10,7 +10,7 @@ import {
   shouldServeInline,
   validateUpload,
 } from './upload-guard.ts'
-import { MAX_FILE_BYTES, MAX_UPLOAD_FILES, validarAdjunto } from '../files/limits.ts'
+import { MAX_FILE_BYTES, MAX_UPLOAD_MB, MAX_UPLOAD_FILES, validarAdjunto } from '../files/limits.ts'
 import { nombreEnDisco, sanitizarNombre } from '../files/nombres.ts'
 
 const buf = (text: string) => Buffer.from(text, 'latin1')
@@ -25,6 +25,29 @@ describe('getExtension', () => {
 })
 
 describe('validateUpload', () => {
+  it('acepta GeoPackage actual y legado pero rechaza SQLite genérico o ejecutables renombrados', () => {
+    const gpkg = Buffer.alloc(100)
+    gpkg.write('SQLite format 3\u0000', 0, 'ascii')
+    for (const id of ['GPKG', 'GP10', 'GP11']) {
+      gpkg.write(id, 68, 'ascii')
+      expect(validateUpload({ filename: 'mapa.GPKG', buffer: gpkg })).toMatchObject({
+        ok: true,
+        safeMime: 'application/geopackage+sqlite3',
+      })
+    }
+    gpkg.fill(0, 68, 72)
+    expect(validateUpload({ filename: 'base.gpkg', buffer: gpkg }).ok).toBe(false)
+    expect(validateUpload({ filename: 'mapa.gpkg', buffer: buf('MZ falso') }).ok).toBe(false)
+    expect(shouldServeInline('gpkg')).toBe(false)
+  })
+
+  it('genera cabeceras válidas con nombres Unicode y sin controles', () => {
+    const value = contentDispositionHeader('attachment', '地図 observación.pdf\r\n')
+    expect(() => new Headers({ 'content-disposition': value })).not.toThrow()
+    expect(value).toContain("filename*=UTF-8''%E5%9C%B0%E5%9B%B3")
+    expect(value).not.toContain('\r')
+    expect(value).not.toContain('\n')
+  })
   it('acepta un PDF real', () => {
     const verdict = validateUpload({ filename: 'solicitud.pdf', buffer: buf('%PDF-1.7 ...') })
     expect(verdict.ok).toBe(true)
@@ -354,7 +377,7 @@ describe('límites de lote (MAX_UPLOAD_FILES / MAX_UPLOAD_MB)', () => {
     const res = validarAdjunto({ size: 1_000, name: 'a.pdf' }, 5, MAX_FILE_BYTES, MAX_UPLOAD_FILES)
     expect(res.ok).toBe(true)
   })
-  it('rechaza archivo que supera MAX_UPLOAD_MB (50 MB + 1)', () => {
+  it('rechaza archivo que supera MAX_UPLOAD_MB (límite + 1)', () => {
     const res = validarAdjunto(
       { size: MAX_FILE_BYTES + 1, name: 'grande.pdf' },
       1,
@@ -363,7 +386,7 @@ describe('límites de lote (MAX_UPLOAD_FILES / MAX_UPLOAD_MB)', () => {
     )
     expect(res.ok).toBe(false)
     expect(res.codigo).toBe(413)
-    expect(res.reason).toContain('50 MB')
+    expect(res.reason).toContain(`${MAX_UPLOAD_MB} MB`)
   })
   it('acepta archivo exactamente en el límite MAX_FILE_BYTES', () => {
     const res = validarAdjunto(

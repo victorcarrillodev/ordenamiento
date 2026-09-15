@@ -6,6 +6,8 @@ import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
 import { DireccionFields } from '../../ui/form/direccion-fields.tsx'
 import { Field, TextArea } from '../../ui/form/field.tsx'
+import { ClasificacionFields } from '../../ui/form/clasificacion-fields.tsx'
+import { ACCEPTED_UPLOADS, MAX_FILE_MB, textoLimites } from '../../utils/uploads.ts'
 
 /**
  * Lo que el capturista escribió, para repintarlo cuando el alta no prospera.
@@ -34,43 +36,6 @@ export type NuevaValues = Partial<
     string
   >
 >
-
-/** Los tres desplegables de clasificación, como datos: `[valor, etiqueta?]`. */
-const CLASIFICACIONES = [
-  {
-    name: 'fuente',
-    opciones: [
-      ['Empresa'],
-      ['Dependencia', 'Organismo público'],
-      ['Organización', 'Organización civil'],
-      ['Persona ciudadana'],
-      ['Otra'],
-    ],
-  },
-  {
-    name: 'genero',
-    opciones: [['Hombre'], ['Mujer'], ['Otro']],
-  },
-  {
-    name: 'tematica',
-    opciones: [
-      ['Servicios Ambientales'],
-      ['Gestión del Agua'],
-      ['Gestión de Riesgo'],
-      ['Desarrollo urbano y gestión de suelo'],
-      ['Vivienda'],
-      ['Movilidad'],
-      ['Equipamiento'],
-      ['Infraestructura'],
-      ['Gestión de Residuos'],
-      ['Patrimonio'],
-      ['Otra'],
-    ],
-  },
-] as const satisfies ReadonlyArray<{
-  name: keyof NuevaValues
-  opciones: ReadonlyArray<readonly [string, string?]>
-}>
 
 export interface NuevaPageProps {
   user: { name: string; role: string }
@@ -249,13 +214,15 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
                 >
                   Ningún archivo seleccionado
                 </span>
-                <span style="font-size: 11px; color: #64748b; font-weight: 600;">Máx. 50 MB</span>
+                <span style="font-size: 11px; color: #64748b; font-weight: 600;">
+                  Máx. {MAX_FILE_MB} MB
+                </span>
               </div>
               <input
                 id="pdf"
                 name="pdf"
                 type="file"
-                accept=".pdf,.shp,.jpg,.jpeg,.dwg,.png,.xlsx,.docx"
+                accept={ACCEPTED_UPLOADS}
                 style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;"
               />
               <div
@@ -263,9 +230,7 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
                 style="display: none; margin-top: 6px; font-size: 12px; color: #0f172a; font-weight: 600;"
               />
             </div>
-            <span class="form-hint">
-              Formatos soportados: PDF, SHP, JPG, DWG, Word, Excel, PNG (hasta 50 MB)
-            </span>
+            <span class="form-hint">{textoLimites(MAX_FILE_MB, 1)}</span>
           </div>
 
           <TextArea
@@ -278,24 +243,7 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
             appearance="admin"
           />
 
-          <div class="form-field form-field--wide">
-            <label>Clasificación</label>
-            <div class="form-grid">
-              {CLASIFICACIONES.map((clasificacion) => (
-                <select key={clasificacion.name} name={clasificacion.name}>
-                  {clasificacion.opciones.map(([valor, etiqueta]) => (
-                    <option
-                      key={valor}
-                      value={valor}
-                      selected={values[clasificacion.name] === valor}
-                    >
-                      {etiqueta ?? valor}
-                    </option>
-                  ))}
-                </select>
-              ))}
-            </div>
-          </div>
+          <ClasificacionFields values={values} appearance="admin" />
 
           <p class="form-hint">Los campos marcados con (*) son obligatorios</p>
 

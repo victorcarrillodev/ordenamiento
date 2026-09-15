@@ -1,7 +1,7 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { colors, FONT_STACK } from '../../ui/civic-horizon.ts'
-import { textoLimites } from '../../utils/uploads.ts'
+import { ACCEPTED_UPLOADS, MAX_FILE_MB, MAX_FILES, textoLimites } from '../../utils/uploads.ts'
 
 export interface UploadFieldProps {
   error?: string
@@ -80,7 +80,7 @@ export function UploadField(handle: Handle<UploadFieldProps>) {
               </span>
             </div>
             <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">
-              Máx. 5 archivos (50 MB c/u)
+              Máx. {MAX_FILES} archivos ({MAX_FILE_MB} MB c/u)
             </span>
           </div>
 
@@ -89,7 +89,7 @@ export function UploadField(handle: Handle<UploadFieldProps>) {
             name="archivos"
             type="file"
             multiple
-            accept=".pdf,.doc,.docx,.odt,.rtf,.txt,.csv,.md,.xls,.xlsx,.ods,.ppt,.pptx,.odp,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.ico,.dwg,.shp,.shx,.zip,.kmz,.rar,.7z,.dbf,.mp3,.wav,.mp4,.mov,.avi,.mkv"
+            accept={ACCEPTED_UPLOADS}
             aria-describedby={error ? 'archivos-error' : 'archivos-hint'}
             aria-invalid={error ? 'true' : undefined}
             style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;"

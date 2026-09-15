@@ -1,4 +1,4 @@
-export const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB ?? 50)
+export const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB ?? 100)
 export const MAX_UPLOAD_FILES = Number(process.env.MAX_UPLOAD_FILES ?? 5)
 export const MAX_FILE_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 export const MAX_TOTAL_BYTES = MAX_FILE_BYTES * MAX_UPLOAD_FILES

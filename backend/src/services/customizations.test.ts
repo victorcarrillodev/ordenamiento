@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it, spyOn, beforeEach, afterEach } from 'bun:test'
 import * as pool from '../db/pool.ts'
-import { deepMerge, getCustomizations } from './customizations.ts'
+import { deepMerge, getCustomizations, DEFAULT_THEME_CONFIG } from './customizations.ts'
 
 describe('customizations · deepMerge', () => {
   it('fusiona objetos anidados recursivamente', () => {
@@ -41,7 +41,9 @@ describe('customizations · getCustomizations', () => {
   })
 
   it('lee la config de la BD y la fusiona con el default', async () => {
-    sqlMock!.mockResolvedValueOnce([{ config: { usuario: { colores: { primario: '#123456' } } } }] as any)
+    sqlMock!.mockResolvedValueOnce([
+      { config: { usuario: { colores: { primario: '#123456' } } } },
+    ] as any)
     const cfg = await getCustomizations()
     expect(cfg.usuario.colores.primario).toBe('#123456')
   })
@@ -51,5 +53,25 @@ describe('customizations · getCustomizations', () => {
     const cfg = await getCustomizations()
     expect(cfg).toBeDefined()
     expect(Object.keys(cfg).length).toBeGreaterThan(0)
+  })
+
+  it('separa el párrafo tercero en configuraciones guardadas con la pregunta antigua', async () => {
+    const texts = DEFAULT_THEME_CONFIG.usuario.textos
+    sqlMock!.mockResolvedValueOnce([
+      {
+        config: {
+          usuario: {
+            textos: {
+              programaPregunta4: `${texts.programaPregunta4} ${texts.programaParrafo3}`,
+              programaParrafo1: 'Texto personalizado que debe conservarse',
+            },
+          },
+        },
+      },
+    ] as never)
+    const cfg = await getCustomizations()
+    expect(cfg.usuario.textos.programaPregunta4).toBe(texts.programaPregunta4)
+    expect(cfg.usuario.textos.programaParrafo3).toBe(texts.programaParrafo3)
+    expect(cfg.usuario.textos.programaParrafo1).toBe('Texto personalizado que debe conservarse')
   })
 })

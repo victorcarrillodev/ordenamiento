@@ -58,6 +58,7 @@ export const adminRoutes = route({
   participacionResolver: form(`${basePath}/admin/participaciones/:id/resolucion`),
   word: get(`${basePath}/admin/participaciones/:id/word`),
   adjunto: get(`${basePath}/admin/participaciones/:id/adjuntos/:aid`),
+  adjuntoVista: get(`${basePath}/admin/participaciones/:id/adjuntos/:aid/vista`),
   participacionDetalle: get(`${basePath}/admin/participaciones/:id`),
   avisos: form(`${basePath}/admin/avisos`),
   poel: form(`${basePath}/admin/poel`),
