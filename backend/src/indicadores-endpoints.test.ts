@@ -119,6 +119,11 @@ describe('indicadores', () => {
       { nombre: 'x', mediciones: [{ periodo: '2026-T1' }] },
       { nombre: 'x', documento_respaldo_id: 12345 },
       { nombre: 12345 },
+      // Cada medición es un INSERT: un envío enorme ocuparía la conexión.
+      {
+        nombre: 'x',
+        mediciones: Array.from({ length: 501 }, (_, i) => ({ periodo: `P${i}`, valor: i })),
+      },
     ]) {
       const res = await handleRequest(alta(cuerpo))
       expect(res.status).toBe(400)
@@ -126,7 +131,7 @@ describe('indicadores', () => {
     expect(crear).not.toHaveBeenCalled()
   })
 
-  it('sin respaldo llega como cadena vacía y se guarda como nulo', async () => {
+  it('los campos que llegan en blanco vacían la columna, no la ponen a cero', async () => {
     const crear = spyOn(indicadores as any, 'createIndicador').mockResolvedValue({ id: 'i1' })
     espias.push(
       crear,
@@ -142,6 +147,12 @@ describe('indicadores', () => {
     ]
     expect(datos.documento_respaldo_id).toBeNull()
     expect(datos.meta).toBe(5000)
+
+    // Regresión (Testing): `Number('  ')` es 0, y la meta quedaba en cero.
+    crear.mockClear()
+    expect((await handleRequest(alta({ nombre: 'Superficie', meta: '   ' }))).status).toBe(201)
+    const [, enBlanco] = crear.mock.calls[0] as [unknown, { meta: unknown }]
+    expect(enBlanco.meta).toBeNull()
   })
 
   // Regresión (Testing): validar el tipo no basta. Un byte nulo no cabe en una

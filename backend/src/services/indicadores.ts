@@ -30,9 +30,13 @@ const CAMPOS_TEXTO = {
 
 const LARGO_PERIODO = 60
 
+/** Cada medición es un INSERT: sin tope, un envío enorme ocupa la conexión. */
+const MAX_MEDICIONES = 500
+
 /** Valor para una columna NUMERIC: null la vacía, undefined es que no es número. */
 function numero(valor: unknown): number | null | undefined {
-  if (valor === null || valor === '') return null
+  // `Number('  ')` es 0: un campo en blanco vacía la columna, no la pone a cero.
+  if (valor === null || (typeof valor === 'string' && valor.trim() === '')) return null
   const n = typeof valor === 'number' || typeof valor === 'string' ? Number(valor) : NaN
   return Number.isFinite(n) ? n : undefined
 }
@@ -78,6 +82,9 @@ export function validarIndicador(cuerpo: unknown): ResultadoIndicador {
 
   if (entrada.mediciones !== undefined) {
     if (!Array.isArray(entrada.mediciones)) return falla('Las mediciones deben venir en una lista.')
+    if (entrada.mediciones.length > MAX_MEDICIONES) {
+      return falla(`Un indicador admite hasta ${MAX_MEDICIONES} mediciones.`)
+    }
     datos.mediciones = []
     for (const fila of entrada.mediciones) {
       const medicion = (fila ?? {}) as Record<string, unknown>
