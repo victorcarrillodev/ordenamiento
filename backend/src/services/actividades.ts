@@ -2,6 +2,7 @@ import { rm } from 'node:fs/promises'
 import { isAbsolute, resolve, sep } from 'node:path'
 
 import { sql, type Db } from '../db/pool.ts'
+import { linea, parrafos } from './texto.ts'
 import { getExtension } from './upload-guard.ts'
 import type { ArchivoSubido } from './upload.ts'
 
@@ -126,27 +127,6 @@ const LARGO = {
   avisoTitulo: 200,
   avisoDescripcion: 500,
 } as const
-
-/** ¿Carácter de control (ASCII < 32 o DEL) que no esté entre los que se conservan? */
-function esControl(caracter: string, conservar: string): boolean {
-  const codigo = caracter.codePointAt(0) ?? 0
-  return (codigo < 32 || codigo === 127) && !conservar.includes(caracter)
-}
-
-/** Una sola línea: sin saltos ni controles (el título acaba en el asunto de un correo). */
-function linea(valor: string | undefined): string {
-  return Array.from(valor ?? '', (c) => (esControl(c, '') ? ' ' : c))
-    .join('')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-/** Texto libre: conserva saltos de línea y tabuladores; quita el resto de controles. */
-function parrafos(valor: string | undefined): string {
-  return Array.from((valor ?? '').replace(/\r\n?/g, '\n'), (c) => (esControl(c, '\n\t') ? '' : c))
-    .join('')
-    .trim()
-}
 
 /** `YYYY-MM-DD` que además existe en el calendario (rechaza 2026-02-31). */
 export function esFechaIso(valor: string): boolean {

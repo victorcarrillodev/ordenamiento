@@ -44,6 +44,17 @@ function alta(body: unknown, admin = true) {
   })
 }
 
+function edicion(body: unknown) {
+  return new Request(`http://localhost/api/indicadores/${ADMIN_ID}`, {
+    method: 'PUT',
+    headers: {
+      'content-type': 'application/json',
+      cookie: 'ordenamiento_session=token-admin',
+    },
+    body: JSON.stringify(body),
+  })
+}
+
 describe('indicadores', () => {
   it('GET /api/indicadores es público', async () => {
     espias.push(spyOn(pool, 'sql').mockImplementation((() => Promise.resolve([])) as never))
@@ -88,18 +99,9 @@ describe('indicadores', () => {
     const nuevo = await handleRequest(alta({ nombre: 'x', documento_respaldo_id: RESPALDO }))
     expect(nuevo.status).toBe(400)
 
-    const edicion = await handleRequest(
-      new Request(`http://localhost/api/indicadores/${ADMIN_ID}`, {
-        method: 'PUT',
-        headers: {
-          'content-type': 'application/json',
-          cookie: 'ordenamiento_session=token-admin',
-        },
-        body: JSON.stringify({ documento_respaldo_id: RESPALDO }),
-      }),
-    )
-    expect(edicion.status).toBe(400)
-    expect(((await edicion.json()) as { error: string }).error).toContain('respaldo')
+    const editado = await handleRequest(edicion({ documento_respaldo_id: RESPALDO }))
+    expect(editado.status).toBe(400)
+    expect(((await editado.json()) as { error: string }).error).toContain('respaldo')
   })
 
   // Regresión (Testing): lo que llega por la API y no por el formulario podía
@@ -140,5 +142,69 @@ describe('indicadores', () => {
     ]
     expect(datos.documento_respaldo_id).toBeNull()
     expect(datos.meta).toBe(5000)
+  })
+
+  // Regresión (Testing): validar el tipo no basta. Un byte nulo no cabe en una
+  // columna `text` de Postgres y `nombre` está indexado, así que uno larguísimo
+  // rompe el índice: los dos acababan en 500.
+  it('el texto se sanea y el nombre tiene tope, en vez de reventar en la base', async () => {
+    const crear = spyOn(indicadores as any, 'createIndicador').mockResolvedValue({ id: 'i1' })
+    espias.push(
+      crear,
+      spyOn(pool.sql as any, 'begin').mockImplementation(async (cb: any) => cb(pool.sql)),
+    )
+
+    const conNulo = `Superficie${String.fromCharCode(0)} total`
+    const res = await handleRequest(
+      alta({
+        nombre: conNulo,
+        descripcion: conNulo,
+        unidad: conNulo,
+        fecha_evaluacion: conNulo,
+        resultado_texto: conNulo,
+        mediciones: [{ periodo: conNulo, valor: 1 }],
+      }),
+    )
+    expect(res.status).toBe(201)
+    const [, datos, mediciones] = crear.mock.calls[0] as [
+      unknown,
+      Record<string, string>,
+      Array<{ periodo: string }>,
+    ]
+    for (const campo of [
+      'nombre',
+      'descripcion',
+      'unidad',
+      'fecha_evaluacion',
+      'resultado_texto',
+    ]) {
+      expect(datos[campo]).not.toContain(String.fromCharCode(0))
+    }
+    expect(mediciones[0].periodo).not.toContain(String.fromCharCode(0))
+
+    crear.mockClear()
+    const largo = await handleRequest(alta({ nombre: 'a'.repeat(3000) }))
+    expect(largo.status).toBe(400)
+    expect(((await largo.json()) as { error: string }).error).toContain('300 caracteres')
+    // Editar tampoco puede dejar al indicador sin nombre.
+    expect((await handleRequest(edicion({ nombre: '   ' }))).status).toBe(400)
+    expect(crear).not.toHaveBeenCalled()
+  })
+
+  // Regresión (Testing): editar reemplaza las mediciones borrándolas antes de
+  // volver a insertarlas. Sin transacción, un fallo a media faena dejaba al
+  // indicador sin las que tenía mientras la respuesta decía «error interno».
+  it('la edición corre dentro de una transacción', async () => {
+    const actualizar = spyOn(indicadores as any, 'updateIndicador').mockResolvedValue(true)
+    const transaccion = { es: 'transacción' }
+    const begin = spyOn(pool.sql as any, 'begin').mockImplementation(async (cb: any) =>
+      cb(transaccion),
+    )
+    espias.push(actualizar, begin)
+
+    const res = await handleRequest(edicion({ mediciones: [{ periodo: '2026-T1', valor: 5 }] }))
+    expect(res.status).toBe(200)
+    expect(begin).toHaveBeenCalled()
+    expect(actualizar.mock.calls[0][0]).toBe(transaccion)
   })
 })

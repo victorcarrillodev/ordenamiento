@@ -1,4 +1,5 @@
 import { sql, type Db } from '../db/pool.ts'
+import { linea, parrafos } from './texto.ts'
 
 /** Campos que llegan del formulario. Los ausentes no se tocan al editar. */
 export interface DatosIndicador {
@@ -14,13 +15,20 @@ export interface DatosIndicador {
 
 export type ResultadoIndicador = { ok: true; datos: DatosIndicador } | { ok: false; error: string }
 
-const CAMPOS_TEXTO = [
-  'nombre',
-  'descripcion',
-  'unidad',
-  'fecha_evaluacion',
-  'resultado_texto',
-] as const
+/**
+ * Cada campo de texto: cómo se sanea y cuánto admite. `nombre` está indexado,
+ * así que uno larguísimo rompería el índice de Postgres; el resto se acota por
+ * el mismo criterio que el formulario de actividades.
+ */
+const CAMPOS_TEXTO = {
+  nombre: { etiqueta: 'El nombre', sanear: linea, largo: 300 },
+  descripcion: { etiqueta: 'La descripción', sanear: parrafos, largo: 5000 },
+  unidad: { etiqueta: 'La unidad', sanear: linea, largo: 50 },
+  fecha_evaluacion: { etiqueta: 'La fecha de evaluación', sanear: linea, largo: 60 },
+  resultado_texto: { etiqueta: 'El resultado', sanear: parrafos, largo: 5000 },
+} as const
+
+const LARGO_PERIODO = 60
 
 /** Valor para una columna NUMERIC: null la vacía, undefined es que no es número. */
 function numero(valor: unknown): number | null | undefined {
@@ -31,20 +39,28 @@ function numero(valor: unknown): number | null | undefined {
 
 /**
  * Normaliza y valida el cuerpo JSON de un indicador. La meta y los valores de
- * las mediciones acaban en columnas NUMERIC y las mediciones se recorren como
- * lista: sin esta comprobación, un texto o una lista que no lo es llegaban a
- * la base y la petición acababa en 500 en vez de explicar qué venía mal.
+ * las mediciones acaban en columnas NUMERIC, las mediciones se recorren como
+ * lista y el texto va a columnas `text` (donde un byte nulo no cabe): sin esta
+ * comprobación esos datos llegaban a la base y la petición acababa en 500 en
+ * vez de explicar qué venía mal.
  */
 export function validarIndicador(cuerpo: unknown): ResultadoIndicador {
   const entrada = (cuerpo ?? {}) as Record<string, unknown>
   const falla = (error: string): ResultadoIndicador => ({ ok: false, error })
   const datos: DatosIndicador = {}
 
-  for (const campo of CAMPOS_TEXTO) {
+  for (const campo of Object.keys(CAMPOS_TEXTO) as Array<keyof typeof CAMPOS_TEXTO>) {
     const valor = entrada[campo]
     if (valor === undefined) continue
-    if (typeof valor !== 'string') return falla(`El campo ${campo} debe ser texto.`)
-    datos[campo] = valor
+    const { etiqueta, sanear, largo } = CAMPOS_TEXTO[campo]
+    if (typeof valor !== 'string') return falla(`${etiqueta} debe ser texto.`)
+    const limpio = sanear(valor)
+    if (limpio.length > largo) return falla(`${etiqueta} admite hasta ${largo} caracteres.`)
+    datos[campo] = limpio
+  }
+  // Al editar, `nombre` puede no venir; si viene, no puede quedar vacío.
+  if (datos.nombre !== undefined && !datos.nombre) {
+    return falla('Escribe el nombre del indicador.')
   }
 
   if (entrada.meta !== undefined) {
@@ -73,7 +89,11 @@ export function validarIndicador(cuerpo: unknown): ResultadoIndicador {
       if (periodo !== undefined && typeof periodo !== 'string') {
         return falla('El periodo de cada medición debe ser texto.')
       }
-      datos.mediciones.push({ periodo: periodo ?? '', valor })
+      const limpio = linea(periodo)
+      if (limpio.length > LARGO_PERIODO) {
+        return falla(`El periodo de cada medición admite hasta ${LARGO_PERIODO} caracteres.`)
+      }
+      datos.mediciones.push({ periodo: limpio, valor })
     }
   }
 
@@ -187,7 +207,13 @@ export async function createIndicador(
   return { id: indicadorId }
 }
 
+/**
+ * Edita un indicador. Va dentro de una transacción (`db`) porque reemplaza sus
+ * mediciones borrándolas antes de volver a insertarlas: si algo fallara a
+ * media faena, sin ella el indicador se quedaría sin las que tenía.
+ */
 export async function updateIndicador(
+  db: Db,
   id: string,
   input: {
     nombre?: string
@@ -217,19 +243,19 @@ export async function updateIndicador(
   if (fields.length > 0) {
     fields.push('updated_at = now()')
     params.push(id)
-    const rows = await sql.unsafe<{ id: string }[]>(
+    const rows = await db.unsafe<{ id: string }[]>(
       `UPDATE indicadores SET ${fields.join(', ')} WHERE id = $${params.length} RETURNING id`,
       params as string[],
     )
     if (rows.length === 0) return false
   } else {
-    const exists = await sql<{ id: string }[]>`SELECT id FROM indicadores WHERE id = ${id}`
+    const exists = await db<{ id: string }[]>`SELECT id FROM indicadores WHERE id = ${id}`
     if (exists.length === 0) return false
   }
   if (mediciones !== undefined) {
-    await sql`DELETE FROM mediciones WHERE indicador_id = ${id}`
+    await db`DELETE FROM mediciones WHERE indicador_id = ${id}`
     for (const m of mediciones) {
-      await sql`INSERT INTO mediciones (indicador_id, periodo, valor) VALUES (${id}, ${m.periodo ?? ''}, ${m.valor})`
+      await db`INSERT INTO mediciones (indicador_id, periodo, valor) VALUES (${id}, ${m.periodo ?? ''}, ${m.valor})`
     }
   }
   return true

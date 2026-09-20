@@ -1756,7 +1756,11 @@ export async function handleRequest(request: Request): Promise<Response> {
     const respaldoInvalido = await validarRespaldo(campos.documento_respaldo_id)
     if (respaldoInvalido) return respaldoInvalido
     try {
-      const ok = await updateIndicador(indicadorPutMatch.id, campos, mediciones)
+      // En una transacción: reemplazar las mediciones las borra antes de
+      // volver a insertarlas, y un fallo a medias dejaría al indicador sin ellas.
+      const ok = await sql.begin(async (tx) =>
+        updateIndicador(tx, indicadorPutMatch.id, campos, mediciones),
+      )
       if (!ok) return json({ error: 'No encontrado' }, 404)
       return json({ ok: true })
     } catch (e) {
