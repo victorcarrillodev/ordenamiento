@@ -9,12 +9,31 @@ import { sql } from '../db/pool.ts'
  */
 
 export const EXPORTABLE = {
-  reuniones: {
-    sheet: 'Reuniones',
+  actividades: {
+    sheet: 'Actividades y avances',
     fetch: () =>
       sql<
-        Array<{ id: string; titulo: string; fecha: string; hora_inicio: string; hora_fin: string }>
-      >`SELECT id::text AS id, titulo, fecha::text AS fecha, hora_inicio, hora_fin FROM reuniones ORDER BY fecha DESC, id DESC`,
+        Array<{
+          titulo: string
+          fase: string
+          tipo: string
+          estado: string
+          fecha: string
+          hora_inicio: string
+          hora_fin: string
+          lugar: string
+          direccion: string
+          publicacion: string
+          aviso: string
+          archivos: number
+        }>
+      >`SELECT a.titulo, a.fase, a.tipo, a.estado, a.fecha::text AS fecha, a.hora_inicio, a.hora_fin,
+               a.lugar, a.direccion, a.publicacion,
+               CASE WHEN a.aviso_activo
+                    THEN COALESCE(NULLIF(a.aviso_titulo, ''), a.titulo) || ' (' || a.aviso_inicio || ' a ' || a.aviso_fin || ')'
+                    ELSE '' END AS aviso,
+               (SELECT count(*) FROM actividad_archivos f WHERE f.actividad_id = a.id)::int AS archivos
+         FROM actividades a ORDER BY a.fecha DESC, a.hora_inicio DESC`,
   },
   participaciones: {
     sheet: 'Participaciones',

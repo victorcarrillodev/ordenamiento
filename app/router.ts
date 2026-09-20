@@ -12,16 +12,17 @@ import actividadesController from './actions/poetdum/actividades/controller.tsx'
 import documentosController from './actions/poetdum/documentos/controller.tsx'
 import indicadoresController from './actions/poetdum/indicadores/controller.tsx'
 import adminController from './actions/admin/controller.tsx'
-import adminReunionesController from './actions/admin/reuniones-controller.tsx'
 import adminUsuariosController from './actions/admin/usuarios-controller.tsx'
-import { avisosController, poelController } from './actions/admin/avisos-poel-controller.tsx'
 import nuevaController from './actions/admin/nueva-controller.tsx'
 import enviarController from './actions/admin/enviar-controller.tsx'
 import resolverController from './actions/admin/resolver-controller.tsx'
 import personalizacionController from './actions/admin/personalizacion-controller.tsx'
 import personalizacionTextosController from './actions/admin/personalizacion-textos-controller.tsx'
-import portalActividadesController from './actions/admin/portal-actividades-controller.tsx'
-import portalDocumentosController from './actions/admin/portal-documentos-controller.tsx'
+import {
+  actividadEditarController as adminActividadEditarController,
+  actividadesController as adminActividadesController,
+  actividadNuevaController as adminActividadNuevaController,
+} from './actions/admin/actividades-controller.tsx'
 import portalIndicadoresController from './actions/admin/portal-indicadores-controller.tsx'
 import cuentaController from './actions/admin/cuenta-controller.tsx'
 import { render } from './middleware/render.tsx'
@@ -106,17 +107,15 @@ router.map(routes.poetdum.indicadores, indicadoresController)
 router.map(routes.poetdum, poetdumController)
 
 // Rutas de administración (sub-controllers específicos primero)
-router.map(adminRoutes.reuniones, adminReunionesController)
 router.map(adminRoutes.usuarios, adminUsuariosController)
-router.map(adminRoutes.avisos, avisosController)
-router.map(adminRoutes.poel, poelController)
 router.map(adminRoutes.participacionNueva, nuevaController)
 router.map(adminRoutes.participacionEnviar, enviarController)
 router.map(adminRoutes.participacionResolver, resolverController)
 router.map(adminRoutes.personalizacion, personalizacionController)
 router.map(adminRoutes.personalizacionTextos, personalizacionTextosController)
-router.map(adminRoutes.actividades, portalActividadesController)
-router.map(adminRoutes.documentos, portalDocumentosController)
+router.map(adminRoutes.actividades, adminActividadesController)
+router.map(adminRoutes.actividadNueva, adminActividadNuevaController)
+router.map(adminRoutes.actividadEditar, adminActividadEditarController)
 router.map(adminRoutes.indicadores, portalIndicadoresController)
 router.map(adminRoutes.cuenta, cuentaController)
 router.map(adminRoutes, adminController)

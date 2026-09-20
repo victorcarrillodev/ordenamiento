@@ -4,6 +4,7 @@ import { join } from 'node:path'
 
 import { sql } from '../db/pool.ts'
 import { attachmentPath } from '../files/attachment-path.ts'
+import { obtenerActividadGestion } from './actividades.ts'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
 
@@ -68,14 +69,6 @@ interface ParticipacionCorreo {
   genero: string
   tematica: string
   observacion: string
-  created_at: Date
-}
-
-interface AvisoCorreo {
-  id: string
-  titulo: string
-  descripcion: string
-  activo: boolean
   created_at: Date
 }
 
@@ -590,48 +583,85 @@ export async function enviarParticipacion(
   return { enviado: true, adjuntos: res.adjuntos }
 }
 
+const MESES_CORREO = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+]
+
+/** '2026-09-20' → '20 de septiembre de 2026', sin pasar por la zona horaria del servidor. */
+function fechaLargaCorreo(iso: string): string {
+  const [anio, mes, dia] = iso.split('-').map(Number)
+  return `${dia} de ${MESES_CORREO[mes - 1] ?? ''} de ${anio}`
+}
+
 /**
- * Envía por correo un Aviso institucional oficial.
+ * Envía por correo el aviso de una actividad del Programa. Todo sale del mismo
+ * registro: título y descripción del aviso (o los de la actividad, si el aviso
+ * no tiene los suyos), fecha, horario y lugar.
+ *
+ * `urlPortal` es el origen público del portal con su prefijo (APP_PUBLIC_URL +
+ * BASE_PATH). El enlace a la ficha solo se incluye si la actividad está
+ * publicada: un borrador daría «no encontrado» a quien lo abra.
  */
-export async function enviarAviso(avisoId: string, para: string): Promise<{ enviado: true }> {
+export async function enviarAviso(
+  actividadId: string,
+  para: string,
+  urlPortal: string,
+): Promise<{ enviado: true }> {
   if (!mailConfigurado()) {
     throw new Error('SMTP_NO_CONFIGURADO')
   }
 
-  const rows = await sql<AvisoCorreo[]>`
-    SELECT id, titulo, descripcion, activo, created_at
-    FROM avisos WHERE id = ${avisoId}
-  `
-  if (rows.length === 0) throw new Error('NO_ENCONTRADO')
-  const av = rows[0]
+  const actividad = await obtenerActividadGestion(actividadId)
+  if (!actividad) throw new Error('NO_ENCONTRADO')
 
-  const fechaFormateada = av.created_at
-    ? new Date(av.created_at).toLocaleString('es-MX', {
-        dateStyle: 'full',
-      })
-    : '—'
+  const titulo = actividad.aviso_titulo || actividad.titulo
+  const descripcion = actividad.aviso_descripcion || actividad.descripcion
+  const horario = [actividad.hora_inicio, actividad.hora_fin].filter(Boolean).join(' – ')
+  const cuando = [fechaLargaCorreo(actividad.fecha), horario].filter(Boolean).join(' · ')
+  const enlace =
+    actividad.publicacion === 'publicado'
+      ? `${urlPortal}/poetdum/actividades/${encodeURIComponent(actividad.id)}`
+      : ''
 
   const contenidoHtml = `
-    <div class="section-heading">Comunicado Oficial</div>
+    <div class="section-heading">Aviso del Programa</div>
     <div style="font-size: 18px; font-weight: 800; color: #1E293B; margin: 16px 0 8px 0;">
-      ${escapeHtml(av.titulo)}
+      ${escapeHtml(titulo)}
     </div>
     <div style="font-size: 13px; color: #64748B; margin-bottom: 18px;">
-      📅 Publicación Oficial: ${escapeHtml(fechaFormateada)}
+      📅 ${escapeHtml(actividad.titulo)} — ${escapeHtml(cuando)}${
+        actividad.lugar ? ` · 📍 ${escapeHtml(actividad.lugar)}` : ''
+      }
     </div>
     <div class="observation-box">
-      ${escapeHtml(av.descripcion || '(Sin detalles adicionales)')}
+      ${escapeHtml(descripcion || '(Sin detalles adicionales)')}
     </div>
+    ${
+      enlace
+        ? `<p style="margin: 18px 0;"><a href="${escapeHtml(enlace)}" style="color: #8C1D3D; font-weight: 700;">Consultar la actividad en el portal</a></p>`
+        : ''
+    }
     <div class="protocol-box">
-      <div class="protocol-title">Información para los participantes:</div>
-      <div class="protocol-step">Este aviso forma parte del proceso participativo del Programa de Ordenamiento Ecológico Local (POEL) de San Pedro Tlaquepaque. Puedes consultar el calendario completo de actividades y bitácora en el portal oficial.</div>
+      <div class="protocol-title">Información para la ciudadanía:</div>
+      <div class="protocol-step">Este aviso forma parte del proceso del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano de San Pedro Tlaquepaque. En el portal puedes consultar el calendario de actividades y los avances del Programa.</div>
     </div>
   `
 
   const html = renderPlantillaBase({
-    titulo: 'Aviso Oficial de la Bitácora Ambiental',
-    subtitulo: 'Programa de Ordenamiento Ecológico y Territorial (POETDUM)',
-    badge: 'Aviso Activo',
+    titulo: 'Aviso de la Bitácora Ambiental',
+    subtitulo: 'Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano (POETDUM)',
+    badge: 'Aviso',
     badgeColor: '#16A34A',
     contenidoHtml,
   })
@@ -640,7 +670,7 @@ export async function enviarAviso(avisoId: string, para: string): Promise<{ envi
   await transporter.sendMail({
     from: MAIL_FROM,
     to: para,
-    subject: `[Aviso Oficial POETDUM Tlaquepaque] ${av.titulo}`,
+    subject: `[Aviso POETDUM Tlaquepaque] ${titulo}`,
     html,
   })
 

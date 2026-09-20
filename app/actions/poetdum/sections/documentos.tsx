@@ -1,13 +1,29 @@
+/**
+ * Repositorio de documentos del Programa. No se captura aparte: son los
+ * archivos que cada actividad publicada ya tiene, así que un acta subida a su
+ * sesión aparece aquí sin volver a cargarla.
+ */
 import { css, type Handle } from 'remix/ui'
-import { colors, FONT_STACK } from '../../../ui/civic-horizon.ts'
+
+import {
+  FASES_PROGRAMA,
+  nombreDeArchivo,
+  pesoLegible,
+  TIPOS_DOCUMENTO,
+  type DocumentoPublico,
+} from '../../../data/programa.ts'
 import { routes } from '../../../routes.ts'
-import { ETAPAS_DOCUMENTO, TIPOS_DOCUMENTO } from '../../../data/poetdum.ts'
-import type { Documento } from '../types.ts'
+import { colors, FONT_STACK } from '../../../ui/civic-horizon.ts'
+import { IconoDocumento } from '../../../ui/programa/iconos.tsx'
+import { fechaLarga } from '../../../utils/calendario.ts'
+import { introSeccionStyle, tituloSeccionStyle, vacioStyle } from '../programa-layout.tsx'
+import { AccionesArchivo } from './archivos.tsx'
+import { chipStyle } from './avances.tsx'
 
 export interface DocumentosSectionProps {
-  documentos: Documento[]
+  documentos: DocumentoPublico[]
   tipo: string
-  etapa: string
+  fase: string
 }
 
 const selectStyle = css({
@@ -17,257 +33,162 @@ const selectStyle = css({
   borderRadius: '8px',
   border: `1px solid ${colors.gray300}`,
   background: colors.white,
+  minWidth: 0,
 })
 
-const btnFiltrar = css({
-  padding: '8px 20px',
-  borderRadius: '8px',
-  background: colors.burgundy900,
-  color: colors.white,
-  border: 'none',
+const etiquetaStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '4px',
   fontFamily: FONT_STACK,
-  fontSize: '14px',
-  fontWeight: 700,
-  cursor: 'pointer',
+  fontSize: '13px',
+  fontWeight: 600,
+  color: colors.gray700,
 })
 
 export function DocumentosSection(handle: Handle<DocumentosSectionProps>) {
   return () => {
-    const { documentos, tipo, etapa } = handle.props
+    const { documentos, tipo, fase } = handle.props
+    const accion = `${routes.poetdum.show.href()}#documentos`
     return (
       <div>
-        <h2
-          mix={css({
-            fontFamily: FONT_STACK,
-            fontSize: '26px',
-            fontWeight: 800,
-            color: colors.gray900,
-            margin: '0 0 8px',
-          })}
-        >
-          Documentos POETDUM
-        </h2>
-        <p
-          mix={css({
-            fontFamily: FONT_STACK,
-            fontSize: '16px',
-            color: colors.gray500,
-            margin: '0 0 24px',
-          })}
-        >
-          Consulta y descarga la documentación oficial del proceso.
+        <h2 mix={tituloSeccionStyle}>Documentos del Programa</h2>
+        <p mix={introSeccionStyle}>
+          Convocatorias, actas, acuerdos, dictámenes y demás documentos de las actividades del
+          Programa. Cada uno está ligado a la actividad en la que se generó.
         </p>
 
         <form
           method="get"
-          action={`${routes.poetdum.show.href()}#documentos`}
+          action={accion}
           mix={css({
             display: 'flex',
             gap: '12px',
             flexWrap: 'wrap',
-            alignItems: 'end',
-            marginBottom: '32px',
+            alignItems: 'flex-end',
+            marginBottom: '24px',
             background: colors.gray50,
             padding: '16px',
             borderRadius: '12px',
             border: `1px solid ${colors.gray200}`,
           })}
         >
-          <label mix={css({ display: 'flex', flexDirection: 'column', gap: '4px' })}>
-            <span
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '13px',
-                fontWeight: 600,
-                color: colors.gray700,
-              })}
-            >
-              Tipo
-            </span>
-            <select name="tipo" defaultValue={tipo} mix={selectStyle}>
-              <option value="">Todos los tipos</option>
+          <label mix={etiquetaStyle}>
+            Tipo de documento
+            <select name="tipo" mix={selectStyle}>
+              <option value="">Todos</option>
               {TIPOS_DOCUMENTO.map((t) => (
-                <option key={t} value={t}>
+                <option key={t} value={t} selected={t === tipo}>
                   {t}
                 </option>
               ))}
             </select>
           </label>
-
-          <label mix={css({ display: 'flex', flexDirection: 'column', gap: '4px' })}>
-            <span
-              mix={css({
-                fontFamily: FONT_STACK,
-                fontSize: '13px',
-                fontWeight: 600,
-                color: colors.gray700,
-              })}
-            >
-              Etapa
-            </span>
-            <select name="etapa" defaultValue={etapa} mix={selectStyle}>
-              <option value="">Todas las etapas</option>
-              {ETAPAS_DOCUMENTO.map((e) => (
-                <option key={e} value={e}>
-                  {e}
+          <label mix={etiquetaStyle}>
+            Fase del Programa
+            <select name="fase" mix={selectStyle}>
+              <option value="">Todas</option>
+              {FASES_PROGRAMA.map((f) => (
+                <option key={f} value={f} selected={f === fase}>
+                  {f}
                 </option>
               ))}
             </select>
           </label>
-
-          <button type="submit" mix={btnFiltrar}>
+          <button
+            type="submit"
+            mix={css({
+              padding: '9px 20px',
+              borderRadius: '8px',
+              background: colors.burgundy900,
+              color: colors.white,
+              border: 'none',
+              fontFamily: FONT_STACK,
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            })}
+          >
             Filtrar
           </button>
-          {(tipo || etapa) && (
+          {tipo || fase ? (
             <a
-              href={`${routes.poetdum.show.href()}#documentos`}
+              href={accion}
               mix={css({
                 fontFamily: FONT_STACK,
                 fontSize: '14px',
                 color: colors.burgundy900,
-                textDecoration: 'underline',
                 padding: '8px',
               })}
             >
               Limpiar filtros
             </a>
-          )}
+          ) : null}
         </form>
 
         {documentos.length === 0 ? (
-          <p
-            mix={css({
-              fontFamily: FONT_STACK,
-              fontSize: '15px',
-              color: colors.gray500,
-              textAlign: 'center',
-              padding: '32px',
-              background: colors.gray50,
-              borderRadius: '12px',
-            })}
-          >
-            No hay documentos para los filtros seleccionados.
+          <p mix={vacioStyle}>
+            {tipo || fase
+              ? 'No hay documentos para los filtros seleccionados.'
+              : 'Todavía no hay documentos publicados.'}
           </p>
         ) : (
-          <div mix={css({ display: 'flex', flexDirection: 'column', gap: '16px' })}>
-            {documentos.map((d) => (
-              <article
-                key={d.id}
-                mix={css({
-                  background: colors.white,
-                  borderRadius: '12px',
-                  border: `1px solid ${colors.gray200}`,
-                  padding: '20px 24px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                })}
-              >
-                <div
+          <ul mix={css({ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: '12px' })}>
+            {documentos.map((d) => {
+              const nombre = nombreDeArchivo(d)
+              const peso = pesoLegible(d.size)
+              return (
+                <li
+                  key={d.id}
                   mix={css({
                     display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: '12px',
+                    gap: '14px',
+                    alignItems: 'flex-start',
                     flexWrap: 'wrap',
-                    alignItems: 'start',
+                    padding: '16px 18px',
+                    borderRadius: '12px',
+                    border: `1px solid ${colors.gray200}`,
+                    background: colors.white,
+                    fontFamily: FONT_STACK,
                   })}
                 >
-                  <h3
-                    mix={css({
-                      fontFamily: FONT_STACK,
-                      fontSize: '16px',
-                      fontWeight: 700,
-                      color: colors.gray900,
-                      margin: 0,
-                    })}
+                  <span
+                    mix={css({ color: colors.burgundy900, display: 'flex', paddingTop: '2px' })}
                   >
-                    {d.titulo}
-                  </h3>
-                  <a
-                    href={`${routes.poetdum.documentos.archivo.href({ id: d.id })}?download=1`}
+                    <IconoDocumento size={22} />
+                  </span>
+                  <div
                     mix={css({
-                      display: 'inline-flex',
-                      alignItems: 'center',
+                      flex: '1 1 260px',
+                      minWidth: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
                       gap: '6px',
-                      padding: '6px 14px',
-                      borderRadius: '8px',
-                      background: colors.burgundy900,
-                      color: colors.white,
-                      fontFamily: FONT_STACK,
-                      fontSize: '13px',
-                      fontWeight: 700,
-                      textDecoration: 'none',
-                      whiteSpace: 'nowrap',
                     })}
                   >
-                    ⬇ Descargar
-                  </a>
-                </div>
-                <div
-                  mix={css({
-                    display: 'flex',
-                    gap: '8px',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                  })}
-                >
-                  <span
-                    mix={css({
-                      display: 'inline-flex',
-                      padding: '3px 10px',
-                      borderRadius: '9999px',
-                      background: colors.gray100,
-                      border: `1px solid ${colors.gray200}`,
-                      fontFamily: FONT_STACK,
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      color: colors.gray700,
-                    })}
-                  >
-                    {d.tipo}
-                  </span>
-                  <span
-                    mix={css({
-                      display: 'inline-flex',
-                      padding: '3px 10px',
-                      borderRadius: '9999px',
-                      background: d.etapa === 'Notificada' ? colors.green100 : colors.gold100,
-                      color: d.etapa === 'Notificada' ? colors.green700 : '#92400e',
-                      fontFamily: FONT_STACK,
-                      fontSize: '12px',
-                      fontWeight: 700,
-                    })}
-                  >
-                    {d.etapa}
-                  </span>
-                  {d.fecha ? (
-                    <span
-                      mix={css({
-                        fontFamily: FONT_STACK,
-                        fontSize: '13px',
-                        color: colors.gray500,
-                      })}
+                    <strong
+                      mix={css({ fontSize: '16px', color: colors.gray900 })}
+                      title={d.nombre_original}
                     >
-                      {d.fecha}
+                      {nombre}
+                    </strong>
+                    <span mix={css({ display: 'flex', gap: '6px', flexWrap: 'wrap' })}>
+                      <span mix={chipStyle}>{d.tipo}</span>
+                      <span mix={chipStyle}>{d.actividad_fase}</span>
+                      {peso ? <span mix={chipStyle}>{peso}</span> : null}
                     </span>
-                  ) : null}
-                </div>
-                {d.descripcion ? (
-                  <p
-                    mix={css({
-                      fontFamily: FONT_STACK,
-                      fontSize: '14px',
-                      color: colors.gray700,
-                      margin: 0,
-                      lineHeight: 1.6,
-                    })}
-                  >
-                    {d.descripcion}
-                  </p>
-                ) : null}
-              </article>
-            ))}
-          </div>
+                    <a
+                      href={routes.poetdum.actividades.detalle.href({ id: d.actividad_id })}
+                      mix={css({ fontSize: '13px', color: colors.gray500 })}
+                    >
+                      {d.actividad_titulo} · {fechaLarga(d.actividad_fecha)}
+                    </a>
+                  </div>
+                  <AccionesArchivo archivo={d} />
+                </li>
+              )
+            })}
+          </ul>
         )}
       </div>
     )

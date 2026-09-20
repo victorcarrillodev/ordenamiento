@@ -9,7 +9,6 @@ import { css } from 'remix/ui'
 import {
   bodyLargeProps,
   bodyProps,
-  cardProps,
   colors,
   eyebrowProps,
   FONT_STACK,
@@ -27,24 +26,23 @@ import { Button } from '../ui/button.tsx'
 import { Document } from './document.tsx'
 import { NAVBAR_ALTURA_MOVIL, NAVBAR_CORTE_MOVIL, NavBar } from '../ui/nav-bar.tsx'
 import { routes } from '../routes.ts'
-import { ReunionesCalendario, type ReunionPublica } from './public/reuniones-calendario.tsx'
+import type { ActividadPublica, AvisoPortada } from '../data/programa.ts'
+import { AvisoFranja, InformacionPrograma, ProximasActividades } from './home-programa.tsx'
 
 const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 
 // ---------------------------------------------------------------------------
 export interface HomePageProps {
   theme?: ThemeData
-  reuniones?: ReunionPublica[]
+  /** Aviso vigente de mayor relevancia; sin aviso, la franja no se dibuja. */
+  aviso?: AvisoPortada | null
+  /** Las próximas actividades (las tres más cercanas). */
+  proximas?: ActividadPublica[]
 }
 
 export function HomePage(handle: Handle<HomePageProps>) {
   return () => {
-    const theme = handle.props.theme
-    const reuniones = handle.props.reuniones ?? []
-    const u = theme?.usuario || {}
-    const c = u.colores || {}
-    const textos = (u.textos ?? {}) as Record<string, string>
-    const accent = isSafeCssColor(c.acento) ? c.acento : colors.gold400
+    const { theme, aviso, proximas = [] } = handle.props
     return (
       <Document>
         <div
@@ -56,17 +54,16 @@ export function HomePage(handle: Handle<HomePageProps>) {
           })}
         >
           <NavBar theme={theme} />
+          {aviso ? <AvisoFranja aviso={aviso} theme={theme} /> : null}
           <main id="main-content">
             <HeroSection theme={theme} />
+            <ProximasActividades actividades={proximas} theme={theme} />
             <WhatIsThisSite theme={theme} />
-            <ActionCardsGrid theme={theme} />
+            <InformacionPrograma theme={theme} />
             <WhatIsTheProgram theme={theme} />
             <ProcessTimeline theme={theme} />
             <ParticipationCta theme={theme} />
           </main>
-          {reuniones.length > 0 ? (
-            <ReunionesCalendario reuniones={reuniones} textos={textos} accent={accent} />
-          ) : null}
           <SiteFooter theme={theme} />
         </div>
       </Document>
@@ -640,218 +637,6 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
                 {txt.queEsPieImagen || 'Equilibrio ecológico • Jalisco, México'}
               </p>
             </div>
-          </div>
-        </div>
-      </section>
-    )
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Action Cards Grid
-// ---------------------------------------------------------------------------
-
-function ActionCardsGrid(handle: Handle<{ theme?: ThemeData }>) {
-  return () => {
-    const { theme } = handle.props
-    const u = theme?.usuario || {}
-    const c = u.colores || {}
-    const ico = u.iconos || {}
-    const txt = u.textos || {}
-
-    const primary = c.primario || colors.burgundy900
-    const secondary = c.secundario || colors.green700
-    const accent = c.acento || colors.gold500
-
-    const cards = [
-      {
-        id: 'card-elaboracion',
-        icon: ico.cardPrograma || '📋',
-        eyebrow: txt.card1Eyebrow || 'Proceso de elaboración',
-        title: txt.card1Titulo || 'Proceso de Elaboración',
-        description:
-          txt.card1Desc ||
-          'Consulta las etapas del proceso de elaboración del Programa, su estado de avance, actividades realizadas, productos obtenidos y documentos relacionados.',
-        href: '#proceso',
-        cta: txt.card1Cta || 'Ver proceso',
-        accent: primary,
-      },
-      {
-        id: 'card-proceso',
-        icon: ico.cardProceso || '🗓️',
-        eyebrow: txt.card2Eyebrow || 'Actividades y participación',
-        title: txt.card2Titulo || 'Actividades y Participación',
-        description:
-          txt.card2Desc ||
-          'Consulta las actividades próximas y realizadas: talleres, mesas de trabajo, consultas públicas y sesiones técnicas, con sus resultados y documentos.',
-        href: '#actividades',
-        cta: txt.card2Cta || 'Ver actividades',
-        accent: secondary,
-      },
-      {
-        id: 'card-documentos',
-        icon: ico.cardDocumentos || '📄',
-        eyebrow: txt.card3Eyebrow || 'Repositorio técnico',
-        title: txt.card3Titulo || 'Documentos del Proceso',
-        description:
-          txt.card3Desc ||
-          'Accede al repositorio de convenios, actas, acuerdos, documentos técnicos, cartografía y avances generados durante el proceso.',
-        href: '#documentos',
-        cta: txt.card3Cta || 'Ver documentos',
-        accent: accent,
-      },
-      {
-        id: 'card-seguimiento',
-        icon: ico.cardCalendario || '📊',
-        eyebrow: txt.card4Eyebrow || 'Seguimiento y evaluación',
-        title: txt.card4Titulo || 'Seguimiento y Evaluación',
-        description:
-          txt.card4Desc ||
-          'Consulta los indicadores ambientales y los resultados de la evaluación del cumplimiento y efectividad del Programa.',
-        href: '#seguimiento',
-        cta: txt.card4Cta || 'Ver indicadores',
-        accent: colors.burgundy700,
-      },
-    ]
-
-    return (
-      <section
-        aria-labelledby="acciones-heading"
-        mix={css({ ...sectionPaddingProps, background: colors.white })}
-      >
-        <div mix={css(sectionContainerProps)}>
-          <div
-            mix={css({
-              textAlign: 'center',
-              marginBottom: '64px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '16px',
-            })}
-          >
-            <span
-              style={`font-family: ${FONT_STACK}; font-size: 12px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: ${primary};`}
-            >
-              {txt.tarjetasEyebrow || 'Explora lo que puedes hacer aquí'}
-            </span>
-            <h2 id="acciones-heading" mix={css({ ...headingLProps, margin: 0, maxWidth: '600px' })}>
-              {txt.tarjetasTitulo || 'Todo lo que necesitas para estar informado y participar'}
-            </h2>
-          </div>
-
-          <div
-            mix={css({
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '24px',
-              '@media (max-width: 1024px)': {
-                gridTemplateColumns: 'repeat(2, 1fr)',
-              },
-              '@media (max-width: 600px)': { gridTemplateColumns: '1fr' },
-            })}
-          >
-            {cards.map((card) => (
-              <a
-                key={card.id}
-                id={card.id}
-                href={card.href}
-                mix={css({
-                  ...cardProps,
-                  textDecoration: 'none',
-                  color: 'inherit',
-                  cursor: 'pointer',
-                })}
-              >
-                <div
-                  style={`
-                    width: 56px;
-                    height: 56px;
-                    border-radius: 14px;
-                    background: ${card.accent}18;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 26px;
-                    flex-shrink: 0;
-                    border: 1px solid ${colors.gray700};
-                  `}
-                  aria-hidden="true"
-                >
-                  {card.icon}
-                </div>
-
-                <div
-                  mix={css({
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                    flex: 1,
-                  })}
-                >
-                  <span
-                    style={`
-                      font-family: ${FONT_STACK};
-                      font-size: 11px;
-                      font-weight: 700;
-                      letter-spacing: 0.12em;
-                      text-transform: uppercase;
-                      color: ${card.accent};
-                    `}
-                  >
-                    {card.eyebrow}
-                  </span>
-                  <h3
-                    mix={css({
-                      fontFamily: FONT_STACK,
-                      fontSize: '17px',
-                      fontWeight: 700,
-                      lineHeight: 1.3,
-                      color: colors.gray900,
-                      margin: 0,
-                    })}
-                  >
-                    {card.title}
-                  </h3>
-                  <p
-                    mix={css({
-                      fontFamily: FONT_STACK,
-                      fontSize: '14px',
-                      lineHeight: 1.6,
-                      color: colors.gray500,
-                      margin: 0,
-                    })}
-                  >
-                    {card.description}
-                  </p>
-                </div>
-
-                <div
-                  style={`
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    font-family: ${FONT_STACK};
-                    font-size: 13px;
-                    font-weight: 700;
-                    color: ${card.accent};
-                    letter-spacing: 0.04em;
-                    margin-top: auto;
-                  `}
-                >
-                  {card.cta}
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path
-                      d="M5 12h14M12 5l7 7-7 7"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </div>
-              </a>
-            ))}
           </div>
         </div>
       </section>
@@ -1583,8 +1368,9 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
                 { label: txt.navEnlaceInicio || 'Inicio y proceso', href: routes.home.href() },
                 { label: 'El Programa', href: '#que-es-el-programa' },
                 { label: 'El Proceso', href: '#proceso' },
-                { label: 'Documentos', href: '#documentos' },
-                { label: 'Elaboración POETDUM', href: routes.poetdum.show.href() },
+                { label: 'Calendario de actividades', href: routes.poetdum.calendario.href() },
+                { label: 'Avances del Programa', href: routes.poetdum.avances.href() },
+                { label: 'Documentos', href: `${routes.poetdum.show.href()}#documentos` },
               ].map((link) => (
                 <a key={link.label} href={link.href} mix={footerLinkStyle}>
                   {link.label}

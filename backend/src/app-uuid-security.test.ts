@@ -16,8 +16,18 @@ let verifySpy: ReturnType<typeof spyOn>
 let userSpy: ReturnType<typeof spyOn>
 
 beforeEach(() => {
-  verifySpy = spyOn(auth as any, 'verifySessionToken').mockImplementation(async (tok: string) => (tok === 'valid-token' ? '550e8400-e29b-41d4-a716-446655440041' : null))
-  userSpy = spyOn(auth as any, 'getUserById').mockImplementation(async () => ({ id: '550e8400-e29b-41d4-a716-446655440041', name: 'Admin', role: 'admin', email: 'admin@test.mx' } as any))
+  verifySpy = spyOn(auth as any, 'verifySessionToken').mockImplementation(async (tok: string) =>
+    tok === 'valid-token' ? '550e8400-e29b-41d4-a716-446655440041' : null,
+  )
+  userSpy = spyOn(auth as any, 'getUserById').mockImplementation(
+    async () =>
+      ({
+        id: '550e8400-e29b-41d4-a716-446655440041',
+        name: 'Admin',
+        role: 'admin',
+        email: 'admin@test.mx',
+      }) as any,
+  )
 })
 afterEach(() => {
   verifySpy.mockRestore()
@@ -29,7 +39,7 @@ describe('H1 · UUID isUuid + IDOR/enumerabilidad', () => {
     const spy = spyOn(pool.sql as any, 'unsafe').mockResolvedValue([] as any)
     const res = await handleRequest(req('/api/participations/123'))
     expect(res.status).toBe(400)
-    const body = await res.json() as { error: string }
+    const body = (await res.json()) as { error: string }
     expect(body.error).toMatch(/id inválido/i)
     expect(spy).not.toHaveBeenCalled()
     spy.mockRestore()
@@ -58,7 +68,7 @@ describe('H1 · UUID isUuid + IDOR/enumerabilidad', () => {
       .mockResolvedValueOnce([] as any)
     const res = await handleRequest(req('/api/participations/550e8400-e29b-41d4-a716-446655440042'))
     expect(res.status).toBe(200)
-    const body = await res.json() as Record<string, unknown>
+    const body = (await res.json()) as Record<string, unknown>
     expect(body.folio).toBe('F-1')
     spy.mockRestore()
   })
@@ -86,7 +96,9 @@ describe('H1 · Inyección / cast en :id', () => {
 
   it('rechaza CRLF en aid de attachments', async () => {
     const spy = spyOn(pool.sql as any, 'unsafe').mockResolvedValue([] as any)
-    const res = await handleRequest(req('/api/participations/550e8400-e29b-41d4-a716-446655440042/attachments/a\r\nb'))
+    const res = await handleRequest(
+      req('/api/participations/550e8400-e29b-41d4-a716-446655440042/attachments/a\r\nb'),
+    )
     expect(res.status).toBe(400)
     expect(spy).not.toHaveBeenCalled()
     spy.mockRestore()
@@ -103,7 +115,9 @@ describe('H1 · Formato UUID', () => {
   })
   it('char extra 550e8400-e29b-41d4-a716-446655440042x → 400', async () => {
     const spy = spyOn(pool.sql as any, 'unsafe').mockResolvedValue([] as any)
-    const res = await handleRequest(req('/api/participations/550e8400-e29b-41d4-a716-446655440042x'))
+    const res = await handleRequest(
+      req('/api/participations/550e8400-e29b-41d4-a716-446655440042x'),
+    )
     expect(res.status).toBe(400)
     spy.mockRestore()
   })
@@ -138,25 +152,31 @@ describe('H1 · Otros endpoints con :id usan isUuid', () => {
   })
   it('GET attachments con participation id inválido → 400', async () => {
     const spy = spyOn(pool.sql as any, 'unsafe').mockResolvedValue([] as any)
-    const res = await handleRequest(req('/api/participations/123/attachments/550e8400-e29b-41d4-a716-446655440042'))
+    const res = await handleRequest(
+      req('/api/participations/123/attachments/550e8400-e29b-41d4-a716-446655440042'),
+    )
     expect(res.status).toBe(400)
     spy.mockRestore()
   })
   it('GET attachments con aid inválido → 400', async () => {
     const spy = spyOn(pool.sql as any, 'unsafe').mockResolvedValue([] as any)
-    const res = await handleRequest(req('/api/participations/550e8400-e29b-41d4-a716-446655440042/attachments/invalid'))
+    const res = await handleRequest(
+      req('/api/participations/550e8400-e29b-41d4-a716-446655440042/attachments/invalid'),
+    )
     expect(res.status).toBe(400)
     spy.mockRestore()
   })
-  it('DELETE reuniones con id numérico → 400', async () => {
+  it('DELETE actividades con id numérico → 400', async () => {
     const spy = spyOn(pool.sql as any, 'unsafe').mockResolvedValue([] as any)
-    const res = await handleRequest(req('/api/reuniones/123', 'DELETE'))
+    const res = await handleRequest(req('/api/actividades/123', 'DELETE'))
     expect(res.status).toBe(400)
     spy.mockRestore()
   })
   it('POST /api/participations/enviar con id numérico → 400 (no 500)', async () => {
     const spy = spyOn(pool.sql as any, 'unsafe').mockResolvedValue([] as any)
-    const res = await handleRequest(req('/api/participations/enviar', 'POST', { id: '123', para: 'a@b.com' }))
+    const res = await handleRequest(
+      req('/api/participations/enviar', 'POST', { id: '123', para: 'a@b.com' }),
+    )
     expect(res.status).toBe(400)
     spy.mockRestore()
   })

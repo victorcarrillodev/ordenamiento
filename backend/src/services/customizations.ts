@@ -107,24 +107,33 @@ export interface ThemeConfig {
       queEsBullet3: string
       queEsBullet4: string
       queEsPieImagen: string
-      tarjetasEyebrow: string
-      tarjetasTitulo: string
-      card1Titulo: string
-      card1Desc: string
-      card1Eyebrow: string
-      card1Cta: string
-      card2Titulo: string
-      card2Desc: string
-      card2Eyebrow: string
-      card2Cta: string
-      card3Titulo: string
-      card3Desc: string
-      card3Eyebrow: string
-      card3Cta: string
-      card4Titulo: string
-      card4Desc: string
-      card4Eyebrow: string
-      card4Cta: string
+      infoEyebrow: string
+      infoTitulo: string
+      infoDescripcion: string
+      fasesEyebrow: string
+      fasesTitulo: string
+      fasesDesc: string
+      fasesCta: string
+      avancesEyebrow: string
+      avancesTitulo: string
+      avancesDesc: string
+      avancesCta: string
+      calendarioEyebrow: string
+      calendarioTitulo: string
+      calendarioDesc: string
+      calendarioCta: string
+      seguimientoEyebrow: string
+      seguimientoTitulo: string
+      seguimientoDesc: string
+      seguimientoDescPendiente: string
+      seguimientoCta: string
+      seguimientoCtaPendiente: string
+      proximasTitulo: string
+      proximasSubtitulo: string
+      proximasBoton: string
+      proximasVacio: string
+      avisoEtiqueta: string
+      avisoBoton: string
       programaTitulo: string
       programaParrafo1: string
       programaParrafo2: string
@@ -167,6 +176,13 @@ export interface ThemeConfig {
     adminLogo: string
     adminTitulo: string
   }
+  /**
+   * Estado del Programa. Mientras no esté aprobado, «Seguimiento y evaluación»
+   * muestra solo el aviso de que se publicará tras la aprobación.
+   */
+  programa: {
+    aprobado: boolean
+  }
 }
 
 export const DEFAULT_THEME_CONFIG: ThemeConfig = {
@@ -190,11 +206,14 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
       imagenEcologia: IMAGEN.ecologia,
       imagenPrograma: IMAGEN.programa,
     },
+    // Íconos de los cuatro accesos de «Sobre el Programa». Las claves son las
+    // de la versión anterior (se conservan para no perder lo ya guardado):
+    // fases, avances, calendario y seguimiento, en ese orden.
     iconos: {
-      cardPrograma: '🏛️',
-      cardProceso: '⚙️',
+      cardPrograma: '🧭',
+      cardProceso: '📊',
       cardCalendario: '📅',
-      cardDocumentos: '📄',
+      cardDocumentos: '📈',
     },
     textos: {
       navbarTitulo: 'Inicio – Portal de Ordenamiento Territorial',
@@ -221,28 +240,40 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
       queEsBullet4:
         'Registro de observaciones, propuestas y documentos de la ciudadanía (durante los tiempos oficiales de consulta pública).',
       queEsPieImagen: 'Equilibrio ecológico • Jalisco, México',
-      tarjetasEyebrow: 'Explora lo que puedes hacer aquí',
-      tarjetasTitulo: 'Todo lo que necesitas para estar informado y participar',
-      card1Titulo: 'Proceso de Elaboración',
-      card1Desc:
-        'Consulta las etapas del proceso de elaboración del Programa, su estado de avance, actividades realizadas, productos obtenidos y documentos relacionados.',
-      card1Eyebrow: 'Proceso de elaboración',
-      card1Cta: 'Ver proceso',
-      card2Titulo: 'Actividades y Participación',
-      card2Desc:
-        'Consulta las actividades próximas y realizadas: talleres, mesas de trabajo, consultas públicas y sesiones técnicas, con sus resultados y documentos.',
-      card2Eyebrow: 'Actividades y participación',
-      card2Cta: 'Ver actividades',
-      card3Titulo: 'Documentos del Proceso',
-      card3Desc:
-        'Accede al repositorio de convenios, actas, acuerdos, documentos técnicos, cartografía y avances generados durante el proceso.',
-      card3Eyebrow: 'Repositorio técnico',
-      card3Cta: 'Ver documentos',
-      card4Titulo: 'Seguimiento y Evaluación',
-      card4Desc:
-        'Consulta los indicadores ambientales y los resultados de la evaluación del cumplimiento y efectividad del Programa.',
-      card4Eyebrow: 'Seguimiento y evaluación',
-      card4Cta: 'Ver indicadores',
+      infoEyebrow: 'Sobre el Programa',
+      infoTitulo: 'Información y avances del Programa',
+      infoDescripcion:
+        'Consulta las fases del Programa, las actividades realizadas, el calendario de actividades programadas y los resultados de su aplicación.',
+      fasesEyebrow: 'Proceso del Programa',
+      fasesTitulo: 'Conoce las fases',
+      fasesDesc:
+        'Conoce las cinco fases del Programa: Formulación, Expedición, Ejecución, Evaluación y Modificación.',
+      fasesCta: 'Ver fases',
+      avancesEyebrow: 'Avances del Programa',
+      avancesTitulo: 'Avances del Programa',
+      avancesDesc:
+        'Consulta las actividades realizadas, sus resultados, acuerdos, documentos, fotografías y evidencias.',
+      avancesCta: 'Ver avances',
+      calendarioEyebrow: 'Actividades',
+      calendarioTitulo: 'Calendario de actividades',
+      calendarioDesc:
+        'Consulta las actividades programadas, con su fecha, horario, lugar, ubicación y documentos disponibles.',
+      calendarioCta: 'Ver calendario',
+      seguimientoEyebrow: 'Seguimiento y evaluación',
+      seguimientoTitulo: 'Seguimiento y evaluación',
+      seguimientoDesc:
+        'Consulta los indicadores, las metas y mediciones y los resultados de la aplicación y evaluación del Programa.',
+      seguimientoDescPendiente:
+        'Aquí se publicarán los indicadores y resultados de la aplicación y evaluación del Programa.',
+      seguimientoCta: 'Ver seguimiento',
+      seguimientoCtaPendiente: 'Disponible una vez aprobado',
+      proximasTitulo: 'Próximas actividades',
+      proximasSubtitulo: 'Consulta las fechas, horarios y lugares de las actividades programadas.',
+      proximasBoton: 'Ver todas las actividades',
+      proximasVacio:
+        'Por el momento no hay actividades programadas. Consulta el historial para conocer las actividades realizadas.',
+      avisoEtiqueta: 'Aviso importante',
+      avisoBoton: 'Ver aviso',
       programaTitulo:
         '¿Qué es el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano?',
       programaParrafo1:
@@ -299,6 +330,9 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
     adminBg: '#f4f6fb',
     adminLogo: IMAGEN.logo,
     adminTitulo: 'ADMINISTRADOR BITÁCORA AMBIENTAL',
+  },
+  programa: {
+    aprobado: false,
   },
 }
 

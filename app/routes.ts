@@ -22,18 +22,26 @@ export const routes = route({
   participationLogin: get(`${basePath}/participation/login`),
   logout: post(`${basePath}/logout`),
   participation: form(`${basePath}/participation`),
+  // Información y avances del Programa (POETDUM). Cada actividad se registra
+  // una vez en el panel y aparece sola donde corresponde según su estado.
   poetdum: {
     show: get(`${basePath}/poetdum`),
-    sesionImagen: get(`${basePath}/poetdum/sesiones/:id/imagen`),
+    avances: get(`${basePath}/poetdum/avances`),
+    calendario: get(`${basePath}/poetdum/calendario`),
+    seguimiento: get(`${basePath}/poetdum/seguimiento`),
+    // Proxy de los archivos de las actividades (el navegador no llega al
+    // backend; el patrón del repo es proxear con backendFetch).
+    archivo: get(`${basePath}/poetdum/archivos/:aid`),
     actividades: {
+      // Todas las próximas actividades («Ver todas las actividades»).
       show: get(`${basePath}/poetdum/actividades`),
-      // Proxy de la foto servida por el backend (el navegador no accede al
-      // backend directamente; el patrón del repo es proxear con backendFetch).
+      detalle: get(`${basePath}/poetdum/actividades/:id`),
+      // Enlaces de versiones anteriores: los ids se conservaron al migrar,
+      // así que redirigen al archivo equivalente.
       foto: get(`${basePath}/poetdum/actividades/:id/fotos/:fid`),
     },
     documentos: {
       show: get(`${basePath}/poetdum/documentos`),
-      // Proxy de descarga de archivo del repositorio de documentos.
       archivo: get(`${basePath}/poetdum/documentos/:id/archivo`),
     },
     indicadores: { show: get(`${basePath}/poetdum/indicadores`) },
@@ -49,7 +57,6 @@ export const routes = route({
  */
 export const adminRoutes = route({
   index: get(`${basePath}/admin`),
-  reuniones: form(`${basePath}/admin/reuniones`),
   exportar: get(`${basePath}/admin/exportar`),
   usuarios: form(`${basePath}/admin/usuarios`),
   participacionNueva: form(`${basePath}/admin/participaciones/nueva`),
@@ -60,12 +67,11 @@ export const adminRoutes = route({
   adjunto: get(`${basePath}/admin/participaciones/:id/adjuntos/:aid`),
   adjuntoVista: get(`${basePath}/admin/participaciones/:id/adjuntos/:aid/vista`),
   participacionDetalle: get(`${basePath}/admin/participaciones/:id`),
-  avisos: form(`${basePath}/admin/avisos`),
-  poel: form(`${basePath}/admin/poel`),
-  poelImagen: get(`${basePath}/admin/poel/:id/imagen`),
-  poelArchivo: get(`${basePath}/admin/poel/archivos/:aid`),
+  // «Actividades y avances del Programa»: sustituye a los apartados separados
+  // de avisos, reuniones, sesiones POEL, actividades y documentos.
   actividades: form(`${basePath}/admin/actividades`),
-  documentos: form(`${basePath}/admin/documentos`),
+  actividadNueva: form(`${basePath}/admin/actividades/nueva`),
+  actividadEditar: form(`${basePath}/admin/actividades/:id`),
   indicadores: form(`${basePath}/admin/indicadores`),
   estadisticas: get(`${basePath}/admin/estadisticas`),
   sesiones: get(`${basePath}/admin/sesiones`),

@@ -635,8 +635,8 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                 <h3 class="panel__title">4. Textos del Portal</h3>
                 <p style="font-size: 13px; color: #64748b; margin: 0 0 12px;">
                   Todos los textos visibles del portal ciudadano (navegación, portada, secciones,
-                  tarjetas, proceso, llamado a participar y pie de página) se editan en una página
-                  dedicada, agrupados por sección.
+                  «Sobre el Programa», próximas actividades, avisos, proceso, llamado a participar y
+                  pie de página) se editan en una página dedicada, agrupados por sección.
                 </p>
                 <Button
                   href={adminRoutes.personalizacionTextos.index.href()}
@@ -649,53 +649,63 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
 
               {/* SECCION ICONOS */}
               <div class="panel">
-                <h3 class="panel__title">5. Íconos de Tarjetas</h3>
+                <h3 class="panel__title">5. Íconos de «Sobre el Programa»</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px;">
                   {/* Tarjeta 1 */}
                   <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 6px; align-items: center;">
                       <input
                         type="text"
                         name="ico_card1"
-                        value={ico.cardPrograma || '🏛️'}
+                        aria-label="Ícono de «Conoce las fases»"
+                        value={ico.cardPrograma || '🧭'}
                         style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
                       />
+                      <span style="font-size: 13px; color: #475569;">Conoce las fases</span>
                     </div>
                   </div>
 
                   {/* Tarjeta 2 */}
                   <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 6px; align-items: center;">
                       <input
                         type="text"
                         name="ico_card2"
-                        value={ico.cardProceso || '⚙️'}
+                        aria-label="Ícono de «Avances del Programa»"
+                        value={ico.cardProceso || '📊'}
                         style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
                       />
+                      <span style="font-size: 13px; color: #475569;">Avances del Programa</span>
                     </div>
                   </div>
 
                   {/* Tarjeta 3 */}
                   <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 6px; align-items: center;">
                       <input
                         type="text"
                         name="ico_card3"
+                        aria-label="Ícono de «Calendario de actividades»"
                         value={ico.cardCalendario || '📅'}
                         style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
                       />
+                      <span style="font-size: 13px; color: #475569;">
+                        Calendario de actividades
+                      </span>
                     </div>
                   </div>
 
                   {/* Tarjeta 4 */}
                   <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="display: flex; gap: 8px; margin-bottom: 6px;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 6px; align-items: center;">
                       <input
                         type="text"
                         name="ico_card4"
-                        value={ico.cardDocumentos || '📄'}
+                        aria-label="Ícono de «Seguimiento y evaluación»"
+                        value={ico.cardDocumentos || '📈'}
                         style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
                       />
+                      <span style="font-size: 13px; color: #475569;">Seguimiento y evaluación</span>
                     </div>
                   </div>
                 </div>
@@ -1228,7 +1238,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                   </div>
 
                   <div class="mp__cards">
-                    <span class="mp__tag">✎ Tarjetas de acción</span>
+                    <span class="mp__tag">✎ Sobre el Programa</span>
                     <div class="mp__cards-row">
                       <div class="mp__card">
                         <span
@@ -1236,10 +1246,10 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                           class="mp__card-icon"
                           style={`color:${c.acento || '#e0b84a'};`}
                         >
-                          {ico.cardPrograma || '🏛️'}
+                          {ico.cardPrograma || '🧭'}
                         </span>
                         <strong id="mp-card-titulo-1">
-                          {txt.card1Titulo || 'Conoce el Programa'}
+                          {txt.fasesTitulo || 'Conoce las fases'}
                         </strong>
                       </div>
                       <div class="mp__card">
@@ -1248,10 +1258,10 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                           class="mp__card-icon"
                           style={`color:${c.acento || '#e0b84a'};`}
                         >
-                          {ico.cardProceso || '⚙️'}
+                          {ico.cardProceso || '📊'}
                         </span>
                         <strong id="mp-card-titulo-2">
-                          {txt.card2Titulo || 'Conoce el Proceso'}
+                          {txt.avancesTitulo || 'Avances del Programa'}
                         </strong>
                       </div>
                       <div class="mp__card">
@@ -1263,7 +1273,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                           {ico.cardCalendario || '📅'}
                         </span>
                         <strong id="mp-card-titulo-3">
-                          {txt.card3Titulo || 'Calendario de Actividades'}
+                          {txt.calendarioTitulo || 'Calendario de actividades'}
                         </strong>
                       </div>
                       <div class="mp__card">
@@ -1272,10 +1282,10 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                           class="mp__card-icon"
                           style={`color:${c.acento || '#e0b84a'};`}
                         >
-                          {ico.cardDocumentos || '📄'}
+                          {ico.cardDocumentos || '📈'}
                         </span>
                         <strong id="mp-card-titulo-4">
-                          {txt.card4Titulo || 'Consulta Documentos'}
+                          {txt.seguimientoTitulo || 'Seguimiento y evaluación'}
                         </strong>
                       </div>
                     </div>

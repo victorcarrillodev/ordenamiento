@@ -5,7 +5,8 @@ const { isExportable, exportTableToXlsx } = await import('./export.ts')
 
 describe('export · lista blanca (anti-inyección de tabla)', () => {
   it('acepta solo tablas exportables', () => {
-    expect(isExportable('reuniones')).toBe(true)
+    expect(isExportable('actividades')).toBe(true)
+    expect(isExportable('reuniones')).toBe(false)
     expect(isExportable('participaciones')).toBe(true)
     expect(isExportable('usuarios')).toBe(true)
   })
@@ -32,8 +33,24 @@ describe('exportTableToXlsx', () => {
       const sql = strings.join('')
       if (sql.includes('FROM participations')) {
         return [
-          { id: '1', folio: 'POE-1', origen: 'digital', nombre: 'Ana', correo: 'a@b.com', estado: 'En proceso', created_at: '2026-01-01' },
-          { id: '2', folio: 'POE-2', origen: 'fisica', nombre: 'Beto', correo: 'b@b.com', estado: 'Procedente', created_at: '2026-01-02' },
+          {
+            id: '1',
+            folio: 'POE-1',
+            origen: 'digital',
+            nombre: 'Ana',
+            correo: 'a@b.com',
+            estado: 'En proceso',
+            created_at: '2026-01-01',
+          },
+          {
+            id: '2',
+            folio: 'POE-2',
+            origen: 'fisica',
+            nombre: 'Beto',
+            correo: 'b@b.com',
+            estado: 'Procedente',
+            created_at: '2026-01-02',
+          },
         ] as Array<Record<string, unknown>>
       }
       return [] as Array<Record<string, unknown>>
@@ -49,7 +66,7 @@ describe('exportTableToXlsx', () => {
 
   it('no rompe con cero filas (usa fila marcador)', async () => {
     sqlMock!.mockImplementation(async () => [] as Array<Record<string, unknown>>)
-    const buf = await exportTableToXlsx('reuniones')
+    const buf = await exportTableToXlsx('actividades')
     expect(Buffer.isBuffer(buf)).toBe(true)
     expect(buf.length).toBeGreaterThan(0)
   })

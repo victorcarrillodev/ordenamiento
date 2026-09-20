@@ -9,11 +9,7 @@ import { etiquetaDeRol } from './roles.ts'
 export type AdminSection =
   | 'general'
   | 'cuenta'
-  | 'avisos'
-  | 'reuniones'
-  | 'poel'
   | 'actividades'
-  | 'documentos'
   | 'indicadores'
   | 'participaciones-digital'
   | 'participaciones-fisica'
@@ -100,34 +96,13 @@ const GRUPOS: Array<{ titulo: string; items: ItemMenu[] }> = [
     titulo: 'Contenido del portal',
     items: [
       {
-        key: 'avisos',
-        href: adminRoutes.avisos.index.href(),
-        label: 'Avisos',
-        icon: <Icon name="mdi:bell-outline" />,
-      },
-      {
-        key: 'reuniones',
-        href: adminRoutes.reuniones.index.href(),
-        label: 'Reuniones',
-        icon: <Icon name="mdi:calendar-month-outline" />,
-      },
-      {
-        key: 'poel',
-        href: adminRoutes.poel.index.href(),
-        label: 'POEL – Sesiones',
-        icon: <Icon name="mdi:book-open-page-variant-outline" />,
-      },
-      {
+        // Un solo módulo para avisos, reuniones, sesiones, actividades y sus
+        // documentos: cada actividad se registra una vez (ver la propuesta de
+        // ajustes al portal de la Bitácora).
         key: 'actividades',
         href: adminRoutes.actividades.index.href(),
-        label: 'Actividades',
+        label: 'Actividades y avances',
         icon: <Icon name="mdi:calendar-check-outline" />,
-      },
-      {
-        key: 'documentos',
-        href: adminRoutes.documentos.index.href(),
-        label: 'Documentos',
-        icon: <Icon name="mdi:file-document-outline" />,
       },
       {
         key: 'indicadores',

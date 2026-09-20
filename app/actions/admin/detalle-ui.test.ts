@@ -81,18 +81,18 @@ describe('UI-3 · header tintado solo con .panel__head', () => {
   })
 })
 
-describe('UI-4 · alcance global cal/aviso/export no pierde hover', () => {
-  it('.cal/.cal-agenda/.export-card/.aviso-card usan borde fuerte + sombra sin perder background', () => {
+describe('UI-4 · alcance global cal/export no pierde hover', () => {
+  it('.cal/.cal-agenda/.export-card usan borde fuerte + sombra sin perder background', () => {
     expect(css).toMatch(
-      /\.cal,\s*\.cal-agenda,\s*\.export-card,\s*\.aviso-card[\s\S]*?border-color:\s*var\(--a-border-strong\)/,
+      /\.cal,\s*\.cal-agenda,\s*\.export-card[\s\S]*?border-color:\s*var\(--a-border-strong\)/,
     )
     expect(css).toMatch(
-      /\.cal,\s*\.cal-agenda,\s*\.export-card,\s*\.aviso-card[\s\S]*?box-shadow:\s*var\(--a-shadow\)/,
+      /\.cal,\s*\.cal-agenda,\s*\.export-card[\s\S]*?box-shadow:\s*var\(--a-shadow\)/,
     )
   })
 
-  it('.aviso-card:hover sigue existiendo', () => {
-    expect(css).toMatch(/\.aviso-card:hover[\s\S]*?box-shadow:/)
+  it('el panel ya no arrastra estilos de las pantallas fusionadas (avisos, POEL)', () => {
+    expect(css).not.toMatch(/\.aviso-card|\.poel-|\.cal-modal/)
   })
 
   it('.card--link:hover preserva transform y border-color', () => {

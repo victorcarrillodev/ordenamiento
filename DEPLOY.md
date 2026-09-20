@@ -109,6 +109,61 @@ docker compose exec db psql -U postgres -d ordenamiento -c "\dx"
 docker compose up -d --build
 ```
 
+## Migración: «Actividades y avances del Programa» (v2)
+
+Los apartados Avisos, Reuniones, POEL–Sesiones, Actividades y Documentos del
+panel se unificaron en un solo módulo: cada actividad se registra una vez y el
+portal decide dónde mostrarla (próximas actividades, calendario, franja de
+avisos o avances del Programa) según su fecha, estado y publicación.
+
+**No hay pasos manuales.** Al arrancar, el backend aplica una sola vez
+`backend/migrations/002_actividades_programa.sql`, que trae lo ya capturado al
+modelo nuevo conservando los ids (los enlaces viejos a fotos y documentos siguen
+funcionando):
+
+| Antes                       | Ahora                                                                |
+| --------------------------- | -------------------------------------------------------------------- |
+| Actividades                 | La misma actividad; «próxima» pasa a «programada»                    |
+| Fotos de actividades        | Archivos «Fotografía» de su actividad                                |
+| Documentos ligados          | Archivos de las actividades a las que estaban ligados                |
+| Documentos sueltos          | Una actividad «Publicación de producto técnico» (realizada) cada uno |
+| Reuniones                   | Actividades «Reunión técnica»                                        |
+| Sesiones POEL (+ archivos)  | Actividades según su categoría (Comité, Taller, Consulta pública…)   |
+| Avisos                      | Actividades con su aviso configurado                                 |
+| Respaldo de los indicadores | El mismo archivo, ahora dentro de su actividad                       |
+
+Lo que ya se veía en el portal sigue publicado. Lo que el portal nunca mostró
+entra como **borrador**: los avisos (eran internos del panel) y las reuniones
+ya pasadas. Conviene revisarlos en «Actividades y avances» (filtro
+«Publicación: Borrador») y publicar lo que corresponda; también las actividades
+viejas que quedaron con tipo «Otra».
+
+La sección pública «Seguimiento y evaluación» muestra el aviso «Esta sección
+estará disponible una vez aprobado el Programa…» hasta que alguien marque el
+Programa como aprobado en **Indicadores** (el cambio queda en la bitácora de
+Personalización).
+
+Los nombres, lugares y direcciones quedan en una sola línea, y los nombres que
+pasaban del límite del formulario (el panel viejo no tenía) se recortan con «…».
+Si dos tablas viejas compartían un id (solo pasa con datos importados o
+capturados a mano), la segunda fila se copia con un id nuevo en vez de
+perderse; conviene revisar el log del primer arranque:
+
+```sh
+docker compose logs backend | grep "Migración 002"
+```
+
+**Tablas viejas.** `avisos`, `reuniones`, `poel_sesiones`, `poel_archivos`,
+`documentos`, `actividad_fotos` y `actividad_documentos` se conservan como
+respaldo en las bases que ya las tenían; el código ya no las usa. `actividades`
+se convierte en su sitio, así que su versión anterior queda en
+`actividades_v1`. Cuando se haya comprobado que todo quedó bien, se pueden
+borrar (los archivos en disco no se tocan: los usan las actividades):
+
+```sh
+docker compose exec db psql -U postgres -d ordenamiento -c "DROP TABLE actividad_documentos, actividad_fotos, documentos, poel_archivos, poel_sesiones, reuniones, avisos, actividades_v1"
+```
+
 ## Publicarlo en /ordena
 
 La app en sí sigue viviendo en `/`, `/admin`, `/login`, etc. — no tiene

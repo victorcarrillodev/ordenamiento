@@ -1,6 +1,44 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { router } from '../../router.ts'
 
+const ACTIVIDAD_ID = '550e8400-e29b-41d4-a716-446655440001'
+
+/** Una actividad tal como la devuelve /api/actividades/gestion/:id. */
+const ACTIVIDAD = {
+  id: ACTIVIDAD_ID,
+  titulo: 'Sesión de Cabildo para la aprobación del Programa',
+  fase: 'Expedición',
+  tipo: 'Sesión de Cabildo',
+  estado: 'programada',
+  fecha: '2030-01-15',
+  hora_inicio: '12:00',
+  hora_fin: '14:00',
+  lugar: 'Salón de Cabildo',
+  direccion: '',
+  latitud: '',
+  longitud: '',
+  descripcion: 'Presentación del proyecto del Programa.',
+  resultados: '',
+  acuerdos: '',
+  publicacion: 'publicado',
+  aviso_activo: true,
+  aviso_titulo: 'Sesión de Cabildo',
+  aviso_descripcion: '',
+  aviso_inicio: '2029-12-20',
+  aviso_fin: '2030-01-15',
+  created_at: '2026-09-01',
+  updated_at: '2026-09-01',
+  total_archivos: 0,
+  visibilidad: {
+    proximas: true,
+    calendario: true,
+    avances: false,
+    aviso: 'programado',
+    fechaPasada: false,
+  },
+  archivos: [],
+}
+
 describe('Admin Routes Protection & Navigation', () => {
   const originalFetch = globalThis.fetch
 
@@ -15,14 +53,16 @@ describe('Admin Routes Protection & Navigation', () => {
   describe('Unauthenticated & non-admin protection', () => {
     const protectedRoutes = [
       '/ordena/admin',
-      '/ordena/admin/reuniones',
+      '/ordena/admin/actividades',
+      '/ordena/admin/actividades?vista=calendario',
+      '/ordena/admin/actividades/nueva',
+      `/ordena/admin/actividades/${ACTIVIDAD_ID}`,
+      '/ordena/admin/indicadores',
       '/ordena/admin/exportar',
       '/ordena/admin/usuarios',
       '/ordena/admin/participaciones',
       '/ordena/admin/participaciones/1',
       '/ordena/admin/participaciones/nueva',
-      '/ordena/admin/avisos',
-      '/ordena/admin/poel',
       '/ordena/admin/estadisticas',
       '/ordena/admin/sesiones',
       '/ordena/admin/cuenta',
@@ -101,27 +141,37 @@ describe('Admin Routes Protection & Navigation', () => {
           )
         }
 
-        if (u.includes('/api/reuniones')) {
+        if (u.includes('/api/actividades/gestion/')) {
           return Promise.resolve(
-            new Response(JSON.stringify({ reuniones: [] }), {
+            new Response(JSON.stringify({ actividad: ACTIVIDAD }), {
               status: 200,
               headers: { 'content-type': 'application/json' },
             }),
           )
         }
 
-        if (u.includes('/api/avisos')) {
+        if (u.includes('/api/actividades/gestion')) {
           return Promise.resolve(
-            new Response(JSON.stringify({ avisos: [] }), {
-              status: 200,
-              headers: { 'content-type': 'application/json' },
-            }),
+            new Response(
+              JSON.stringify({
+                actividades: [ACTIVIDAD],
+                resumen: {
+                  total: 1,
+                  proximas: 1,
+                  realizadas: 0,
+                  borradores: 0,
+                  avisosVigentes: 0,
+                  avisos: [],
+                },
+              }),
+              { status: 200, headers: { 'content-type': 'application/json' } },
+            ),
           )
         }
 
-        if (u.includes('/api/poel')) {
+        if (u.includes('/api/actividades/documentos')) {
           return Promise.resolve(
-            new Response(JSON.stringify({ sesiones: [] }), {
+            new Response(JSON.stringify({ documentos: [] }), {
               status: 200,
               headers: { 'content-type': 'application/json' },
             }),
@@ -182,13 +232,15 @@ describe('Admin Routes Protection & Navigation', () => {
 
     const adminPages = [
       { path: '/ordena/admin', name: 'Vista General' },
-      { path: '/ordena/admin/reuniones', name: 'Reuniones' },
+      { path: '/ordena/admin/actividades', name: 'Actividades y avances' },
+      { path: '/ordena/admin/actividades?vista=calendario', name: 'Calendario de actividades' },
+      { path: '/ordena/admin/actividades/nueva', name: 'Agregar actividad' },
+      { path: `/ordena/admin/actividades/${ACTIVIDAD_ID}`, name: 'Editar actividad' },
+      { path: '/ordena/admin/indicadores', name: 'Indicadores' },
       { path: '/ordena/admin/exportar', name: 'Exportar' },
       { path: '/ordena/admin/participaciones', name: 'Participaciones' },
       { path: '/ordena/admin/participaciones/nueva', name: 'Nueva Participación' },
       { path: '/ordena/admin/participaciones/1', name: 'Detalle de Participación' },
-      { path: '/ordena/admin/avisos', name: 'Avisos' },
-      { path: '/ordena/admin/poel', name: 'POEL' },
       { path: '/ordena/admin/estadisticas', name: 'Estadísticas' },
       { path: '/ordena/admin/usuarios', name: 'Usuarios' },
       { path: '/ordena/admin/cuenta', name: 'Cuenta' },
@@ -253,11 +305,10 @@ describe('Admin Routes Protection & Navigation', () => {
         '/ordena/admin/sesiones',
         '/ordena/admin/cuenta',
         '/ordena/admin/exportar',
-        '/ordena/admin/reuniones',
-        '/ordena/admin/avisos',
-        '/ordena/admin/poel',
         '/ordena/admin/actividades',
-        '/ordena/admin/documentos',
+        '/ordena/admin/actividades?vista=calendario',
+        '/ordena/admin/actividades/nueva',
+        `/ordena/admin/actividades/${ACTIVIDAD_ID}`,
         '/ordena/admin/indicadores',
         '/ordena/admin/participaciones?origen=fisica',
         '/ordena/admin/participaciones/nueva',

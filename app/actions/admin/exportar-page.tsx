@@ -9,9 +9,9 @@ export interface ExportarPageProps {
 
 const TABLAS = [
   {
-    slug: 'reuniones',
-    nombre: 'Reuniones',
-    desc: 'Bitácora de reuniones: título, fecha y horarios.',
+    slug: 'actividades',
+    nombre: 'Actividades y avances',
+    desc: 'Actividades del Programa: fase, tipo, estado, fecha, horario, lugar, publicación y aviso.',
   },
   {
     slug: 'participaciones',

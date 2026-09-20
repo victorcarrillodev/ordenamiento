@@ -21,7 +21,7 @@ describe('observaciones del formulario ciudadano', () => {
   it('usa la misma navegación en la portada, el formulario y los errores', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => Response.json({ reuniones: [] })),
+      vi.fn(async () => Response.json({})),
     )
     for (const url of [
       routes.home.href(),

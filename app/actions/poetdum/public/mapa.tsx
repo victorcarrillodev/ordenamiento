@@ -1,8 +1,6 @@
-import { clientEntry, css, type Handle } from 'remix/ui'
+import { clientEntry, css, type Handle, type SerializableProps } from 'remix/ui'
 
-type Leaflet = typeof import('leaflet')
-
-const LEAFLET_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+import { loadLeaflet } from '../../../ui/leaflet.ts'
 
 const mapa = css({
   width: '100%',
@@ -11,40 +9,26 @@ const mapa = css({
   overflow: 'hidden',
 })
 
-let leafletPromise: Promise<Leaflet | null> | null = null
+/** Centro por omisión del mapa del territorio. */
+const CENTRO_TERRITORIO: [number, number] = [20.6767, -103.3475]
 
-function loadLeaflet(): Promise<Leaflet | null> {
-  leafletPromise ??= new Promise((resolve) => {
-    const global = window as unknown as { L?: Leaflet }
-
-    if (global.L) {
-      resolve(global.L)
-      return
-    }
-
-    const script = document.createElement('script')
-
-    script.src = LEAFLET_URL
-
-    script.onload = () => {
-      resolve((window as unknown as { L?: Leaflet }).L ?? null)
-    }
-
-    script.onerror = () => {
-      leafletPromise = null
-      resolve(null)
-    }
-
-    document.head.appendChild(script)
-  })
-
-  return leafletPromise
+export interface MapaProps extends SerializableProps {
+  /**
+   * Punto a marcar (la sede de una actividad). Sin él, el mapa muestra el
+   * territorio completo con su marcador de referencia.
+   */
+  latitud?: number
+  longitud?: number
+  /** Texto del marcador; se inserta como texto, nunca como HTML. */
+  etiqueta?: string
+  /** Alto del mapa (CSS). */
+  alto?: string
 }
 
 export const Mapa = clientEntry(
   import.meta.url,
 
-  function Mapa(handle: Handle) {
+  function Mapa(handle: Handle<MapaProps>) {
     let map: import('leaflet').Map | null = null
 
     let scheduled = false
@@ -71,7 +55,13 @@ export const Mapa = clientEntry(
           // MAPA
           // ==========================================
 
-          map = L.map(elemento).setView([20.6767, -103.3475], 13)
+          const { latitud, longitud, etiqueta } = handle.props
+          const punto: [number, number] | null =
+            Number.isFinite(latitud) && Number.isFinite(longitud)
+              ? [latitud as number, longitud as number]
+              : null
+
+          map = L.map(elemento).setView(punto ?? CENTRO_TERRITORIO, punto ? 16 : 13)
 
           // ==========================================
           // MAPA NORMAL - OPENSTREETMAP
@@ -140,11 +130,21 @@ export const Mapa = clientEntry(
           // MARCADOR
           // ==========================================
 
-          L.marker([20.6767, -103.3475]).addTo(map).bindPopup('<b>Guadalajara</b>').openPopup()
+          if (punto) {
+            // Un nodo con textContent: el nombre de la sede lo escribe el
+            // panel, y Leaflet interpretaría un texto con etiquetas como HTML.
+            const rotulo = document.createElement('strong')
+            rotulo.textContent = etiqueta ?? ''
+            const marcador = L.marker(punto).addTo(map)
+            if (etiqueta) marcador.bindPopup(rotulo).openPopup()
+          } else {
+            L.marker(CENTRO_TERRITORIO).addTo(map).bindPopup('<b>Guadalajara</b>').openPopup()
+          }
         })
       }
 
-      return <div id={handle.id} mix={mapa} />
+      const { alto } = handle.props
+      return <div id={handle.id} mix={alto ? [mapa, css({ height: alto })] : mapa} />
     }
   },
 )

@@ -31,6 +31,15 @@ marca `needsOcr`.
   del formulario, estado
 - `attachments` – archivos subidos (PDF, DWG, JPG, SHX...) y, para los PDF
   con capa de texto, ese texto en `texto_extraido` + índice `texto_tsv`
+- `actividades` – «Actividades y avances del Programa»: cada actividad se
+  registra una vez (fase, tipo, estado, fecha, lugar, resultados, acuerdos,
+  publicación y, opcionalmente, su aviso con vigencia). Las vistas públicas
+  (próximas, calendario, avances, franja de avisos) salen de reglas sobre esta
+  misma tabla, en `services/actividades.ts`
+- `actividad_archivos` – archivos de cada actividad con su tipo (convocatoria,
+  acta, fotografía…); forman también el repositorio público de documentos
+- `indicadores` / `mediciones` – seguimiento y evaluación; el documento de
+  respaldo es un archivo de actividad
 
 ## Arranque
 
@@ -87,24 +96,32 @@ Configura un valor real en un archivo `.env` local (no versionado).
 
 ## Endpoints
 
-| Método | Ruta                                       | Descripción                                                           |
-| ------ | ------------------------------------------ | --------------------------------------------------------------------- |
-| GET    | `/api/health`                              | Health check                                                          |
-| POST   | `/api/auth/register`                       | Crear usuario (body: email, name, password, role?)                    |
-| POST   | `/api/auth/login`                          | Login → cookie HttpOnly                                               |
-| POST   | `/api/auth/logout`                         | Cerrar sesión                                                         |
-| GET    | `/api/auth/me`                             | Usuario actual                                                        |
-| GET    | `/api/participations`                      | Listado con filtros + paginación                                      |
-| GET    | `/api/participations/:id`                  | Detalle + adjuntos                                                    |
-| POST   | `/api/participations`                      | Crear (multipart: folio autogenerado, origen, nombre, correo, pdf...) |
-| POST   | `/api/participations/:id/resolucion`       | Dictaminar + notificar (admin) — flujo canónico de cambio de estado   |
-| DELETE | `/api/participations/:id`                  | Eliminar (admin)                                                      |
-| GET    | `/api/participations/:id/attachments/:aid` | Ver / descargar adjunto                                               |
-| GET    | `/api/participations/:id/word`             | Exportar .docx (admin)                                                |
-| POST   | `/api/participations/enviar`              | Reenviar participación por correo (admin)                             |
-| POST   | `/api/mail/test`                           | Correo de prueba SMTP (admin) — cableado a Personalización            |
-| POST   | `/api/avisos/enviar`                      | Enviar aviso por correo (admin)                                       |
-| GET/POST/DELETE | `/api/reuniones`, `/api/avisos`, `/api/poel`, `/api/export/:tabla`, `/api/users`, `/api/stats`, `/api/settings/*` | Bitácora, exportación, usuarios, stats, personalización (ver `app.ts`) |
+| Método          | Ruta                                                                | Descripción                                                                                |
+| --------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| GET             | `/api/health`                                                       | Health check                                                                               |
+| POST            | `/api/auth/register`                                                | Crear usuario (body: email, name, password, role?)                                         |
+| POST            | `/api/auth/login`                                                   | Login → cookie HttpOnly                                                                    |
+| POST            | `/api/auth/logout`                                                  | Cerrar sesión                                                                              |
+| GET             | `/api/auth/me`                                                      | Usuario actual                                                                             |
+| GET             | `/api/participations`                                               | Listado con filtros + paginación                                                           |
+| GET             | `/api/participations/:id`                                           | Detalle + adjuntos                                                                         |
+| POST            | `/api/participations`                                               | Crear (multipart: folio autogenerado, origen, nombre, correo, pdf...)                      |
+| POST            | `/api/participations/:id/resolucion`                                | Dictaminar + notificar (admin) — flujo canónico de cambio de estado                        |
+| DELETE          | `/api/participations/:id`                                           | Eliminar (admin)                                                                           |
+| GET             | `/api/participations/:id/attachments/:aid`                          | Ver / descargar adjunto                                                                    |
+| GET             | `/api/participations/:id/word`                                      | Exportar .docx (admin)                                                                     |
+| POST            | `/api/participations/enviar`                                        | Reenviar participación por correo (admin)                                                  |
+| POST            | `/api/mail/test`                                                    | Correo de prueba SMTP (admin) — cableado a Personalización                                 |
+| GET             | `/api/actividades?vista=proximas\|avances\|calendario`              | Vistas públicas (solo publicadas; `limite`, `fase`, `mes=YYYY-MM`)                         |
+| GET             | `/api/actividades/aviso`                                            | Aviso vigente de la portada                                                                |
+| GET             | `/api/actividades/documentos`                                       | Repositorio público de documentos (`tipo`, `fase`)                                         |
+| GET             | `/api/actividades/:id`                                              | Ficha pública (solo publicadas)                                                            |
+| GET             | `/api/actividades/archivos/:aid`                                    | Ver / descargar archivo (borradores solo para el panel)                                    |
+| GET             | `/api/actividades/gestion[/:id]`                                    | Listado y ficha completos para el panel (admin)                                            |
+| POST/PUT/DELETE | `/api/actividades[/:id]`                                            | Alta / edición del mismo registro / baja (admin; multipart con `archivo` + `archivo_tipo`) |
+| PATCH/DELETE    | `/api/actividades/archivos/:aid`                                    | Corregir tipo o nombre / quitar un archivo (admin)                                         |
+| POST            | `/api/actividades/:id/aviso/enviar`                                 | Enviar el aviso de una actividad por correo (admin)                                        |
+| GET/POST/DELETE | `/api/export/:tabla`, `/api/users`, `/api/stats`, `/api/settings/*` | Exportación, usuarios, stats, personalización (ver `app.ts`)                               |
 
 > **Nota 2026-08-28 (Arquitecto):** Se eliminaron `GET /api/search` (`searchParticipations`) y
 > `PATCH /api/participations/:id/estado` (`updateEstado`) por ser huérfanos sin consumidor en

@@ -1,7 +1,5 @@
 import { sql } from './db/pool.ts'
-import { createReunion } from './services/reuniones.ts'
-import { createAviso } from './services/avisos.ts'
-import { createPoelSesion } from './services/poel.ts'
+import { crearActividad, hoyEnMexico, validarActividad } from './services/actividades.ts'
 import { createParticipation } from './services/participations.ts'
 import { nextFolio } from './services/folio.ts'
 
@@ -10,86 +8,100 @@ import { nextFolio } from './services/folio.ts'
  * Solo inserta si la tabla está vacía en su categoría, para no duplicar.
  */
 export async function seedDemoData(): Promise<void> {
-  // Sesiones POEL
-  const poelCount = await sql<{ n: string }[]>`SELECT count(*)::text AS n FROM poel_sesiones`
-  if (Number(poelCount[0].n) === 0) {
-    const sesiones: Array<[string, number, string, string, string, string]> = [
-      [
-        'Presentación',
-        1,
-        'Presentación del Programa',
-        'Contexto y objetivos del POEL',
-        '2026-08-25',
-        'Salón de Cabildo',
-      ],
-      [
-        'Diagnóstico',
-        2,
-        'Diagnóstico territorial',
-        'Análisis del uso de suelo actual',
-        '2026-08-26',
-        'Centro Municipal',
-      ],
-      [
-        'Sesión ciudadana',
-        3,
-        'Foro ciudadano',
-        'Aportaciones de la ciudadanía',
-        '2026-08-27',
-        'Plaza Principal',
-      ],
-      [
-        'Taller',
-        4,
-        'Taller de escenarios',
-        'Construcción de escenarios futuros',
-        '2026-08-28',
-        'Casa de la Cultura',
-      ],
+  // Actividades y avances del Programa: una muestra del flujo completo
+  // (realizadas en avances, programadas en el calendario, un aviso vigente).
+  const actividadesCount = await sql<{ n: string }[]>`SELECT count(*)::text AS n FROM actividades`
+  if (Number(actividadesCount[0].n) === 0) {
+    const hoy = hoyEnMexico()
+    const dia = (desplazamiento: number) => {
+      const [a, m, d] = hoy.split('-').map(Number)
+      return new Date(Date.UTC(a, m - 1, d + desplazamiento)).toISOString().slice(0, 10)
+    }
+    const muestras: Array<Record<string, string>> = [
+      {
+        titulo: 'Firma del convenio de coordinación con SEMADET',
+        fase: 'Formulación',
+        tipo: 'Firma de convenio',
+        estado: 'realizada',
+        fecha: dia(-120),
+        hora_inicio: '11:00',
+        lugar: 'Palacio Municipal',
+        descripcion:
+          'Firma del convenio de coordinación para la elaboración del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
+        resultados: 'Convenio firmado por el Municipio y la SEMADET.',
+        acuerdos: 'Integrar el Comité de Ordenamiento Ecológico en los siguientes 60 días.',
+      },
+      {
+        titulo: 'Instalación del Comité de Ordenamiento Ecológico',
+        fase: 'Formulación',
+        tipo: 'Sesión del Comité',
+        estado: 'realizada',
+        fecha: dia(-60),
+        hora_inicio: '10:00',
+        hora_fin: '12:00',
+        lugar: 'Salón de Cabildo',
+        descripcion: 'Sesión de instalación del Comité y aprobación de su programa de trabajo.',
+        resultados: 'Comité instalado con 18 integrantes.',
+        acuerdos: 'Aprobado el calendario de sesiones ordinarias.',
+      },
+      {
+        titulo: 'Taller sectorial de diagnóstico',
+        fase: 'Formulación',
+        tipo: 'Taller',
+        estado: 'realizada',
+        fecha: dia(-30),
+        hora_inicio: '09:00',
+        hora_fin: '13:00',
+        lugar: 'Casa de la Cultura',
+        descripcion: 'Diagnóstico del territorio con los sectores productivo, social y académico.',
+        resultados: 'Se identificaron 12 zonas prioritarias para conservación.',
+      },
+      {
+        titulo: 'Segunda sesión ordinaria del Comité',
+        fase: 'Formulación',
+        tipo: 'Sesión del Comité',
+        estado: 'programada',
+        fecha: dia(7),
+        hora_inicio: '10:00',
+        hora_fin: '12:00',
+        lugar: 'Salón de Cabildo',
+        descripcion: 'Revisión de la caracterización y el diagnóstico del territorio.',
+      },
+      {
+        titulo: 'Foro de consulta pública',
+        fase: 'Formulación',
+        tipo: 'Consulta pública',
+        estado: 'programada',
+        fecha: dia(14),
+        hora_inicio: '17:00',
+        hora_fin: '19:00',
+        lugar: 'Centro Cultural El Refugio',
+        descripcion: 'Presentación de la propuesta del Programa y recepción de observaciones.',
+        aviso_activo: '1',
+        aviso_titulo: 'Apertura de la consulta pública',
+        aviso_descripcion:
+          'Participa en el foro de consulta pública y presenta tus observaciones y propuestas.',
+        aviso_inicio: hoy,
+        aviso_fin: dia(14),
+      },
+      {
+        titulo: 'Sesión de Cabildo para la aprobación del Programa',
+        fase: 'Expedición',
+        tipo: 'Sesión de Cabildo',
+        estado: 'programada',
+        fecha: dia(45),
+        hora_inicio: '12:00',
+        lugar: 'Salón de Cabildo',
+        descripcion:
+          'Presentación del proyecto del Programa para su análisis y, en su caso, aprobación.',
+      },
     ]
-    for (const [c, o, t, d, f, u] of sesiones)
-      await createPoelSesion({
-        categoria: c,
-        orden: o,
-        titulo: t,
-        descripcion: d,
-        fecha: f,
-        ubicacion: u,
-      })
-    console.log('[seed] POEL: 4 sesiones')
-  }
-
-  // Avisos
-  const avisosCount = await sql<{ n: string }[]>`SELECT count(*)::text AS n FROM avisos`
-  if (Number(avisosCount[0].n) === 0) {
-    await createAviso({
-      titulo: 'Convocatoria a la sesión pública',
-      descripcion: 'Se invita a la ciudadanía a participar en la sesión pública del 28 de agosto.',
-    })
-    await createAviso({
-      titulo: 'Período de consulta',
-      descripcion:
-        'El borrador del Programa está disponible para consulta del 1 al 30 de septiembre.',
-    })
-    console.log('[seed] Avisos: 2')
-  }
-
-  // Reuniones
-  const reunionesCount = await sql<{ n: string }[]>`SELECT count(*)::text AS n FROM reuniones`
-  if (Number(reunionesCount[0].n) === 0) {
-    await createReunion({
-      titulo: 'Sesión POEL agosto',
-      fecha: '2026-08-24',
-      horaInicio: '10:00',
-      horaFin: '12:30',
-    })
-    await createReunion({
-      titulo: 'Mesa técnica de diagnóstico',
-      fecha: '2026-08-20',
-      horaInicio: '09:00',
-      horaFin: '13:00',
-    })
-    console.log('[seed] Reuniones: 2')
+    for (const muestra of muestras) {
+      const validacion = validarActividad(muestra, hoy)
+      if (!validacion.ok) throw new Error(`[seed] actividad inválida: ${validacion.error}`)
+      await crearActividad(sql, validacion.datos, [], null)
+    }
+    console.log(`[seed] Actividades: ${muestras.length}`)
   }
 
   // Participaciones con métricas (solo si no hay con fuente/sexo aún)

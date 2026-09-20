@@ -171,10 +171,10 @@ export default createController(adminRoutes.personalizacion, {
               imagenPrograma: uploadedProgramaImg || String(formData.get('imagen_programa') ?? ''),
             },
             iconos: {
-              cardPrograma: String(formData.get('ico_card1') ?? '🏛️'),
-              cardProceso: String(formData.get('ico_card2') ?? '⚙️'),
+              cardPrograma: String(formData.get('ico_card1') ?? '🧭'),
+              cardProceso: String(formData.get('ico_card2') ?? '📊'),
               cardCalendario: String(formData.get('ico_card3') ?? '📅'),
-              cardDocumentos: String(formData.get('ico_card4') ?? '📄'),
+              cardDocumentos: String(formData.get('ico_card4') ?? '📈'),
             },
           },
         }

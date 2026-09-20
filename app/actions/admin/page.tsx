@@ -6,6 +6,34 @@ import { Icon } from '../../ui/admin/icon.tsx'
 import { BarrasMensuales, Donut, type SerieMensual } from '../../ui/admin/charts.tsx'
 import { formatearFecha } from '../../ui/admin/formato.ts'
 
+/** Cifras de «Actividades y avances del Programa» para la vista general. */
+export interface ContenidoPortal {
+  actividades: number
+  proximas: number
+  realizadas: number
+  borradores: number
+  avisosVigentes: number
+  indicadores: number
+}
+
+export interface ProximaActividad {
+  id: string
+  titulo: string
+  fecha: string
+  hora_inicio: string
+  hora_fin: string
+  lugar: string
+}
+
+/** Avisos publicados en vigencia o por empezar. */
+export interface AvisoResumen {
+  actividad_id: string
+  titulo: string
+  inicio: string
+  fin: string
+  estado: 'vigente' | 'programado'
+}
+
 export interface AdminPageProps {
   user: { name: string; role: string }
   stats: {
@@ -16,29 +44,10 @@ export interface AdminPageProps {
     fuente?: Array<[string, number]>
     genero?: Array<[string, number]>
     tematica?: Array<[string, number]>
-    contenido?: {
-      actividades: number
-      documentos: number
-      indicadores: number
-      poelSesiones: number
-      reuniones: number
-      avisos: number
-    }
+    contenido?: ContenidoPortal
     participacionesPorMes?: SerieMensual[]
-    proximaReunion?: {
-      id: string
-      titulo: string
-      fecha: string
-      hora_inicio: string
-      hora_fin: string
-    } | null
-    ultimosAvisos?: Array<{
-      id: string
-      titulo: string
-      descripcion: string
-      activo: boolean
-      fecha?: string
-    }>
+    proximaActividad?: ProximaActividad | null
+    avisos?: AvisoResumen[]
   }
   ahora: { dia: string; saludo?: string; fecha: string; hora: string }
 }
@@ -80,8 +89,8 @@ function Kpi(
   }
 }
 
-/** Fecha de una reunión sin desplazamiento de zona: `YYYY-MM-DD` es un día, no un instante. */
-function fechaReunion(valor: string): string {
+/** Fecha de una actividad sin desplazamiento de zona: `YYYY-MM-DD` es un día, no un instante. */
+function fechaActividad(valor: string): string {
   const partes = valor.split('-')
   if (partes.length === 3) {
     const d = new Date(Date.UTC(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2])))
@@ -101,44 +110,46 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
     const contenido = stats.contenido
     const totalParticipaciones = stats.digitales + stats.fisicas
     const resultado = (stats.resultado ?? []).map((r) => [r.estado, r.total] as [string, number])
-    const avisos = stats.ultimosAvisos ?? []
+    const avisos = stats.avisos ?? []
+    const proxima = stats.proximaActividad
+    const lista = adminRoutes.actividades.index.href()
 
     const atajos: AtajoContenido[] = [
       {
-        href: adminRoutes.actividades.index.href(),
+        href: lista,
         etiqueta: 'Actividades',
         icono: 'mdi:calendar-check-outline',
         total: contenido?.actividades ?? 0,
       },
       {
-        href: adminRoutes.documentos.index.href(),
-        etiqueta: 'Documentos',
-        icono: 'mdi:file-document-outline',
-        total: contenido?.documentos ?? 0,
+        href: `${lista}?estado=programada`,
+        etiqueta: 'Próximas',
+        icono: 'mdi:calendar-clock-outline',
+        total: contenido?.proximas ?? 0,
+      },
+      {
+        href: `${lista}?estado=realizada`,
+        etiqueta: 'Avances',
+        icono: 'mdi:chart-timeline-variant',
+        total: contenido?.realizadas ?? 0,
+      },
+      {
+        href: `${lista}?publicacion=borrador`,
+        etiqueta: 'Borradores',
+        icono: 'mdi:file-edit-outline',
+        total: contenido?.borradores ?? 0,
+      },
+      {
+        href: lista,
+        etiqueta: 'Avisos vigentes',
+        icono: 'mdi:bullhorn-outline',
+        total: contenido?.avisosVigentes ?? 0,
       },
       {
         href: adminRoutes.indicadores.index.href(),
         etiqueta: 'Indicadores',
         icono: 'mdi:chart-line',
         total: contenido?.indicadores ?? 0,
-      },
-      {
-        href: adminRoutes.poel.index.href(),
-        etiqueta: 'Sesiones POEL',
-        icono: 'mdi:book-open-page-variant-outline',
-        total: contenido?.poelSesiones ?? 0,
-      },
-      {
-        href: adminRoutes.reuniones.index.href(),
-        etiqueta: 'Reuniones',
-        icono: 'mdi:calendar-month-outline',
-        total: contenido?.reuniones ?? 0,
-      },
-      {
-        href: adminRoutes.avisos.index.href(),
-        etiqueta: 'Avisos',
-        icono: 'mdi:bell-outline',
-        total: contenido?.avisos ?? 0,
       },
     ]
 
@@ -251,49 +262,71 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
           <aside class="dash__side">
             <div class="panel">
               <h2 class="panel__title">
-                <Icon name="mdi:calendar-clock-outline" size={18} /> Próxima reunión
+                <Icon name="mdi:calendar-clock-outline" size={18} /> Próxima actividad
               </h2>
-              {stats.proximaReunion ? (
+              {proxima ? (
                 <div class="reunion">
-                  <p class="reunion__titulo">{stats.proximaReunion.titulo}</p>
+                  <a
+                    class="reunion__titulo"
+                    href={adminRoutes.actividadEditar.index.href({ id: proxima.id })}
+                  >
+                    {proxima.titulo}
+                  </a>
                   <p class="reunion__fecha">
                     <Icon name="mdi:calendar-outline" size={14} />
-                    {fechaReunion(stats.proximaReunion.fecha)}
+                    {fechaActividad(proxima.fecha)}
                   </p>
-                  {stats.proximaReunion.hora_inicio ? (
+                  {proxima.hora_inicio ? (
                     <p class="reunion__fecha">
                       <Icon name="mdi:clock-outline" size={14} />
-                      {stats.proximaReunion.hora_inicio} – {stats.proximaReunion.hora_fin}
+                      {proxima.hora_fin
+                        ? `${proxima.hora_inicio} – ${proxima.hora_fin}`
+                        : proxima.hora_inicio}
                     </p>
                   ) : null}
-                  <a class="btn btn--white btn--sm" href={adminRoutes.reuniones.index.href()}>
-                    Ver reuniones →
+                  {proxima.lugar ? (
+                    <p class="reunion__fecha">
+                      <Icon name="mdi:map-marker-outline" size={14} />
+                      {proxima.lugar}
+                    </p>
+                  ) : null}
+                  <a class="btn btn--white btn--sm" href={`${lista}?vista=calendario`}>
+                    Ver calendario →
                   </a>
                 </div>
               ) : (
-                <p class="empty">Sin reuniones programadas</p>
+                <p class="empty">Sin actividades programadas</p>
               )}
             </div>
 
             <div class="panel">
               <div class="panel__head">
                 <h2 class="panel__title">
-                  <Icon name="mdi:bell-outline" size={18} /> Últimos avisos
+                  <Icon name="mdi:bullhorn-outline" size={18} /> Avisos en la portada
                 </h2>
-                <a class="btn btn--white btn--sm" href={adminRoutes.avisos.index.href()}>
+                <a class="btn btn--white btn--sm" href={lista}>
                   Gestionar
                 </a>
               </div>
               {avisos.length === 0 ? (
-                <p class="empty">Sin avisos publicados</p>
+                <p class="empty">Sin avisos vigentes ni programados</p>
               ) : (
                 <ul class="lista-avisos">
                   {avisos.map((a) => (
-                    <li key={a.id}>
-                      <span class="lista-avisos__titulo">{a.titulo}</span>
+                    <li key={a.actividad_id}>
+                      <a
+                        class="lista-avisos__titulo"
+                        href={adminRoutes.actividadEditar.index.href({ id: a.actividad_id })}
+                      >
+                        {a.titulo}
+                      </a>
                       <span class="lista-avisos__meta">
-                        {formatearFecha(a.fecha)}
-                        {a.activo ? <span class="badge procedente">Activo</span> : null}
+                        {fechaActividad(a.inicio)} – {fechaActividad(a.fin)}
+                        <span
+                          class={'badge ' + (a.estado === 'vigente' ? 'procedente' : 'en-proceso')}
+                        >
+                          {a.estado === 'vigente' ? 'Vigente' : 'Programado'}
+                        </span>
                       </span>
                     </li>
                   ))}
@@ -312,8 +345,8 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
                 <a class="btn btn--white" href={adminRoutes.sesiones.href()}>
                   <Icon name="mdi:account-clock-outline" size={16} /> Registro de sesiones
                 </a>
-                <a class="btn btn--excel" href={`${adminRoutes.exportar.href()}?tabla=reuniones`}>
-                  <Icon name="mdi:microsoft-excel" size={16} /> Reuniones a Excel
+                <a class="btn btn--excel" href={`${adminRoutes.exportar.href()}?tabla=actividades`}>
+                  <Icon name="mdi:microsoft-excel" size={16} /> Actividades a Excel
                 </a>
                 <a class="btn btn--white" href={adminRoutes.exportar.href()}>
                   <Icon name="mdi:table-arrow-down" size={16} /> Exportar otras tablas

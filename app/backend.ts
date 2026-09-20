@@ -308,6 +308,15 @@ const THEME_TTL_MS = 30_000
 let themeCache: { data: ThemeData | null; expires: number } | null = null
 
 /**
+ * Descarta el tema en caché para que el próximo render lo lea del backend.
+ * Tras un cambio que quien lo hizo va a comprobar enseguida en el portal (la
+ * aprobación del Programa), esperar el TTL parecería que no se guardó.
+ */
+export function olvidarTemaPublico(): void {
+  themeCache = null
+}
+
+/**
  * Obtiene la configuración de diseño activa desde el backend
  */
 export async function getPublicTheme(request: Request): Promise<ThemeData> {

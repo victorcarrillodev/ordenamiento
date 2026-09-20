@@ -211,92 +211,6 @@ DROP EXTENSION IF EXISTS vector;
 --  lecturas/escrituras en el código; el endpoint que la llenaba se podó en la auditoría previa.)
 
 -- ---------------------------------------------------------------------------
--- Reuniones (bitácora administrativa) — relacional
--- ---------------------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS reuniones (
-  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  titulo       TEXT NOT NULL,
-  fecha        DATE NOT NULL,
-  hora_inicio  TEXT NOT NULL DEFAULT '',
-  hora_fin     TEXT NOT NULL DEFAULT '',
-  creado_por   UUID REFERENCES users(id) ON DELETE SET NULL,
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- ---------------------------------------------------------------------------
--- Avisos (bitácora) — relacional
--- ---------------------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS avisos (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  titulo      TEXT NOT NULL,
-  descripcion TEXT NOT NULL DEFAULT '',
-  activo      BOOLEAN NOT NULL DEFAULT true,
-  creado_por  UUID REFERENCES users(id) ON DELETE SET NULL,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- ---------------------------------------------------------------------------
--- Sesiones POEL — relacional
--- ---------------------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS poel_sesiones (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  categoria   TEXT NOT NULL DEFAULT '',
-  orden       INT NOT NULL DEFAULT 0,
-  titulo      TEXT NOT NULL,
-  descripcion TEXT NOT NULL DEFAULT '',
-  fecha       DATE,
-  ubicacion   TEXT NOT NULL DEFAULT '',
-  activo      BOOLEAN NOT NULL DEFAULT true,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Imagen ilustrativa de la sesión (foto del taller, cartel de la convocatoria).
--- El archivo vive en uploads/ como los adjuntos; aquí solo su referencia.
-ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS imagen_ruta   TEXT NOT NULL DEFAULT '';
-ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS imagen_nombre TEXT NOT NULL DEFAULT '';
-ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS imagen_mime   TEXT NOT NULL DEFAULT '';
-
--- Coordenadas del lugar. Van aparte de `ubicacion` (que es la dirección escrita)
--- porque una cosa es cómo se lee y otra dónde cae en el mapa.
-ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS latitud  TEXT NOT NULL DEFAULT '';
-ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS longitud TEXT NOT NULL DEFAULT '';
-
-ALTER TABLE poel_sesiones ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
-
--- Archivos de la sesión: varios por sesión y de cualquier tipo permitido. Las
--- columnas `imagen_*` de arriba solo admitían UNA imagen; el sitio público
--- necesita separar "Documentos de la sesión" de "Imágenes de la sesión", así
--- que cada archivo lleva su `tipo` y se clasifica al subirlo por su extensión.
-CREATE TABLE IF NOT EXISTS poel_archivos (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  sesion_id       UUID NOT NULL REFERENCES poel_sesiones(id) ON DELETE CASCADE,
-  tipo            TEXT NOT NULL DEFAULT 'documento'
-                  CHECK (tipo IN ('imagen','documento')),
-  nombre_original TEXT NOT NULL,
-  mime            TEXT NOT NULL,
-  size            BIGINT NOT NULL DEFAULT 0,
-  ruta_local      TEXT NOT NULL,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_poel_archivos_sesion ON poel_archivos (sesion_id);
-
--- Traslada la imagen única que ya estuviera guardada. Idempotente: el NOT
--- EXISTS evita duplicarla si el schema se aplica varias veces.
-INSERT INTO poel_archivos (sesion_id, tipo, nombre_original, mime, ruta_local)
-SELECT s.id, 'imagen', s.imagen_nombre, s.imagen_mime, s.imagen_ruta
-FROM poel_sesiones s
-WHERE s.imagen_ruta <> ''
-  AND NOT EXISTS (
-    SELECT 1 FROM poel_archivos a
-    WHERE a.sesion_id = s.id AND a.ruta_local = s.imagen_ruta
-  );
-
--- ---------------------------------------------------------------------------
 -- Personalización Visual y Marca (Site Customizations & Theming)
 -- ---------------------------------------------------------------------------
 
@@ -326,65 +240,91 @@ CREATE TABLE IF NOT EXISTS customization_audit_logs (
 CREATE INDEX IF NOT EXISTS idx_customization_audit_fecha ON customization_audit_logs (created_at DESC);
 
 -- ---------------------------------------------------------------------------
--- Portal POETDUM — Actividades, Documentos, Indicadores
+-- Actividades y avances del Programa
 -- ---------------------------------------------------------------------------
+-- Cada actividad se registra UNA sola vez y el portal decide dónde mostrarla
+-- según su fecha, su estado y su publicación: programada → próximas
+-- actividades y calendario; realizada → avances del Programa; con aviso en
+-- vigencia → franja de avisos de la portada. Borrador y oculto nunca salen.
+--
+-- Sustituye a las tablas separadas de avisos, reuniones, sesiones POEL y al
+-- repositorio de documentos. Sus datos los trae
+-- migrations/002_actividades_programa.sql; las tablas viejas se quedan como
+-- respaldo en las bases que ya las tenían, sin que el código las use.
+--
+-- Las restricciones llevan nombre fijo porque la migración 002 las crea con
+-- el mismo nombre en las bases anteriores: así una migración futura puede
+-- sustituirlas sin distinguir cómo nació cada base.
 
 CREATE TABLE IF NOT EXISTS actividades (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  titulo        TEXT NOT NULL,
-  fecha         DATE NOT NULL,
-  hora_inicio   TEXT NOT NULL DEFAULT '',
-  hora_fin      TEXT NOT NULL DEFAULT '',
-  lugar         TEXT NOT NULL DEFAULT '',
-  descripcion   TEXT NOT NULL DEFAULT '',
-  estado        TEXT NOT NULL DEFAULT 'proxima'
-                CHECK (estado IN ('proxima','realizada','cancelada')),
-  resultados    TEXT NOT NULL DEFAULT '',
-  creado_por    UUID REFERENCES users(id) ON DELETE SET NULL,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  titulo            TEXT NOT NULL,
+  fase              TEXT NOT NULL DEFAULT 'Formulación',
+  tipo              TEXT NOT NULL DEFAULT 'Otra',
+  estado            TEXT NOT NULL DEFAULT 'programada',
+  fecha             DATE NOT NULL,
+  hora_inicio       TEXT NOT NULL DEFAULT '',
+  hora_fin          TEXT NOT NULL DEFAULT '',
+  lugar             TEXT NOT NULL DEFAULT '',
+  -- Dirección escrita o enlace de Google Maps; las coordenadas van aparte
+  -- porque una cosa es cómo se lee el lugar y otra dónde cae en el mapa.
+  direccion         TEXT NOT NULL DEFAULT '',
+  latitud           TEXT NOT NULL DEFAULT '',
+  longitud          TEXT NOT NULL DEFAULT '',
+  descripcion       TEXT NOT NULL DEFAULT '',
+  resultados        TEXT NOT NULL DEFAULT '',
+  acuerdos          TEXT NOT NULL DEFAULT '',
+  publicacion       TEXT NOT NULL DEFAULT 'publicado',
+  -- «Mostrar también como aviso»: el aviso pertenece a la actividad y solo
+  -- aparece en la franja de la portada dentro de su vigencia.
+  aviso_activo      BOOLEAN NOT NULL DEFAULT false,
+  aviso_titulo      TEXT NOT NULL DEFAULT '',
+  aviso_descripcion TEXT NOT NULL DEFAULT '',
+  aviso_inicio      DATE,
+  aviso_fin         DATE,
+  creado_por        UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT actividades_fase_check CHECK (fase IN (
+    'Formulación','Expedición','Ejecución','Evaluación','Modificación')),
+  CONSTRAINT actividades_tipo_check CHECK (tipo IN (
+    'Sesión del Comité','Sesión del Consejo','Sesión de Cabildo','Foro','Taller',
+    'Mesa de trabajo','Reunión técnica','Presentación','Consulta pública',
+    'Firma de convenio','Aprobación','Publicación de producto técnico','Otra')),
+  CONSTRAINT actividades_estado_check CHECK (estado IN (
+    'programada','realizada','reprogramada','cancelada')),
+  CONSTRAINT actividades_publicacion_check CHECK (publicacion IN (
+    'borrador','publicado','oculto')),
+  CONSTRAINT actividades_aviso_vigencia_check CHECK (
+    NOT aviso_activo
+    OR (aviso_inicio IS NOT NULL AND aviso_fin IS NOT NULL AND aviso_fin >= aviso_inicio))
 );
 CREATE INDEX IF NOT EXISTS idx_actividades_fecha  ON actividades (fecha DESC);
 CREATE INDEX IF NOT EXISTS idx_actividades_estado ON actividades (estado);
 
-CREATE TABLE IF NOT EXISTS documentos (
-  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  titulo           TEXT NOT NULL,
-  tipo             TEXT NOT NULL CHECK (tipo IN (
-    'Convenios y anexos','Acuerdos','Actas y minutas','Convocatorias',
-    'Documentos técnicos','Cartografía','Avances y resultados','Programa')),
-  etapa            TEXT NOT NULL DEFAULT 'En proceso'
-                   CHECK (etapa IN ('En proceso','Dictaminada','Notificada')),
-  fecha            DATE,
-  descripcion      TEXT NOT NULL DEFAULT '',
-  nombre_original  TEXT NOT NULL,
-  mime             TEXT NOT NULL,
-  size             BIGINT NOT NULL,
-  ruta_local       TEXT NOT NULL,
-  creado_por       UUID REFERENCES users(id) ON DELETE SET NULL,
-  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+-- Archivos de la actividad (convocatoria, acta, fotografías…). Viven con su
+-- actividad: se suben una vez y aparecen en su ficha, en los avances y en el
+-- repositorio público de documentos sin volver a cargarlos.
+CREATE TABLE IF NOT EXISTS actividad_archivos (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actividad_id    UUID NOT NULL REFERENCES actividades(id) ON DELETE CASCADE,
+  tipo            TEXT NOT NULL DEFAULT 'Otro',
+  -- Nombre para mostrar; vacío = el nombre del archivo.
+  titulo          TEXT NOT NULL DEFAULT '',
+  nombre_original TEXT NOT NULL,
+  mime            TEXT NOT NULL,
+  size            BIGINT NOT NULL DEFAULT 0,
+  ruta_local      TEXT NOT NULL,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT actividad_archivos_tipo_check CHECK (tipo IN (
+    'Convocatoria','Orden del día','Acta','Acuerdo','Lista de asistencia','Presentación',
+    'Dictamen','Documento aprobado','Fotografía','Otro'))
 );
-CREATE INDEX IF NOT EXISTS idx_documentos_tipo  ON documentos (tipo);
-CREATE INDEX IF NOT EXISTS idx_documentos_etapa ON documentos (etapa);
-CREATE INDEX IF NOT EXISTS idx_documentos_fecha ON documentos (fecha DESC);
+CREATE INDEX IF NOT EXISTS idx_actividad_archivos_actividad ON actividad_archivos (actividad_id);
 
-CREATE TABLE IF NOT EXISTS actividad_fotos (
-  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  actividad_id     UUID NOT NULL REFERENCES actividades(id) ON DELETE CASCADE,
-  nombre_original  TEXT NOT NULL,
-  mime             TEXT NOT NULL,
-  size             BIGINT NOT NULL,
-  ruta_local       TEXT NOT NULL,
-  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS idx_actividad_fotos_act ON actividad_fotos (actividad_id);
-
-CREATE TABLE IF NOT EXISTS actividad_documentos (
-  actividad_id  UUID NOT NULL REFERENCES actividades(id) ON DELETE CASCADE,
-  documento_id  UUID NOT NULL REFERENCES documentos(id) ON DELETE CASCADE,
-  PRIMARY KEY (actividad_id, documento_id)
-);
+-- ---------------------------------------------------------------------------
+-- Seguimiento y evaluación — Indicadores
+-- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS indicadores (
   id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -394,7 +334,9 @@ CREATE TABLE IF NOT EXISTS indicadores (
   meta                 NUMERIC,
   fecha_evaluacion     TEXT NOT NULL DEFAULT '',
   resultado_texto      TEXT NOT NULL DEFAULT '',
-  documento_respaldo_id UUID REFERENCES documentos(id) ON DELETE SET NULL,
+  -- El documento de respaldo es un archivo de alguna actividad (p. ej. el
+  -- informe de evaluación publicado como producto técnico).
+  documento_respaldo_id UUID REFERENCES actividad_archivos(id) ON DELETE SET NULL,
   creado_por           UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()

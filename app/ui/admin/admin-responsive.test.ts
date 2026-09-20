@@ -59,7 +59,7 @@ describe('Sin desborde horizontal', () => {
 
   it('latitud y longitud se apilan cuando no caben en dos columnas', () => {
     expect(css).toMatch(
-      /\.poel-coords \{[^}]*repeat\(auto-fit, minmax\(min\(140px, 100%\), 1fr\)\)/,
+      /\.ubicacion-coords__campos \{[^}]*repeat\(auto-fit, minmax\(min\(140px, 100%\), 1fr\)\)/,
     )
   })
 })

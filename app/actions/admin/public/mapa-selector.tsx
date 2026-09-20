@@ -1,9 +1,6 @@
 import { clientEntry, css, type Handle, type SerializableProps } from 'remix/ui'
 
-type Leaflet = typeof import('leaflet')
-
-const LEAFLET_JS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
-const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+import { loadLeaflet } from '../../../ui/leaflet.ts'
 
 /** Centro de San Pedro Tlaquepaque, para cuando la sesión aún no tiene punto. */
 const CENTRO_TLAQUEPAQUE: [number, number] = [20.6409, -103.3126]
@@ -15,40 +12,6 @@ const contenedor = css({
   overflow: 'hidden',
   border: '1px solid #e3e8f0',
 })
-
-let leafletPromise: Promise<Leaflet | null> | null = null
-
-/**
- * Carga Leaflet desde unpkg (permitido por la CSP del sitio, ver server.ts).
- * Se cachea la promesa para no volver a bajar el script si hay varios mapas.
- */
-function loadLeaflet(): Promise<Leaflet | null> {
-  leafletPromise ??= new Promise((resolve) => {
-    const global = window as unknown as { L?: Leaflet }
-    if (global.L) {
-      resolve(global.L)
-      return
-    }
-
-    if (!document.querySelector(`link[href="${LEAFLET_CSS}"]`)) {
-      const hoja = document.createElement('link')
-      hoja.rel = 'stylesheet'
-      hoja.href = LEAFLET_CSS
-      document.head.appendChild(hoja)
-    }
-
-    const script = document.createElement('script')
-    script.src = LEAFLET_JS
-    script.onload = () => resolve((window as unknown as { L?: Leaflet }).L ?? null)
-    script.onerror = () => {
-      leafletPromise = null
-      resolve(null)
-    }
-    document.head.appendChild(script)
-  })
-
-  return leafletPromise
-}
 
 /**
  * Saca lat/lng de un enlace de Google Maps pegado en el campo de ubicación.

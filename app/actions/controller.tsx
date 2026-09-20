@@ -1,17 +1,46 @@
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
+import type { RemixNode } from 'remix/ui'
 
 import { assetServer } from '../assets.ts'
 import { fetchJsonOr, getPublicTheme, logoutBackend } from '../backend.ts'
 import { sugerirColonias, sugerirMunicipios } from '../data/colonias.ts'
 import { routes } from '../routes.ts'
+import type { ActividadPublica, AvisoPortada } from '../data/programa.ts'
 import { HomePage } from './home-page.tsx'
-import type { ReunionPublica } from './public/reuniones-calendario.tsx'
 import { marcaAction } from './marca-controller.tsx'
 import { ErrorPage } from './error-page.tsx'
 
 /** Cuántas sugerencias devuelve el autocompletado por consulta. */
 const SUGERENCIAS_POR_CONSULTA = 12
+
+/** La portada muestra las tres actividades más próximas (ver la propuesta). */
+const PROXIMAS_EN_PORTADA = 3
+
+/**
+ * Portada. Si el backend no responde, cada bloque cae a su versión vacía (sin
+ * franja de aviso, «no hay actividades programadas») y el resto sigue en pie.
+ */
+async function renderHome(context: { request: Request; render: (node: RemixNode) => Response }) {
+  const [theme, avisoData, proximasData] = await Promise.all([
+    getPublicTheme(context.request),
+    fetchJsonOr<{ aviso: AvisoPortada | null }>(context.request, '/api/actividades/aviso', {
+      aviso: null,
+    }),
+    fetchJsonOr<{ actividades: ActividadPublica[] }>(
+      context.request,
+      `/api/actividades?vista=proximas&limite=${PROXIMAS_EN_PORTADA}`,
+      { actividades: [] },
+    ),
+  ])
+  return context.render(
+    <HomePage
+      theme={theme}
+      aviso={avisoData.aviso ?? null}
+      proximas={proximasData.actividades ?? []}
+    />,
+  )
+}
 
 export default createController(routes, {
   actions: {
@@ -20,23 +49,11 @@ export default createController(routes, {
         (await assetServer.fetch(context.request)) ?? new Response('Not Found', { status: 404 })
       )
     },
-    async home(context) {
-      const [theme, reunionesData] = await Promise.all([
-        getPublicTheme(context.request),
-        fetchJsonOr<{ reuniones: ReunionPublica[] }>(context.request, '/api/reuniones/activas', {
-          reuniones: [],
-        }),
-      ])
-      return context.render(<HomePage theme={theme} reuniones={reunionesData.reuniones ?? []} />)
+    home(context) {
+      return renderHome(context)
     },
-    async homeSlash(context) {
-      const [theme, reunionesData] = await Promise.all([
-        getPublicTheme(context.request),
-        fetchJsonOr<{ reuniones: ReunionPublica[] }>(context.request, '/api/reuniones/activas', {
-          reuniones: [],
-        }),
-      ])
-      return context.render(<HomePage theme={theme} reuniones={reunionesData.reuniones ?? []} />)
+    homeSlash(context) {
+      return renderHome(context)
     },
     participationLogin() {
       return redirect(routes.login.index.href())

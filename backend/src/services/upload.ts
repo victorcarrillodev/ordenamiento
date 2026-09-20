@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { validarAdjunto } from '../files/limits.ts'
@@ -15,51 +15,50 @@ export interface ArchivoSubido {
 }
 
 /**
- * Replica la secuencia de participations.ts:79-107 para N claves de formData.
- * Itera getAll(clave), valida límites → magic bytes → escribe a disco.
- * Devuelve archivos y rutas escritas para rollback.
+ * Valida y escribe a disco un lote de archivos ya leídos del formulario, con la
+ * misma secuencia que los adjuntos ciudadanos: tamaño → firma binaria (magic
+ * bytes) → nombre saneado y único en disco.
+ *
+ * Si un archivo no pasa, borra los que ya hubiera escrito del mismo lote y
+ * lanza un error con `status` (413/415/400). Si todo pasa, devuelve las rutas
+ * escritas para que quien llama las borre si después falla la base de datos.
  */
-export async function subirArchivosDesdeForm(
-  request: Request,
-  claves: string[],
+export async function guardarArchivos(
+  files: File[],
 ): Promise<{ archivos: ArchivoSubido[]; escritos: string[] }> {
-  const form = await request.formData()
-  const rawFiles: File[] = []
-  for (const clave of claves) {
-    for (const entry of form.getAll(clave)) {
-      if (entry instanceof File && entry.size > 0) rawFiles.push(entry)
-    }
-  }
-
   const archivos: ArchivoSubido[] = []
   const escritos: string[] = []
 
-  for (const file of rawFiles) {
-    const lim = validarAdjunto({ size: file.size, name: file.name }, rawFiles.length)
-    if (!lim.ok) {
-      throw Object.assign(new Error(lim.reason ?? 'Archivo rechazado'), {
-        status: lim.codigo ?? 400,
+  try {
+    for (const file of files) {
+      const lim = validarAdjunto({ size: file.size, name: file.name }, 1)
+      if (!lim.ok) {
+        throw Object.assign(new Error(lim.reason ?? 'Archivo rechazado'), {
+          status: lim.codigo ?? 400,
+        })
+      }
+      const buffer = Buffer.from(await file.arrayBuffer())
+      const verdict = validateUpload({ filename: file.name, buffer })
+      if (!verdict.ok) {
+        throw Object.assign(
+          new Error(`Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}`),
+          { status: 415 },
+        )
+      }
+      await mkdir(UPLOAD_DIR, { recursive: true })
+      const ruta = join(UPLOAD_DIR, nombreEnDisco(file.name))
+      await writeFile(ruta, buffer)
+      escritos.push(ruta)
+      archivos.push({
+        nombreOriginal: sanitizarNombre(file.name),
+        mime: verdict.safeMime!,
+        size: file.size,
+        rutaLocal: ruta,
       })
     }
-    const buffer = Buffer.from(await file.arrayBuffer())
-    const verdict = validateUpload({ filename: file.name, buffer })
-    if (!verdict.ok) {
-      throw Object.assign(
-        new Error(`Archivo rechazado (${sanitizarNombre(file.name)}): ${verdict.reason}`),
-        { status: 415 },
-      )
-    }
-    await mkdir(UPLOAD_DIR, { recursive: true })
-    const nombreDisco = nombreEnDisco(file.name)
-    const ruta = join(UPLOAD_DIR, nombreDisco)
-    await writeFile(ruta, buffer)
-    escritos.push(ruta)
-    archivos.push({
-      nombreOriginal: sanitizarNombre(file.name),
-      mime: verdict.safeMime!,
-      size: file.size,
-      rutaLocal: ruta,
-    })
+  } catch (err) {
+    await Promise.allSettled(escritos.map((ruta) => rm(ruta, { force: true })))
+    throw err
   }
 
   return { archivos, escritos }

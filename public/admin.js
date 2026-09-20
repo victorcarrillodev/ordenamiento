@@ -56,118 +56,19 @@
     }
   }
 
-  // 2. Delegación de eventos para el Calendario Interactivo
-  document.addEventListener('click', function (e) {
-    // A) Abrir modal al hacer clic en un evento del calendario
-    var btn = e.target.closest('.cal-event-btn')
-    if (btn) {
-      e.preventDefault()
-      var tipo = btn.getAttribute('data-tipo') || 'aviso'
-      var titulo = btn.getAttribute('data-titulo') || ''
-      var fecha = btn.getAttribute('data-fecha') || ''
-      var hora = btn.getAttribute('data-hora') || ''
-      var ubicacion = btn.getAttribute('data-ubicacion') || ''
-      var desc = btn.getAttribute('data-desc') || ''
-      var href = btn.getAttribute('data-href') || ''
-      var linktext = btn.getAttribute('data-linktext') || 'Ver más'
-
-      var modal = document.getElementById('cal-detail-modal')
-      var tagEl = document.getElementById('cal-m-tag')
-      var titleEl = document.getElementById('cal-m-title')
-      var fechaEl = document.getElementById('cal-m-fecha')
-      var horaEl = document.getElementById('cal-m-hora')
-      var lugarEl = document.getElementById('cal-m-lugar')
-      var descEl = document.getElementById('cal-m-desc')
-      var linkEl = document.getElementById('cal-m-link')
-      // El icono vive en su propio elemento; el texto se escribe en el span
-      // interior para no borrarlo. Si no existe, se cae al contenedor.
-      var tagIcon = document.getElementById('cal-m-tag-icon')
-      var tagTxt = document.getElementById('cal-m-tag-txt') || tagEl
-      var fechaTxt = document.getElementById('cal-m-fecha-txt') || fechaEl
-      var horaTxt = document.getElementById('cal-m-hora-txt') || horaEl
-      var lugarTxt = document.getElementById('cal-m-lugar-txt') || lugarEl
-
-      if (titleEl) titleEl.textContent = titulo
-      if (fechaTxt) fechaTxt.textContent = 'Fecha: ' + fecha
-
-      if (horaEl) {
-        if (hora) {
-          if (horaTxt) horaTxt.textContent = 'Horario: ' + hora
-          horaEl.style.display = 'block'
-        } else {
-          horaEl.style.display = 'none'
-        }
-      }
-
-      if (lugarEl) {
-        if (ubicacion) {
-          if (lugarTxt) lugarTxt.textContent = 'Ubicación: ' + ubicacion
-          lugarEl.style.display = 'block'
-        } else {
-          lugarEl.style.display = 'none'
-        }
-      }
-
-      if (descEl) descEl.textContent = desc
-      if (linkEl) {
-        // Sin destino no se enseña el botón: un enlace a `#` que no lleva a
-        // ningún lado es peor que no ofrecerlo.
-        if (href) {
-          linkEl.href = href
-          linkEl.textContent = linktext
-          linkEl.hidden = false
-        } else {
-          linkEl.removeAttribute('href')
-          linkEl.hidden = true
-        }
-      }
-
-      if (tagEl) {
-        var icono = 'mdi:bullhorn-outline'
-        var etiqueta = 'Aviso Oficial'
-        var fondo = '#FAF5FF'
-        var tinta = '#7E22CE'
-        if (tipo === 'reunion') {
-          icono = 'mdi:account-group-outline'
-          etiqueta = 'Reunión de Trabajo'
-          fondo = '#F0FDF4'
-          tinta = '#166534'
-        } else if (tipo === 'poel') {
-          icono = 'mdi:bank-outline'
-          etiqueta = 'Sesión POEL'
-          fondo = '#FEFCE8'
-          tinta = '#854D0E'
-        }
-        if (tagIcon) tagIcon.setAttribute('icon', icono)
-        if (tagTxt) tagTxt.textContent = etiqueta
-        tagEl.style.background = fondo
-        tagEl.style.color = tinta
-      }
-
-      if (modal) {
-        modal.style.display = 'flex'
-      }
-      return
-    }
-
-    // B) Cerrar modal al pulsar botón de cerrar o el fondo oscuro
-    if (
-      e.target.closest('#cal-m-close') ||
-      e.target.closest('#cal-m-btn-close') ||
-      (e.target && e.target.id === 'cal-detail-modal')
-    ) {
-      var m = document.getElementById('cal-detail-modal')
-      if (m) m.style.display = 'none'
-    }
+  // 2. Acciones que no se deshacen (borrar una actividad, quitar un archivo):
+  //    cualquier formulario con `data-confirmar` pregunta antes de enviarse. Va
+  //    aquí y no en un `onsubmit` en línea porque la CSP no admite manejadores
+  //    en línea.
+  document.addEventListener('submit', function (e) {
+    var form = e.target
+    var mensaje = form && form.getAttribute ? form.getAttribute('data-confirmar') : null
+    if (mensaje && !confirm(mensaje)) e.preventDefault()
   })
 
-  // Cerrar modal con tecla Escape
+  // Cerrar la vista previa de Personalización con Escape
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
-      var m = document.getElementById('cal-detail-modal')
-      if (m && m.style.display !== 'none') {
-        m.style.display = 'none'
-      }
       var mp = document.getElementById('mini-preview-modal')
       if (mp) mp.classList.remove('mp-modal--abierto')
     }
@@ -332,13 +233,13 @@
       txt_hero_btn1: 'mp-btn1',
       txt_hero_btn2: 'mp-btn2',
       ico_card1: 'mp-card-icon-1',
-      txt_card1_titulo: 'mp-card-titulo-1',
+      txt_fases_titulo: 'mp-card-titulo-1',
       ico_card2: 'mp-card-icon-2',
-      txt_card2_titulo: 'mp-card-titulo-2',
+      txt_avances_titulo: 'mp-card-titulo-2',
       ico_card3: 'mp-card-icon-3',
-      txt_card3_titulo: 'mp-card-titulo-3',
+      txt_calendario_titulo: 'mp-card-titulo-3',
       ico_card4: 'mp-card-icon-4',
-      txt_card4_titulo: 'mp-card-titulo-4',
+      txt_seguimiento_titulo: 'mp-card-titulo-4',
       txt_footer_entidad: 'mp-footer-entidad',
       txt_footer_email: 'mp-footer-email',
     }

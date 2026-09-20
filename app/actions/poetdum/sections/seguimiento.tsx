@@ -1,13 +1,20 @@
+/**
+ * Seguimiento y evaluación. Solo tiene sentido con el Programa aprobado y en
+ * aplicación: mientras tanto se muestra el aviso que pide la propuesta.
+ */
 import { css, type Handle } from 'remix/ui'
-import { colors, FONT_STACK } from '../../../ui/civic-horizon.ts'
+
 import { routes } from '../../../routes.ts'
+import { colors, FONT_STACK } from '../../../ui/civic-horizon.ts'
+import { IconoDocumento } from '../../../ui/programa/iconos.tsx'
+import { diaEnMexico, fechaLarga } from '../../../utils/calendario.ts'
+import { vacioStyle } from '../programa-layout.tsx'
 import type { Indicador } from '../types.ts'
 
-export interface SeguimientoSectionProps {
-  indicadores: Indicador[]
-}
+export const MENSAJE_SEGUIMIENTO_PENDIENTE =
+  'Esta sección estará disponible una vez aprobado el Programa. Aquí se publicarán los indicadores y resultados de su aplicación y evaluación.'
 
-const card = css({
+const tarjetaStyle = css({
   background: colors.white,
   borderRadius: '12px',
   border: `1px solid ${colors.gray200}`,
@@ -16,178 +23,171 @@ const card = css({
   flexDirection: 'column',
   gap: '12px',
   boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
+  fontFamily: FONT_STACK,
 })
 
-const barTrack = css({
+const metaStyle = css({
+  display: 'flex',
+  gap: '16px',
+  flexWrap: 'wrap',
+  fontSize: '13px',
+  color: colors.gray500,
+})
+
+const pistaStyle = css({
   width: '100%',
-  height: '1.25rem',
-  background: '#e5e7eb',
+  height: '12px',
+  background: colors.gray200,
   borderRadius: '9999px',
   overflow: 'hidden',
 })
 
-export function SeguimientoSection(handle: Handle<SeguimientoSectionProps>) {
+function numero(valor: number | string | null | undefined): number | null {
+  if (valor === null || valor === undefined || valor === '') return null
+  const n = Number(valor)
+  return Number.isFinite(n) ? n : null
+}
+
+export function SeguimientoPendiente() {
+  return () => (
+    <div
+      role="status"
+      mix={css({
+        display: 'flex',
+        gap: '16px',
+        alignItems: 'flex-start',
+        padding: '28px',
+        borderRadius: '14px',
+        background: colors.burgundy50,
+        border: `1px solid ${colors.burgundy100}`,
+        fontFamily: FONT_STACK,
+      })}
+    >
+      <span aria-hidden="true" mix={css({ fontSize: '28px', lineHeight: 1, flexShrink: 0 })}>
+        📈
+      </span>
+      <p mix={css({ margin: 0, fontSize: '17px', lineHeight: 1.6, color: colors.gray900 })}>
+        {MENSAJE_SEGUIMIENTO_PENDIENTE}
+      </p>
+    </div>
+  )
+}
+
+export function IndicadoresLista(handle: Handle<{ indicadores: Indicador[] }>) {
   return () => {
     const { indicadores } = handle.props
+    if (indicadores.length === 0) {
+      return <p mix={vacioStyle}>Todavía no hay indicadores publicados.</p>
+    }
     return (
-      <div>
-        <h2
-          mix={css({
-            fontFamily: FONT_STACK,
-            fontSize: '26px',
-            fontWeight: 800,
-            color: colors.gray900,
-            margin: '0 0 8px',
-          })}
-        >
-          Seguimiento de indicadores
-        </h2>
-        <p
-          mix={css({
-            fontFamily: FONT_STACK,
-            fontSize: '16px',
-            color: colors.gray500,
-            margin: '0 0 32px',
-          })}
-        >
-          Monitoreo del avance del POETDUM respecto a las metas establecidas.
-        </p>
-
-        {indicadores.length === 0 ? (
-          <p
-            mix={css({
-              fontFamily: FONT_STACK,
-              fontSize: '15px',
-              color: colors.gray500,
-              textAlign: 'center',
-              padding: '32px',
-              background: colors.gray50,
-              borderRadius: '12px',
-            })}
-          >
-            No hay indicadores registrados por el momento.
-          </p>
-        ) : (
-          <div mix={css({ display: 'flex', flexDirection: 'column', gap: '20px' })}>
-            {indicadores.map((ind) => (
-              <article key={ind.id} mix={card}>
-                <h3
+      <div mix={css({ display: 'flex', flexDirection: 'column', gap: '20px' })}>
+        {indicadores.map((ind) => {
+          const meta = numero(ind.meta)
+          // `updated_at` es un instante (UTC): se muestra el día de México.
+          const actualizado = ind.updated_at ? diaEnMexico(new Date(ind.updated_at)) : ''
+          return (
+            <article key={ind.id} mix={tarjetaStyle}>
+              <h3
+                mix={css({ fontSize: '18px', fontWeight: 700, color: colors.gray900, margin: 0 })}
+              >
+                {ind.nombre}
+              </h3>
+              {ind.descripcion ? (
+                <p
+                  mix={css({ fontSize: '14px', color: colors.gray700, margin: 0, lineHeight: 1.6 })}
+                >
+                  {ind.descripcion}
+                </p>
+              ) : null}
+              <div mix={metaStyle}>
+                {meta !== null ? (
+                  <span>
+                    Meta: {meta} {ind.unidad}
+                  </span>
+                ) : null}
+                {ind.fecha_evaluacion ? <span>Evaluación: {ind.fecha_evaluacion}</span> : null}
+                {actualizado ? <span>Actualizado: {fechaLarga(actualizado)}</span> : null}
+              </div>
+              {ind.resultado_texto ? (
+                <p
                   mix={css({
-                    fontFamily: FONT_STACK,
-                    fontSize: '18px',
-                    fontWeight: 700,
-                    color: colors.gray900,
+                    fontSize: '14px',
+                    color: colors.gray700,
+                    background: colors.gray50,
+                    padding: '10px 14px',
+                    borderRadius: '8px',
                     margin: 0,
                   })}
                 >
-                  {ind.nombre}
-                </h3>
-
-                {ind.descripcion ? (
-                  <p
-                    mix={css({
-                      fontFamily: FONT_STACK,
-                      fontSize: '14px',
-                      color: colors.gray700,
-                      margin: 0,
-                      lineHeight: 1.6,
-                    })}
-                  >
-                    {ind.descripcion}
-                  </p>
-                ) : null}
-
-                <div
-                  mix={css({
-                    display: 'flex',
-                    gap: '16px',
-                    flexWrap: 'wrap',
-                    fontFamily: FONT_STACK,
-                    fontSize: '13px',
-                    color: colors.gray500,
-                  })}
-                >
-                  {ind.unidad ? <span>Unidad: {ind.unidad}</span> : null}
-                  {ind.fecha_evaluacion ? <span>Evaluación: {ind.fecha_evaluacion}</span> : null}
-                  {ind.meta != null ? (
-                    <span>
-                      Meta: {ind.meta} {ind.unidad ?? ''}
-                    </span>
-                  ) : null}
-                </div>
-
-                {ind.resultado_texto ? (
-                  <p
-                    mix={css({
-                      fontFamily: FONT_STACK,
-                      fontSize: '14px',
-                      color: colors.gray700,
-                      background: colors.gray50,
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      margin: 0,
-                    })}
-                  >
-                    {ind.resultado_texto}
-                  </p>
-                ) : null}
-
-                {ind.documento_respaldo ? (
-                  <a
-                    href={`${routes.poetdum.documentos.archivo.href({ id: ind.documento_respaldo.id })}?download=1`}
-                    mix={css({
-                      fontFamily: FONT_STACK,
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      color: colors.burgundy900,
-                      textDecoration: 'underline',
-                    })}
-                  >
-                    📄 Documento respaldo: {ind.documento_respaldo.titulo}
-                  </a>
-                ) : null}
-
-                {ind.mediciones && ind.mediciones.length > 0 ? (
-                  <div mix={css({ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' })}>
-                    {ind.mediciones.map((m) => {
-                      const pct =
-                        ind.meta != null && ind.meta > 0 ? Math.min(100, Math.round((m.valor / ind.meta) * 100)) : 0
-                      return (
-                        <div key={m.id} mix={css({ display: 'flex', flexDirection: 'column', gap: '4px' })}>
-                          <div
-                            mix={css({
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              fontFamily: FONT_STACK,
-                              fontSize: '13px',
-                              color: colors.gray700,
-                            })}
-                          >
-                            <span>
-                              {m.periodo}: {m.valor} {ind.unidad ?? ''}
-                            </span>
-                            {ind.meta != null ? <span>meta: {ind.meta} ({pct}%)</span> : null}
-                          </div>
-                          <div mix={barTrack}>
+                  <strong>Resultado: </strong>
+                  {ind.resultado_texto}
+                </p>
+              ) : null}
+              {ind.mediciones.length > 0 ? (
+                <div mix={css({ display: 'flex', flexDirection: 'column', gap: '10px' })}>
+                  {ind.mediciones.map((m) => {
+                    const valor = numero(m.valor) ?? 0
+                    const pct =
+                      meta !== null && meta > 0
+                        ? Math.min(100, Math.round((valor / meta) * 100))
+                        : 0
+                    return (
+                      <div
+                        key={m.id}
+                        mix={css({ display: 'flex', flexDirection: 'column', gap: '4px' })}
+                      >
+                        <div
+                          mix={css({
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            gap: '12px',
+                            fontSize: '13px',
+                            color: colors.gray700,
+                          })}
+                        >
+                          <span>
+                            {m.periodo}: {valor} {ind.unidad}
+                          </span>
+                          {meta !== null ? <span>{pct}% de la meta</span> : null}
+                        </div>
+                        {meta !== null ? (
+                          <div mix={pistaStyle}>
                             <div
-                              style={{ width: pct + '%' }}
+                              style={{ width: `${pct}%` }}
                               mix={css({
                                 height: '100%',
                                 background: colors.burgundy900,
                                 borderRadius: '9999px',
-                                transition: 'width 300ms ease',
                               })}
                             />
                           </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : null}
-              </article>
-            ))}
-          </div>
-        )}
+                        ) : null}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : null}
+              {ind.documento_respaldo ? (
+                <a
+                  href={routes.poetdum.archivo.href({ aid: ind.documento_respaldo.id })}
+                  target="_blank"
+                  rel="noopener"
+                  mix={css({
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: colors.burgundy900,
+                  })}
+                >
+                  <IconoDocumento size={15} /> Documento de respaldo:{' '}
+                  {ind.documento_respaldo.titulo}
+                </a>
+              ) : null}
+            </article>
+          )
+        })}
       </div>
     )
   }

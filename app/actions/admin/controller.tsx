@@ -2,13 +2,19 @@
  * Admin Controller · rutas GET de la Bitácora Ambiental
  *   adminRoutes.index     â†’ GET /admin            (vista general)
  *   adminRoutes.exportar  â†’ GET /admin/exportar   (pígina o descarga .xlsx)
- * La ruta form() de reuniones se mapea por separado (reuniones-controller.tsx).
+ * Las rutas form() de «Actividades y avances» se mapean por separado
+ * (actividades-controller.tsx).
  */
 import { createController } from 'remix/router'
 
 import { backendFetch, fetchJsonOr, requireAdminUser } from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
-import { AdminPage } from './page.tsx'
+import {
+  AdminPage,
+  type AvisoResumen,
+  type ContenidoPortal,
+  type ProximaActividad,
+} from './page.tsx'
 import { ExportarPage } from './exportar-page.tsx'
 import { ParticipacionesPage } from './participaciones-page.tsx'
 import { EstadisticasPage, type DatosOrigen, type VistaEstadisticas } from './estadisticas-page.tsx'
@@ -25,29 +31,10 @@ interface Stats {
   fuente: Array<[string, number]>
   genero: Array<[string, number]>
   tematica: Array<[string, number]>
-  contenido?: {
-    actividades: number
-    documentos: number
-    indicadores: number
-    poelSesiones: number
-    reuniones: number
-    avisos: number
-  }
+  contenido?: ContenidoPortal
   participacionesPorMes?: Array<{ mes: string; total: number }>
-  proximaReunion?: {
-    id: string
-    titulo: string
-    fecha: string
-    hora_inicio: string
-    hora_fin: string
-  } | null
-  ultimosAvisos?: Array<{
-    id: string
-    titulo: string
-    descripcion: string
-    activo: boolean
-    fecha?: string
-  }>
+  proximaActividad?: ProximaActividad | null
+  avisos?: AvisoResumen[]
 }
 
 const STATS_VACIAS: Stats = {
@@ -60,15 +47,15 @@ const STATS_VACIAS: Stats = {
   tematica: [],
   contenido: {
     actividades: 0,
-    documentos: 0,
+    proximas: 0,
+    realizadas: 0,
+    borradores: 0,
+    avisosVigentes: 0,
     indicadores: 0,
-    poelSesiones: 0,
-    reuniones: 0,
-    avisos: 0,
   },
   participacionesPorMes: [],
-  proximaReunion: null,
-  ultimosAvisos: [],
+  proximaActividad: null,
+  avisos: [],
 }
 
 /**
@@ -286,51 +273,6 @@ export default createController(adminRoutes, {
 
       headers.set('cache-control', 'private, no-store')
       return new Response(response.body, { status: response.status, headers })
-    },
-
-    /** Sirve un archivo de una sesión POEL a través del panel. */
-    async poelArchivo(context) {
-      const user = await requireAdminUser(context.request)
-      if (user instanceof Response) return user
-
-      const descarga = new URL(context.request.url).searchParams.get('download') === '1'
-      const response = await backendFetch(
-        context.request,
-        `/api/poel/archivos/${context.params.aid}${descarga ? '?download=1' : ''}`,
-      )
-      if (!response.ok) return new Response('Not Found', { status: response.status })
-
-      const headers = new Headers()
-      for (const h of ['content-type', 'content-disposition', 'content-length']) {
-        const v = response.headers.get(h)
-        if (v) headers.set(h, v)
-      }
-      headers.set('x-content-type-options', 'nosniff')
-      // Igual que con los adjuntos: la CSP del backend no dejaría incrustarlo
-      // en el propio panel; se emite una que sí lo permite en mismo origen.
-      headers.set('content-security-policy', "default-src 'none'; frame-ancestors 'self'")
-
-      return new Response(response.body, { headers })
-    },
-    /** Sirve la imagen de una sesión POEL a través del panel. */
-    async poelImagen(context) {
-      const user = await requireAdminUser(context.request)
-      if (user instanceof Response) return user
-
-      const response = await backendFetch(context.request, `/api/poel/${context.params.id}/imagen`)
-      if (!response.ok) return new Response('Not Found', { status: response.status })
-
-      const headers = new Headers()
-      for (const h of ['content-type', 'content-disposition', 'content-length']) {
-        const v = response.headers.get(h)
-        if (v) headers.set(h, v)
-      }
-      headers.set('x-content-type-options', 'nosniff')
-      // Igual que con los adjuntos: la CSP del backend impediría incrustarla en
-      // el propio panel, así que se emite una que sí lo permite en mismo origen.
-      headers.set('content-security-policy', "default-src 'none'; frame-ancestors 'self'")
-
-      return new Response(response.body, { headers })
     },
 
     async estadisticas(context) {
