@@ -79,6 +79,9 @@ describe('Admin · nueva participación', () => {
       expect(body.get('municipio')).toBe('San Pedro Tlaquepaque') // el del aporte
       expect(body.get('municipio_participante')).toBe('San Pedro Tlaquepaque') // el de quien participa
       expect(body.get('domicilio')).toBe('Av. Juárez 100, Centro')
+      // El formulario lo captura como «cp» y el backend solo lee
+      // `codigo_postal`: con el nombre viejo se perdía en cada alta física.
+      expect(body.get('codigo_postal')).toBe('45640')
     })
 
     it('cae al municipio por defecto cuando el del aporte llega vacío', async () => {

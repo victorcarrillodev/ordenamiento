@@ -1,4 +1,5 @@
 import { sql, type Db } from '../db/pool.ts'
+import { linea, parrafos } from './texto.ts'
 
 export type Origen = 'digital' | 'fisica'
 export type Estado = 'En proceso' | 'Procedente' | 'No procedente'
@@ -29,6 +30,71 @@ export interface ParticipationInput {
   genero?: string
   tematica?: string
   creadoPor?: string
+}
+
+export type ResultadoCampos =
+  { ok: true; campos: Record<string, string> } | { ok: false; error: string }
+
+/**
+ * Cada campo de texto del formulario ciudadano: cómo se sanea y cuánto admite.
+ * `nombre` está indexado (`idx_participaciones_nombre`) y `busqueda_tsv` es una
+ * columna generada que concatena varios campos: un carácter de control o un
+ * texto enorme rompían el INSERT entero y la participación se perdía con un
+ * 500. La propuesta (`observacion`) conserva sus párrafos y admite mucho más,
+ * que para eso es.
+ */
+const CAMPOS_TEXTO = {
+  nombre: { sanear: linea, largo: 300 },
+  // RFC 5321: 254 caracteres es el máximo práctico de una dirección de correo;
+  // ser más estrictos que el propio protocolo solo rechaza correos válidos.
+  correo: { sanear: linea, largo: 254 },
+  calle: { sanear: linea, largo: 200 },
+  numero: { sanear: linea, largo: 50 },
+  colonia: { sanear: linea, largo: 200 },
+  municipio: { sanear: linea, largo: 200 },
+  institucion: { sanear: linea, largo: 200 },
+  codigo_postal: { sanear: linea, largo: 20 },
+  direccion_origen: { sanear: linea, largo: 400 },
+  latitud: { sanear: linea, largo: 50 },
+  longitud: { sanear: linea, largo: 50 },
+  domicilio: { sanear: linea, largo: 400 },
+  municipio_participante: { sanear: linea, largo: 200 },
+  ocupacion: { sanear: linea, largo: 200 },
+  fuente: { sanear: linea, largo: 200 },
+  genero: { sanear: linea, largo: 200 },
+  tematica: { sanear: linea, largo: 200 },
+  consentimiento_version: { sanear: linea, largo: 100 },
+  observacion: { sanear: parrafos, largo: 20000 },
+} as const
+
+export const VERSION_AVISO_POR_OMISION = 'lgpdppso-2026-01'
+
+/** Sin ellos la participación no se puede identificar ni responder. */
+const OBLIGATORIOS = ['nombre', 'correo'] as const
+
+/**
+ * Lee, sanea y acota el texto del formulario ciudadano (digital o físico). Sin
+ * esto, un carácter de control no cabe en una columna `text` y la
+ * participación se perdía con un 500.
+ */
+export function camposDelFormulario(form: FormData): ResultadoCampos {
+  const campos: Record<string, string> = {}
+  for (const campo of Object.keys(CAMPOS_TEXTO) as Array<keyof typeof CAMPOS_TEXTO>) {
+    const { sanear, largo } = CAMPOS_TEXTO[campo]
+    const valor = form.get(campo)
+    const limpio = typeof valor === 'string' ? sanear(valor) : ''
+    const invalido = (valor !== null && typeof valor !== 'string') || limpio.length > largo
+    if (invalido) {
+      return { ok: false, error: `El campo ${campo} debe ser texto de hasta ${largo} caracteres` }
+    }
+    campos[campo] = limpio
+  }
+  // Los dos formularios ya los exigen, pero eso solo corre en el navegador: un
+  // nombre hecho de caracteres invisibles se quedaba en blanco al sanearlo.
+  for (const campo of OBLIGATORIOS) {
+    if (!campos[campo]) return { ok: false, error: `El campo ${campo} es obligatorio` }
+  }
+  return { ok: true, campos }
 }
 
 export interface CreateResult {

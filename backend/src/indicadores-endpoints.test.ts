@@ -202,6 +202,25 @@ describe('indicadores', () => {
     expect(crear).not.toHaveBeenCalled()
   })
 
+  // Regresión (Testing): el mismo caso de arriba pero con los invisibles del
+  // commit 3e14415 (no solo el byte nulo) y en el ALTA, no solo en la
+  // edición. validarIndicador ya cubre esto (el nombre saneado queda vacío y
+  // el propio `if (datos.nombre !== undefined && !datos.nombre)` lo
+  // rechaza con «Escribe el nombre del indicador.»); el `if (!campos.nombre)
+  // return json({ error: 'Falta nombre' })` de app.ts es la red por si el
+  // campo llega omitido del todo. Aquí se confirma que, en el alta real, el
+  // primero ya basta y no se crea un indicador sin forma de identificarlo.
+  it('un nombre hecho solo de invisibles en el alta también se rechaza', async () => {
+    const crear = spyOn(indicadores as any, 'createIndicador').mockResolvedValue({ id: 'i1' })
+    espias.push(crear)
+    const soloInvisibles =
+      String.fromCodePoint(0x200b) + String.fromCodePoint(0x202e) + String.fromCodePoint(0xfeff)
+    const res = await handleRequest(alta({ nombre: soloInvisibles }))
+    expect(res.status).toBe(400)
+    expect(((await res.json()) as { error: string }).error).toContain('nombre')
+    expect(crear).not.toHaveBeenCalled()
+  })
+
   // Regresión (Testing): editar reemplaza las mediciones borrándolas antes de
   // volver a insertarlas. Sin transacción, un fallo a media faena dejaba al
   // indicador sin las que tenía mientras la respuesta decía «error interno».

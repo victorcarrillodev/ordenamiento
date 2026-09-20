@@ -127,6 +127,27 @@ describe('validarActividad', () => {
     if (r.ok) expect(r.datos.acuerdos).toBe('Uno\nDos')
   })
 
+  // Regresión (Testing): antes de que esControl cubriera los C1 y los
+  // invisibles (commit 3e14415), un título así no perdía estos caracteres —
+  // no se dibujan, pero antes tampoco eran controles para esta función—, así
+  // que el título quedaba con contenido y no se rechazaba. Ahora sí se
+  // limpian todos y el título queda vacío: debe rechazarse igual que uno en
+  // blanco.
+  it('un título hecho solo de invisibles y controles C1 se rechaza igual que uno en blanco', () => {
+    const soloRuido =
+      String.fromCodePoint(0x200b) + String.fromCodePoint(0x202e) + String.fromCodePoint(0x85)
+    expect(error({ titulo: soloRuido })).toContain('nombre')
+  })
+
+  // Las banderas regionales y el ZWNJ no son invisibles de esta lista
+  // (ver texto.test.ts): un título que los usa debe sobrevivir intacto.
+  it('conserva banderas regionales y ZWNJ en el título', () => {
+    const bandera = String.fromCodePoint(0x1f1f2, 0x1f1fd) // 🇲🇽
+    const r = validarActividad(formulario({ titulo: `Foro binacional ${bandera}` }), HOY)
+    expect(r.ok).toBe(true)
+    if (r.ok) expect(r.datos.titulo).toBe(`Foro binacional ${bandera}`)
+  })
+
   it('topes de longitud', () => {
     expect(error({ titulo: 'x'.repeat(301) })).toContain('300')
     expect(error({ descripcion: 'x'.repeat(5001) })).toContain('5000')

@@ -39,7 +39,6 @@ const MULTIPART_OVERHEAD_BYTES = 64 * 1024
 const CAMPOS_DIRECTOS = [
   'colonia',
   'calle',
-  'cp',
   'latitud',
   'longitud',
   'fuente',
@@ -53,6 +52,7 @@ const CAMPOS_DIRECTOS = [
 /** Todo lo que se repinta si el alta falla, incluidos los de tratamiento propio. */
 const CAMPOS_DEL_FORMULARIO = [
   ...CAMPOS_DIRECTOS,
+  'cp',
   'nombre',
   'correo',
   'domicilio',
@@ -145,6 +145,8 @@ export default createController(adminRoutes.participacionNueva, {
       for (const nombre of CAMPOS_DIRECTOS) {
         body.set(nombre, campo(nombre))
       }
+      // El formulario lo captura como «cp»; el backend lo guarda en `codigo_postal`.
+      body.set('codigo_postal', campo('cp'))
 
       const pdf = formData.get('pdf')
       if (pdf instanceof File && pdf.size > 0) {

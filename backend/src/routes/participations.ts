@@ -16,7 +16,12 @@ import { validateUpload } from '../services/upload-guard.ts'
 import { nextFolio } from '../services/folio.ts'
 import { ingestParticipation, type IngestFile } from '../services/ingest.ts'
 import { enviarAcuseReciboParticipacion, mailConfigurado } from '../services/mail.ts'
-import { createParticipation, type Origen } from '../services/participations.ts'
+import {
+  camposDelFormulario,
+  createParticipation,
+  VERSION_AVISO_POR_OMISION,
+  type Origen,
+} from '../services/participations.ts'
 import { json, bodyTooLarge, logger } from '../utils.ts'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
@@ -41,23 +46,15 @@ export async function handleCreateParticipation(
     return json({ error: 'El cuerpo de la petición excede el tamaño máximo permitido' }, 413)
   }
 
-  const form = await request.formData()
-  const complementarios: Record<string, string> = {}
-  for (const campo of [
-    'domicilio',
-    'municipio_participante',
-    'ocupacion',
-    'fuente',
-    'genero',
-    'tematica',
-  ]) {
-    const valor = form.get(campo)
-    const limite = campo === 'domicilio' ? 400 : 200
-    if (valor !== null && (typeof valor !== 'string' || valor.length > limite)) {
-      return json({ error: `El campo ${campo} debe ser texto de hasta ${limite} caracteres` }, 422)
-    }
-    complementarios[campo] = typeof valor === 'string' ? valor.trim() : ''
+  let form: FormData
+  try {
+    form = await request.formData()
+  } catch {
+    return json({ error: 'Formulario inválido' }, 400)
   }
+  const validado = camposDelFormulario(form)
+  if (!validado.ok) return json({ error: validado.error }, 422)
+  const campos = validado.campos
   const origin = String(form.get('origen') ?? 'digital') as Origen
   if (!isOrigen(origin)) {
     return json({ error: 'origen inválido' }, 400)
@@ -70,7 +67,7 @@ export async function handleCreateParticipation(
 
   // Consentimiento ciudadano obligatorio para origen digital
   const consentimiento = String(form.get('consentimiento') ?? '')
-  const consentimientoVersion = String(form.get('consentimiento_version') ?? 'lgpdppso-2026-01')
+  const consentimientoVersion = campos.consentimiento_version || VERSION_AVISO_POR_OMISION
   if (origin === 'digital' && consentimiento !== '1') {
     return json({ error: 'Debes aceptar el aviso de privacidad para enviar tu participación' }, 400)
   }
@@ -136,21 +133,21 @@ export async function handleCreateParticipation(
     const folio = await nextFolio()
 
     const camposFormulario: Record<string, string> = {
-      nombre: String(form.get('nombre') ?? ''),
-      correo: String(form.get('correo') ?? ''),
-      colonia: String(form.get('colonia') ?? ''),
-      municipio: String(form.get('municipio') ?? ''),
-      institucion: String(form.get('institucion') ?? ''),
-      ocupacion: complementarios.ocupacion,
-      fuente: complementarios.fuente,
-      genero: complementarios.genero,
-      tematica: complementarios.tematica,
-      observacion: String(form.get('observacion') ?? ''),
-      codigo_postal: String(form.get('codigo_postal') ?? ''),
-      direccion_origen: String(form.get('direccion_origen') ?? ''),
+      nombre: campos.nombre,
+      correo: campos.correo,
+      colonia: campos.colonia,
+      municipio: campos.municipio,
+      institucion: campos.institucion,
+      ocupacion: campos.ocupacion,
+      fuente: campos.fuente,
+      genero: campos.genero,
+      tematica: campos.tematica,
+      observacion: campos.observacion,
+      codigo_postal: campos.codigo_postal,
+      direccion_origen: campos.direccion_origen,
       // Domicilio personal, independiente de la ubicación de la propuesta.
-      domicilio: complementarios.domicilio,
-      municipio_participante: complementarios.municipio_participante,
+      domicilio: campos.domicilio,
+      municipio_participante: campos.municipio_participante,
       folio,
     }
 
@@ -162,8 +159,8 @@ export async function handleCreateParticipation(
           origen: origin,
           nombre: camposFormulario.nombre,
           correo: camposFormulario.correo,
-          calle: String(form.get('calle') ?? ''),
-          numero: String(form.get('numero') ?? ''),
+          calle: campos.calle,
+          numero: campos.numero,
           colonia: camposFormulario.colonia,
           municipio: camposFormulario.municipio,
           codigo_postal: camposFormulario.codigo_postal,
@@ -177,8 +174,8 @@ export async function handleCreateParticipation(
           fuente: camposFormulario.fuente,
           genero: camposFormulario.genero,
           tematica: camposFormulario.tematica,
-          latitud: String(form.get('latitud') ?? ''),
-          longitud: String(form.get('longitud') ?? ''),
+          latitud: campos.latitud,
+          longitud: campos.longitud,
           observacion: camposFormulario.observacion,
           creadoPor: user?.id,
         },

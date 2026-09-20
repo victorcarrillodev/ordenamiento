@@ -37,4 +37,19 @@ describe('texto', () => {
     const familia = '👩‍👧'
     expect(linea(familia)).toBe(familia)
   })
+
+  // Regresión (Testing): U+200C (ZWNJ) queda fuera de INVISIBLES a propósito
+  // —unir palabras en árabe/persa y separar letras en el resto de emojis
+  // compuestos—, y las banderas regionales (dos puntos de código fuera del
+  // BMP) no son controles de ningún rango de los que filtra esControl. Ambos
+  // deben sobrevivir intactos.
+  it('conserva ZWNJ y las banderas regionales, que no son invisibles de esta lista', () => {
+    const ZWNJ = String.fromCodePoint(0x200c)
+    expect(linea(`disc${ZWNJ}connect`)).toBe(`disc${ZWNJ}connect`)
+    expect(parrafos(`disc${ZWNJ}connect`)).toBe(`disc${ZWNJ}connect`)
+
+    const banderaMexico = String.fromCodePoint(0x1f1f2, 0x1f1fd) // 🇲🇽
+    expect(linea(`México ${banderaMexico}`)).toBe(`México ${banderaMexico}`)
+    expect(parrafos(`Sede: México ${banderaMexico}`)).toBe(`Sede: México ${banderaMexico}`)
+  })
 })
