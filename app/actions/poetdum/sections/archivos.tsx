@@ -7,7 +7,8 @@ import { css, type Handle } from 'remix/ui'
 import { nombreDeArchivo, pesoLegible, type ArchivoActividad } from '../../../data/programa.ts'
 import { routes } from '../../../routes.ts'
 import { colors, FONT_STACK } from '../../../ui/civic-horizon.ts'
-import { IconoDescarga, IconoDocumento, IconoVer } from '../../../ui/programa/iconos.tsx'
+import { AccionesDocumento } from '../../../ui/programa/acciones-documento.tsx'
+import { IconoDocumento } from '../../../ui/programa/iconos.tsx'
 
 const galeriaStyle = css({
   display: 'grid',
@@ -93,46 +94,17 @@ const documentoStyle = css({
   fontFamily: FONT_STACK,
 })
 
-const accionStyle = css({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '6px',
-  padding: '6px 12px',
-  borderRadius: '6px',
-  fontSize: '13px',
-  fontWeight: 700,
-  textDecoration: 'none',
-  whiteSpace: 'nowrap',
-})
-
 /** «Ver documento» (en otra pestaña) y «Descargar» para un archivo. */
 export function AccionesArchivo(handle: Handle<{ archivo: ArchivoActividad }>) {
   return () => {
     const { archivo } = handle.props
-    const href = routes.poetdum.archivo.href({ aid: archivo.id })
-    const nombre = nombreDeArchivo(archivo)
     return (
-      <span mix={css({ display: 'flex', gap: '8px', flexWrap: 'wrap' })}>
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener"
-          aria-label={`Ver documento: ${nombre}`}
-          mix={[
-            accionStyle,
-            css({ color: colors.burgundy900, border: `1px solid ${colors.burgundy100}` }),
-          ]}
-        >
-          <IconoVer size={15} /> Ver documento
-        </a>
-        <a
-          href={`${href}?download=1`}
-          aria-label={`Descargar: ${nombre}`}
-          mix={[accionStyle, css({ color: colors.white, background: colors.burgundy900 })]}
-        >
-          <IconoDescarga size={15} /> Descargar
-        </a>
-      </span>
+      <AccionesDocumento
+        href={routes.poetdum.archivo.href({ aid: archivo.id })}
+        nombre={nombreDeArchivo(archivo)}
+        nombreArchivo={archivo.nombre_original}
+        etiquetaVer="Ver documento"
+      />
     )
   }
 }

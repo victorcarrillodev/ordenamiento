@@ -14,6 +14,7 @@ import {
   type DocumentoPublico,
 } from '../../data/programa.ts'
 import { routes } from '../../routes.ts'
+import { pideDescarga, respuestaDeArchivo } from '../../utils/archivo-proxy.ts'
 import { claveMes, hoyEnMexico, parsearFecha, parsearMes } from '../../utils/calendario.ts'
 import { AvancesPage } from './avances-page.tsx'
 import { CalendarioPage } from './calendario-page.tsx'
@@ -33,16 +34,6 @@ const indicadoresDe = (request: Request) =>
   fetchJsonOr<{ indicadores: Indicador[] }>(request, '/api/indicadores', { indicadores: [] }).then(
     (d) => d.indicadores ?? [],
   )
-
-/** Cabeceras del backend que se reenvían al servir un archivo. */
-const CABECERAS_ARCHIVO = [
-  'content-type',
-  'content-disposition',
-  'content-length',
-  'x-content-type-options',
-  'cross-origin-resource-policy',
-  'cache-control',
-]
 
 export default createController(routes.poetdum, {
   actions: {
@@ -137,22 +128,13 @@ export default createController(routes.poetdum, {
      */
     async archivo(context) {
       const { aid } = context.params
-      const descarga = new URL(context.request.url).searchParams.get('download') === '1'
+      const descarga = pideDescarga(context.request)
       const response = await backendFetch(
         context.request,
         `/api/actividades/archivos/${encodeURIComponent(aid)}${descarga ? '?download=1' : ''}`,
       )
       if (!response.ok) return new Response('Not Found', { status: 404 })
-
-      const headers = new Headers()
-      for (const nombre of CABECERAS_ARCHIVO) {
-        const valor = response.headers.get(nombre)
-        if (valor) headers.set(nombre, valor)
-      }
-      // Sin `sandbox`: el visor de PDF del navegador se niega a abrir dentro
-      // de un documento aislado. El recurso sigue sin poder cargar nada.
-      headers.set('content-security-policy', "default-src 'none'; frame-ancestors 'self'")
-      return new Response(response.body, { headers })
+      return respuestaDeArchivo(response, descarga)
     },
   },
 })

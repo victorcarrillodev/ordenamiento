@@ -126,6 +126,8 @@ describe('Programa · páginas públicas', () => {
     expect(pagina).toContain(`/ordena/poetdum/archivos/foto-1`)
     expect(pagina).toContain('Ver documento')
     expect(pagina).toContain(`/ordena/poetdum/archivos/${AID}?download=1`)
+    // El enlace de descarga lleva `download`: no depende de la cabecera que llegue por el camino.
+    expect(pagina).toContain('download="convenio.pdf"')
     expect(pagina).toContain(`/ordena/poetdum/actividades/${ID}`)
   })
 
