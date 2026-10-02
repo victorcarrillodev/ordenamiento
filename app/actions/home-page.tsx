@@ -26,6 +26,7 @@ import { Button } from '../ui/button.tsx'
 import { Document } from './document.tsx'
 import { NAVBAR_ALTURA_MOVIL, NAVBAR_CORTE_MOVIL, NavBar } from '../ui/nav-bar.tsx'
 import { routes } from '../routes.ts'
+import { FORMATOS_DESTACADOS, textoCantidadYPeso } from '../utils/uploads.ts'
 import type { ActividadPublica, AvisoPortada } from '../data/programa.ts'
 import { AvisoFranja, InformacionPrograma, ProximasActividades } from './home-programa.tsx'
 
@@ -1167,7 +1168,7 @@ function ParticipationCta(handle: Handle<{ theme?: ThemeData }>) {
               justifyContent: 'center',
             })}
           >
-            {['.PDF', '.SHP', '.JPG', '.DWG'].map((fmt) => (
+            {FORMATOS_DESTACADOS.map((fmt) => (
               <span
                 key={fmt}
                 mix={css({
@@ -1198,7 +1199,7 @@ function ParticipationCta(handle: Handle<{ theme?: ThemeData }>) {
                 color: accent,
               })}
             >
-              Hasta 220 MB
+              {textoCantidadYPeso()}
             </span>
           </div>
 

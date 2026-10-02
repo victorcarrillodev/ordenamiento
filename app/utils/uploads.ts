@@ -7,6 +7,24 @@ export const ACCEPTED_UPLOADS =
   '.pdf,.doc,.docx,.odt,.rtf,.txt,.csv,.md,.xls,.xlsx,.ods,.ppt,.pptx,.odp,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.ico,.dwg,.shp,.shx,.gpkg,.zip,.kmz,.rar,.7z,.dbf,.mp3,.wav,.mp4,.mov,.avi,.mkv'
 
 /**
+ * Formatos con que se ilustra la convocatoria en la portada. Los admitidos
+ * son todos los de `ACCEPTED_UPLOADS`; estos solo dan una idea de qué se puede
+ * enviar, así que no se duplica la lista completa.
+ */
+export const FORMATOS_DESTACADOS = ['.PDF', '.SHP', '.JPG', '.DWG'] as const
+
+/**
+ * «Hasta 5 archivos de 100 MB cada uno». Es la única redacción de la cantidad y
+ * el peso máximos: la portada, el formulario ciudadano y las capturas del panel
+ * la toman de aquí, de modo que una cifra distinta en una pantalla no se
+ * produzca por haberla escrito a mano.
+ */
+export function textoCantidadYPeso(maxMb = MAX_FILE_MB, maxFiles = MAX_FILES): string {
+  const archivos = maxFiles === 1 ? '1 archivo' : `${maxFiles} archivos`
+  return `Hasta ${archivos} de ${maxMb} MB ${maxFiles === 1 ? '' : 'cada uno'}`.trim()
+}
+
+/**
  * Genera el texto legible de límites para la interfaz ciudadana derivado de la configuración.
  * Lista alineada con la whitelist real de backend/src/services/upload-guard.ts (ALLOWED_MIMES).
  */

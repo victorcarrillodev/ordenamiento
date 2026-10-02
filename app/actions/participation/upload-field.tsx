@@ -1,7 +1,7 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { colors, FONT_STACK } from '../../ui/civic-horizon.ts'
-import { ACCEPTED_UPLOADS, MAX_FILE_MB, MAX_FILES, textoLimites } from '../../utils/uploads.ts'
+import { ACCEPTED_UPLOADS, textoCantidadYPeso, textoLimites } from '../../utils/uploads.ts'
 
 export interface UploadFieldProps {
   error?: string
@@ -80,7 +80,7 @@ export function UploadField(handle: Handle<UploadFieldProps>) {
               </span>
             </div>
             <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">
-              Máx. {MAX_FILES} archivos ({MAX_FILE_MB} MB c/u)
+              {textoCantidadYPeso()}
             </span>
           </div>
 
@@ -103,7 +103,7 @@ export function UploadField(handle: Handle<UploadFieldProps>) {
         </div>
 
         <span id="archivos-hint" mix={hintStyle}>
-          {textoLimites()}
+          Puedes participar con o sin archivos adjuntos. {textoLimites()}
         </span>
         {error ? (
           <span id="archivos-error" role="alert" mix={errorMsgStyle}>
