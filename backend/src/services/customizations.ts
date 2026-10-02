@@ -220,8 +220,8 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
       navEnlaceInicio: 'Inicio y proceso',
       navEnlacePoetdum: 'Elaboración del POETDUM',
       navCtaRegistrar: 'Registra tu participación',
-      heroCintillo: 'BITÁCORA AMBIENTAL Y ORDENAMIENTO TERRITORIAL · SAN PEDRO TLAQUEPAQUE',
-      heroTitulo: 'Bitácora Ambiental y Ordenamiento Territorial',
+      heroCintillo: 'BITÁCORA DE ORDENAMIENTO TERRITORIAL · SAN PEDRO TLAQUEPAQUE',
+      heroTitulo: 'Bitácora de Ordenamiento Territorial',
       heroTituloResaltado: 'Ordenamiento Territorial',
       heroSubtitulo:
         'Un espacio público y transparente que reúne información, facilita la participación ciudadana y permite dar seguimiento a la elaboración y aplicación del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
@@ -229,9 +229,9 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
       heroBtn2: 'Registra tu participación',
       heroScrollIndicador: 'Explorar',
       queEsCintillo: '¿QUÉ ES ESTE SITIO?',
-      queEsTitulo: 'Conoce la Bitácora Ambiental y de Ordenamiento Territorial',
+      queEsTitulo: 'Conoce la Bitácora de Ordenamiento Territorial',
       queEsParrafo1:
-        'Este sitio forma parte de la Bitácora Ambiental y de Ordenamiento Territorial del Municipio de San Pedro Tlaquepaque, un espacio público y transparente en el que se registra, organiza y difunde la información relacionada con el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
+        'Este sitio forma parte de la Bitácora de Ordenamiento Territorial del Municipio de San Pedro Tlaquepaque, un espacio público y transparente en el que se registra, organiza y difunde la información relacionada con el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
       queEsParrafo2:
         'La Bitácora permite conocer y dar seguimiento a la elaboración, actualización, aplicación y evaluación del Programa; consultar los acuerdos, avances, resultados y documentos técnicos generados, así como conocer las actividades relacionadas con la planeación del territorio municipal. También facilita la participación de la ciudadanía, al permitir la presentación de observaciones, propuestas y documentos durante los mecanismos de consulta pública establecidos.',
       queEsBullet1: 'Consulta de documentos técnicos, acuerdos, avances y resultados.',
@@ -312,13 +312,13 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
       ctaBoton: 'Registra tu participación',
       footerEntidad: 'Municipio de San Pedro Tlaquepaque',
       footerDesc:
-        'Portal oficial de la Bitácora Ambiental del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
+        'Portal oficial de la Bitácora del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
       footerContacto:
         'Dirección de Medio Ambiente y Ecología\nH. Ayuntamiento de San Pedro Tlaquepaque\nJalisco, México',
       footerEmail: 'ordenamiento@tlaquepaque.gob.mx',
       footerCopyright:
         '© 2026 H. Ayuntamiento de San Pedro Tlaquepaque. Todos los derechos reservados.',
-      footerFirma: 'Portal de Ordenamiento Territorial · Bitácora Ambiental',
+      footerFirma: 'Portal de Ordenamiento Territorial · Bitácora',
     },
   },
   panel: {
@@ -329,7 +329,7 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
     colorAcento: '#2563eb',
     adminBg: '#f4f6fb',
     adminLogo: IMAGEN.logo,
-    adminTitulo: 'ADMINISTRADOR BITÁCORA AMBIENTAL',
+    adminTitulo: 'ADMINISTRADOR BITÁCORA',
   },
   programa: {
     aprobado: false,

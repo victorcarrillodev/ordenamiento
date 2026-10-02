@@ -1,6 +1,6 @@
 /**
  * Admin Panel Client Runtime
- * Bitácora Ambiental - San Pedro Tlaquepaque
+ * Bitácora - San Pedro Tlaquepaque
  */
 ;(function () {
   // 1. Reloj en tiempo real de México

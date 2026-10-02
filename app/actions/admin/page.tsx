@@ -158,7 +158,7 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
         user={user}
         active="general"
         title={`${ahora.saludo ?? 'Hola'}, ${user.name.split(' ')[0]}`}
-        subtitle={`${ahora.dia} ${ahora.fecha} · Bitácora Ambiental del POETDUM`}
+        subtitle={`${ahora.dia} ${ahora.fecha} · Bitácora del POETDUM`}
         actions={
           <>
             {/* Va directo al formulario de captura: el botón promete capturar,

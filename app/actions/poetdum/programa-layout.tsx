@@ -94,7 +94,7 @@ export function ProgramaLayout(handle: Handle<ProgramaLayoutProps>) {
     const primarioTema = theme?.usuario?.colores?.primario
     const primario = isSafeCssColor(primarioTema) ? primarioTema : colors.burgundy900
     return (
-      <Document title={`${tituloDocumento ?? titulo} – Bitácora Ambiental`} head={head}>
+      <Document title={`${tituloDocumento ?? titulo} – Bitácora`} head={head}>
         <style>{'html{scroll-behavior:smooth} [id]{scroll-margin-top:150px}'}</style>
         <NavBar theme={theme} />
 
@@ -118,7 +118,7 @@ export function ProgramaLayout(handle: Handle<ProgramaLayoutProps>) {
             })}
           >
             <span mix={css({ ...eyebrowProps, color: colors.gold400 })}>
-              {eyebrow ?? 'Bitácora Ambiental · Programa de Ordenamiento'}
+              {eyebrow ?? 'Bitácora · Programa de Ordenamiento'}
             </span>
             <h1
               mix={css({
@@ -178,7 +178,7 @@ export function ProgramaLayout(handle: Handle<ProgramaLayoutProps>) {
           })}
         >
           <p mix={css({ margin: 0 })}>
-            © 2026 H. Ayuntamiento de San Pedro Tlaquepaque · Bitácora Ambiental POETDUM
+            © 2026 H. Ayuntamiento de San Pedro Tlaquepaque · Bitácora POETDUM
           </p>
         </footer>
       </Document>

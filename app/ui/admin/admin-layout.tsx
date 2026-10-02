@@ -161,7 +161,7 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
   return () => {
     const { children, user, active, title, actions, subtitle, breadcrumb, theme } = handle.props
     const customLogo = theme?.adminLogo || LOGO_POR_DEFECTO
-    const customTitle = theme?.adminTitulo || 'ADMINISTRADOR BITÁCORA AMBIENTAL'
+    const customTitle = theme?.adminTitulo || 'ADMINISTRADOR BITÁCORA'
     // Estos valores vienen del formulario de Personalización y se insertan
     // como texto crudo de <style> (sin escapar), así que se validan primero:
     // un valor como `red;}</style><script>...` guardado ahí inyectaría
@@ -182,7 +182,7 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
 
     return (
       <Document
-        title={`${title} – Bitácora Ambiental`}
+        title={`${title} – Bitácora`}
         head={
           <>
             <link rel="stylesheet" href={`${basePath}/admin.css`} />

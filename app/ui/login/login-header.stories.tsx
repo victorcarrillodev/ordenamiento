@@ -8,7 +8,7 @@ const meta: Meta<LoginHeaderProps> = {
   title: 'Login/LoginHeader',
   render: mountRemix((args: LoginHeaderProps) => <LoginHeader {...args} />),
   args: {
-    title: 'Bitácora Ambiental',
+    title: 'Bitácora',
     subtitle: 'Portal de administración',
     logoSrc: '/assets/img/logo/logo-200x60.webp',
     logoAlt: 'Tlaquepaque',

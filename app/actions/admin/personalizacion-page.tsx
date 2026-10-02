@@ -944,7 +944,7 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       rows={2}
                       style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
                     >
-                      {p.adminTitulo || 'ADMINISTRADOR\nBITÁCORA AMBIENTAL'}
+                      {p.adminTitulo || 'ADMINISTRADOR\nBITÁCORA'}
                     </textarea>
                   </div>
                 </div>

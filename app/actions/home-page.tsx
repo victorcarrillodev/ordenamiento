@@ -140,8 +140,8 @@ function HeroSection(handle: Handle<{ theme?: ThemeData }>) {
     )`
 
     const cintillo =
-      txt.heroCintillo || 'Bitácora Ambiental y Ordenamiento Territorial · San Pedro Tlaquepaque'
-    const titulo = txt.heroTitulo || 'Bitácora Ambiental y Ordenamiento Territorial'
+      txt.heroCintillo || 'Bitácora de Ordenamiento Territorial · San Pedro Tlaquepaque'
+    const titulo = txt.heroTitulo || 'Bitácora de Ordenamiento Territorial'
     const tituloResaltado = txt.heroTituloResaltado || 'Ordenamiento Territorial'
     const subtitulo =
       txt.heroSubtitulo ||
@@ -528,10 +528,10 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
 
     const primary = c.primario || colors.burgundy900
     const cintillo = txt.queEsCintillo || '¿QUÉ ES ESTE SITIO?'
-    const titulo = txt.queEsTitulo || 'Conoce la Bitácora Ambiental y de Ordenamiento Territorial'
+    const titulo = txt.queEsTitulo || 'Conoce la Bitácora de Ordenamiento Territorial'
     const p1 =
       txt.queEsParrafo1 ||
-      'Este sitio forma parte de la Bitácora Ambiental y de Ordenamiento Territorial del Municipio de San Pedro Tlaquepaque, un espacio público y transparente en el que se registra, organiza y difunde la información relacionada con el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.'
+      'Este sitio forma parte de la Bitácora de Ordenamiento Territorial del Municipio de San Pedro Tlaquepaque, un espacio público y transparente en el que se registra, organiza y difunde la información relacionada con el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.'
     const p2 =
       txt.queEsParrafo2 ||
       'La Bitácora permite conocer y dar seguimiento a la elaboración, actualización, aplicación y evaluación del Programa; consultar los acuerdos, avances, resultados y documentos técnicos generados, así como conocer las actividades relacionadas con la planeación del territorio municipal. También facilita la participación de la ciudadanía, al permitir la presentación de observaciones, propuestas y documentos durante los mecanismos de consulta pública establecidos.'
@@ -1262,7 +1262,7 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
     const entidad = txt.footerEntidad || 'Municipio de San Pedro Tlaquepaque'
     const desc =
       txt.footerDesc ||
-      'Portal oficial de la Bitácora Ambiental del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.'
+      'Portal oficial de la Bitácora del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.'
     const contacto =
       txt.footerContacto ||
       'Dirección de Medio Ambiente y Ecología\nH. Ayuntamiento de San Pedro Tlaquepaque\nJalisco, México'
@@ -1449,7 +1449,7 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
                 margin: 0;
               `}
             >
-              {txt.footerFirma || 'Portal de Ordenamiento Territorial · Bitácora Ambiental'}
+              {txt.footerFirma || 'Portal de Ordenamiento Territorial · Bitácora'}
             </p>
           </div>
         </div>

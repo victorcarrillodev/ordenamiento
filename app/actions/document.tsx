@@ -12,7 +12,7 @@ export interface DocumentProps {
 
 const DEFAULT_TITLE = 'Portal de Ordenamiento Territorial – San Pedro Tlaquepaque'
 const DEFAULT_DESCRIPTION =
-  'Bitácora Ambiental del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano del Municipio de San Pedro Tlaquepaque, Jalisco.'
+  'Bitácora del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano del Municipio de San Pedro Tlaquepaque, Jalisco.'
 
 const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 

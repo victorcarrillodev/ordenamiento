@@ -104,7 +104,7 @@ export async function participationDocx(p: Row): Promise<Buffer> {
             heading: HeadingLevel.HEADING_1,
             children: [
               new TextRun({
-                text: 'Bitácora Ambiental · Participación',
+                text: 'Bitácora · Participación',
                 bold: true,
                 color: AZUL,
                 size: 32,

@@ -15,8 +15,8 @@ const SMTP_PASS = process.env.SMTP_PASS || ''
 const MAIL_FROM =
   process.env.MAIL_FROM ||
   (SMTP_USER
-    ? `"Bitácora Ambiental Tlaquepaque" <${SMTP_USER}>`
-    : '"Bitácora Ambiental Tlaquepaque" <no-reply@tlaquepaque.gob.mx>')
+    ? `"Bitácora Tlaquepaque" <${SMTP_USER}>`
+    : '"Bitácora Tlaquepaque" <no-reply@tlaquepaque.gob.mx>')
 
 /**
  * true si hay configuración SMTP suficiente para enviar.
@@ -313,7 +313,7 @@ function renderPlantillaBase({
             <!-- Footer -->
             <div class="footer">
               <div class="footer-highlight">Dirección de Medio Ambiente y Ecología</div>
-              <div>Bitácora Ambiental &bull; Programa de Ordenamiento Ecológico y Territorial de San Pedro Tlaquepaque</div>
+              <div>Bitácora &bull; Programa de Ordenamiento Ecológico y Territorial de San Pedro Tlaquepaque</div>
               <div style="margin-top: 10px; font-size: 11px; color: #94A3B8;">
                 Este acuse digital tiene validez oficial de confirmación de recepción ciudadana. &copy; ${anio} San Pedro Tlaquepaque, Jalisco.
               </div>
@@ -424,7 +424,7 @@ export async function enviarAcuseReciboParticipacion(
     <div class="section-heading">${adjuntos.length > 0 ? '4' : '3'}. Protocolo de Seguimiento y Próximos Pasos</div>
     <div class="protocol-box">
       <div class="protocol-title">Etapas del Proceso de Consulta y Dictamen:</div>
-      <div class="protocol-step">✔ <strong>Paso 1: Asignación y Registro:</strong> Su propuesta ha quedado formalmente asentada en la Bitácora Ambiental oficial.</div>
+      <div class="protocol-step">✔ <strong>Paso 1: Asignación y Registro:</strong> Su propuesta ha quedado formalmente asentada en la Bitácora oficial.</div>
       <div class="protocol-step">⏳ <strong>Paso 2: Análisis Técnico y Vectorial:</strong> El Comité Técnico del POETDUM evaluará la viabilidad ambiental, territorial y normativa del planteamiento.</div>
       <div class="protocol-step">📋 <strong>Paso 3: Integración y Respuesta:</strong> Se integrará en la memoria técnica del programa y se emitirá el dictamen de procedencia correspondiente.</div>
     </div>
@@ -436,7 +436,7 @@ export async function enviarAcuseReciboParticipacion(
 
   const html = renderPlantillaBase({
     titulo: `Acuse Oficial de Participación`,
-    subtitulo: `Confirmación de Recepción y Registro en la Bitácora Ambiental`,
+    subtitulo: `Confirmación de Recepción y Registro en la Bitácora`,
     badge: `Folio: ${p.folio}`,
     badgeColor: '#7A1A37',
     contenidoHtml,
@@ -555,7 +555,7 @@ export async function enviarResolucionParticipacion(
 
   const html = renderPlantillaBase({
     titulo: procede ? 'Su participación fue aceptada' : 'Resolución de su participación',
-    subtitulo: 'Dictamen del Comité Técnico · Bitácora Ambiental POETDUM',
+    subtitulo: 'Dictamen del Comité Técnico · Bitácora POETDUM',
     badge: p.estado,
     badgeColor: color,
     contenidoHtml,
@@ -659,7 +659,7 @@ export async function enviarAviso(
   `
 
   const html = renderPlantillaBase({
-    titulo: 'Aviso de la Bitácora Ambiental',
+    titulo: 'Aviso de la Bitácora',
     subtitulo: 'Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano (POETDUM)',
     badge: 'Aviso',
     badgeColor: '#16A34A',
@@ -688,7 +688,7 @@ export async function enviarCorreoPrueba(para: string): Promise<{ enviado: true 
   const contenidoHtml = `
     <div class="section-heading">Verificación de Conectividad SMTP</div>
     <p style="font-size: 14px; line-height: 1.6; color: #334155;">
-      Este es un correo de prueba enviado desde el sistema de <strong>Bitácora Ambiental y Ordenamiento Territorial de Tlaquepaque</strong>.
+      Este es un correo de prueba enviado desde el sistema de <strong>Bitácora de Ordenamiento Territorial de Tlaquepaque</strong>.
     </p>
     <div class="observation-box">
       <strong>Servidor SMTP:</strong> ${escapeHtml(SMTP_HOST)}<br>
@@ -713,7 +713,7 @@ export async function enviarCorreoPrueba(para: string): Promise<{ enviado: true 
   await transporter.sendMail({
     from: MAIL_FROM,
     to: para,
-    subject: `[Bitácora Ambiental] Verificación de Sistema de Correo`,
+    subject: `[Bitácora] Verificación de Sistema de Correo`,
     html,
   })
 
@@ -745,7 +745,7 @@ export async function enviarCorreoRecuperacion(input: {
     </p>
     <p style="font-size: 14px; line-height: 1.6; color: #334155;">
       Recibimos una solicitud para restablecer la contraseña de la cuenta asociada a
-      <strong>${escapeHtml(input.para)}</strong> en la <strong>Bitácora Ambiental</strong> del
+      <strong>${escapeHtml(input.para)}</strong> en la <strong>Bitácora</strong> del
       Municipio de San Pedro Tlaquepaque. Para elegir una contraseña nueva, use el siguiente botón:
     </p>
 
@@ -773,7 +773,7 @@ export async function enviarCorreoRecuperacion(input: {
 
   const html = renderPlantillaBase({
     titulo: 'Restablecer su contraseña',
-    subtitulo: 'Solicitud de recuperación de acceso · Bitácora Ambiental',
+    subtitulo: 'Solicitud de recuperación de acceso · Bitácora',
     badge: 'Enlace temporal',
     badgeColor: '#7A1A37',
     contenidoHtml,
@@ -783,7 +783,7 @@ export async function enviarCorreoRecuperacion(input: {
   await transporter.sendMail({
     from: MAIL_FROM,
     to: input.para,
-    subject: '[Bitácora Ambiental] Restablecimiento de contraseña',
+    subject: '[Bitácora] Restablecimiento de contraseña',
     html,
   })
 
@@ -815,7 +815,7 @@ export async function enviarConfirmacionCorreoNuevo(input: {
     <p style="font-size: 14px; line-height: 1.6; color: #334155;">
       Se solicitó cambiar el correo de acceso de la cuenta
       <strong>${escapeHtml(input.emailAnterior)}</strong> a esta dirección, en la
-      <strong>Bitácora Ambiental</strong> del Municipio de San Pedro Tlaquepaque.
+      <strong>Bitácora</strong> del Municipio de San Pedro Tlaquepaque.
       El cambio <strong>todavía no se ha aplicado</strong>: se aplicará cuando confirme aquí.
     </p>
 
@@ -843,7 +843,7 @@ export async function enviarConfirmacionCorreoNuevo(input: {
 
   const html = renderPlantillaBase({
     titulo: 'Confirme su nuevo correo',
-    subtitulo: 'Cambio de dirección de acceso · Bitácora Ambiental',
+    subtitulo: 'Cambio de dirección de acceso · Bitácora',
     badge: 'Pendiente de confirmar',
     badgeColor: '#7A1A37',
     contenidoHtml,
@@ -853,7 +853,7 @@ export async function enviarConfirmacionCorreoNuevo(input: {
   await transporter.sendMail({
     from: MAIL_FROM,
     to: input.para,
-    subject: '[Bitácora Ambiental] Confirme su nuevo correo de acceso',
+    subject: '[Bitácora] Confirme su nuevo correo de acceso',
     html,
   })
 
@@ -879,7 +879,7 @@ export async function enviarAvisoCorreoCambiado(input: {
       Estimado(a) <strong>${escapeHtml(input.nombre || 'usuario(a)')}</strong>:
     </p>
     <p style="font-size: 14px; line-height: 1.6; color: #334155;">
-      El correo de acceso de su cuenta en la <strong>Bitácora Ambiental</strong> cambió
+      El correo de acceso de su cuenta en la <strong>Bitácora</strong> cambió
       de <strong>${escapeHtml(input.para)}</strong> a <strong>${escapeHtml(input.emailNuevo)}</strong>.
       A partir de ahora deberá iniciar sesión con la dirección nueva.
     </p>
@@ -893,7 +893,7 @@ export async function enviarAvisoCorreoCambiado(input: {
 
   const html = renderPlantillaBase({
     titulo: 'El correo de su cuenta cambió',
-    subtitulo: 'Aviso de seguridad · Bitácora Ambiental',
+    subtitulo: 'Aviso de seguridad · Bitácora',
     badge: 'Aviso de seguridad',
     badgeColor: '#B91C1C',
     contenidoHtml,
@@ -903,7 +903,7 @@ export async function enviarAvisoCorreoCambiado(input: {
   await transporter.sendMail({
     from: MAIL_FROM,
     to: input.para,
-    subject: '[Bitácora Ambiental] El correo de acceso de su cuenta cambió',
+    subject: '[Bitácora] El correo de acceso de su cuenta cambió',
     html,
   })
 

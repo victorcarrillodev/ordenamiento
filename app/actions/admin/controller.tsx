@@ -1,5 +1,5 @@
 /**
- * Admin Controller · rutas GET de la Bitácora Ambiental
+ * Admin Controller · rutas GET de la Bitácora
  *   adminRoutes.index     â†’ GET /admin            (vista general)
  *   adminRoutes.exportar  â†’ GET /admin/exportar   (pígina o descarga .xlsx)
  * Las rutas form() de «Actividades y avances» se mapean por separado

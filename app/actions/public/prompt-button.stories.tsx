@@ -11,7 +11,7 @@ const meta: Meta<Args> = {
   title: 'Público/PromptButton',
   render: mountRemix((args: Args) => <PromptButton text={args.text} />),
   args: {
-    text: 'Explícame cómo funciona la Bitácora Ambiental',
+    text: 'Explícame cómo funciona la Bitácora',
   },
 }
 

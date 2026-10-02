@@ -51,7 +51,7 @@ export const routes = route({
 })
 
 /**
- * Mapa anidado del admin (Bitácora Ambiental).
+ * Mapa anidado del admin (Bitácora).
  * Las rutas fijas y específicas (/nueva, /enviar, etc.) se definen antes
  * de los parámetros dinámicos (/:id) para evitar que :id capture rutas fijas.
  */

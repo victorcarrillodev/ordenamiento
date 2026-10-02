@@ -109,7 +109,7 @@ export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
                   color: colors.gold300,
                 })}
               >
-                Bitácora Ambiental
+                Bitácora
               </span>
               <p
                 mix={css({

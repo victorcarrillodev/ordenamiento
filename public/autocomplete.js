@@ -392,7 +392,7 @@
         </div>
 
         <div class="mui-progress-footer-note">
-          🔒 <strong>Bitácora Ambiental:</strong> Por favor no recargues ni cierres esta ventana mientras concluye el registro.
+          🔒 <strong>Bitácora:</strong> Por favor no recargues ni cierres esta ventana mientras concluye el registro.
         </div>
       </div>
     `
@@ -513,7 +513,7 @@
           ? 'Enviando tu participación...'
           : 'Guardando participación física...'
         const desc = isPublic
-          ? 'Estamos registrando tu información y subiendo los documentos adjuntos al expediente de la Bitácora Ambiental.'
+          ? 'Estamos registrando tu información y subiendo los documentos adjuntos al expediente de la Bitácora.'
           : 'Estamos procesando los datos y vinculando los archivos adjuntos al expediente técnico.'
 
         showUploadProgressModal(title, desc)

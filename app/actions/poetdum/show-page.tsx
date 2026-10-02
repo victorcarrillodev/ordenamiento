@@ -110,8 +110,8 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
         seccion="inicio"
         titulo="Elaboración del POETDUM"
         tituloDocumento="Elaboración del POETDUM"
-        eyebrow="Bitácora Ambiental · Tlaquepaque"
-        descripcion="Sigue el avance del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano: actividades programadas, avances, documentos y seguimiento, en un solo lugar."
+        eyebrow="Bitácora · Tlaquepaque"
+        descripcion="Sigue el avance del Programa de Ordenamiento Ecológico y Territorial y de Desarrollo Urbano. Consulta las actividades programadas, los avances, los documentos y el seguimiento en un solo lugar."
         head={<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />}
       >
         <section
