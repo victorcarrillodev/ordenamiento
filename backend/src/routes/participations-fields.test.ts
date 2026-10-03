@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test'
 import * as pool from '../db/pool.ts'
 import * as folios from '../services/folio.ts'
 import * as mail from '../services/mail.ts'
+import { GENEROS, TEMATICAS, TIPOS_PARTICIPANTE } from '../services/participacion-campos.ts'
 import { handleCreateParticipation } from './participations.ts'
 
 let restore: Array<() => void>
@@ -35,8 +36,16 @@ function form() {
   data.set('nombre', 'Persona de prueba')
   data.set('correo', 'prueba@example.com')
   data.set('consentimiento', '1')
+  data.set('alcance_ubicacion', 'municipio')
   data.set('observacion', 'Una propuesta para el municipio')
   return data
+}
+
+async function enviar(data: FormData) {
+  return handleCreateParticipation(
+    new Request('http://local/api/participations', { method: 'POST', body: data }),
+    null,
+  )
 }
 
 describe('persistencia de complementarios por la API', () => {
@@ -46,7 +55,7 @@ describe('persistencia de complementarios por la API', () => {
       domicilio: 'Calle del hogar 12',
       municipio_participante: 'Guadalajara',
       ocupacion: 'Docente',
-      fuente: 'Persona ciudadana',
+      fuente: 'Persona a título individual',
       genero: 'Prefiero no responder',
       tematica: 'Movilidad',
     }
@@ -68,7 +77,7 @@ describe('persistencia de complementarios por la API', () => {
     expect(saved.fuente).toBe('')
     expect(saved.domicilio).toBe('')
     saved = {}
-    data.set('ocupacion', 'x'.repeat(201))
+    data.set('ocupacion', 'x'.repeat(101))
     const invalid = await handleCreateParticipation(
       new Request('http://local/api/participations', { method: 'POST', body: data }),
       null,
@@ -99,7 +108,7 @@ describe('persistencia de complementarios por la API', () => {
     expect(saved.observacion).toBe('Primer párrafo\nSegundo párrafo')
 
     saved = {}
-    data.set('nombre', 'a'.repeat(301))
+    data.set('nombre', 'a'.repeat(101))
     expect(
       (
         await handleCreateParticipation(
@@ -111,39 +120,32 @@ describe('persistencia de complementarios por la API', () => {
     expect(saved).toEqual({})
   })
 
-  it('una propuesta larga de verdad sigue entrando', async () => {
+  // El límite de la propuesta se mide DESPUÉS de sanear (parrafos quita el byte
+  // nulo antes de contar) y en caracteres, no en unidades UTF-16: 500 emojis son
+  // 500 caracteres para quien los escribe, aunque ocupen 1000 unidades.
+  it('la propuesta admite hasta 500 caracteres exactos tras sanear, ni uno más', async () => {
     const data = form()
-    data.set('observacion', 'Propuesta muy detallada. '.repeat(400))
-    const response = await handleCreateParticipation(
-      new Request('http://local/api/participations', { method: 'POST', body: data }),
-      null,
-    )
-    expect(response.status).toBe(201)
-    expect(String(saved.observacion)).toHaveLength(9999)
-  })
-
-  // Regresión (Testing): el borde exacto de observacion (20000) no tenía
-  // prueba propia. El límite se aplica DESPUÉS de sanear (parrafos quita el
-  // byte nulo antes de medir), así que un envío de 20000 caracteres válidos
-  // más un byte nulo de propina también debe entrar en 20000, no rechazarse
-  // por parecer 20001 en crudo.
-  it('la propuesta admite hasta 20000 caracteres exactos tras sanear, ni uno más', async () => {
-    const data = form()
-    data.set('observacion', 'x'.repeat(20000 - 1) + String.fromCharCode(0) + 'x')
-    const enElBorde = await handleCreateParticipation(
-      new Request('http://local/api/participations', { method: 'POST', body: data }),
-      null,
-    )
+    data.set('observacion', 'x'.repeat(500 - 1) + String.fromCharCode(0) + 'x')
+    const enElBorde = await enviar(data)
     expect(enElBorde.status).toBe(201)
-    expect(String(saved.observacion)).toHaveLength(20000)
+    expect(String(saved.observacion)).toHaveLength(500)
 
     saved = {}
-    data.set('observacion', 'x'.repeat(20001))
-    const excede = await handleCreateParticipation(
-      new Request('http://local/api/participations', { method: 'POST', body: data }),
-      null,
-    )
+    data.set('observacion', '😀'.repeat(500))
+    expect((await enviar(data)).status).toBe(201)
+
+    saved = {}
+    data.set('observacion', 'x'.repeat(501))
+    const excede = await enviar(data)
     expect(excede.status).toBe(422)
+    expect(await excede.json()).toEqual({ error: expect.stringContaining('500 caracteres') })
+    expect(saved).toEqual({})
+  })
+
+  it('la propuesta es obligatoria', async () => {
+    const data = form()
+    data.set('observacion', '   ')
+    expect((await enviar(data)).status).toBe(422)
     expect(saved).toEqual({})
   })
 })
@@ -258,5 +260,200 @@ describe('lo obligatorio y lo malformado', () => {
       null,
     )
     expect(response.status).toBe(400)
+  })
+})
+
+describe('ubicación de la propuesta: todo el municipio o un lugar específico', () => {
+  it('sin indicar el alcance se rechaza: no se adivina', async () => {
+    const data = form()
+    data.delete('alcance_ubicacion')
+    const response = await enviar(data)
+    expect(response.status).toBe(422)
+    expect(await response.json()).toEqual({ error: expect.stringContaining('todo el municipio') })
+    expect(saved).toEqual({})
+  })
+
+  it('un alcance inventado se rechaza', async () => {
+    const data = form()
+    data.set('alcance_ubicacion', 'otro')
+    expect((await enviar(data)).status).toBe(422)
+    expect(saved).toEqual({})
+  })
+
+  it('«Todo el municipio»: la ubicación es opcional y se guarda lo que se dé', async () => {
+    const data = form()
+    expect((await enviar(data)).status).toBe(201)
+    expect(saved.alcance_ubicacion).toBe('municipio')
+    expect(saved.calle).toBe('')
+    expect(saved.colonia).toBe('')
+
+    saved = {}
+    data.set('calle', 'Av. Juárez 100')
+    data.set('colonia', 'Centro')
+    expect((await enviar(data)).status).toBe(201)
+    expect(saved.calle).toBe('Av. Juárez 100')
+    expect(saved.colonia).toBe('Centro')
+  })
+
+  it('«Lugar o predio específico»: exige el domicilio o referencia y la colonia o zona', async () => {
+    const data = form()
+    data.set('alcance_ubicacion', 'especifico')
+
+    const sinNada = await enviar(data)
+    expect(sinNada.status).toBe(422)
+    expect(await sinNada.json()).toEqual({
+      error: expect.stringContaining('domicilio o una referencia'),
+    })
+
+    data.set('calle', 'Frente al mercado, junto al puente')
+    const sinColonia = await enviar(data)
+    expect(sinColonia.status).toBe(422)
+    expect(await sinColonia.json()).toEqual({ error: expect.stringContaining('colonia o zona') })
+    expect(saved).toEqual({})
+
+    data.set('colonia', 'Santa Anita')
+    expect((await enviar(data)).status).toBe(201)
+    expect(saved.alcance_ubicacion).toBe('especifico')
+    expect(saved.calle).toBe('Frente al mercado, junto al puente')
+    expect(saved.colonia).toBe('Santa Anita')
+  })
+
+  it('una referencia hecha de caracteres invisibles cuenta como vacía', async () => {
+    const data = form()
+    data.set('alcance_ubicacion', 'especifico')
+    data.set('calle', String.fromCodePoint(0x200b, 0xfeff))
+    data.set('colonia', 'Centro')
+    expect((await enviar(data)).status).toBe(422)
+  })
+
+  it('el municipio no se pregunta: siempre es San Pedro Tlaquepaque', async () => {
+    const data = form()
+    data.set('municipio', 'Zapopan')
+    expect((await enviar(data)).status).toBe(201)
+    expect(saved.municipio).toBe('San Pedro Tlaquepaque')
+  })
+
+  it('el domicilio y la colonia admiten 100 y 60 caracteres, ni uno más', async () => {
+    const data = form()
+    data.set('calle', 'c'.repeat(100))
+    data.set('colonia', 'k'.repeat(60))
+    expect((await enviar(data)).status).toBe(201)
+
+    for (const [campo, largo] of [
+      ['calle', 101],
+      ['colonia', 61],
+    ] as const) {
+      const largoData = form()
+      largoData.set(campo, 'x'.repeat(largo))
+      saved = {}
+      expect((await enviar(largoData)).status).toBe(422)
+      expect(saved).toEqual({})
+    }
+  })
+
+  it('el código postal, si se da, son 5 dígitos', async () => {
+    const data = form()
+    data.set('codigo_postal', '45500')
+    expect((await enviar(data)).status).toBe(201)
+    for (const malo of ['4550', '455001', '45 50', 'abcde']) {
+      const d = form()
+      d.set('codigo_postal', malo)
+      saved = {}
+      expect((await enviar(d)).status).toBe(422)
+    }
+  })
+})
+
+describe('listas con «Otra» y límites de lo que llega al acuse', () => {
+  it('«Otra» conserva lo que se especificó, hasta 60 caracteres', async () => {
+    const data = form()
+    data.set('tematica', 'Otra')
+    data.set('tematica_otra', 'Arbolado urbano')
+    data.set('fuente', 'Otra')
+    data.set('fuente_otra', 'Colectivo vecinal')
+    expect((await enviar(data)).status).toBe(201)
+    expect(saved.tematica_otra).toBe('Arbolado urbano')
+    expect(saved.fuente_otra).toBe('Colectivo vecinal')
+
+    for (const campo of ['tematica_otra', 'fuente_otra']) {
+      const d = form()
+      d.set('tematica', 'Otra')
+      d.set('fuente', 'Otra')
+      d.set(campo, 'x'.repeat(61))
+      saved = {}
+      expect((await enviar(d)).status).toBe(422)
+      expect(saved).toEqual({})
+    }
+  })
+
+  it('«Otra» sin especificar es válida: la especificación es opcional', async () => {
+    const data = form()
+    data.set('tematica', 'Otra')
+    expect((await enviar(data)).status).toBe(201)
+    expect(saved.tematica_otra).toBe('')
+  })
+
+  it('con otra opción la especificación sobra y se descarta', async () => {
+    const data = form()
+    data.set('tematica', 'Vivienda')
+    data.set('tematica_otra', 'residuo de una selección anterior')
+    data.set('fuente', 'Empresa')
+    data.set('fuente_otra', 'residuo')
+    expect((await enviar(data)).status).toBe(201)
+    expect(saved.tematica_otra).toBe('')
+    expect(saved.fuente_otra).toBe('')
+  })
+
+  it('acepta todas las opciones de los tres catálogos', async () => {
+    for (const [campo, opciones] of [
+      ['tematica', TEMATICAS],
+      ['fuente', TIPOS_PARTICIPANTE],
+      ['genero', GENEROS],
+    ] as const) {
+      for (const opcion of opciones) {
+        const data = form()
+        data.set(campo, opcion)
+        saved = {}
+        expect((await enviar(data)).status, `${campo}: ${opcion}`).toBe(201)
+        expect(saved[campo]).toBe(opcion)
+      }
+    }
+  })
+
+  it('una opción que no está en el catálogo se rechaza', async () => {
+    for (const [campo, valor] of [
+      ['tematica', 'Servicios Ambientales'], // la mayúscula vieja ya no es una opción
+      ['fuente', 'Dependencia'],
+      ['genero', 'Otro'],
+      ['genero', 'Prefiero no decir'],
+    ] as const) {
+      const data = form()
+      data.set(campo, valor)
+      saved = {}
+      expect((await enviar(data)).status, `${campo}: ${valor}`).toBe(422)
+      expect(saved).toEqual({})
+    }
+  })
+
+  it('el correo debe parecer un correo y caber en el acuse (100 caracteres)', async () => {
+    for (const malo of ['sin-arroba', 'a@b', 'dos@@x.mx', 'con espacio@x.mx']) {
+      const data = form()
+      data.set('correo', malo)
+      saved = {}
+      expect((await enviar(data)).status, malo).toBe(422)
+    }
+    const largo = form()
+    largo.set('correo', `${'a'.repeat(96)}@x.mx`)
+    expect((await enviar(largo)).status).toBe(422)
+  })
+
+  it('la empresa, institución u organización admite 100 caracteres, ni uno más', async () => {
+    const data = form()
+    data.set('institucion', 'i'.repeat(100))
+    expect((await enviar(data)).status).toBe(201)
+    data.set('institucion', 'i'.repeat(101))
+    saved = {}
+    expect((await enviar(data)).status).toBe(422)
+    expect(saved).toEqual({})
   })
 })

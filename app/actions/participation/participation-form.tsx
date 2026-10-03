@@ -1,26 +1,17 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
+import type { ErroresParticipacion, ValoresParticipacion } from '../../data/participacion.ts'
 import { routes } from '../../routes.ts'
 import { colors, FONT_STACK } from '../../ui/civic-horizon.ts'
-import { DireccionFields } from '../../ui/form/direccion-fields.tsx'
-import { ClasificacionFields } from '../../ui/form/clasificacion-fields.tsx'
-import { CheckboxField, Field, TextArea } from '../../ui/form/field.tsx'
+import { CheckboxField } from '../../ui/form/field.tsx'
+import { ParticipacionCampos } from '../../ui/form/participacion-campos.tsx'
 import { SubmitButton } from './public/submit-button.tsx'
-import type { FormErrors, FormValues } from './schema.ts'
-import { UploadField } from './upload-field.tsx'
 
 export interface ParticipationFormProps {
-  errors?: FormErrors
+  errors?: ErroresParticipacion
   /** Lo ya escrito, para no perderlo cuando la validación rechaza el envío. */
-  values?: FormValues
+  values?: ValoresParticipacion
 }
-
-const fieldRowStyle = css({
-  display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
-  gap: '14px',
-  '@media (max-width: 560px)': { gridTemplateColumns: '1fr' },
-})
 
 export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
   return () => {
@@ -77,9 +68,8 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
             margin: '0 0 20px',
           })}
         >
-          Comparte tu observación, propuesta o documento técnico con el equipo del Programa de
-          Ordenamiento Territorial. Los campos con{' '}
-          <strong mix={css({ color: colors.burgundy900 })}>*</strong> son obligatorios.
+          Comparte tus observaciones o propuestas sobre el Proyecto del Programa. Los campos
+          marcados con <strong mix={css({ color: colors.burgundy900 })}>*</strong> son obligatorios.
         </p>
 
         <form
@@ -89,110 +79,11 @@ export function ParticipationForm(handle: Handle<ParticipationFormProps>) {
           encType="multipart/form-data"
           mix={css({ display: 'flex', flexDirection: 'column', gap: '16px' })}
         >
-          <div mix={fieldRowStyle}>
-            <Field
-              name="nombre"
-              label="Nombre completo"
-              placeholder="Ej. María González López"
-              required
-              value={values.nombre}
-              error={errors.nombre}
-            />
-            <Field
-              name="email"
-              type="email"
-              label="Correo electrónico"
-              placeholder="correo@ejemplo.com"
-              required
-              value={values.email}
-              error={errors.email}
-            />
-          </div>
-
-          <p mix={css({ fontSize: '14px', fontWeight: 700, margin: 0 })}>
-            Ubicación de la propuesta
-          </p>
-          <DireccionFields
-            endpoint={routes.colonias.href()}
-            values={{
-              calle: values.calle,
-              colonia: values.colonia,
-              municipio: values.municipio,
-              cp: values.cp,
-              direccion_origen: values.direccion_origen,
-            }}
-            errors={{
-              calle: errors.calle,
-              colonia: errors.colonia,
-              municipio: errors.municipio,
-              cp: errors.cp,
-            }}
-            required
+          <ParticipacionCampos
+            coloniasEndpoint={routes.colonias.href()}
+            values={values}
+            errors={errors}
           />
-
-          <Field
-            name="institucion"
-            label="Institución u organización"
-            placeholder="Opcional (ej. Colectivo Ambiental, ITESO)"
-            value={values.institucion}
-            error={errors.institucion}
-            wide
-          />
-
-          <TextArea
-            name="observacion"
-            label="Observación o propuesta"
-            placeholder="Describe tu observación, comentario técnico o propuesta sobre el ordenamiento territorial..."
-            required
-            rows={5}
-            minHeight="120px"
-            value={values.observacion}
-            error={errors.observacion}
-            wide
-          />
-
-          <fieldset
-            mix={css({
-              border: '1px solid #cbd5e1',
-              borderRadius: '10px',
-              padding: '16px',
-              minWidth: 0,
-              display: 'grid',
-              gap: '16px',
-            })}
-          >
-            <legend mix={css({ fontSize: '14px', fontWeight: 700 })}>
-              Datos complementarios (opcionales)
-            </legend>
-            <p mix={css({ margin: 0, fontSize: '13px', color: '#475569' })}>
-              Estos datos corresponden a quien participa y pueden ser distintos de la ubicación de
-              la propuesta.
-            </p>
-            <Field
-              name="domicilio"
-              label="Domicilio de quien participa"
-              value={values.domicilio}
-              error={errors.domicilio}
-              placeholder="Calle y número"
-            />
-            <div mix={fieldRowStyle}>
-              <Field
-                name="municipio_participante"
-                label="Municipio de quien participa"
-                value={values.municipio_participante}
-                error={errors.municipio_participante}
-              />
-              <Field
-                name="ocupacion"
-                label="Ocupación o puesto"
-                value={values.ocupacion}
-                error={errors.ocupacion}
-              />
-            </div>
-            <ClasificacionFields values={values} errors={errors} />
-          </fieldset>
-
-          <UploadField error={errors.archivos} />
 
           <p
             mix={css({

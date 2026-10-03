@@ -5,7 +5,6 @@ import { Field, type FieldAppearance } from './field.tsx'
 export interface DireccionValues {
   calle?: string
   colonia?: string
-  municipio?: string
   cp?: string
   direccion_origen?: string
 }
@@ -13,7 +12,6 @@ export interface DireccionValues {
 export interface DireccionErrors {
   calle?: string
   colonia?: string
-  municipio?: string
   cp?: string
 }
 
@@ -25,18 +23,26 @@ export interface DireccionFieldsProps {
   /** Prefijo de name opcional (ej: 'aporte_' en panel admin) */
   namePrefix?: string
   appearance?: FieldAppearance
-  /** Marca colonia y municipio como requeridos */
+  /** Marca el domicilio o referencia y la colonia o zona como requeridos. */
   required?: boolean
+  maxCalle?: number
+  maxColonia?: number
 }
 
 const gridStyle = css({
   display: 'grid',
-  gridTemplateColumns: '1.4fr 1.3fr 1.3fr 0.85fr',
+  gridTemplateColumns: '1.6fr 1.2fr 0.8fr',
   gap: '14px',
-  '@media (max-width: 860px)': { gridTemplateColumns: '1fr 1fr' },
+  '@media (max-width: 760px)': { gridTemplateColumns: '1fr 1fr' },
   '@media (max-width: 520px)': { gridTemplateColumns: '1fr' },
 })
 
+/**
+ * Domicilio o referencia, colonia o zona y código postal de la propuesta. El
+ * municipio no se pregunta: el Programa abarca uno solo. Con `required` el
+ * domicilio y la colonia son obligatorios (la propuesta es de un lugar o predio
+ * específico); sin él, son opcionales (abarca todo el municipio).
+ */
 export function DireccionFields(handle: Handle<DireccionFieldsProps>) {
   return () => {
     const {
@@ -46,6 +52,8 @@ export function DireccionFields(handle: Handle<DireccionFieldsProps>) {
       namePrefix = '',
       appearance = 'civic',
       required = true,
+      maxCalle,
+      maxColonia,
     } = handle.props
 
     const p = namePrefix
@@ -60,32 +68,24 @@ export function DireccionFields(handle: Handle<DireccionFieldsProps>) {
         <Field
           id={`${p}calle`}
           name={`${p}calle`}
-          label="Calle y número"
-          placeholder="Ej. Av. Juárez 100"
+          label="Domicilio o referencia del lugar o predio"
+          placeholder="Ej. Av. Juárez 100, o frente al mercado"
           value={values.calle}
           error={errors.calle}
+          required={required}
+          maxLength={maxCalle}
           autoComplete="off"
           appearance={appearance}
         />
         <Field
           id={`${p}colonia`}
           name={`${p}colonia`}
-          label="Colonia"
+          label="Colonia o zona"
           placeholder="Ej. Centro"
           value={values.colonia}
           error={errors.colonia}
           required={required}
-          autoComplete="off"
-          appearance={appearance}
-        />
-        <Field
-          id={`${p}municipio`}
-          name={`${p}municipio`}
-          label="Municipio"
-          placeholder="Ej. San Pedro Tlaquepaque"
-          value={values.municipio}
-          error={errors.municipio}
-          required={required}
+          maxLength={maxColonia}
           autoComplete="off"
           appearance={appearance}
         />
@@ -96,6 +96,7 @@ export function DireccionFields(handle: Handle<DireccionFieldsProps>) {
           placeholder="Ej. 45500"
           value={values.cp}
           error={errors.cp}
+          maxLength={5}
           appearance={appearance}
         />
         <input

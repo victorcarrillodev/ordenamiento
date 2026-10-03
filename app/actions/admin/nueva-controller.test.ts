@@ -1,61 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { router } from '../../router.ts'
-import { MAX_FILE_BYTES } from '../../utils/uploads.ts'
-
-const NUEVA_URL = 'http://localhost/ordena/admin/participaciones/nueva'
-
-/** Mockea al backend y captura el FormData reenviado a /api/participations. */
-function mockBackend() {
-  const captured: { body: FormData | null } = { body: null }
-
-  globalThis.fetch = vi
-    .fn()
-    .mockImplementation((url: string | URL | Request, init?: RequestInit) => {
-      const u = typeof url === 'string' ? url : url instanceof Request ? url.url : url.toString()
-
-      if (u.includes('/api/auth/me')) {
-        return Promise.resolve(
-          new Response(JSON.stringify({ user: { id: 1, name: 'Admin Root', role: 'admin' } }), {
-            status: 200,
-            headers: { 'content-type': 'application/json' },
-          }),
-        )
-      }
-
-      if (u.includes('/api/participations')) {
-        captured.body = init?.body as FormData
-        return Promise.resolve(
-          new Response(JSON.stringify({ id: 105, folio: 'FIS-2026-009' }), {
-            status: 201,
-            headers: { 'content-type': 'application/json' },
-          }),
-        )
-      }
-
-      return Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 }))
-    })
-
-  return captured
-}
-
-/** Formulario admin mínimo válido, con los dos domicilios que la página captura. */
-function formularioBase() {
-  const fd = new FormData()
-  fd.set('nombre', 'Ciudadano Físico')
-  fd.set('correo', 'fisico@ejemplo.com')
-  fd.set('domicilio', 'Av. Juárez 100, Centro')
-  fd.set('municipio_participante', 'San Pedro Tlaquepaque')
-  fd.set('calle', 'Prolongación Colón 500')
-  fd.set('colonia', 'Santa Anita')
-  fd.set('municipio', 'San Pedro Tlaquepaque')
-  fd.set('cp', '45640')
-  fd.set('observacion', 'Aporte capturado en módulo físico')
-  return fd
-}
-
-function postNueva(fd: FormData) {
-  return router.fetch(new Request(NUEVA_URL, { method: 'POST', body: fd }))
-}
+import { MAX_FILE_BYTES, MAX_FILES } from '../../utils/uploads.ts'
+import { formularioBase, mockBackend, postNueva } from './nueva-fixtures.ts'
 
 describe('Admin · nueva participación', () => {
   const originalFetch = globalThis.fetch
@@ -68,60 +13,80 @@ describe('Admin · nueva participación', () => {
     globalThis.fetch = originalFetch
   })
 
-  describe('domicilio del participante y domicilio del aporte', () => {
-    it('preserva ambos municipios por separado en vez de colapsarlos', async () => {
+  describe('mismos campos y reglas que el formulario ciudadano', () => {
+    it('reenvía al backend la participación presencial con los nombres del backend', async () => {
       const captured = mockBackend()
 
       const response = await postNueva(formularioBase())
       expect(response?.status).toBe(302)
+      expect(response?.headers.get('location')).toContain('registrado=FIS-2026-009')
 
       const body = captured.body as FormData
-      expect(body.get('municipio')).toBe('San Pedro Tlaquepaque') // el del aporte
-      expect(body.get('municipio_participante')).toBe('San Pedro Tlaquepaque') // el de quien participa
-      expect(body.get('domicilio')).toBe('Av. Juárez 100, Centro')
-      // El formulario lo captura como «cp» y el backend solo lee
-      // `codigo_postal`: con el nombre viejo se perdía en cada alta física.
+      expect(body.get('origen')).toBe('fisica')
+      expect(body.get('correo')).toBe('fisico@ejemplo.com')
+      expect(body.get('alcance_ubicacion')).toBe('especifico')
+      expect(body.get('calle')).toBe('Prolongación Colón 500')
+      expect(body.get('colonia')).toBe('Santa Anita')
+      expect(body.get('municipio')).toBe('San Pedro Tlaquepaque')
+      // El formulario lo captura como «cp» y el backend solo lee `codigo_postal`.
       expect(body.get('codigo_postal')).toBe('45640')
+      // El domicilio y el municipio de quien participa viajan aparte de la ubicación.
+      expect(body.get('domicilio')).toBe('Av. Juárez 100, Centro')
+      expect(body.get('municipio_participante')).toBe('Guadalajara')
     })
 
-    it('cae al municipio por defecto cuando el del aporte llega vacío', async () => {
+    it('«Todo el municipio» no exige la ubicación', async () => {
       const captured = mockBackend()
-
       const fd = formularioBase()
-      fd.set('municipio', '')
+      fd.set('alcance_ubicacion', 'municipio')
+      fd.set('calle', '')
+      fd.set('colonia', '')
 
       const response = await postNueva(fd)
       expect(response?.status).toBe(302)
-
-      // Un input vacío llega como '' y no como null: el fallback tiene que
-      // cubrir la cadena vacía o nunca se alcanza.
-      const body = captured.body as FormData
-      expect(body.get('municipio')).toBe('San Pedro Tlaquepaque')
-      expect(body.get('municipio_participante')).toBe('San Pedro Tlaquepaque')
+      expect((captured.body as FormData).get('alcance_ubicacion')).toBe('municipio')
     })
 
-    it('omite el municipio del participante cuando no se capturó', async () => {
+    it('«Lugar o predio específico» sin domicilio ni colonia se rechaza y repinta lo escrito', async () => {
       const captured = mockBackend()
-
       const fd = formularioBase()
-      fd.set('municipio_participante', '   ')
+      fd.set('calle', '')
+      fd.set('colonia', '')
 
       const response = await postNueva(fd)
-      expect(response?.status).toBe(302)
+      expect(response?.status).toBe(422)
+      expect(captured.body).toBeNull()
+      const html = (await response?.text()) ?? ''
+      expect(html).toContain('Indica el domicilio o una referencia')
+      expect(html).toContain('Indica la colonia o zona')
+      expect(html).toContain('Ciudadano Físico')
+    })
 
-      const body = captured.body as FormData
-      expect(body.has('municipio_participante')).toBe(false)
-      expect(body.get('municipio')).toBe('San Pedro Tlaquepaque')
+    it('aplica los mismos límites: la propuesta admite 500 caracteres', async () => {
+      const captured = mockBackend()
+      const fd = formularioBase()
+      fd.set('observacion', 'x'.repeat(501))
+
+      const response = await postNueva(fd)
+      expect(response?.status).toBe(422)
+      expect(captured.body).toBeNull()
+      expect(await response?.text()).toContain('500 caracteres')
+    })
+
+    it('no pide aviso de privacidad: la persona está en ventanilla', async () => {
+      mockBackend()
+      const response = await postNueva(formularioBase())
+      expect(response?.status).toBe(302)
     })
   })
 
-  describe('límites de subida', () => {
+  describe('límites de subida: los mismos que en el formulario ciudadano', () => {
     it('rechaza un archivo que excede el límite de tamaño', async () => {
       mockBackend()
 
       const fd = formularioBase()
       fd.append(
-        'pdf',
+        'archivos',
         new File([new Uint8Array(MAX_FILE_BYTES + 1024)], 'expediente.pdf', {
           type: 'application/pdf',
         }),
@@ -129,30 +94,33 @@ describe('Admin · nueva participación', () => {
 
       const response = await postNueva(fd)
       expect(response?.status).toBe(413)
-      expect(await response?.text()).toContain('excede el límite')
+      expect(await response?.text()).toContain('pesar hasta')
     })
 
-    it('rechaza más de un adjunto', async () => {
+    it(`rechaza más de ${MAX_FILES} adjuntos`, async () => {
       mockBackend()
 
       const fd = formularioBase()
-      for (const nombre of ['uno.pdf', 'dos.pdf']) {
-        fd.append('pdf', new File(['contenido'], nombre, { type: 'application/pdf' }))
+      for (let i = 0; i <= MAX_FILES; i++) {
+        fd.append('archivos', new File(['contenido'], `doc${i}.pdf`, { type: 'application/pdf' }))
       }
 
       const response = await postNueva(fd)
       expect(response?.status).toBe(413)
+      expect(await response?.text()).toContain(`Máximo ${MAX_FILES} archivos`)
     })
 
-    it('acepta un adjunto dentro del límite', async () => {
+    it('acepta el máximo de adjuntos y los reenvía todos', async () => {
       const captured = mockBackend()
 
       const fd = formularioBase()
-      fd.append('pdf', new File(['expediente escaneado'], 'acta.pdf', { type: 'application/pdf' }))
+      for (let i = 0; i < MAX_FILES; i++) {
+        fd.append('archivos', new File([`doc ${i}`], `doc${i}.pdf`, { type: 'application/pdf' }))
+      }
 
       const response = await postNueva(fd)
       expect(response?.status).toBe(302)
-      expect((captured.body as FormData).get('pdf')).toBeInstanceOf(File)
+      expect((captured.body as FormData).getAll('archivos')).toHaveLength(MAX_FILES)
     })
   })
 })

@@ -8,11 +8,15 @@
  */
 import { randomBytes } from 'node:crypto'
 import { createFsFileStorage } from 'remix/file-storage/fs'
-import * as s from 'remix/data-schema'
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
 import { BACKEND_URL, getPublicTheme } from '../../backend.ts'
+import {
+  cuerpoParaBackend,
+  validarParticipacion,
+  valoresDeFormulario,
+} from '../../data/participacion.ts'
 import { routes } from '../../routes.ts'
 import {
   MAX_FILE_BYTES,
@@ -22,13 +26,6 @@ import {
   sanitizeFilename,
 } from '../../utils/uploads.ts'
 import { ParticipationPage } from './page.tsx'
-import {
-  errorMap,
-  participationSchema,
-  toFormErrors,
-  toFormValues,
-  type FormErrors,
-} from './schema.ts'
 import { parseParticipationForm, type FileUpload } from './parse-with-values.ts'
 
 const tmpStorage = createFsFileStorage('./tmp/uploads')
@@ -82,7 +79,7 @@ export default createController(routes.participation, {
             <ParticipationPage
               theme={theme}
               errors={{ archivos: `Máximo ${MAX_FILES} archivos por participación` }}
-              values={toFormValues(formData)}
+              values={valoresDeFormulario(formData)}
             />,
             { status: 413 },
           )
@@ -94,44 +91,25 @@ export default createController(routes.participation, {
               errors={{
                 archivos: `Uno de los archivos excede el límite de ${Math.round(MAX_FILE_BYTES / (1024 * 1024))} MB`,
               }}
-              values={toFormValues(formData)}
+              values={valoresDeFormulario(formData)}
             />,
             { status: 413 },
           )
         }
 
-        const parsed = s.parseSafe(participationSchema, formData, { errorMap })
-
-        if (!parsed.success) {
-          const errors: FormErrors = toFormErrors(parsed.issues)
+        const { valores, errores } = validarParticipacion(formData, {
+          exigirConsentimiento: true,
+        })
+        if (Object.keys(errores).length > 0) {
           return context.render(
-            <ParticipationPage theme={theme} errors={errors} values={toFormValues(formData)} />,
+            <ParticipationPage theme={theme} errors={errores} values={valores} />,
             { status: 422 },
           )
         }
 
-        // Enviar al backend para persistir y vectorizar (origen digital, público)
-        const body = new FormData()
+        // Enviar al backend para persistir (origen digital, público)
+        const body = cuerpoParaBackend(valores)
         body.set('origen', 'digital')
-        body.set('nombre', parsed.value.nombre)
-        body.set('correo', parsed.value.email)
-        body.set('calle', parsed.value.calle)
-        body.set('colonia', parsed.value.colonia)
-        body.set('municipio', parsed.value.municipio)
-        body.set('codigo_postal', parsed.value.cp)
-        body.set('direccion_origen', parsed.value.direccion_origen)
-        body.set('institucion', parsed.value.institucion)
-        body.set('observacion', parsed.value.observacion)
-        for (const campo of [
-          'domicilio',
-          'municipio_participante',
-          'ocupacion',
-          'fuente',
-          'genero',
-          'tematica',
-        ] as const) {
-          body.set(campo, parsed.value[campo])
-        }
         body.set('consentimiento', '1')
         body.set('consentimiento_version', 'lgpdppso-2026-01')
 
@@ -186,7 +164,7 @@ export default createController(routes.participation, {
                   archivos:
                     'Tu conexión está tardando demasiado. Verifica tu conexión a internet e inténtalo de nuevo.',
                 }}
-                values={toFormValues(formData)}
+                values={valoresDeFormulario(formData)}
               />,
               { status: 504 },
             )
@@ -205,7 +183,7 @@ export default createController(routes.participation, {
                 archivos:
                   'Estás enviando demasiadas solicitudes, espera un momento e inténtalo de nuevo.',
               }}
-              values={toFormValues(formData)}
+              values={valoresDeFormulario(formData)}
             />,
             { status: 502 },
           )
@@ -221,7 +199,7 @@ export default createController(routes.participation, {
                   ? undefined
                   : 'No se pudo registrar. Verifica que el servicio esté activo e inténtalo de nuevo.',
               }}
-              values={toFormValues(formData)}
+              values={valoresDeFormulario(formData)}
             />,
             { status: 502 },
           )

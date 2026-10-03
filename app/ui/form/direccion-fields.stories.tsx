@@ -13,7 +13,6 @@ const meta: Meta<DireccionFieldsProps> = {
     values: {
       calle: 'Av. Juárez 100',
       colonia: 'Centro',
-      municipio: 'San Pedro Tlaquepaque',
       cp: '45500',
     },
   },
@@ -40,12 +39,10 @@ export const WithErrors: Story = {
     values: {
       calle: '',
       colonia: '',
-      municipio: '',
       cp: '123',
     },
     errors: {
-      colonia: 'La colonia es requerida',
-      municipio: 'El municipio es requerido',
+      colonia: 'Indica la colonia o zona',
       cp: 'Código postal inválido',
     },
   },
@@ -58,7 +55,6 @@ export const AdminAppearance: Story = {
     values: {
       calle: 'Hidalgo 45',
       colonia: 'Santa Anita',
-      municipio: 'San Pedro Tlaquepaque',
       cp: '45600',
     },
   },

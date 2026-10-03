@@ -139,6 +139,17 @@ ALTER TABLE participations ADD COLUMN IF NOT EXISTS direccion_origen       TEXT 
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS domicilio              TEXT NOT NULL DEFAULT '';
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS municipio_participante TEXT NOT NULL DEFAULT '';
 
+-- Alcance de la propuesta: `municipio` (todo el municipio, ubicación opcional)
+-- o `especifico` (un lugar o predio: domicilio o referencia y colonia o zona
+-- son obligatorios). Lo que ya estaba registrado tenía siempre una colonia, así
+-- que su alcance es `especifico`.
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS alcance_ubicacion TEXT NOT NULL DEFAULT 'especifico';
+-- Lo que la persona especificó al elegir «Otra» en la temática o en el tipo de
+-- participante. Las opciones van en `tematica`/`fuente` para que las
+-- estadísticas sigan agrupando por opción.
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS tematica_otra TEXT NOT NULL DEFAULT '';
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS fuente_otra   TEXT NOT NULL DEFAULT '';
+
 -- Dictamen y notificacion al ciudadano. `estado` dice QUE se resolvio;
 -- estas columnas dicen POR QUE, A DONDE debe acudir y SI ya se le aviso.
 ALTER TABLE participations ADD COLUMN IF NOT EXISTS resolucion_motivo    TEXT NOT NULL DEFAULT '';

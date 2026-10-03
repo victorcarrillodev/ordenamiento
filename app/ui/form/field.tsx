@@ -19,6 +19,10 @@ export interface FieldProps {
   hint?: string
   appearance?: FieldAppearance
   wide?: boolean
+  /** Tope de caracteres del campo; el navegador lo aplica y el contador lo muestra. */
+  maxLength?: number
+  /** Muestra «n / máximo» bajo el campo. Requiere `maxLength`. */
+  contador?: boolean
 }
 
 const labelStyle = css({
@@ -53,6 +57,40 @@ const hintStyle = css({
   marginTop: '5px',
 })
 
+const contadorStyle = css({
+  fontFamily: FONT_STACK,
+  fontSize: '12px',
+  color: '#475569',
+  marginTop: '4px',
+  textAlign: 'right',
+  fontVariantNumeric: 'tabular-nums',
+  '&[data-estado="cerca"]': { color: '#b45309', fontWeight: 700 },
+  '&[data-estado="lleno"]': { color: '#b91c1c', fontWeight: 700 },
+})
+
+/**
+ * «n / máximo»: lo actualiza `public/participacion.js` al teclear; aquí solo se
+ * pinta el valor con el que llega el campo. `largo` cuenta caracteres, no
+ * unidades UTF-16, igual que el script y que el servidor.
+ */
+function Contador(handle: Handle<{ para: string; maximo: number; valor?: string }>) {
+  return () => {
+    const { para, maximo, valor = '' } = handle.props
+    const largo = Array.from(valor.replace(/\r\n?/g, '\n')).length
+    return (
+      <span
+        id={`${para}-contador`}
+        data-contador={para}
+        data-max={String(maximo)}
+        mix={contadorStyle}
+        aria-live="polite"
+      >
+        {largo} / {maximo}
+      </span>
+    )
+  }
+}
+
 const requiredMark = (
   <span mix={css({ color: colors.burgundy900 })} aria-hidden="true">
     {' '}
@@ -77,11 +115,14 @@ export function Field(handle: Handle<FieldProps>) {
       hint,
       appearance = 'civic',
       wide = false,
+      maxLength,
+      contador = false,
     } = handle.props
 
     const errorId = error ? `${id}-error` : undefined
     const hintId = hint ? `${id}-hint` : undefined
     const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined
+    const contadorDe = contador && maxLength ? maxLength : undefined
 
     if (appearance === 'admin') {
       return (
@@ -97,6 +138,7 @@ export function Field(handle: Handle<FieldProps>) {
             required={required}
             readOnly={readOnly}
             placeholder={placeholder}
+            maxLength={maxLength}
             autocomplete={autoComplete}
             list={list}
             aria-required={required ? 'true' : undefined}
@@ -108,6 +150,7 @@ export function Field(handle: Handle<FieldProps>) {
               {hint}
             </span>
           ) : null}
+          {contadorDe ? <Contador para={id} maximo={contadorDe} valor={value} /> : null}
           {error ? (
             <span id={errorId} role="alert" class="form-error">
               ⚠ {error}
@@ -130,6 +173,7 @@ export function Field(handle: Handle<FieldProps>) {
           value={value}
           placeholder={placeholder}
           required={required}
+          maxLength={maxLength}
           readOnly={readOnly}
           autocomplete={autoComplete}
           list={list}
@@ -143,6 +187,7 @@ export function Field(handle: Handle<FieldProps>) {
             {hint}
           </span>
         ) : null}
+        {contadorDe ? <Contador para={id} maximo={contadorDe} valor={value} /> : null}
         {error ? (
           <span id={errorId} role="alert" mix={errorMsgStyle}>
             ⚠ {error}
@@ -174,11 +219,14 @@ export function TextArea(handle: Handle<TextAreaProps>) {
       wide = false,
       rows = 3,
       minHeight = '72px',
+      maxLength,
+      contador = false,
     } = handle.props
 
     const errorId = error ? `${id}-error` : undefined
     const hintId = hint ? `${id}-hint` : undefined
     const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined
+    const contadorDe = contador && maxLength ? maxLength : undefined
 
     if (appearance === 'admin') {
       return (
@@ -193,6 +241,7 @@ export function TextArea(handle: Handle<TextAreaProps>) {
             value={value}
             required={required}
             readOnly={readOnly}
+            maxLength={maxLength}
             placeholder={placeholder}
             aria-required={required ? 'true' : undefined}
             aria-invalid={error ? 'true' : undefined}
@@ -203,6 +252,7 @@ export function TextArea(handle: Handle<TextAreaProps>) {
               {hint}
             </span>
           ) : null}
+          {contadorDe ? <Contador para={id} maximo={contadorDe} valor={value} /> : null}
           {error ? (
             <span id={errorId} role="alert" class="form-error">
               ⚠ {error}
@@ -226,6 +276,7 @@ export function TextArea(handle: Handle<TextAreaProps>) {
           placeholder={placeholder}
           required={required}
           readOnly={readOnly}
+          maxLength={maxLength}
           aria-required={required ? 'true' : undefined}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={describedBy}
@@ -240,6 +291,7 @@ export function TextArea(handle: Handle<TextAreaProps>) {
             {hint}
           </span>
         ) : null}
+        {contadorDe ? <Contador para={id} maximo={contadorDe} valor={value} /> : null}
         {error ? (
           <span id={errorId} role="alert" mix={errorMsgStyle}>
             ⚠ {error}

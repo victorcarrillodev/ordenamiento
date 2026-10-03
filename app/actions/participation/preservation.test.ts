@@ -7,14 +7,14 @@ describe('Ciudadano · preservación de valores tras error', () => {
   beforeEach(() => vi.restoreAllMocks())
   afterEach(() => (globalThis.fetch = originalFetch))
 
-  it('422 por validación repinta nombre/email/calle/colonia/municipio/cp/institucion/observacion y mantiene consentimiento', async () => {
+  it('422 por validación repinta nombre/email/calle/colonia/cp/institucion/observacion y mantiene consentimiento', async () => {
     // backend no se toca: falla por validación antes de fetch
     const fd = new FormData()
     fd.set('nombre', 'María López')
     fd.set('email', 'no-es-email') // inválido
     fd.set('calle', 'Av. Juárez 123')
     fd.set('colonia', 'Centro')
-    fd.set('municipio', 'San Pedro Tlaquepaque')
+    fd.set('alcance_ubicacion', 'municipio')
     fd.set('cp', '45500')
     fd.set('institucion', 'ITESO')
     fd.set('observacion', 'corta') // <10
@@ -30,7 +30,6 @@ describe('Ciudadano · preservación de valores tras error', () => {
     expect(html).toContain('María López')
     expect(html).toContain('Av. Juárez 123')
     expect(html).toContain('Centro')
-    expect(html).toContain('San Pedro Tlaquepaque')
     expect(html).toContain('45500')
     expect(html).toContain('ITESO')
     expect(html).toContain('corta')
@@ -51,7 +50,7 @@ describe('Ciudadano · preservación de valores tras error', () => {
     fd.set('email', 'juan@ejemplo.com')
     fd.set('calle', 'Calle Falsa 123')
     fd.set('colonia', 'Santa Anita')
-    fd.set('municipio', 'Tlajomulco')
+    fd.set('alcance_ubicacion', 'municipio')
     fd.set('cp', '45640')
     fd.set('institucion', 'Colectivo X')
     fd.set('observacion', 'Observación suficientemente larga para pasar validación')
@@ -66,7 +65,6 @@ describe('Ciudadano · preservación de valores tras error', () => {
     expect(html).toContain('juan@ejemplo.com')
     expect(html).toContain('Calle Falsa 123')
     expect(html).toContain('Santa Anita')
-    expect(html).toContain('Tlajomulco')
     expect(html).toContain('45640')
     expect(html).toContain('Colectivo X')
     expect(html).toContain('Observación suficientemente larga')
@@ -78,7 +76,7 @@ describe('Ciudadano · preservación de valores tras error', () => {
     fd.set('email', 'bad-email@@')
     fd.set('calle', 'Calle 1')
     fd.set('colonia', 'Centro')
-    fd.set('municipio', 'Guadalajara')
+    fd.set('alcance_ubicacion', 'municipio')
     fd.set('cp', '44100')
     fd.set('observacion', 'xxx') // corta
     // sin consentimiento
@@ -99,7 +97,7 @@ describe('Ciudadano · preservación de valores tras error', () => {
     fd.set('nombre', 'Con Muchos Archivos')
     fd.set('email', 'test@ejemplo.com')
     fd.set('colonia', 'Centro')
-    fd.set('municipio', 'Guadalajara')
+    fd.set('alcance_ubicacion', 'municipio')
     fd.set('observacion', 'Observación válida con muchos archivos pero excede límite')
     fd.set('consentimiento', '1')
     for (let i = 0; i < 6; i++)
@@ -113,7 +111,6 @@ describe('Ciudadano · preservación de valores tras error', () => {
     expect(html).toContain('Con Muchos Archivos')
     expect(html).toContain('test@ejemplo.com')
     expect(html).toContain('Centro')
-    expect(html).toContain('Guadalajara')
     expect(html).toContain('Observación válida con muchos archivos pero excede límite')
     // consentimiento vino después de archivos y el parseo abortó antes de leerlo
     // → documenta el límite del streaming, no un valor repintado.
@@ -125,7 +122,7 @@ describe('Ciudadano · preservación de valores tras error', () => {
     fd.set('nombre', 'Archivo Grande')
     fd.set('email', 'grande@ejemplo.com')
     fd.set('colonia', 'Centro')
-    fd.set('municipio', 'San Pedro Tlaquepaque')
+    fd.set('alcance_ubicacion', 'municipio')
     fd.set('observacion', 'Archivo único que supera el tamaño máximo permitido por participacion')
     fd.set('consentimiento', '1')
     fd.append('archivos', new File([new Uint8Array(MAX_FILE_BYTES + 1)], 'enorme.pdf'))
@@ -146,7 +143,7 @@ describe('Ciudadano · preservación de valores tras error', () => {
     fd.set('nombre', 'Límite Interno')
     fd.set('email', 'limite@ejemplo.com')
     fd.set('colonia', 'Centro')
-    fd.set('municipio', 'Guadalajara')
+    fd.set('alcance_ubicacion', 'municipio')
     fd.set('observacion', 'Observación válida con suficiente longitud para el límite')
     fd.set('consentimiento', '1')
     const r = await router.fetch(
@@ -171,7 +168,7 @@ describe('Ciudadano · preservación de valores tras error', () => {
     fd.set('nombre', 'Espera Larga')
     fd.set('email', 'espera@ejemplo.com')
     fd.set('colonia', 'Centro')
-    fd.set('municipio', 'Guadalajara')
+    fd.set('alcance_ubicacion', 'municipio')
     fd.set('observacion', 'Observación válida que espera respuesta y nunca llega')
     fd.set('consentimiento', '1')
     const r = await router.fetch(
@@ -189,7 +186,7 @@ describe('Ciudadano · preservación de valores tras error', () => {
     fd.set('nombre', 'Sin Folio')
     fd.set('email', 'sinfolio@ejemplo.com')
     fd.set('colonia', 'Centro')
-    fd.set('municipio', 'Guadalajara')
+    fd.set('alcance_ubicacion', 'municipio')
     fd.set('observacion', 'Observación válida con longitud suficiente para el caso')
     fd.set('consentimiento', '1')
     const r = await router.fetch(

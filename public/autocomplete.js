@@ -640,6 +640,10 @@
 
   function isAddressField(el) {
     if (!el || el.tagName !== 'INPUT' || el.type === 'hidden' || el.type === 'file') return false
+    // Solo el bloque «Ubicación de la propuesta». El domicilio o el municipio de
+    // residencia de quien participa son otra cosa: sugerirles colonias y, al
+    // elegir una, reescribir la ubicación de la propuesta era un error.
+    if (!el.closest('[data-autocomplete-group]')) return false
     const name = (el.name || el.id || '').toLowerCase()
     return (
       name.includes('calle') ||
@@ -666,17 +670,14 @@
       target.parentElement?.parentElement ||
       document.body
 
+    // Por el final del nombre, no por contenerlo: dentro del bloque los nombres
+    // pueden llevar prefijo (`aporte_calle`) y así no se confunden entre sí.
     return {
-      calle:
-        form.querySelector('input[name*="calle"]') ||
-        form.querySelector('input[name*="domicilio"]') ||
-        form.querySelector('#calle'),
-      colonia: form.querySelector('input[name*="colonia"]') || form.querySelector('#colonia'),
-      municipio: form.querySelector('input[name*="municipio"]') || form.querySelector('#municipio'),
-      cp: form.querySelector('input[name*="cp"]') || form.querySelector('#cp'),
-      origen:
-        form.querySelector('input[name*="direccion_origen"]') ||
-        form.querySelector('#direccion_origen'),
+      calle: form.querySelector('input[name$="calle"]'),
+      colonia: form.querySelector('input[name$="colonia"]'),
+      municipio: form.querySelector('input[name$="municipio"]'),
+      cp: form.querySelector('input[name$="cp"]'),
+      origen: form.querySelector('input[name$="direccion_origen"]'),
     }
   }
 

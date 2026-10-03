@@ -12,6 +12,7 @@ import {
   validarAdjunto,
 } from '../files/limits.ts'
 import { nombreEnDisco, sanitizarNombre } from '../files/nombres.ts'
+import type { Alcance } from '../services/participacion-campos.ts'
 import { validateUpload } from '../services/upload-guard.ts'
 import { nextFolio } from '../services/folio.ts'
 import { ingestParticipation, type IngestFile } from '../services/ingest.ts'
@@ -140,8 +141,10 @@ export async function handleCreateParticipation(
       institucion: campos.institucion,
       ocupacion: campos.ocupacion,
       fuente: campos.fuente,
+      fuente_otra: campos.fuente_otra,
       genero: campos.genero,
       tematica: campos.tematica,
+      tematica_otra: campos.tematica_otra,
       observacion: campos.observacion,
       codigo_postal: campos.codigo_postal,
       direccion_origen: campos.direccion_origen,
@@ -172,8 +175,11 @@ export async function handleCreateParticipation(
           institucion: camposFormulario.institucion,
           ocupacion: camposFormulario.ocupacion,
           fuente: camposFormulario.fuente,
+          fuente_otra: camposFormulario.fuente_otra,
           genero: camposFormulario.genero,
           tematica: camposFormulario.tematica,
+          tematica_otra: camposFormulario.tematica_otra,
+          alcance_ubicacion: campos.alcance_ubicacion as Alcance,
           latitud: campos.latitud,
           longitud: campos.longitud,
           observacion: camposFormulario.observacion,

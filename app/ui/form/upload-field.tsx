@@ -1,10 +1,13 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
-import { colors, FONT_STACK } from '../../ui/civic-horizon.ts'
 import { ACCEPTED_UPLOADS, textoCantidadYPeso, textoLimites } from '../../utils/uploads.ts'
+import { colors, FONT_STACK } from '../civic-horizon.ts'
+import type { FieldAppearance } from './field.tsx'
 
 export interface UploadFieldProps {
   error?: string
+  /** Con `admin` el botón toma el color del panel. */
+  appearance?: FieldAppearance
 }
 
 const labelStyle = css({
@@ -54,7 +57,8 @@ const uploadContainerStyle = css({
 
 export function UploadField(handle: Handle<UploadFieldProps>) {
   return () => {
-    const { error } = handle.props
+    const { error, appearance = 'civic' } = handle.props
+    const fondoBoton = appearance === 'admin' ? '#1e293b' : '#8c1d3d'
 
     return (
       <div mix={fieldGroupStyle}>
@@ -67,7 +71,7 @@ export function UploadField(handle: Handle<UploadFieldProps>) {
             <div style="display: flex; align-items: center; gap: 10px;">
               <label
                 for="archivos"
-                style="display: inline-flex; align-items: center; gap: 8px; background: #8c1d3d; color: #ffffff; font-family: Montserrat, sans-serif; font-size: 13px; font-weight: 700; padding: 9px 18px; border-radius: 6px; cursor: pointer; transition: background 150ms ease; box-shadow: 0 2px 6px rgba(140,29,61,0.2);"
+                style={`display: inline-flex; align-items: center; gap: 8px; background: ${fondoBoton}; color: #ffffff; font-family: Montserrat, sans-serif; font-size: 13px; font-weight: 700; padding: 9px 18px; border-radius: 6px; cursor: pointer; transition: background 150ms ease; box-shadow: 0 2px 6px rgba(15,23,42,0.2);`}
               >
                 <iconify-icon icon="mdi:paperclip" width="16" height="16" />
                 <span>Seleccionar archivos</span>

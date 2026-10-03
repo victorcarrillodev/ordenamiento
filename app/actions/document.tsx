@@ -66,6 +66,7 @@ export function Document(handle: Handle<DocumentProps>) {
           <link rel="stylesheet" href={`${basePath}/autocomplete.css`} />
           <script src={`${basePath}/colonias-data.js`}></script>
           <script src={`${basePath}/autocomplete.js`} defer></script>
+          <script src={`${basePath}/participacion.js`} defer></script>
           {/* Respaldo de las imágenes configurables; ver public/imagenes.js */}
           <script src={`${basePath}/imagenes.js`} defer></script>
           <title>{title}</title>

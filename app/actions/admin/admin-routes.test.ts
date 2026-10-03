@@ -358,10 +358,10 @@ describe('Admin Routes Protection & Navigation', () => {
 
       const fd = new FormData()
       fd.set('nombre', 'Ciudadano Físico')
-      fd.set('correo', 'fisico@ejemplo.com')
+      fd.set('email', 'fisico@ejemplo.com')
+      fd.set('alcance_ubicacion', 'especifico')
       fd.set('calle', 'Juárez 50')
       fd.set('colonia', 'Centro')
-      fd.set('municipio', 'San Pedro Tlaquepaque')
       fd.set('cp', '45500')
       fd.set('observacion', 'Aporte en módulo físico')
 

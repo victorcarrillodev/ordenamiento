@@ -6,6 +6,7 @@
  */
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
+import type { ErroresParticipacion, ValoresParticipacion } from '../../data/participacion.ts'
 import { routes } from '../../routes.ts'
 import { colors, FONT_STACK, type ThemeData } from '../../ui/civic-horizon.ts'
 import {
@@ -16,18 +17,15 @@ import {
 } from '../../ui/nav-bar.tsx'
 import { Document } from '../document.tsx'
 import { ParticipationForm } from './participation-form.tsx'
-import type { FormErrors, FormValues } from './schema.ts'
 import { SuccessDialog } from './success-dialog.tsx'
 
 const basePath = (process.env.BASE_PATH ?? '/ordena').replace(/\/$/, '')
 
-export type { FormErrors }
-
 export interface ParticipationPageProps {
   theme?: ThemeData
-  errors?: FormErrors
+  errors?: ErroresParticipacion
   /** Lo ya escrito, para no perderlo cuando la validación rechaza el envío. */
-  values?: FormValues
+  values?: ValoresParticipacion
   success?: boolean
   folio?: string
 }

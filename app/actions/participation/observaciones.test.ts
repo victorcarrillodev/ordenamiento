@@ -54,14 +54,15 @@ describe('observaciones del formulario ciudadano', () => {
     const values = {
       nombre: 'Ciudadana Ejemplo',
       email: 'ejemplo@example.com',
+      alcance_ubicacion: 'especifico',
+      calle: 'Av. Hidalgo 12',
       colonia: 'Centro',
-      municipio: 'Tlaquepaque',
       observacion: 'Una propuesta ciudadana',
       consentimiento: '1',
       domicilio: 'Calle del hogar 42',
       municipio_participante: 'Guadalajara',
       ocupacion: 'Arquitecta',
-      fuente: 'Persona ciudadana',
+      fuente: 'Persona a título individual',
       genero: 'Mujer',
       tematica: 'Movilidad',
     }

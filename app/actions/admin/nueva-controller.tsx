@@ -12,54 +12,24 @@ import {
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import * as s from 'remix/data-schema'
 import { backendFetch, requireAdminUser } from '../../backend.ts'
+import { cuerpoParaBackend, primerError, validarParticipacion } from '../../data/participacion.ts'
 import { adminRoutes } from '../../routes.ts'
-import { MAX_FILE_BYTES, MAX_FILE_MB, UPLOAD_TIMEOUT_MS } from '../../utils/uploads.ts'
-import { adminSchema, toAdminFormErrors } from './schema.ts'
-import { NuevaPage, type NuevaValues } from './nueva-page.tsx'
-
-/** La captura física adjunta un solo expediente escaneado, a diferencia del formulario ciudadano. */
-const MAX_ADMIN_FILES = 1
+import {
+  MAX_FILE_BYTES,
+  MAX_FILE_MB,
+  MAX_FILES,
+  MAX_TOTAL_BYTES,
+  UPLOAD_TIMEOUT_MS,
+} from '../../utils/uploads.ts'
+import { NuevaPage } from './nueva-page.tsx'
 
 /**
  * Margen para lo que el propio multipart añade al cuerpo: delimitadores,
- * cabeceras por parte y los ~16 campos de texto del formulario. Sin él, un
- * archivo de exactamente MAX_FILE_BYTES supera el total y se rechaza.
+ * cabeceras por parte y los ~20 campos de texto del formulario. Sin él, un
+ * lote exactamente al tope supera el total y se rechaza.
  */
 const MULTIPART_OVERHEAD_BYTES = 64 * 1024
-
-/**
- * Campos que viajan tal cual al backend.
- *
- * `numero` no está: el formulario captura "Calle y número" en un solo campo (ver
- * DireccionFields), así que enviarlo siempre vacío sólo daba a entender que se
- * recogía por separado.
- */
-const CAMPOS_DIRECTOS = [
-  'colonia',
-  'calle',
-  'latitud',
-  'longitud',
-  'fuente',
-  'genero',
-  'tematica',
-  'institucion',
-  'ocupacion',
-  'observacion',
-] as const
-
-/** Todo lo que se repinta si el alta falla, incluidos los de tratamiento propio. */
-const CAMPOS_DEL_FORMULARIO = [
-  ...CAMPOS_DIRECTOS,
-  'cp',
-  'nombre',
-  'correo',
-  'domicilio',
-  'municipio_participante',
-  'municipio',
-  'direccion_origen',
-] as const satisfies ReadonlyArray<keyof NuevaValues>
 
 export default createController(adminRoutes.participacionNueva, {
   actions: {
@@ -78,79 +48,50 @@ export default createController(adminRoutes.participacionNueva, {
       let formData: FormData
       try {
         formData = await parseFormData(context.request, {
-          maxFiles: MAX_ADMIN_FILES,
+          maxFiles: MAX_FILES,
           maxFileSize: MAX_FILE_BYTES,
-          maxTotalSize: MAX_FILE_BYTES * MAX_ADMIN_FILES + MULTIPART_OVERHEAD_BYTES,
+          maxTotalSize: MAX_TOTAL_BYTES + MULTIPART_OVERHEAD_BYTES,
         })
       } catch (error) {
         if (error instanceof MaxFilesExceededError) {
           return context.render(
-            <NuevaPage user={user} error={`Solo se puede adjuntar ${MAX_ADMIN_FILES} archivo`} />,
+            <NuevaPage user={user} error={`Máximo ${MAX_FILES} archivos por participación`} />,
             { status: 413 },
           )
         }
-        // El total se rebasa por el mismo motivo que el tamaño individual —un
-        // solo adjunto—, así que el capturista recibe el mismo mensaje.
         if (
           error instanceof MaxFileSizeExceededError ||
           error instanceof MaxTotalSizeExceededError
         ) {
           return context.render(
-            <NuevaPage user={user} error={`El archivo excede el límite de ${MAX_FILE_MB} MB`} />,
+            <NuevaPage user={user} error={`Cada archivo puede pesar hasta ${MAX_FILE_MB} MB`} />,
             { status: 413 },
           )
         }
         throw error
       }
 
-      // `campo()` colapsa ausente y vacío en un solo caso: los inputs siempre se
-      // envían, así que `formData.get()` devuelve '' —nunca null— para un campo
-      // que el capturista dejó en blanco.
-      const campo = (nombre: string) => String(formData.get(nombre) ?? '').trim()
-
-      // Lo que el capturista escribió, por si hay que repintar el formulario.
-      const values: NuevaValues = {}
-      for (const nombre of CAMPOS_DEL_FORMULARIO) {
-        const valor = campo(nombre)
-        if (valor) values[nombre] = valor
-      }
-
-      // Validar contra schema antes de enviar al backend
-      const parsed = s.parseSafe(adminSchema, formData)
-      if (!parsed.success) {
-        const errors = toAdminFormErrors(parsed.issues)
+      // Mismas reglas que el formulario ciudadano; solo cambia que aquí no hay
+      // aviso de privacidad que aceptar: la persona está en ventanilla.
+      const { valores, errores } = validarParticipacion(formData)
+      if (Object.keys(errores).length > 0) {
         return context.render(
           <NuevaPage
             user={user}
-            error={Object.values(errors)[0] ?? 'Revisa los campos marcados'}
-            values={values}
+            error={primerError(errores) ?? 'Revisa los campos marcados'}
+            values={valores}
+            errors={errores}
           />,
           { status: 422 },
         )
       }
 
-      const body = new FormData()
+      const body = cuerpoParaBackend(valores)
       body.set('origen', 'fisica')
-      body.set('nombre', campo('nombre'))
-      body.set('correo', campo('correo'))
-
-      // El formulario captura dos domicilios distintos: el de quien participa y el
-      // del aporte que se reporta. Se envían por separado; colapsarlos perdía el
-      // municipio del participante.
-      body.set('domicilio', campo('domicilio'))
-      const municipioParticipante = campo('municipio_participante')
-      if (municipioParticipante) body.set('municipio_participante', municipioParticipante)
-
-      body.set('municipio', campo('municipio') || 'San Pedro Tlaquepaque')
-      for (const nombre of CAMPOS_DIRECTOS) {
-        body.set(nombre, campo(nombre))
-      }
-      // El formulario lo captura como «cp»; el backend lo guarda en `codigo_postal`.
-      body.set('codigo_postal', campo('cp'))
-
-      const pdf = formData.get('pdf')
-      if (pdf instanceof File && pdf.size > 0) {
-        body.set('pdf', pdf, pdf.name)
+      for (const archivo of formData.getAll('archivos')) {
+        if (archivo instanceof File && archivo.size > 0) {
+          body.append('archivos', archivo, archivo.name)
+        }
       }
 
       const response = await backendFetch(context.request, '/api/participations', {
@@ -164,7 +105,7 @@ export default createController(adminRoutes.participacionNueva, {
           <NuevaPage
             user={user}
             error={data.error ?? 'No se pudo guardar la participación'}
-            values={values}
+            values={valores}
           />,
           { status: response.status },
         )
