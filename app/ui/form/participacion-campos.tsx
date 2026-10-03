@@ -3,6 +3,7 @@ import { css } from 'remix/ui'
 import {
   GENEROS,
   LIMITES,
+  MAX_SALTOS_OBSERVACION,
   TEMATICAS,
   TIPOS_PARTICIPANTE,
   type ErroresParticipacion,
@@ -100,8 +101,9 @@ export function ParticipacionCampos(handle: Handle<ParticipacionCamposProps>) {
           rows={5}
           minHeight="120px"
           maxLength={LIMITES.observacion}
+          maxSaltos={MAX_SALTOS_OBSERVACION}
           contador
-          hint={`Máximo ${LIMITES.observacion} caracteres, incluidos los espacios.`}
+          hint={`Máximo ${LIMITES.observacion} caracteres, incluidos los espacios, y hasta ${MAX_SALTOS_OBSERVACION} saltos de línea.`}
           value={values.observacion}
           error={errors.observacion}
           appearance={appearance}

@@ -96,14 +96,13 @@ describe('Admin · nueva — bordes de límites y datos sucios', () => {
       expect(captured.body).toBeNull()
     })
 
-    it('los saltos CRLF del navegador cuentan como un carácter en la propuesta', async () => {
+    it('los saltos CRLF del navegador llegan al backend como saltos simples', async () => {
       const captured = mockBackend()
       const fd = formularioBase()
-      // 250 saltos CRLF = 250 caracteres para quien escribe, no 500.
-      fd.set('observacion', 'Línea\r\n'.repeat(80))
+      fd.set('observacion', 'Línea 1\r\nLínea 2\r\nLínea 3')
       const r = await postNueva(fd)
       expect(r?.status).toBe(302)
-      expect((captured.body as FormData).get('observacion')).toBe('Línea\n'.repeat(80).trim())
+      expect((captured.body as FormData).get('observacion')).toBe('Línea 1\nLínea 2\nLínea 3')
     })
   })
 })

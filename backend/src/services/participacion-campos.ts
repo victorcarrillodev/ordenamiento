@@ -79,6 +79,13 @@ export const LIMITES = {
   ocupacion: 100,
 } as const
 
+/**
+ * Saltos de línea que admite la observación. Además de los 500 caracteres, el
+ * texto ocupa un renglón por cada salto: con más de 8 ya no cabe completo en la
+ * hoja del acuse junto con el resto de los campos al máximo (`acuse.test.ts`).
+ */
+export const MAX_SALTOS_OBSERVACION = 8
+
 /** Nombre con que se nombra cada campo cuando se rechaza. */
 const ETIQUETAS: Record<string, string> = {
   nombre: 'Nombre',
@@ -196,6 +203,12 @@ export function camposDelFormulario(form: FormData): ResultadoCampos {
   // nombre hecho de caracteres invisibles se quedaba en blanco al sanearlo.
   for (const campo of ['nombre', 'correo', 'observacion'] as const) {
     if (!campos[campo]) return { ok: false, error: `${etiquetaDe(campo)} es obligatorio` }
+  }
+  if (campos.observacion.split('\n').length - 1 > MAX_SALTOS_OBSERVACION) {
+    return {
+      ok: false,
+      error: `La observación o propuesta admite hasta ${MAX_SALTOS_OBSERVACION} saltos de línea`,
+    }
   }
   if (!CORREO_RE.test(campos.correo)) {
     return { ok: false, error: 'Ingresa un correo electrónico válido' }

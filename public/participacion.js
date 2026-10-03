@@ -9,6 +9,7 @@
  *     o referencia y la colonia o zona son obligatorios (con asterisco); con
  *     «Todo el municipio» son opcionales.
  *  3. Listas con «Otra»: abren el campo para especificarla solo con esa opción.
+ *  4. Tope de saltos de línea de la propuesta (cada uno ocupa un renglón del acuse).
  *
  * Usa delegación de eventos en `document`: sigue funcionando si la página se
  * reemplaza (el envío por XHR reescribe el documento al fallar la validación).
@@ -34,6 +35,18 @@
       'data-estado',
       actual >= maximo ? 'lleno' : maximo > 0 && actual >= maximo * 0.9 ? 'cerca' : '',
     )
+  }
+
+  function saltosDe(campo) {
+    return campo.value.split('\n').length - 1
+  }
+
+  /** Lo que pase del tope de saltos de línea (al pegar texto) se convierte en espacios. */
+  function limitarSaltos(campo) {
+    var maximo = Number(campo.getAttribute('data-max-saltos')) || 0
+    if (!maximo || saltosDe(campo) <= maximo) return
+    var partes = campo.value.split('\n')
+    campo.value = partes.slice(0, maximo + 1).join('\n') + ' ' + partes.slice(maximo + 1).join(' ')
   }
 
   function iniciarContadores() {
@@ -110,9 +123,18 @@
 
   document.addEventListener('input', function (evento) {
     var campo = evento.target
+    if (campo && campo.hasAttribute && campo.hasAttribute('data-max-saltos')) limitarSaltos(campo)
     if (campo && campo.id && document.querySelector('[data-contador="' + campo.id + '"]')) {
       actualizarContador(campo)
     }
+  })
+
+  // Con el tope de saltos alcanzado, Enter no agrega otro renglón.
+  document.addEventListener('keydown', function (evento) {
+    var campo = evento.target
+    if (evento.key !== 'Enter' || !campo || !campo.hasAttribute) return
+    var maximo = Number(campo.getAttribute('data-max-saltos')) || 0
+    if (maximo && saltosDe(campo) >= maximo) evento.preventDefault()
   })
 
   document.addEventListener('change', function (evento) {

@@ -142,6 +142,22 @@ describe('persistencia de complementarios por la API', () => {
     expect(saved).toEqual({})
   })
 
+  // Cada salto de línea ocupa un renglón del acuse, que es de una sola hoja: con
+  // más de 8 ya no cabe completa junto al resto de los campos al máximo.
+  it('la propuesta admite hasta 8 saltos de línea, ni uno más', async () => {
+    const data = form()
+    data.set('observacion', Array.from({ length: 9 }, () => 'renglón').join('\r\n'))
+    expect((await enviar(data)).status).toBe(201)
+    expect(String(saved.observacion).split('\n')).toHaveLength(9)
+
+    saved = {}
+    data.set('observacion', Array.from({ length: 10 }, () => 'renglón').join('\n'))
+    const excede = await enviar(data)
+    expect(excede.status).toBe(422)
+    expect(await excede.json()).toEqual({ error: expect.stringContaining('8 saltos de línea') })
+    expect(saved).toEqual({})
+  })
+
   it('la propuesta es obligatoria', async () => {
     const data = form()
     data.set('observacion', '   ')

@@ -11,7 +11,7 @@ import {
   MAX_UPLOAD_FILES,
   validarAdjunto,
 } from '../files/limits.ts'
-import { nombreEnDisco, sanitizarNombre } from '../files/nombres.ts'
+import { acortarNombre, nombreEnDisco, sanitizarNombre } from '../files/nombres.ts'
 import type { Alcance } from '../services/participacion-campos.ts'
 import { validateUpload } from '../services/upload-guard.ts'
 import { nextFolio } from '../services/folio.ts'
@@ -124,7 +124,7 @@ export async function handleCreateParticipation(
       filesParaIngest.push({
         size: buffer.length,
         meta: {
-          nombreOriginal: sanitizarNombre(file.name),
+          nombreOriginal: acortarNombre(sanitizarNombre(file.name)),
           mime: verdict.safeMime!,
           rutaLocal: rutaDestino,
         },

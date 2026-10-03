@@ -34,6 +34,10 @@ describe('catálogos del formulario: frontend y backend coinciden', () => {
     }
   })
 
+  it('el tope de saltos de línea de la propuesta', () => {
+    expect(BACKEND).toContain(`MAX_SALTOS_OBSERVACION = ${front.MAX_SALTOS_OBSERVACION}`)
+  })
+
   it('el municipio único', () => {
     expect(BACKEND).toContain(`MUNICIPIO = '${front.MUNICIPIO}'`)
   })

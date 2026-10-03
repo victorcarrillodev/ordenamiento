@@ -201,6 +201,8 @@ export function Field(handle: Handle<FieldProps>) {
 export interface TextAreaProps extends Omit<FieldProps, 'type' | 'autoComplete'> {
   rows?: number
   minHeight?: string
+  /** Saltos de línea que admite; `public/participacion.js` evita pasarse al teclear. */
+  maxSaltos?: number
 }
 
 export function TextArea(handle: Handle<TextAreaProps>) {
@@ -221,6 +223,7 @@ export function TextArea(handle: Handle<TextAreaProps>) {
       minHeight = '72px',
       maxLength,
       contador = false,
+      maxSaltos,
     } = handle.props
 
     const errorId = error ? `${id}-error` : undefined
@@ -242,6 +245,7 @@ export function TextArea(handle: Handle<TextAreaProps>) {
             required={required}
             readOnly={readOnly}
             maxLength={maxLength}
+            data-max-saltos={maxSaltos}
             placeholder={placeholder}
             aria-required={required ? 'true' : undefined}
             aria-invalid={error ? 'true' : undefined}
@@ -277,6 +281,7 @@ export function TextArea(handle: Handle<TextAreaProps>) {
           required={required}
           readOnly={readOnly}
           maxLength={maxLength}
+          data-max-saltos={maxSaltos}
           aria-required={required ? 'true' : undefined}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={describedBy}

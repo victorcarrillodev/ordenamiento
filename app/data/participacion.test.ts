@@ -100,6 +100,12 @@ describe('validarParticipacion', () => {
       expect(errores({ observacion: unoDeMas }).observacion).toContain('500')
     })
 
+    it('la propuesta admite hasta 8 saltos de línea: cada uno es un renglón del acuse', () => {
+      const conSaltos = (n: number) => Array.from({ length: n + 1 }, () => 'renglón').join('\r\n')
+      expect(errores({ observacion: conSaltos(8) }).observacion).toBeUndefined()
+      expect(errores({ observacion: conSaltos(9) }).observacion).toContain('8 saltos de línea')
+    })
+
     it('cada campo respeta su tope', () => {
       const casos: Array<[string, number]> = [
         ['nombre', LIMITES.nombre],

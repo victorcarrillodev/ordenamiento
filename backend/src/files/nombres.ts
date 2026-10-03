@@ -70,3 +70,22 @@ export function contentDisposition(nombre: string, modo: 'inline' | 'attachment'
   )
   return `${modo}; filename="${safeAscii}"; filename*=UTF-8''${encodedUtf8}`
 }
+
+/** Máximo de caracteres con que se guarda y se muestra el nombre de un archivo recibido. */
+export const MAX_NOMBRE_ARCHIVO = 120
+
+/**
+ * Un nombre de archivo demasiado largo se acorta por el medio, conservando la
+ * extensión, que es lo que dice qué clase de archivo es. El nombre se muestra
+ * en el acuse, que es de una sola hoja: sin tope, cinco nombres larguísimos
+ * la desbordarían.
+ */
+export function acortarNombre(nombre: string, maximo = MAX_NOMBRE_ARCHIVO): string {
+  const letras = Array.from(nombre)
+  if (letras.length <= maximo) return nombre
+  const punto = nombre.lastIndexOf('.')
+  const extension = punto > 0 && nombre.length - punto <= 10 ? nombre.slice(punto) : ''
+  const base = Array.from(extension ? nombre.slice(0, punto) : nombre)
+  const disponible = maximo - Array.from(extension).length - 1
+  return `${base.slice(0, Math.max(1, disponible)).join('')}…${extension}`
+}

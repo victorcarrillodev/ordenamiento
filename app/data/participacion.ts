@@ -68,6 +68,12 @@ export const LIMITES = {
   ocupacion: 100,
 } as const
 
+/**
+ * Saltos de línea que admite la propuesta, además de los 500 caracteres: cada
+ * salto ocupa un renglón en el acuse, que es de una sola hoja.
+ */
+export const MAX_SALTOS_OBSERVACION = 8
+
 /** Lo mínimo que debe tener una propuesta para que valga la pena revisarla. */
 export const OBSERVACION_MINIMA = 10
 
@@ -211,6 +217,8 @@ export function validarParticipacion(
     errores.observacion = `La observación debe tener al menos ${OBSERVACION_MINIMA} caracteres`
   } else if (largoEnCaracteres(v('observacion')) > LIMITES.observacion) {
     errores.observacion = `La observación admite hasta ${LIMITES.observacion} caracteres, con todo y espacios`
+  } else if (v('observacion').split('\n').length - 1 > MAX_SALTOS_OBSERVACION) {
+    errores.observacion = `La observación admite hasta ${MAX_SALTOS_OBSERVACION} saltos de línea`
   }
 
   for (const [campo, catalogo, otro] of [
