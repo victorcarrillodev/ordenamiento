@@ -3,7 +3,14 @@ export interface CampoTexto {
   name: string
   label: string
   rows: number
+  /** Ocupa todo el ancho de la cuadrícula. */
   full?: boolean
+  /**
+   * Texto de párrafo que admite formato (negritas y alineación) con el editor.
+   * Son los mismos que `CLAVES_TEXTO_RICO` del backend; los títulos, etiquetas y
+   * botones quedan como texto plano porque su aspecto lo decide la página.
+   */
+  rico?: boolean
 }
 
 export interface GrupoTextos {
@@ -61,6 +68,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Subtítulo descriptivo',
         rows: 4,
         full: true,
+        rico: true,
       },
       { key: 'heroBtn1', name: 'txt_hero_btn1', label: 'Texto botón principal', rows: 1 },
       { key: 'heroBtn2', name: 'txt_hero_btn2', label: 'Texto botón participar', rows: 1 },
@@ -84,6 +92,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Párrafo 1',
         rows: 4,
         full: true,
+        rico: true,
       },
       {
         key: 'queEsParrafo2',
@@ -91,6 +100,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Párrafo 2',
         rows: 5,
         full: true,
+        rico: true,
       },
       { key: 'queEsBullet1', name: 'txt_que_es_bullet1', label: 'Viñeta 1', rows: 2 },
       { key: 'queEsBullet2', name: 'txt_que_es_bullet2', label: 'Viñeta 2', rows: 2 },
@@ -111,6 +121,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Descripción de la sección',
         rows: 3,
         full: true,
+        rico: true,
       },
       {
         key: 'fasesEyebrow',
@@ -125,6 +136,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Conoce las fases · descripción',
         rows: 3,
         full: true,
+        rico: true,
       },
       { key: 'fasesCta', name: 'txt_fases_cta', label: 'Conoce las fases · enlace', rows: 1 },
       {
@@ -140,6 +152,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Avances · descripción',
         rows: 3,
         full: true,
+        rico: true,
       },
       { key: 'avancesCta', name: 'txt_avances_cta', label: 'Avances · enlace', rows: 1 },
       {
@@ -160,6 +173,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Calendario · descripción',
         rows: 3,
         full: true,
+        rico: true,
       },
       { key: 'calendarioCta', name: 'txt_calendario_cta', label: 'Calendario · enlace', rows: 1 },
       {
@@ -180,6 +194,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Seguimiento · descripción (Programa aprobado)',
         rows: 3,
         full: true,
+        rico: true,
       },
       {
         key: 'seguimientoDescPendiente',
@@ -187,6 +202,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Seguimiento · descripción (en elaboración)',
         rows: 3,
         full: true,
+        rico: true,
       },
       {
         key: 'seguimientoCta',
@@ -218,6 +234,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Párrafo 1',
         rows: 4,
         full: true,
+        rico: true,
       },
       {
         key: 'programaParrafo2',
@@ -225,6 +242,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Párrafo 2',
         rows: 4,
         full: true,
+        rico: true,
       },
       {
         key: 'programaParrafo3',
@@ -232,6 +250,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Párrafo 3 (después de las preguntas)',
         rows: 4,
         full: true,
+        rico: true,
       },
       { key: 'programaPregunta1', name: 'txt_programa_pregunta1', label: 'Pregunta 1', rows: 2 },
       { key: 'programaPregunta2', name: 'txt_programa_pregunta2', label: 'Pregunta 2', rows: 2 },
@@ -267,6 +286,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Paso 1 · descripción',
         rows: 3,
         full: true,
+        rico: true,
       },
       {
         key: 'timelinePaso2Titulo',
@@ -280,6 +300,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Paso 2 · descripción',
         rows: 3,
         full: true,
+        rico: true,
       },
       {
         key: 'timelinePaso3Titulo',
@@ -293,6 +314,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Paso 3 · descripción',
         rows: 3,
         full: true,
+        rico: true,
       },
       {
         key: 'timelinePaso4Titulo',
@@ -306,6 +328,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Paso 4 · descripción',
         rows: 3,
         full: true,
+        rico: true,
       },
       {
         key: 'timelinePaso5Titulo',
@@ -319,6 +342,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Paso 5 · descripción',
         rows: 3,
         full: true,
+        rico: true,
       },
     ],
   },
@@ -328,7 +352,14 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
     campos: [
       { key: 'ctaEyebrow', name: 'txt_cta_eyebrow', label: 'Antetítulo', rows: 1 },
       { key: 'ctaTitulo', name: 'txt_cta_titulo', label: 'Título', rows: 3 },
-      { key: 'ctaParrafo', name: 'txt_cta_parrafo', label: 'Párrafo', rows: 4, full: true },
+      {
+        key: 'ctaParrafo',
+        name: 'txt_cta_parrafo',
+        label: 'Párrafo',
+        rows: 4,
+        full: true,
+        rico: true,
+      },
       { key: 'ctaBoton', name: 'txt_cta_boton', label: 'Texto del botón', rows: 1 },
     ],
   },
@@ -360,6 +391,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Mensaje cuando no hay actividades programadas',
         rows: 3,
         full: true,
+        rico: true,
       },
     ],
   },
@@ -392,6 +424,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Descripción del portal',
         rows: 4,
         full: true,
+        rico: true,
       },
       {
         key: 'footerContacto',
@@ -399,6 +432,7 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         label: 'Dirección y datos de contacto',
         rows: 3,
         full: true,
+        rico: true,
       },
       {
         key: 'footerEmail',

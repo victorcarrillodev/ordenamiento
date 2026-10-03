@@ -4,6 +4,8 @@ import { logger } from '../utils.ts'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { sql } from '../db/pool.ts'
+import { canonizarTextoRico, LIMITE_TEXTO_RICO } from './texto-rico.ts'
+import { canonizarTextosConFormato, esTextoConFormato } from './textos-portal.ts'
 
 /**
  * Prefijo publico del portal. Las imagenes por defecto y las que sube el
@@ -447,7 +449,9 @@ export interface SaveCustomizationParams {
 
 export async function saveCustomizations(params: SaveCustomizationParams): Promise<ThemeConfig> {
   const current = await getCustomizations()
-  const merged = deepMerge(current, params.config)
+  // Lo que manda el editor de texto del panel es HTML del navegador: se guarda solo lo
+  // que el portal sabe dibujar (párrafos, negritas, saltos y alineación).
+  const merged = deepMerge(current, canonizarTextosConFormato(params.config))
 
   const motivoLimpio = params.motivo.trim() || 'Actualización de diseño y marca'
   const section = params.section || 'general'
@@ -614,7 +618,11 @@ export function validarYSanitizarThemeConfig(config: Partial<ThemeConfig>): stri
   if (config.usuario?.textos) {
     for (const [key, text] of Object.entries(config.usuario.textos)) {
       if (text && typeof text === 'string') {
-        config.usuario.textos[key as keyof typeof config.usuario.textos] = sanitizeText(text, 500)
+        // Los textos con formato se dejan canónicos (quitarles las etiquetas borraría el
+        // formato); el resto es texto plano.
+        config.usuario.textos[key as keyof typeof config.usuario.textos] = esTextoConFormato(key)
+          ? canonizarTextoRico(text, LIMITE_TEXTO_RICO)
+          : sanitizeText(text, 500)
       }
     }
   }

@@ -180,18 +180,35 @@ describe('validarYSanitizarThemeConfig', () => {
 
   it('sanitiza textos libres quitando tags y truncando', () => {
     const config: {
-      usuario: { textos: { heroTitulo: string; footerDesc: string } }
+      usuario: { textos: { heroTitulo: string; footerEntidad: string } }
     } = {
       usuario: {
         textos: {
           heroTitulo: '<script>hola</script>',
-          footerDesc: 'x'.repeat(600),
+          footerEntidad: 'x'.repeat(600),
         },
       },
     }
     expect(validar(config)).toBeNull()
     expect(config.usuario.textos.heroTitulo).toBe('hola')
-    expect(config.usuario.textos.footerDesc.length).toBeLessThanOrEqual(500)
+    expect(config.usuario.textos.footerEntidad.length).toBeLessThanOrEqual(500)
+  })
+
+  it('los textos con formato conservan negritas y alineación, y se truncan por caracteres visibles', () => {
+    const config: { usuario: { textos: { ctaParrafo: string; footerDesc: string } } } = {
+      usuario: {
+        textos: {
+          ctaParrafo:
+            '<div style="text-align: center;">Con <b>negrita</b><script>x()</script></div>',
+          footerDesc: 'x'.repeat(600),
+        },
+      },
+    }
+    expect(validar(config)).toBeNull()
+    expect(config.usuario.textos.ctaParrafo).toBe(
+      '<p style="text-align:center">Con <strong>negrita</strong></p>',
+    )
+    expect(config.usuario.textos.footerDesc).toBe(`<p>${'x'.repeat(500)}</p>`)
   })
 
   it('acepta colores y URLs válidas', () => {
