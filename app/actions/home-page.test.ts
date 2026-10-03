@@ -39,6 +39,8 @@ const AVISO = {
 }
 
 interface Escenario {
+  /** Textos del tema guardados por el panel, además del título. */
+  textos?: Record<string, string>
   aviso?: unknown
   proximas?: unknown[]
   aprobado?: boolean
@@ -58,7 +60,7 @@ function mockHome(escenario: Escenario = {}) {
     if (u.includes('/api/settings/theme')) {
       return json({
         theme: {
-          usuario: { textos: { heroTitulo: 'TÍTULO PERSONALIZADO' } },
+          usuario: { textos: { heroTitulo: 'TÍTULO PERSONALIZADO', ...escenario.textos } },
           programa: { aprobado: escenario.aprobado === true },
         },
       })
@@ -89,6 +91,66 @@ describe('Portada', () => {
   it('muestra el heroTitulo configurado en el tema', async () => {
     mockHome()
     expect(await portada()).toContain('TÍTULO PERSONALIZADO')
+  })
+
+  describe('textos con formato', () => {
+    it('muestra las negritas y la alineación que guardó el editor del panel', async () => {
+      mockHome({
+        textos: {
+          heroSubtitulo:
+            '<p style="text-align:justify">Sigue el <strong>avance</strong> del Programa</p>',
+          ctaParrafo: '<p style="text-align:right">Primero</p><p>Segundo</p>',
+          footerDesc: '<p style="text-align:center"><strong>Portal oficial</strong></p>',
+        },
+      })
+      const html = await portada()
+      expect(html).toMatch(
+        /text-align:justify[^"]*">Sigue el <strong>avance<\/strong> del Programa/,
+      )
+      expect(html).toMatch(/text-align:right[^"]*">Primero<\/span><span[^>]*>Segundo<\/span>/)
+      expect(html).toMatch(/text-align:center[^"]*"><strong>Portal oficial<\/strong>/)
+    })
+
+    it('un texto plano de antes del editor se ve igual que siempre, con los saltos de línea', async () => {
+      mockHome({
+        textos: {
+          heroSubtitulo: 'Subtítulo sin formato',
+          footerContacto: 'Calle 1\nColonia Centro\nJalisco, México',
+        },
+      })
+      const html = await portada()
+      expect(html).toContain('>Subtítulo sin formato</p>')
+      expect(html).toContain('Calle 1<br />Colonia Centro<br />Jalisco, México')
+    })
+
+    it('un texto con formato sin contenido deja el texto por defecto', async () => {
+      mockHome({ textos: { heroSubtitulo: '<p><br></p>', ctaParrafo: '   ' } })
+      const html = await portada()
+      expect(html).toContain('Un espacio público y transparente que reúne información')
+      expect(html).toContain('Registra tus observaciones, propuestas y documentos técnicos.')
+    })
+
+    it('lo que venga en el valor guardado nunca se inserta como HTML', async () => {
+      mockHome({
+        textos: {
+          heroSubtitulo:
+            '<p onclick="robar()">Hola <img src=x onerror=alert(1)><script>alert(2)</script><a href="javascript:alert(3)">enlace</a></p>',
+          ctaParrafo: '<p style="text-align:center;background:url(javascript:alert(4))">Texto</p>',
+        },
+      })
+      const html = await portada()
+      expect(html).toContain('Hola enlace')
+      for (const peligro of [
+        'robar()',
+        'onerror',
+        'alert(1)',
+        'alert(2)',
+        'alert(3)',
+        'alert(4)',
+      ]) {
+        expect(html, peligro).not.toContain(peligro)
+      }
+    })
   })
 
   it('pide las tres actividades más próximas', async () => {

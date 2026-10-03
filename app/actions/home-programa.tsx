@@ -10,6 +10,8 @@ import type { ActividadPublica, AvisoPortada } from '../data/programa.ts'
 import { routes } from '../routes.ts'
 import { ActividadCard } from '../ui/programa/actividad-card.tsx'
 import { IconoFlecha, IconoMegafono } from '../ui/programa/iconos.tsx'
+import { TextoRico } from '../ui/texto-rico.tsx'
+import { textoDelPortal } from '../utils/texto-rico.ts'
 import {
   colors,
   eyebrowProps,
@@ -238,8 +240,12 @@ export function ProximasActividades(
               })}
             >
               <p mix={css({ margin: 0, fontSize: '16px', color: colors.gray700, lineHeight: 1.6 })}>
-                {txt.proximasVacio ||
-                  'Por el momento no hay actividades programadas. Consulta el historial para conocer las actividades realizadas.'}
+                <TextoRico
+                  valor={textoDelPortal(
+                    txt.proximasVacio,
+                    'Por el momento no hay actividades programadas. Consulta el historial para conocer las actividades realizadas.',
+                  )}
+                />
               </p>
               <a href={routes.poetdum.avances.href()} mix={botonContornoStyle}>
                 Ver avances del Programa
@@ -302,9 +308,10 @@ export function InformacionPrograma(handle: Handle<{ theme?: ThemeData }>) {
         icono: ico.cardPrograma || '🧭',
         eyebrow: txt.fasesEyebrow || 'Proceso del Programa',
         titulo: txt.fasesTitulo || 'Conoce las fases',
-        descripcion:
-          txt.fasesDesc ||
+        descripcion: textoDelPortal(
+          txt.fasesDesc,
           'Conoce las cinco fases del Programa: Formulación, Expedición, Ejecución, Evaluación y Modificación.',
+        ),
         href: '#proceso',
         cta: txt.fasesCta || 'Ver fases',
         disponible: true,
@@ -315,9 +322,10 @@ export function InformacionPrograma(handle: Handle<{ theme?: ThemeData }>) {
         icono: ico.cardProceso || '📊',
         eyebrow: txt.avancesEyebrow || 'Avances del Programa',
         titulo: txt.avancesTitulo || 'Avances del Programa',
-        descripcion:
-          txt.avancesDesc ||
+        descripcion: textoDelPortal(
+          txt.avancesDesc,
           'Consulta las actividades realizadas, sus resultados, acuerdos, documentos, fotografías y evidencias.',
+        ),
         href: routes.poetdum.avances.href(),
         cta: txt.avancesCta || 'Ver avances',
         disponible: true,
@@ -328,9 +336,10 @@ export function InformacionPrograma(handle: Handle<{ theme?: ThemeData }>) {
         icono: ico.cardCalendario || '📅',
         eyebrow: txt.calendarioEyebrow || 'Actividades',
         titulo: txt.calendarioTitulo || 'Calendario de actividades',
-        descripcion:
-          txt.calendarioDesc ||
+        descripcion: textoDelPortal(
+          txt.calendarioDesc,
           'Consulta las actividades programadas, con su fecha, horario, lugar, ubicación y documentos disponibles.',
+        ),
         href: routes.poetdum.calendario.href(),
         cta: txt.calendarioCta || 'Ver calendario',
         disponible: true,
@@ -342,10 +351,14 @@ export function InformacionPrograma(handle: Handle<{ theme?: ThemeData }>) {
         eyebrow: txt.seguimientoEyebrow || 'Seguimiento y evaluación',
         titulo: txt.seguimientoTitulo || 'Seguimiento y evaluación',
         descripcion: aprobado
-          ? txt.seguimientoDesc ||
-            'Consulta los indicadores, las metas y mediciones y los resultados de la aplicación y evaluación del Programa.'
-          : txt.seguimientoDescPendiente ||
-            'Aquí se publicarán los indicadores y resultados de la aplicación y evaluación del Programa.',
+          ? textoDelPortal(
+              txt.seguimientoDesc,
+              'Consulta los indicadores, las metas y mediciones y los resultados de la aplicación y evaluación del Programa.',
+            )
+          : textoDelPortal(
+              txt.seguimientoDescPendiente,
+              'Aquí se publicarán los indicadores y resultados de la aplicación y evaluación del Programa.',
+            ),
         href: routes.poetdum.seguimiento.href(),
         cta: aprobado
           ? txt.seguimientoCta || 'Ver seguimiento'
@@ -391,8 +404,12 @@ export function InformacionPrograma(handle: Handle<{ theme?: ThemeData }>) {
                 maxWidth: '720px',
               })}
             >
-              {txt.infoDescripcion ||
-                'Consulta las fases del Programa, las actividades realizadas, el calendario de actividades programadas y los resultados de su aplicación.'}
+              <TextoRico
+                valor={textoDelPortal(
+                  txt.infoDescripcion,
+                  'Consulta las fases del Programa, las actividades realizadas, el calendario de actividades programadas y los resultados de su aplicación.',
+                )}
+              />
             </p>
           </div>
 
@@ -492,7 +509,7 @@ function AccesoPrograma(handle: Handle<{ acceso: Acceso }>) {
             flex: 1,
           })}
         >
-          {acceso.descripcion}
+          <TextoRico valor={acceso.descripcion} />
         </p>
         <span
           mix={css({

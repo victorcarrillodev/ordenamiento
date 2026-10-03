@@ -23,9 +23,11 @@ import {
   type ThemeData,
 } from '../ui/civic-horizon.ts'
 import { Button } from '../ui/button.tsx'
+import { TextoRico } from '../ui/texto-rico.tsx'
 import { Document } from './document.tsx'
 import { NAVBAR_ALTURA_MOVIL, NAVBAR_CORTE_MOVIL, NavBar } from '../ui/nav-bar.tsx'
 import { routes } from '../routes.ts'
+import { textoDelPortal } from '../utils/texto-rico.ts'
 import { FORMATOS_DESTACADOS, textoCantidadYPeso } from '../utils/uploads.ts'
 import type { ActividadPublica, AvisoPortada } from '../data/programa.ts'
 import { AvisoFranja, InformacionPrograma, ProximasActividades } from './home-programa.tsx'
@@ -144,9 +146,10 @@ function HeroSection(handle: Handle<{ theme?: ThemeData }>) {
       txt.heroCintillo || 'Bitácora de Ordenamiento Territorial · San Pedro Tlaquepaque'
     const titulo = txt.heroTitulo || 'Bitácora de Ordenamiento Territorial'
     const tituloResaltado = txt.heroTituloResaltado || 'Ordenamiento Territorial'
-    const subtitulo =
-      txt.heroSubtitulo ||
-      'Un espacio público y transparente que reúne información, facilita la participación ciudadana y permite dar seguimiento a la elaboración y aplicación del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.'
+    const subtitulo = textoDelPortal(
+      txt.heroSubtitulo,
+      'Un espacio público y transparente que reúne información, facilita la participación ciudadana y permite dar seguimiento a la elaboración y aplicación del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
+    )
     const btn1Text = txt.heroBtn1 || 'Conoce la Bitácora'
     const btn2Text = txt.heroBtn2 || 'Registra tu participación'
 
@@ -292,7 +295,7 @@ function HeroSection(handle: Handle<{ theme?: ThemeData }>) {
               textAlign: 'center',
             })}
           >
-            {subtitulo}
+            <TextoRico valor={subtitulo} />
           </p>
 
           {/* CTAs */}
@@ -530,12 +533,14 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
     const primary = c.primario || colors.burgundy900
     const cintillo = txt.queEsCintillo || '¿QUÉ ES ESTE SITIO?'
     const titulo = txt.queEsTitulo || 'Conoce la Bitácora de Ordenamiento Territorial'
-    const p1 =
-      txt.queEsParrafo1 ||
-      'Este sitio forma parte de la Bitácora de Ordenamiento Territorial del Municipio de San Pedro Tlaquepaque, un espacio público y transparente en el que se registra, organiza y difunde la información relacionada con el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.'
-    const p2 =
-      txt.queEsParrafo2 ||
-      'La Bitácora permite conocer y dar seguimiento a la elaboración, actualización, aplicación y evaluación del Programa; consultar los acuerdos, avances, resultados y documentos técnicos generados, así como conocer las actividades relacionadas con la planeación del territorio municipal. También facilita la participación de la ciudadanía, al permitir la presentación de observaciones, propuestas y documentos durante los mecanismos de consulta pública establecidos.'
+    const p1 = textoDelPortal(
+      txt.queEsParrafo1,
+      'Este sitio forma parte de la Bitácora de Ordenamiento Territorial del Municipio de San Pedro Tlaquepaque, un espacio público y transparente en el que se registra, organiza y difunde la información relacionada con el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
+    )
+    const p2 = textoDelPortal(
+      txt.queEsParrafo2,
+      'La Bitácora permite conocer y dar seguimiento a la elaboración, actualización, aplicación y evaluación del Programa; consultar los acuerdos, avances, resultados y documentos técnicos generados, así como conocer las actividades relacionadas con la planeación del territorio municipal. También facilita la participación de la ciudadanía, al permitir la presentación de observaciones, propuestas y documentos durante los mecanismos de consulta pública establecidos.',
+    )
     // Ya viene normalizada desde getPublicTheme: aquí solo se cubre el caso
     // de que no haya tema guardado todavía.
     const ecoImg = img.imagenEcologia || IMAGEN_POR_DEFECTO.ecologia
@@ -572,8 +577,12 @@ function WhatIsThisSite(handle: Handle<{ theme?: ThemeData }>) {
             <h2 id="que-es-heading" mix={css({ ...headingLProps, margin: 0 })}>
               {titulo}
             </h2>
-            <p mix={css({ ...bodyLargeProps, margin: 0 })}>{p1}</p>
-            <p mix={css({ ...bodyProps, margin: 0 })}>{p2}</p>
+            <p mix={css({ ...bodyLargeProps, margin: 0 })}>
+              <TextoRico valor={p1} />
+            </p>
+            <p mix={css({ ...bodyProps, margin: 0 })}>
+              <TextoRico valor={p2} />
+            </p>
 
             {/* Feature bullets */}
             <div mix={css({ marginTop: '8px' })}>
@@ -741,8 +750,12 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
                     margin: 0,
                   })}
                 >
-                  {txt.programaParrafo1 ||
-                    'Es una herramienta que permite organizar el territorio del municipio, definiendo qué actividades pueden realizarse en cada zona y en qué condiciones, con el objetivo de proteger el medio ambiente y orientar el desarrollo urbano de manera ordenada.'}
+                  <TextoRico
+                    valor={textoDelPortal(
+                      txt.programaParrafo1,
+                      'Es una herramienta que permite organizar el territorio del municipio, definiendo qué actividades pueden realizarse en cada zona y en qué condiciones, con el objetivo de proteger el medio ambiente y orientar el desarrollo urbano de manera ordenada.',
+                    )}
+                  />
                 </p>
                 <p
                   mix={css({
@@ -753,8 +766,12 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
                     margin: 0,
                   })}
                 >
-                  {txt.programaParrafo2 ||
-                    'Para elaborarlo se analizan las características del territorio, sus recursos naturales y las actividades que se desarrollan en él, con el propósito de encontrar un equilibrio entre la protección del medio ambiente y el desarrollo urbano del municipio. A partir de estos análisis se busca responder preguntas como:'}
+                  <TextoRico
+                    valor={textoDelPortal(
+                      txt.programaParrafo2,
+                      'Para elaborarlo se analizan las características del territorio, sus recursos naturales y las actividades que se desarrollan en él, con el propósito de encontrar un equilibrio entre la protección del medio ambiente y el desarrollo urbano del municipio. A partir de estos análisis se busca responder preguntas como:',
+                    )}
+                  />
                 </p>
 
                 <ul
@@ -789,7 +806,7 @@ function WhatIsTheProgram(handle: Handle<{ theme?: ThemeData }>) {
                     margin: 0,
                   })}
                 >
-                  {txt.programaParrafo3 || PROGRAMA_PARRAFO3}
+                  <TextoRico valor={textoDelPortal(txt.programaParrafo3, PROGRAMA_PARRAFO3)} />
                 </p>
               </div>
 
@@ -844,41 +861,46 @@ function getTimelineSteps(
     {
       number: '01',
       title: txt.timelinePaso1Titulo || 'Formulación',
-      description:
-        txt.timelinePaso1Desc ||
+      description: textoDelPortal(
+        txt.timelinePaso1Desc,
         'Diagnóstico territorial, caracterización del área y elaboración de la propuesta inicial del programa con participación ciudadana.',
+      ),
       color: primary,
     },
     {
       number: '02',
       title: txt.timelinePaso2Titulo || 'Expedición',
-      description:
-        txt.timelinePaso2Desc ||
+      description: textoDelPortal(
+        txt.timelinePaso2Desc,
         'Consulta pública, revisión técnica, aprobación por el Ayuntamiento y publicación oficial del programa en el Periódico Oficial.',
+      ),
       color: accent,
     },
     {
       number: '03',
       title: txt.timelinePaso3Titulo || 'Ejecución',
-      description:
-        txt.timelinePaso3Desc ||
+      description: textoDelPortal(
+        txt.timelinePaso3Desc,
         'Implementación de acciones, programas e instrumentos para materializar los lineamientos del ordenamiento territorial.',
+      ),
       color: secondary,
     },
     {
       number: '04',
       title: txt.timelinePaso4Titulo || 'Evaluación',
-      description:
-        txt.timelinePaso4Desc ||
+      description: textoDelPortal(
+        txt.timelinePaso4Desc,
         'Monitoreo de indicadores, revisión periódica de avances y verificación del cumplimiento de metas establecidas.',
+      ),
       color: colors.gray700,
     },
     {
       number: '05',
       title: txt.timelinePaso5Titulo || 'Modificación',
-      description:
-        txt.timelinePaso5Desc ||
+      description: textoDelPortal(
+        txt.timelinePaso5Desc,
         'Actualización del programa con base en nuevas condiciones territoriales, ambientales o socioeconómicas del municipio.',
+      ),
       color: primary,
     },
   ]
@@ -1030,7 +1052,7 @@ function TimelineStepCard(handle: Handle<{ step: TimelineStep; isLast: boolean }
               margin: 0,
             })}
           >
-            {step.description}
+            <TextoRico valor={step.description} />
           </p>
         </div>
 
@@ -1156,8 +1178,12 @@ function ParticipationCta(handle: Handle<{ theme?: ThemeData }>) {
               margin: 0,
             })}
           >
-            {txt.ctaParrafo ||
-              'Registra tus observaciones, propuestas y documentos técnicos. Tu participación es fundamental para construir el Programa de Ordenamiento que refleje las necesidades reales del municipio.'}
+            <TextoRico
+              valor={textoDelPortal(
+                txt.ctaParrafo,
+                'Registra tus observaciones, propuestas y documentos técnicos. Tu participación es fundamental para construir el Programa de Ordenamiento que refleje las necesidades reales del municipio.',
+              )}
+            />
           </p>
 
           <div
@@ -1261,12 +1287,14 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
     const accent = c.acento || colors.gold400
     const footerLogo = img.logoFooter || `${basePath}/assets/img/logo/logo-200x60.webp`
     const entidad = txt.footerEntidad || 'Municipio de San Pedro Tlaquepaque'
-    const desc =
-      txt.footerDesc ||
-      'Portal oficial de la Bitácora del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.'
-    const contacto =
-      txt.footerContacto ||
-      'Dirección de Medio Ambiente y Ecología\nH. Ayuntamiento de San Pedro Tlaquepaque\nJalisco, México'
+    const desc = textoDelPortal(
+      txt.footerDesc,
+      'Portal oficial de la Bitácora del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',
+    )
+    const contacto = textoDelPortal(
+      txt.footerContacto,
+      'Dirección de Medio Ambiente y Ecología\nH. Ayuntamiento de San Pedro Tlaquepaque\nJalisco, México',
+    )
     const email = txt.footerEmail || 'ordenamiento@tlaquepaque.gob.mx'
     const copyright =
       txt.footerCopyright ||
@@ -1347,7 +1375,7 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
                   max-width: 360px;
                 `}
               >
-                {desc}
+                <TextoRico valor={desc} />
               </p>
             </div>
 
@@ -1403,7 +1431,7 @@ function SiteFooter(handle: Handle<{ theme?: ThemeData }>) {
                   white-space: pre-line;
                 `}
               >
-                {contacto}
+                <TextoRico valor={contacto} />
               </p>
               <a
                 href={`mailto:${email}`}

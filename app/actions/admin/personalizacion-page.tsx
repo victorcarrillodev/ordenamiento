@@ -5,6 +5,8 @@ import { adminRoutes, routes } from '../../routes.ts'
 import { Button } from '../../ui/button.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
 import { HERO_IMAGEN_POR_DEFECTO, type ThemeData } from '../../ui/civic-horizon.ts'
+import { TextoRico } from '../../ui/texto-rico.tsx'
+import { textoDelPortal } from '../../utils/texto-rico.ts'
 
 export interface AuditLogEntry {
   id: string
@@ -1216,8 +1218,12 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
                       </span>
                     </h2>
                     <p id="mp-subtitulo" class="mp__subtitulo">
-                      {txt.heroSubtitulo ||
-                        'Consulta el proceso, revisa documentos y registra tu participación ciudadana.'}
+                      <TextoRico
+                        valor={textoDelPortal(
+                          txt.heroSubtitulo,
+                          'Consulta el proceso, revisa documentos y registra tu participación ciudadana.',
+                        )}
+                      />
                     </p>
                     <div class="mp__hero-actions">
                       <span
