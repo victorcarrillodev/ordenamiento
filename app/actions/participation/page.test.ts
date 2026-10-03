@@ -35,6 +35,30 @@ describe('página «Registra tu participación»', () => {
     expect(html).not.toContain('participacion.webp')
   })
 
+  it('la foto y la frase se quedan a la vista al bajar por el formulario (columna fija)', async () => {
+    // El formulario mide más de 1600 px: con la frase centrada en una columna igual de alta,
+    // quedaba por debajo del primer vistazo.
+    const html = await paginaDelFormulario()
+    const lateral = html.match(/<aside[^>]*>([\s\S]*?)<\/aside>/)?.[1] ?? ''
+    expect(lateral).toContain('Tu voz ayuda a construir el futuro de San Pedro Tlaquepaque.')
+    const fija = html.match(/\{[^{}]*position: sticky[^{}]*\}/)?.[0] ?? ''
+    expect(fija).toMatch(/top:\s*0/)
+    expect(fija).toMatch(/height:\s*100vh/)
+    // La foto y la frase van dentro de esa columna fija.
+    const clase = html.match(/class="(rmxc-[^"]+)"[^>]*>\s*<img[^>]*territorio\.webp/)?.[1]
+    expect(clase).toBeTruthy()
+    expect(html).toMatch(new RegExp(`\\.${clase}\\s*\\{[^{}]*position: sticky`))
+  })
+
+  it('la columna del formulario declara su propio fondo claro, no el lienzo del navegador', async () => {
+    // Sin fondo propio, el texto oscuro del formulario quedaba sobre negro en un panel
+    // incrustado o con el modo oscuro forzado, y no se leía.
+    const html = await paginaDelFormulario()
+    const regla = html.match(/\{[^{}]*flex: 1 1 60%[^{}]*\}/)?.[0] ?? ''
+    expect(regla).not.toBe('')
+    expect(regla).toMatch(/background:\s*#ffffff/i)
+  })
+
   it('la imagen existe en public/ (una ruta rota dejaría la columna vacía)', () => {
     const imagen = readFileSync(
       new URL('../../../public/assets/img/participacion/territorio.webp', import.meta.url),
