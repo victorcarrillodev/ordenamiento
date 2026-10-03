@@ -13,6 +13,9 @@ import {
   type ActividadPublica,
   type DocumentoPublico,
 } from '../../data/programa.ts'
+import { etapaDeConsulta } from '../../data/consulta.ts'
+import { PAGINA_VACIA, type PaginaPublica } from '../../data/participaciones-publicas.ts'
+import { PROYECTO_VACIO, type ProyectoPublico } from '../../data/proyecto.ts'
 import { routes } from '../../routes.ts'
 import { pideDescarga, respuestaDeArchivo } from '../../utils/archivo-proxy.ts'
 import { claveMes, hoyEnMexico, parsearFecha, parsearMes } from '../../utils/calendario.ts'
@@ -48,21 +51,37 @@ export default createController(routes.poetdum, {
       if (tipo) filtros.set('tipo', tipo)
       if (fase) filtros.set('fase', fase)
 
-      const [theme, proximas, avances, documentos, indicadores] = await Promise.all([
-        getPublicTheme(context.request),
-        actividadesDe(context.request, `vista=proximas&limite=${EN_EL_HUB}`),
-        actividadesDe(context.request, 'vista=avances'),
-        fetchJsonOr<{ documentos: DocumentoPublico[] }>(
-          context.request,
-          `/api/actividades/documentos${filtros.size ? `?${filtros}` : ''}`,
-          { documentos: [] },
-        ).then((d) => d.documentos ?? []),
-        indicadoresDe(context.request),
-      ])
+      // Buscador de «Participaciones y respuestas»: un valor raro se acota, no rompe.
+      const busqueda = (params.get('folio') ?? '').trim().slice(0, 40)
+      const pagina = Number(params.get('pagina'))
+      const paginaPedida = Number.isInteger(pagina) && pagina > 0 ? pagina : 1
+
+      const [theme, proximas, avances, documentos, indicadores, proyecto, participaciones] =
+        await Promise.all([
+          getPublicTheme(context.request),
+          actividadesDe(context.request, `vista=proximas&limite=${EN_EL_HUB}`),
+          actividadesDe(context.request, 'vista=avances'),
+          fetchJsonOr<{ documentos: DocumentoPublico[] }>(
+            context.request,
+            `/api/actividades/documentos${filtros.size ? `?${filtros}` : ''}`,
+            { documentos: [] },
+          ).then((d) => d.documentos ?? []),
+          indicadoresDe(context.request),
+          fetchJsonOr<ProyectoPublico>(context.request, '/api/proyecto', PROYECTO_VACIO),
+          fetchJsonOr<PaginaPublica>(
+            context.request,
+            `/api/participaciones-publicas?page=${paginaPedida}${busqueda ? `&folio=${encodeURIComponent(busqueda)}` : ''}`,
+            PAGINA_VACIA,
+          ),
+        ])
 
       return context.render(
         <PoetdumPage
           theme={theme}
+          etapaConsulta={etapaDeConsulta(theme)}
+          proyecto={{ ...PROYECTO_VACIO, ...proyecto }}
+          participaciones={{ ...PAGINA_VACIA, ...participaciones }}
+          busqueda={busqueda}
           proximas={proximas}
           avancesRecientes={avances.slice(-EN_EL_HUB).reverse()}
           documentos={documentos}
@@ -72,6 +91,39 @@ export default createController(routes.poetdum, {
           indicadores={indicadores}
         />,
       )
+    },
+
+    /**
+     * Proxy de los PDF del Proyecto del Programa. El backend decide si se pueden
+     * ver (con la consulta pendiente solo el panel) y calcula la disposición.
+     */
+    async proyectoArchivo(context) {
+      const descarga = pideDescarga(context.request)
+      const response = await backendFetch(
+        context.request,
+        `/api/proyecto/documentos/${encodeURIComponent(context.params.id)}/archivo${descarga ? '?download=1' : ''}`,
+      )
+      if (!response.ok) return new Response('Not Found', { status: 404 })
+      return respuestaDeArchivo(response, descarga)
+    },
+
+    /**
+     * Proxy de la versión pública de una participación o de su oficio de
+     * respuesta. Solo salen los publicados: para el resto, el backend responde
+     * 404 igual que para un folio que no existe.
+     */
+    async participacionArchivo(context) {
+      const { folio, documento } = context.params
+      if (documento !== 'participacion' && documento !== 'oficio') {
+        return new Response('Not Found', { status: 404 })
+      }
+      const descarga = pideDescarga(context.request)
+      const response = await backendFetch(
+        context.request,
+        `/api/participaciones-publicas/${encodeURIComponent(folio)}/${documento}${descarga ? '?download=1' : ''}`,
+      )
+      if (!response.ok) return new Response('Not Found', { status: 404 })
+      return respuestaDeArchivo(response, descarga)
     },
 
     async avances(context) {

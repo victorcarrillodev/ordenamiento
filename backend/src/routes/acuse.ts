@@ -16,8 +16,14 @@ import { exigirAdmin, matchPath, uuidInvalido, type ManejadorRuta } from './ruta
 /** Un folio es letras, números y guiones: nada que no sea eso llega a la consulta. */
 const FOLIO_RE = /^[A-Za-z0-9-]{3,60}$/
 
-/** Descargas del acuse por IP y minuto: la firma ya impide adivinar, esto frena el abuso de CPU. */
-const MAX_DESCARGAS_POR_MINUTO = 30
+/**
+ * Descargas del acuse por minuto. La firma ya impide adivinar; esto es un
+ * cortafuegos para el CPU (generar el PDF cuesta ~0.1 s). Sin TRUST_PROXY el
+ * backend no distingue visitantes (todos llegan del contenedor web), así que el
+ * tope es de todo el servidor y por eso es holgado: tras una fecha límite cientos
+ * de personas descargan su acuse a la vez, y no deben toparse unas con otras.
+ */
+const MAX_DESCARGAS_POR_MINUTO = 300
 
 async function respuestaDelAcuse(
   datos: NonNullable<Awaited<ReturnType<typeof datosDeParticipacion>>>,

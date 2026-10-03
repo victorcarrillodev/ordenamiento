@@ -1,6 +1,9 @@
 import { css, type Handle } from 'remix/ui'
 
+import type { EtapaConsulta } from '../../data/consulta.ts'
+import type { PaginaPublica } from '../../data/participaciones-publicas.ts'
 import type { ActividadPublica, DocumentoPublico } from '../../data/programa.ts'
+import type { ProyectoPublico } from '../../data/proyecto.ts'
 import { routes } from '../../routes.ts'
 import {
   colors,
@@ -19,6 +22,9 @@ import {
 } from './programa-layout.tsx'
 import { Mapa } from './public/mapa.tsx'
 import { AvanceItem } from './sections/avances.tsx'
+import { ConsultaConcluidaAviso } from './sections/consulta-concluida.tsx'
+import { ParticipacionesSection } from './sections/participaciones.tsx'
+import { ProyectoSection } from './sections/proyecto.tsx'
 import { DescargasSection } from './sections/descargas.tsx'
 import { DocumentosSection } from './sections/documentos.tsx'
 import { IndicadoresLista, SeguimientoPendiente } from './sections/seguimiento.tsx'
@@ -34,6 +40,12 @@ export interface PoetdumPageProps {
   fase: string
   programaAprobado: boolean
   indicadores: Indicador[]
+  /** Etapa de la consulta pública: decide si el Proyecto se ve y si se muestra el aviso de cierre. */
+  etapaConsulta: EtapaConsulta
+  proyecto: ProyectoPublico
+  participaciones: PaginaPublica
+  /** Folio buscado en «Participaciones y respuestas». */
+  busqueda: string
 }
 
 const chipBase = css({
@@ -103,6 +115,10 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
       fase,
       programaAprobado,
       indicadores,
+      etapaConsulta,
+      proyecto,
+      participaciones,
+      busqueda,
     } = handle.props
     return (
       <ProgramaLayout
@@ -182,6 +198,10 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
             </div>
           </div>
         </section>
+
+        <ConsultaConcluidaAviso visible={etapaConsulta === 'concluida'} />
+        <ProyectoSection proyecto={proyecto} />
+        <ParticipacionesSection pagina={participaciones} busqueda={busqueda} />
 
         <section id="proximas" aria-labelledby="proximas-titulo" mix={seccionStyle}>
           <div mix={cabeceraSeccionStyle}>

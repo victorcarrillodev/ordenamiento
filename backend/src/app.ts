@@ -4,6 +4,7 @@ import { rutasConsulta } from './routes/consulta.ts'
 import { rutasDocumentos } from './routes/documentos.ts'
 import { rutasFormatos } from './routes/formatos.ts'
 import { rutasProyecto } from './routes/proyecto.ts'
+import { rutasPublicas } from './routes/publicas.ts'
 import { matchPath, type ContextoRuta, type ManejadorRuta } from './routes/ruta.ts'
 import { readFile, rm } from 'node:fs/promises'
 import { join, isAbsolute } from 'node:path'
@@ -446,6 +447,7 @@ const MANEJADORES: ManejadorRuta[] = [
   rutasFormatos,
   rutasDocumentos,
   rutasProyecto,
+  rutasPublicas,
 ]
 
 /**

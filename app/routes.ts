@@ -42,6 +42,10 @@ export const routes = route({
       // así que redirigen al archivo equivalente.
       foto: get(`${basePath}/poetdum/actividades/:id/fotos/:fid`),
     },
+    // Proyecto del Programa y «Participaciones y respuestas»: los PDF que el área
+    // responsable publicó. El navegador no llega al backend: estas rutas los proxean.
+    proyectoArchivo: get(`${basePath}/poetdum/proyecto/:id/archivo`),
+    participacionArchivo: get(`${basePath}/poetdum/participaciones/:folio/:documento`),
     documentos: {
       show: get(`${basePath}/poetdum/documentos`),
       archivo: get(`${basePath}/poetdum/documentos/:id/archivo`),
