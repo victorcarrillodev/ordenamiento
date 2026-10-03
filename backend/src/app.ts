@@ -131,9 +131,9 @@ import {
 } from './services/users.ts'
 import {
   listarSesiones,
-  registrarActividad,
   registrarCierreSesion,
   registrarInicioSesion,
+  registrarPresencia,
   resumenSesiones,
 } from './services/sesiones.ts'
 import {
@@ -243,13 +243,11 @@ async function currentUser(request: Request): Promise<SessionUser | null> {
   const corte = user.sessionsValidFrom ?? 0
   if (corte > 0 && (emitido === null || emitido < corte)) return null
 
-  // Señal de vida para la bitácora. El servicio ya limita la frecuencia de
-  // escritura, y va sin `await` para no sumar una ida a la base a cada
-  // petición del panel.
-  if (emitido !== null) {
-    void registrarActividad(user.id, emitido).catch(() => {})
-  }
-
+  // Esta función NO anota actividad en la bitácora de sesiones. Cualquier
+  // petición con la cookie —una descarga, una carga de imagen, la portada pública
+  // de alguien con la sesión abierta— llegaba aquí y contaba como «estuvo
+  // conectado». La presencia la avisa el panel de forma explícita, solo cuando la
+  // persona lo tiene a la vista y está haciendo algo (POST /api/sessions/ping).
   return user
 }
 
@@ -1158,6 +1156,22 @@ export async function handleRequest(request: Request): Promise<Response> {
     }
 
     return json({ ok: true, pendiente: resultado.nuevoEmail, expiraMinutos: EMAIL_TTL_MINUTOS })
+  }
+
+  // ── Presencia en el panel ────────────────────────────────────────────
+  // La manda el navegador mientras la persona tiene una pestaña del panel a la
+  // vista y está haciendo algo (public/presencia.js). Es lo único que suma tiempo
+  // de uso y mantiene a la sesión «en línea». No lleva cuerpo: el navegador no
+  // dice cuánto tiempo estuvo, solo que sigue ahí; el servidor cuenta con su reloj.
+  if (method === 'POST' && pathname === '/api/sessions/ping') {
+    const authError = requireAuth()
+    if (authError) return authError
+    const token = readCookie(request.headers.get('cookie'), 'ordenamiento_session')
+    const emitido = token ? sessionIssuedAt(token) : null
+    if (emitido !== null) {
+      anotarSesion(registrarPresencia(user!.id, emitido), 'sesiones.presencia')
+    }
+    return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } })
   }
 
   // ── Bitácora de sesiones — solo admin ────────────────────────────────

@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 
 import { sql } from '../db/pool.ts'
 import type { Rol } from './roles.ts'
+import { DURACION_SESION_S } from './sesion-duracion.ts'
 
 /**
  * SESSION_SECRET firma las cookies de sesión con HMAC. Si su valor fuera
@@ -16,7 +17,7 @@ if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
   )
 }
 const SECRET = process.env.SESSION_SECRET ?? 'cambia-este-secreto-en-produccion'
-const MAX_AGE_SECONDS = 60 * 60 * 24 * 7 // 7 días
+const MAX_AGE_SECONDS = DURACION_SESION_S // 7 días
 
 function sign(value: string): string {
   return createHmac('sha256', SECRET).update(value).digest('base64url')

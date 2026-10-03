@@ -70,19 +70,30 @@ CREATE INDEX IF NOT EXISTS idx_email_changes_user ON email_changes (user_id);
 -- ---------------------------------------------------------------------------
 -- Una fila por sesión iniciada. `issued_at` es la marca que lleva dentro la
 -- cookie firmada, así que identifica la sesión sin guardar el token.
--- `last_seen_at` se refresca con la actividad; el tiempo conectado es
--- COALESCE(ended_at, last_seen_at) - started_at.
+--
+-- El tiempo NO es de inicio a cierre: la sesión sigue abierta (la cookie dura 7
+-- días) aunque la persona se vaya sin salir. Se mide la presencia:
+--  · `last_seen_at`   último aviso de presencia del panel (pestaña a la vista y
+--                     persona haciendo algo). Con él se sabe si está en línea.
+--  · `active_seconds` suma del tiempo entre avisos seguidos; un hueco largo es
+--                     una ausencia y no se cuenta. NULL en las sesiones
+--                     anteriores a la medición: no se inventa un tiempo.
+--  · `ended_at`       solo cuando la persona pulsó «Cerrar sesión».
+-- El estado (en línea, inactiva, cerrada, expirada, revocada) se calcula al
+-- consultar, porque cambia con el paso del tiempo (ver services/sesiones.ts).
 CREATE TABLE IF NOT EXISTS user_sessions (
-  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  issued_at    TIMESTAMPTZ NOT NULL,
-  started_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  ended_at     TIMESTAMPTZ,
-  ip           TEXT NOT NULL DEFAULT '',
-  user_agent   TEXT NOT NULL DEFAULT '',
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  issued_at      TIMESTAMPTZ NOT NULL,
+  started_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_seen_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  ended_at       TIMESTAMPTZ,
+  active_seconds DOUBLE PRECISION,
+  ip             TEXT NOT NULL DEFAULT '',
+  user_agent     TEXT NOT NULL DEFAULT '',
   UNIQUE (user_id, issued_at)
 );
+ALTER TABLE user_sessions ADD COLUMN IF NOT EXISTS active_seconds DOUBLE PRECISION;
 CREATE INDEX IF NOT EXISTS idx_user_sessions_user  ON user_sessions (user_id);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_fecha ON user_sessions (started_at DESC);
 
