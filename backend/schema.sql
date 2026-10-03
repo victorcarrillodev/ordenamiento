@@ -278,6 +278,28 @@ CREATE TABLE IF NOT EXISTS participacion_envios (
 CREATE INDEX IF NOT EXISTS idx_participacion_envios ON participacion_envios (participation_id, created_at DESC);
 
 -- ---------------------------------------------------------------------------
+-- Proyecto del Programa (documentos de la consulta pública)
+-- ---------------------------------------------------------------------------
+-- El documento técnico y los documentos gráficos del Proyecto, en PDF. Se pueden
+-- cargar, nombrar y ordenar antes de iniciar la consulta: el portal los muestra
+-- solo cuando la consulta está abierta o concluida (ver services/consulta.ts).
+CREATE TABLE IF NOT EXISTS proyecto_documentos (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  seccion         TEXT NOT NULL,
+  titulo          TEXT NOT NULL,
+  nombre_original TEXT NOT NULL,
+  mime            TEXT NOT NULL DEFAULT 'application/pdf',
+  size            BIGINT NOT NULL DEFAULT 0,
+  ruta_local      TEXT NOT NULL,
+  orden           INT NOT NULL DEFAULT 0,
+  subido_por      UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT proyecto_documentos_seccion_check CHECK (seccion IN ('tecnico','grafico'))
+);
+CREATE INDEX IF NOT EXISTS idx_proyecto_documentos_orden ON proyecto_documentos (seccion, orden, created_at);
+
+-- ---------------------------------------------------------------------------
 -- Adjuntos (archivos subidos: PDF, DWG, JPG, SHX, ...) – relacional
 -- ---------------------------------------------------------------------------
 

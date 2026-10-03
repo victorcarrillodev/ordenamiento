@@ -89,6 +89,9 @@ export const adminRoutes = route({
   indicadores: form(`${basePath}/admin/indicadores`),
   // Inicio y cierre de la consulta pública.
   consulta: form(`${basePath}/admin/consulta`),
+  // Documentos del Proyecto del Programa: una acción con varias intenciones y el archivo aparte.
+  proyecto: form(`${basePath}/admin/consulta/proyecto`),
+  proyectoArchivo: get(`${basePath}/admin/consulta/proyecto/:id/archivo`),
   estadisticas: get(`${basePath}/admin/estadisticas`),
   sesiones: get(`${basePath}/admin/sesiones`),
   cuenta: form(`${basePath}/admin/cuenta`),

@@ -1,11 +1,13 @@
 import type { Handle } from 'remix/ui'
 
 import type { EtapaConsulta } from '../../data/consulta.ts'
+import type { ProyectoPublico } from '../../data/proyecto.ts'
 import { routes } from '../../routes.ts'
 import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
 import { Button } from '../../ui/button.tsx'
+import { PanelProyecto } from './proyecto-panel.tsx'
 
 export interface EstadoConsultaAdmin {
   etapa: EtapaConsulta
@@ -16,9 +18,20 @@ export interface EstadoConsultaAdmin {
 export interface ConsultaPageProps {
   user: { name: string; role: string }
   estado: EstadoConsultaAdmin
+  /** Documentos del Proyecto del Programa; el portal los muestra con la consulta abierta o concluida. */
+  proyecto: ProyectoPublico
   /** Etapa a la que se acaba de pasar, para confirmarlo. */
   cambio?: EtapaConsulta
+  /** Acción que se acaba de hacer sobre los documentos del Proyecto, para confirmarla. */
+  proyectoCambio?: string
   error?: string
+}
+
+const CONFIRMACION_PROYECTO: Record<string, string> = {
+  subir: 'Documentos cargados al Proyecto del Programa.',
+  renombrar: 'Nombre del documento actualizado.',
+  mover: 'Orden actualizado.',
+  eliminar: 'Documento quitado del Proyecto del Programa.',
 }
 
 const TITULO: Record<EtapaConsulta, string> = {
@@ -101,7 +114,7 @@ function Accion(
 
 export function ConsultaPage(handle: Handle<ConsultaPageProps>) {
   return () => {
-    const { user, estado, cambio, error } = handle.props
+    const { user, estado, proyecto, cambio, proyectoCambio, error } = handle.props
     const { etapa } = estado
     return (
       <AdminLayout
@@ -122,6 +135,9 @@ export function ConsultaPage(handle: Handle<ConsultaPageProps>) {
       >
         {error ? <AdminAlert type="error" message={error} /> : null}
         {cambio ? <AdminAlert type="success" message={CONFIRMACION[cambio]} /> : null}
+        {proyectoCambio && CONFIRMACION_PROYECTO[proyectoCambio] && !error ? (
+          <AdminAlert type="success" message={CONFIRMACION_PROYECTO[proyectoCambio]} />
+        ) : null}
 
         <section
           class={`panel act-programa${etapa === 'abierta' ? ' act-programa--aprobado' : ''}`}
@@ -186,6 +202,12 @@ export function ConsultaPage(handle: Handle<ConsultaPageProps>) {
             ))}
           </div>
         </section>
+
+        <PanelProyecto
+          visible={proyecto.visible}
+          tecnico={proyecto.tecnico}
+          grafico={proyecto.grafico}
+        />
       </AdminLayout>
     )
   }

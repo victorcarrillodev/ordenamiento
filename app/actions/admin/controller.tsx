@@ -363,6 +363,20 @@ export default createController(adminRoutes, {
       )
     },
 
+    /** Un documento del Proyecto del Programa: el panel lo revisa aunque el portal aún no lo muestre. */
+    async proyectoArchivo(context) {
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
+
+      const descarga = pideDescarga(context.request)
+      const response = await backendFetch(
+        context.request,
+        `/api/proyecto/documentos/${encodeURIComponent(context.params.id)}/archivo${descarga ? '?download=1' : ''}`,
+      )
+      if (!response.ok) return new Response('Not Found', { status: response.status })
+      return respuestaDeArchivo(response, descarga)
+    },
+
     /** Un documento PDF de la participación: se ve en el visor o, con ?download=1, se descarga. */
     async participacionDocumento(context) {
       const user = await requireAdminUser(context.request)

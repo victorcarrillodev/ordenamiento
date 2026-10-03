@@ -9,29 +9,25 @@
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { backendFetch, fetchJsonOr, olvidarTemaPublico, requireAdminUser } from '../../backend.ts'
+import { backendFetch, olvidarTemaPublico, requireAdminUser } from '../../backend.ts'
 import { esEtapaConsulta, type EtapaConsulta } from '../../data/consulta.ts'
 import { adminRoutes } from '../../routes.ts'
-import { ConsultaPage, type EstadoConsultaAdmin } from './consulta-page.tsx'
-
-const ESTADO_VACIO: EstadoConsultaAdmin = { etapa: 'pendiente', inicio: null, cierre: null }
+import { datosDeConsulta } from './consulta-datos.ts'
+import { ConsultaPage } from './consulta-page.tsx'
 
 export default createController(adminRoutes.consulta, {
   actions: {
     async index(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
-      const cambio = new URL(context.request.url).searchParams.get('cambio')
-      const estado = await fetchJsonOr<EstadoConsultaAdmin>(
-        context.request,
-        '/api/consulta',
-        ESTADO_VACIO,
-      )
+      const params = new URL(context.request.url).searchParams
+      const cambio = params.get('cambio')
       return context.render(
         <ConsultaPage
           user={user}
-          estado={estado}
+          {...await datosDeConsulta(context.request)}
           cambio={esEtapaConsulta(cambio) ? (cambio as EtapaConsulta) : undefined}
+          proyectoCambio={params.get('proyecto') ?? undefined}
         />,
       )
     },
@@ -42,14 +38,13 @@ export default createController(adminRoutes.consulta, {
 
       const formData = await context.request.formData()
       const etapa = String(formData.get('etapa') ?? '')
-      const estado = await fetchJsonOr<EstadoConsultaAdmin>(
-        context.request,
-        '/api/consulta',
-        ESTADO_VACIO,
-      )
       if (!esEtapaConsulta(etapa)) {
         return context.render(
-          <ConsultaPage user={user} estado={estado} error="Elige una etapa válida." />,
+          <ConsultaPage
+            user={user}
+            {...await datosDeConsulta(context.request)}
+            error="Elige una etapa válida."
+          />,
           { status: 400 },
         )
       }
@@ -64,7 +59,7 @@ export default createController(adminRoutes.consulta, {
         return context.render(
           <ConsultaPage
             user={user}
-            estado={estado}
+            {...await datosDeConsulta(context.request)}
             error={data.error ?? 'No se pudo cambiar la etapa de la consulta.'}
           />,
           { status: response.status },
