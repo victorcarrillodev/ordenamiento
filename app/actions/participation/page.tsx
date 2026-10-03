@@ -37,27 +37,36 @@ const splitStyle = css({
   '& *, & *::before, & *::after': { boxSizing: 'border-box' },
 })
 
+/**
+ * Columna lateral: arriba la fotografía del territorio —a su tamaño, sin
+ * recortarla ni ampliarla, para que se vea nítida— y abajo la frase sobre el
+ * color institucional, con el contraste de texto blanco sobre guinda.
+ */
 const imagePanelStyle = css({
-  position: 'relative',
   flex: '1 1 40%',
   minHeight: '100vh',
-  backgroundImage: `url(${basePath}/assets/img/participacion/participacion.webp)`,
-  backgroundSize: 'cover',
-  backgroundPosition: 'center 35%',
+  display: 'flex',
+  flexDirection: 'column',
+  background: `linear-gradient(180deg, ${colors.burgundy900} 0%, #5c1428 100%)`,
   '@media (max-width: 860px)': { display: 'none' },
 })
 
-const imageOverlayStyle = css({
-  position: 'absolute',
-  inset: 0,
-  background: `linear-gradient(200deg, rgba(15,17,23,0.15) 0%, rgba(140,29,61,0.55) 65%, rgba(15,17,23,0.75) 100%)`,
+const imageFotoStyle = css({
+  display: 'block',
+  width: '100%',
+  aspectRatio: '860 / 516',
+  objectFit: 'cover',
+  // Deja libre la barra de navegación fija, que si no tapa la parte alta de la foto.
+  marginTop: NAVBAR_ALTURA,
+  borderBottom: `4px solid ${colors.gold300}`,
 })
 
 const imageCaptionStyle = css({
-  position: 'absolute',
-  bottom: '40px',
-  left: '40px',
-  right: '40px',
+  flex: '1 1 auto',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  padding: '40px',
   color: '#ffffff',
 })
 
@@ -94,13 +103,19 @@ export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
       >
         <NavBar theme={theme} />
         <div mix={splitStyle}>
-          <div mix={imagePanelStyle} role="img" aria-label="Paisaje de San Pedro Tlaquepaque">
-            <div mix={imageOverlayStyle} aria-hidden="true" />
-            <div mix={imageCaptionStyle} aria-hidden="true">
+          <aside mix={imagePanelStyle}>
+            <img
+              src={`${basePath}/assets/img/participacion/territorio.webp`}
+              alt="Vista aérea del centro de San Pedro Tlaquepaque, con la Parroquia de San Pedro y el jardín"
+              width="860"
+              height="516"
+              mix={imageFotoStyle}
+            />
+            <div mix={imageCaptionStyle}>
               <span
                 mix={css({
                   fontFamily: FONT_STACK,
-                  fontSize: '11px',
+                  fontSize: '12px',
                   fontWeight: 700,
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
@@ -112,17 +127,17 @@ export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
               <p
                 mix={css({
                   fontFamily: FONT_STACK,
-                  fontSize: '20px',
-                  fontWeight: 600,
-                  lineHeight: 1.4,
-                  margin: '10px 0 0',
-                  maxWidth: '360px',
+                  fontSize: 'clamp(24px, 2.4vw, 32px)',
+                  fontWeight: 700,
+                  lineHeight: 1.3,
+                  margin: '12px 0 0',
+                  maxWidth: '420px',
                 })}
               >
-                Tu voz ayuda a construir el territorio que queremos para San Pedro Tlaquepaque.
+                Tu voz ayuda a construir el futuro de San Pedro Tlaquepaque.
               </p>
             </div>
-          </div>
+          </aside>
 
           <div mix={formPanelStyle}>
             <div mix={formShellStyle}>
