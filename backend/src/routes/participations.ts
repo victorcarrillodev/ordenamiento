@@ -16,6 +16,13 @@ import { leerEstadoConsulta, type EtapaConsulta } from '../services/consulta.ts'
 import type { Alcance } from '../services/participacion-campos.ts'
 import { validateUpload } from '../services/upload-guard.ts'
 import { firmarAcuse } from '../services/acuse-token.ts'
+import {
+  escribirPdf,
+  guardarDocumento,
+  validarPdf,
+  type ResultadoPdf,
+} from '../services/documentos-participacion.ts'
+import { marcarFormatoRecibido, obtenerFormato, type Formato } from '../services/formatos.ts'
 import { nextFolio } from '../services/folio.ts'
 import { ingestParticipation, type IngestFile } from '../services/ingest.ts'
 import { enviarAcuseReciboParticipacion, mailConfigurado } from '../services/mail.ts'
@@ -26,6 +33,7 @@ import {
   type Origen,
 } from '../services/participations.ts'
 import { json, bodyTooLarge, logger } from '../utils.ts'
+import { esUuid } from './ruta.ts'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
 
@@ -76,11 +84,50 @@ export async function handleCreateParticipation(
     return json({ error: 'Requiere rol admin' }, 403)
   }
 
-  // Solo se reciben participaciones mientras la consulta está abierta: antes de
-  // iniciar no hay a qué responder y después de concluir el periodo se cerró.
-  const etapa = await leerEtapa()
-  if (etapa !== 'abierta') {
-    return json({ error: MENSAJE_SIN_RECEPCION[etapa], codigo: 'consulta_no_abierta', etapa }, 403)
+  // Un formato que se imprimió para llenar a mano y ya regresó se registra con el
+  // folio que ya tiene: no genera uno nuevo.
+  const formatoId = String(form.get('formato_id') ?? '').trim()
+  let formato: Formato | null = null
+  let escaneado: Extract<ResultadoPdf, { ok: true }> | null = null
+  if (formatoId) {
+    if (origin !== 'fisica') {
+      return json({ error: 'Solo una participación presencial puede venir de un formato' }, 400)
+    }
+    if (!esUuid(formatoId)) return json({ error: 'Formato inválido' }, 400)
+    formato = await obtenerFormato(formatoId)
+    if (!formato) return json({ error: 'El formato no existe' }, 404)
+    if (!formato.pendiente) {
+      return json(
+        {
+          error: `El formato ${formato.folio} ya se registró como participación`,
+          folio: formato.folio,
+        },
+        409,
+      )
+    }
+    // El formato escaneado es la constancia del escrito de puño y letra: sin él
+    // no se registra, porque quedaría una participación sin su documento.
+    const archivo = form.get('escaneado')
+    if (!(archivo instanceof File) || archivo.size === 0) {
+      return json({ error: 'Carga el formato escaneado en PDF' }, 422)
+    }
+    const pdf = await validarPdf(archivo)
+    if (!pdf.ok) return json({ error: pdf.error }, pdf.status)
+    escaneado = pdf
+  }
+
+  // Solo se reciben participaciones nuevas mientras la consulta está abierta:
+  // antes de iniciar no hay a qué responder y después de concluir el periodo se
+  // cerró. Un formato que se generó con la consulta abierta sí se puede registrar
+  // al regresar, aunque ya haya concluido: la persona participó en tiempo.
+  if (!formato) {
+    const etapa = await leerEtapa()
+    if (etapa !== 'abierta') {
+      return json(
+        { error: MENSAJE_SIN_RECEPCION[etapa], codigo: 'consulta_no_abierta', etapa },
+        403,
+      )
+    }
   }
 
   // Consentimiento ciudadano obligatorio para origen digital
@@ -148,7 +195,14 @@ export async function handleCreateParticipation(
       })
     }
 
-    const folio = await nextFolio()
+    const folio = formato?.folio ?? (await nextFolio())
+
+    // El formato escaneado, junto a los adjuntos: si algo falla, se borra con ellos.
+    let rutaEscaneado: string | null = null
+    if (escaneado) {
+      rutaEscaneado = await escribirPdf(escaneado.buffer, escaneado.nombre)
+      escritos.push(rutaEscaneado)
+    }
 
     const camposFormulario: Record<string, string> = {
       nombre: campos.nombre,
@@ -200,10 +254,25 @@ export async function handleCreateParticipation(
           latitud: campos.latitud,
           longitud: campos.longitud,
           observacion: camposFormulario.observacion,
+          captura: formato ? 'manuscrita' : origin === 'fisica' ? 'asistida' : '',
           creadoPor: user?.id,
         },
         folio,
       )
+
+      if (formato && escaneado && rutaEscaneado) {
+        if (!(await marcarFormatoRecibido(tx, formato.id, creada.participationId))) {
+          throw Object.assign(new Error('Ese formato ya se registró como participación'), {
+            status: 409,
+          })
+        }
+        await guardarDocumento(tx, creada.participationId, 'formato_escaneado', {
+          nombreOriginal: escaneado.nombre,
+          size: escaneado.buffer.length,
+          rutaLocal: rutaEscaneado,
+          subidoPor: user?.id,
+        })
+      }
 
       const ingest = await ingestParticipation(
         tx,
@@ -234,6 +303,12 @@ export async function handleCreateParticipation(
       },
       201,
     )
+  } catch (err) {
+    // Un rechazo previsto (el formato ya se registró, por ejemplo) se explica; lo demás es un 500.
+    const status = (err as { status?: number }).status
+    if (status && status >= 400 && status < 500)
+      return json({ error: (err as Error).message }, status)
+    throw err
   } finally {
     // Cubre tanto la excepción como los `return` de rechazo (400/415).
     if (!persistido) {

@@ -12,7 +12,8 @@ import {
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { backendFetch, requireAdminUser } from '../../backend.ts'
+import { backendFetch, fetchJsonOr, requireAdminUser } from '../../backend.ts'
+import { avisoSinRecepcion, esEtapaConsulta } from '../../data/consulta.ts'
 import { cuerpoParaBackend, primerError, validarParticipacion } from '../../data/participacion.ts'
 import { adminRoutes } from '../../routes.ts'
 import {
@@ -31,6 +32,26 @@ import { NuevaPage } from './nueva-page.tsx'
  */
 const MULTIPART_OVERHEAD_BYTES = 64 * 1024
 
+/** El formato pendiente con ese id, si existe y todavía no regresa. */
+async function formatoPendiente(request: Request, id: string | null | undefined) {
+  if (!id) return undefined
+  const { formatos } = await fetchJsonOr<{ formatos: Array<{ id: string; folio: string }> }>(
+    request,
+    '/api/formatos?estado=pendiente',
+    { formatos: [] },
+  )
+  const formato = (formatos ?? []).find((f) => f.id === id)
+  return formato ? { id: formato.id, folio: formato.folio } : undefined
+}
+
+/** Qué se muestra si la consulta no recibe participaciones nuevas (null si sí las recibe). */
+async function avisoDeEtapa(request: Request) {
+  const { etapa } = await fetchJsonOr<{ etapa: string }>(request, '/api/consulta', {
+    etapa: 'pendiente',
+  })
+  return esEtapaConsulta(etapa) ? avisoSinRecepcion(etapa) : null
+}
+
 export default createController(adminRoutes.participacionNueva, {
   actions: {
     async index(context) {
@@ -38,7 +59,32 @@ export default createController(adminRoutes.participacionNueva, {
       if (user instanceof Response) return user
       const url = new URL(context.request.url)
       const registrado = url.searchParams.get('registrado') ?? undefined
-      return context.render(<NuevaPage user={user} folioRegistrado={registrado} />)
+      const participacionId = url.searchParams.get('id') ?? undefined
+      const formatoId = url.searchParams.get('formato')
+      const formato = await formatoPendiente(context.request, formatoId)
+      if (formatoId && !formato && !registrado) {
+        return context.render(
+          <NuevaPage
+            user={user}
+            error="Ese formato no existe o ya se registró como participación."
+            aviso={{
+              titulo: 'Formato no disponible',
+              texto: 'Elige otro en la lista de formatos pendientes.',
+            }}
+          />,
+          { status: 404 },
+        )
+      }
+      const aviso = registrado ? null : await avisoDeEtapa(context.request)
+      return context.render(
+        <NuevaPage
+          user={user}
+          folioRegistrado={registrado}
+          participacionId={participacionId}
+          formato={formato}
+          aviso={aviso ?? undefined}
+        />,
+      )
     },
 
     async action(context) {
@@ -48,7 +94,8 @@ export default createController(adminRoutes.participacionNueva, {
       let formData: FormData
       try {
         formData = await parseFormData(context.request, {
-          maxFiles: MAX_FILES,
+          // Los anexos y, si viene de un formato, el escaneado.
+          maxFiles: MAX_FILES + 1,
           maxFileSize: MAX_FILE_BYTES,
           maxTotalSize: MAX_TOTAL_BYTES + MULTIPART_OVERHEAD_BYTES,
         })
@@ -88,9 +135,28 @@ export default createController(adminRoutes.participacionNueva, {
 
       const body = cuerpoParaBackend(valores)
       body.set('origen', 'fisica')
-      for (const archivo of formData.getAll('archivos')) {
-        if (archivo instanceof File && archivo.size > 0) {
-          body.append('archivos', archivo, archivo.name)
+      const anexos = formData
+        .getAll('archivos')
+        .filter((a): a is File => a instanceof File && a.size > 0)
+      if (anexos.length > MAX_FILES) {
+        return context.render(
+          <NuevaPage
+            user={user}
+            error={`Máximo ${MAX_FILES} archivos por participación`}
+            values={valores}
+          />,
+          { status: 413 },
+        )
+      }
+      for (const anexo of anexos) body.append('archivos', anexo, anexo.name)
+
+      // Lo que regresó de un formato llenado a mano: mismo folio, con su escaneado.
+      const formatoId = String(formData.get('formato_id') ?? '').trim()
+      if (formatoId) {
+        body.set('formato_id', formatoId)
+        const escaneado = formData.get('escaneado')
+        if (escaneado instanceof File && escaneado.size > 0) {
+          body.set('escaneado', escaneado, escaneado.name)
         }
       }
 
@@ -106,16 +172,17 @@ export default createController(adminRoutes.participacionNueva, {
             user={user}
             error={data.error ?? 'No se pudo guardar la participación'}
             values={valores}
+            formato={await formatoPendiente(context.request, formatoId)}
           />,
           { status: response.status },
         )
       }
 
-      const created = (await response.json().catch(() => ({}))) as { folio?: string }
-      return redirect(
-        adminRoutes.participacionNueva.index.href() +
-          (created.folio ? `?registrado=${encodeURIComponent(created.folio)}` : ''),
-      )
+      const created = (await response.json().catch(() => ({}))) as { folio?: string; id?: string }
+      const destino = new URLSearchParams()
+      if (created.folio) destino.set('registrado', created.folio)
+      if (created.id) destino.set('id', created.id)
+      return redirect(`${adminRoutes.participacionNueva.index.href()}?${destino}`)
     },
   },
 })

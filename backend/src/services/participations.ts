@@ -35,6 +35,8 @@ export interface ParticipationInput {
   tematica_otra?: string
   /** `municipio` (todo el municipio) o `especifico` (un lugar o predio). */
   alcance_ubicacion?: Alcance
+  /** Presenciales: `asistida` (el personal capturó) o `manuscrita` (formato llenado a mano). */
+  captura?: 'asistida' | 'manuscrita' | ''
   creadoPor?: string
 }
 
@@ -63,7 +65,7 @@ export async function createParticipation(
       codigo_postal, direccion_origen, domicilio, municipio_participante,
       consentimiento_en, consentimiento_version,
       institucion, ocupacion, latitud, longitud, observacion, estado,
-      fuente, fuente_otra, genero, tematica, tematica_otra, alcance_ubicacion, creado_por
+      fuente, fuente_otra, genero, tematica, tematica_otra, alcance_ubicacion, captura, creado_por
     )
     VALUES (
       ${folio},
@@ -92,6 +94,7 @@ export async function createParticipation(
       ${input.tematica ?? ''},
       ${input.tematica_otra ?? ''},
       ${input.alcance_ubicacion ?? 'especifico'},
+      ${input.captura ?? ''},
       ${input.creadoPor ?? null}
     )
     RETURNING id

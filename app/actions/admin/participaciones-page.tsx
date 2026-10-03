@@ -100,11 +100,8 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
         }
         actions={
           origen === 'fisica' ? (
-            <a
-              class="btn btn--green"
-              href={`${adminRoutes.participacionNueva.index.href()}?origen=fisica`}
-            >
-              <Icon name="mdi:plus" size={16} /> Capturar participación
+            <a class="btn btn--green" href={adminRoutes.presencial.href()}>
+              <Icon name="mdi:plus" size={16} /> Registrar participación
             </a>
           ) : null
         }

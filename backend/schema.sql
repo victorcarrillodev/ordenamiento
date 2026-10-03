@@ -176,6 +176,86 @@ ALTER TABLE participations ADD COLUMN IF NOT EXISTS busqueda_tsv tsvector
 
 CREATE INDEX IF NOT EXISTS idx_participations_tsv ON participations USING gin (busqueda_tsv);
 
+-- Cómo se recibió una participación presencial: `asistida` (el personal capturó
+-- lo que la persona dictó) o `manuscrita` (la persona llenó a mano el formato y
+-- después se registró). Vacío en las digitales.
+ALTER TABLE participations ADD COLUMN IF NOT EXISTS captura TEXT NOT NULL DEFAULT '';
+
+-- ---------------------------------------------------------------------------
+-- Folios y formatos para llenar a mano
+-- ---------------------------------------------------------------------------
+-- El folio sale de una secuencia, no de contar filas: contar repetía folios
+-- cuando se borraba una participación y no sabía de los folios ya reservados
+-- para un formato que todavía no regresa.
+
+CREATE SEQUENCE IF NOT EXISTS folios_participacion;
+
+-- Formato de participación que se imprime con su folio para que la persona lo
+-- llene de su puño y letra. El folio queda reservado desde que se genera y
+-- permanece «Pendiente de recepción» (participation_id nulo) hasta que se
+-- registra la participación efectivamente recibida, con el MISMO folio.
+CREATE TABLE IF NOT EXISTS formatos_presenciales (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  folio            TEXT NOT NULL UNIQUE,
+  generado_por     UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  participation_id UUID UNIQUE REFERENCES participations(id) ON DELETE SET NULL,
+  recibido_en      TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_formatos_pendientes ON formatos_presenciales (created_at DESC)
+  WHERE participation_id IS NULL;
+
+-- La secuencia nunca debe quedar por detrás de un folio ya emitido: al estrenar
+-- la secuencia en una base con participaciones se coloca en el mayor número
+-- existente. Solo avanza, así que repetirlo en cada arranque no hace nada.
+DO $$
+DECLARE
+  maximo bigint;
+  actual bigint;
+BEGIN
+  SELECT COALESCE(MAX((regexp_match(folio, '(\d+)$'))[1]::bigint), 0) INTO maximo
+  FROM (SELECT folio FROM participations UNION ALL SELECT folio FROM formatos_presenciales) f;
+  SELECT CASE WHEN is_called THEN last_value ELSE 0 END INTO actual FROM folios_participacion;
+  IF maximo > actual THEN
+    PERFORM setval('folios_participacion', maximo, true);
+  END IF;
+END
+$$;
+
+-- ---------------------------------------------------------------------------
+-- Documentos de una participación (todos PDF, uno de cada tipo por folio)
+-- ---------------------------------------------------------------------------
+--   formato_escaneado  el formato llenado a mano, escaneado (interno)
+--   version_publica    la participación con sus datos personales testados,
+--                      sin anexos (se publica en «Participaciones y respuestas»)
+--   oficio             el oficio de respuesta íntegro y firmado (interno; es lo
+--                      que se envía a quien participó)
+--   oficio_publico     la versión pública del oficio, con su número y fecha
+--
+-- Lo interno nunca sale en el portal: solo `version_publica` y `oficio_publico`,
+-- y solo cuando alguien las marca como publicadas tras revisarlas.
+CREATE TABLE IF NOT EXISTS participacion_documentos (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  participation_id UUID NOT NULL REFERENCES participations(id) ON DELETE CASCADE,
+  tipo             TEXT NOT NULL,
+  nombre_original  TEXT NOT NULL,
+  mime             TEXT NOT NULL DEFAULT 'application/pdf',
+  size             BIGINT NOT NULL DEFAULT 0,
+  ruta_local       TEXT NOT NULL,
+  numero_oficio    TEXT NOT NULL DEFAULT '',
+  fecha_oficio     DATE,
+  publicado        BOOLEAN NOT NULL DEFAULT false,
+  publicado_en     TIMESTAMPTZ,
+  subido_por       UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT participacion_documentos_tipo_check CHECK (tipo IN (
+    'formato_escaneado','version_publica','oficio','oficio_publico')),
+  CONSTRAINT participacion_documentos_unico UNIQUE (participation_id, tipo)
+);
+CREATE INDEX IF NOT EXISTS idx_participacion_documentos_publicados
+  ON participacion_documentos (tipo, publicado_en DESC) WHERE publicado;
+
 -- ---------------------------------------------------------------------------
 -- Adjuntos (archivos subidos: PDF, DWG, JPG, SHX, ...) – relacional
 -- ---------------------------------------------------------------------------

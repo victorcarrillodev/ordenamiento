@@ -62,6 +62,12 @@ export const adminRoutes = route({
   exportar: get(`${basePath}/admin/exportar`),
   usuarios: form(`${basePath}/admin/usuarios`),
   participacionNueva: form(`${basePath}/admin/participaciones/nueva`),
+  // Registro presencial: captura asistida o formato para llenar a mano. Van antes
+  // de `:id` para que este no las capture.
+  presencial: get(`${basePath}/admin/participaciones/presencial`),
+  // Con GET que regresa al selector: tras el POST el navegador se queda en esta dirección y recargar no debe dar 404.
+  formatoNuevo: form(`${basePath}/admin/participaciones/formatos`),
+  formatoPdf: get(`${basePath}/admin/participaciones/formatos/:id/pdf`),
   participaciones: get(`${basePath}/admin/participaciones`),
   participacionEnviar: form(`${basePath}/admin/participaciones/:id/enviar`),
   participacionResolver: form(`${basePath}/admin/participaciones/:id/resolucion`),

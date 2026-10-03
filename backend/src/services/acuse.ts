@@ -16,13 +16,19 @@
  * extendido, así que un nombre con caracteres poco comunes no sale con
  * cuadritos. Los archivos de fuente vienen del paquete `dejavu-fonts-ttf`.
  */
-import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
-
-import PDFDocument from 'pdfkit'
-
 import { acortarNombre } from '../files/nombres.ts'
 import { textoDeOpcion, textoDeUbicacion } from './participacion-campos.ts'
+import {
+  ALTO,
+  ANCHO,
+  ANCHO_UTIL,
+  COLOR,
+  dibujarBanda,
+  dibujarPie,
+  MARGEN_X,
+  nuevoDocumento,
+  type Doc,
+} from './pdf-base.ts'
 
 export interface DatosAcuse {
   folio: string
@@ -51,10 +57,6 @@ export const etiquetaModalidad = (origen: string) =>
 
 // ── Página ──────────────────────────────────────────────────────────────────
 
-const ANCHO = 612
-const ALTO = 792
-const MARGEN_X = 34
-const ANCHO_UTIL = ANCHO - MARGEN_X * 2
 /** Espacio libre al pie de la hoja, donde va la firma de la Bitácora. */
 const PIE_ALTO = 26
 
@@ -64,30 +66,6 @@ const PIE_ALTO = 26
  * máximo baja hasta 0.85 (la letra más chica queda en 7.5 pt, la del cuerpo en 8).
  */
 export const ESCALAS = [1.14, 1.1, 1.06, 1.03, 1, 0.97, 0.94, 0.91, 0.88, 0.85] as const
-
-const COLOR = {
-  guinda: '#5E142D',
-  oro: '#C9A24D',
-  cintillo: '#F2D58B',
-  texto: '#3F4C5E',
-  suave: '#475467',
-  caja: '#F7EEF1',
-  fondoTabla: '#F4F5F7',
-  linea: '#E4E7EC',
-  enlace: '#1F5C99',
-  blanco: '#FFFFFF',
-}
-
-// ── Tipografía ──────────────────────────────────────────────────────────────
-
-const requerir = createRequire(import.meta.url)
-const RAIZ_FUENTES = join(dirname(requerir.resolve('dejavu-fonts-ttf/package.json')), 'ttf')
-const FUENTE = {
-  normal: join(RAIZ_FUENTES, 'DejaVuSans.ttf'),
-  negrita: join(RAIZ_FUENTES, 'DejaVuSans-Bold.ttf'),
-}
-
-type Doc = InstanceType<typeof PDFDocument>
 
 // ── Textos fijos del modelo aprobado ────────────────────────────────────────
 
@@ -209,16 +187,9 @@ function componer(doc: Doc, d: DatosAcuse, s: number): Resultado {
   }
 
   // Banda superior guinda con el título.
-  const altoBanda = px(74)
-  doc.rect(0, 0, ANCHO, altoBanda).fill(COLOR.guinda)
-  doc.rect(0, altoBanda, ANCHO, px(3)).fill(COLOR.oro)
-  y = px(15)
-  escribir(T.cintillo, MARGEN_X, ANCHO_UTIL, { negrita: true, tamano: 7.5, color: COLOR.cintillo })
-  y += px(15)
-  y += escribir(T.titulo, MARGEN_X, ANCHO_UTIL, { negrita: true, tamano: 21, color: COLOR.blanco })
-  y += px(3)
-  escribir(T.subtitulo, MARGEN_X, ANCHO_UTIL, { tamano: 10, color: COLOR.blanco })
-  y = altoBanda + px(3) + px(14)
+  y =
+    dibujarBanda(doc, { cintillo: T.cintillo, titulo: T.titulo, subtitulo: T.subtitulo }, s) +
+    px(14)
 
   // Saludo y presentación.
   y += escribir(`Hola, ${d.nombre || ''}:`, MARGEN_X, ANCHO_UTIL, {
@@ -375,47 +346,19 @@ function componer(doc: Doc, d: DatosAcuse, s: number): Resultado {
 
 /** El acuse a una escala dada: el PDF en un Buffer y hasta dónde llegó el contenido. */
 function generarEnEscala(d: DatosAcuse, s: number): Promise<{ pdf: Buffer; fin: number }> {
-  const doc = new PDFDocument({
-    size: 'LETTER',
-    margin: 0,
-    autoFirstPage: true,
-    info: {
-      Title: `Acuse de recepción ${d.folio}`,
-      Author: 'Gobierno Municipal de San Pedro Tlaquepaque',
-      Subject: 'Acuse de recepción de participación ciudadana',
-    },
-  })
-  doc.registerFont('Sans', FUENTE.normal)
-  doc.registerFont('Sans-Bold', FUENTE.negrita)
-
-  const trozos: Buffer[] = []
-  const listo = new Promise<Buffer>((resolver, rechazar) => {
-    doc.on('data', (t: Buffer) => trozos.push(t))
-    doc.on('end', () => resolver(Buffer.concat(trozos)))
-    doc.on('error', rechazar)
+  const { doc, listo } = nuevoDocumento({
+    Title: `Acuse de recepción ${d.folio}`,
+    Subject: 'Acuse de recepción de participación ciudadana',
   })
 
   // Todo se recorta a la hoja: si algún día un texto pasa del límite no abre una
   // segunda página, solo se corta (la prueba de capacidad existe para que no pase).
-  // PDFKit abre página nueva en cuanto un texto cruza el margen inferior; con un
-  // margen inferior enorme y negativo nunca lo cruza.
-  doc.page.margins.bottom = -1_000_000
   doc.save()
   doc.rect(0, 0, ANCHO, ALTO).clip()
   const { fin } = componer(doc, d, s)
   doc.restore()
 
-  // Pie con la firma de la Bitácora.
-  const yPie = ALTO - PIE_ALTO
-  doc
-    .moveTo(MARGEN_X, yPie)
-    .lineTo(ANCHO - MARGEN_X, yPie)
-    .lineWidth(0.7)
-    .strokeColor(COLOR.linea)
-    .stroke()
-  doc.font('Sans').fontSize(8).fillColor(COLOR.suave)
-  doc.text(T.pie, MARGEN_X, yPie + 8, { width: ANCHO_UTIL, lineBreak: false })
-
+  dibujarPie(doc, T.pie, PIE_ALTO)
   doc.end()
   return listo.then((pdf) => ({ pdf, fin }))
 }

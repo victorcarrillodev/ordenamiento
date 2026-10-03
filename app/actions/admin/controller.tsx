@@ -22,6 +22,7 @@ import { EstadisticasPage, type DatosOrigen, type VistaEstadisticas } from './es
 import { DetallePage } from './detalle-page.tsx'
 import { AdjuntoVistaPage } from './adjunto-vista-page.tsx'
 import { ETAPAS } from './etapa.ts'
+import { formatoPdfAction, presencialAction } from './presencial-actions.tsx'
 import { sesionesAction } from './sesiones-controller.tsx'
 
 interface Stats {
@@ -301,6 +302,15 @@ export default createController(adminRoutes, {
           vista={vista}
         />,
       )
+    },
+
+    /** Selector del registro presencial y sus formatos pendientes (ver presencial-actions). */
+    presencial(context) {
+      return presencialAction(context)
+    },
+
+    formatoPdf(context) {
+      return formatoPdfAction(context)
     },
 
     /** Bitácora de accesos (solo admin). La lógica vive en sesiones-controller. */
