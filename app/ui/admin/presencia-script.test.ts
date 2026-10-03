@@ -36,6 +36,7 @@ function montar(opciones: Opciones = {}) {
 
   let reloj = 1_700_000_000_000
   let seVe = visible
+  let enfocado: Element | null = null
   const ventana = new EventTarget()
   const temporizadores: Array<{ id: number; fn: () => void; cada: number; proximo: number }> = []
   let consecutivo = 1
@@ -43,6 +44,7 @@ function montar(opciones: Opciones = {}) {
     configurable: true,
     get: () => (seVe ? 'visible' : 'hidden'),
   })
+  Object.defineProperty(doc, 'activeElement', { configurable: true, get: () => enfocado })
 
   const avisos: Array<{ en: number; url: string; init: RequestInit }> = []
   const falsoFetch = (url: string, init: RequestInit) => {
@@ -99,6 +101,15 @@ function montar(opciones: Opciones = {}) {
     sobreElVisor: () => raton('mouseover', doc.getElementById('visor')!),
     fueraDelVisor: () =>
       raton('mouseout', doc.getElementById('visor')!, doc.getElementById('texto')),
+    /** Un clic dentro del visor le da el foco (la ventana lo pierde). */
+    enfocaElVisor() {
+      enfocado = doc.getElementById('visor')
+      ventana.dispatchEvent(new Event('blur'))
+    },
+    quitaElFoco() {
+      enfocado = null
+      ventana.dispatchEvent(new Event('focus'))
+    },
     sobreUnObjeto() {
       const objeto = doc.createElement('object')
       doc.body.append(objeto)
@@ -264,6 +275,39 @@ describe('presencia: la pestaña a la vista', () => {
 })
 
 describe('presencia: leer un documento sin tocar la página', () => {
+  it('con el foco dentro de un visor (clic en el PDF) cuenta más allá de los 2 minutos', () => {
+    const p = montar()
+    p.enfocaElVisor()
+    p.avanzar(8 * MIN)
+    expect(Math.max(...p.avisos.map((a) => a.en)) - p.avisos[0].en).toBeGreaterThan(5 * MIN)
+  })
+
+  it('el foco en un visor también tiene tope de 10 minutos', () => {
+    const p = montar()
+    p.enfocaElVisor()
+    p.avanzar(30 * MIN)
+    expect(Math.max(...p.avisos.map((a) => a.en)) - p.avisos[0].en).toBeLessThanOrEqual(10 * MIN)
+  })
+
+  it('al quitar el foco del visor vuelve la regla normal de 2 minutos', () => {
+    const p = montar()
+    p.enfocaElVisor()
+    p.avanzar(1 * MIN)
+    p.quitaElFoco()
+    const cuando = p.ahora()
+    p.avanzar(10 * MIN)
+    expect(Math.max(...p.avisos.map((a) => a.en)) - cuando).toBeLessThanOrEqual(2 * MIN)
+  })
+
+  it('el foco en un visor no cuenta si la pestaña está oculta', () => {
+    const p = montar()
+    p.enfocaElVisor()
+    p.visibilidad(false)
+    const antes = p.avisos.length
+    p.avanzar(5 * MIN)
+    expect(p.avisos).toHaveLength(antes)
+  })
+
   it('con el puntero sobre un visor sigue contando más allá de los 2 minutos', () => {
     const p = montar()
     p.sobreElVisor()

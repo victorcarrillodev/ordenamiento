@@ -9,7 +9,9 @@
  *  · hizo algo en los últimos 2 minutos: un clic, una tecla, desplazarse o mover
  *    el puntero. Un visor de documentos (PDF, vista previa) se lee sin tocar la
  *    página, y el navegador no avisa de lo que pasa dentro de él: mientras el
- *    puntero está encima cuenta hasta 10 minutos sin otra señal.
+ *    foco o el puntero están en el visor cuenta hasta 10 minutos sin otra señal.
+ *    (Hacer clic dentro de un PDF incrustado mueve el foco a él: es lo que se ve
+ *    desde la página, y se comprobó en el navegador.)
  *
  * Mientras es así avisa cada 30 s, de inmediato al volver o al cargar una pantalla,
  * y una vez más al ocultar la pestaña o salir de la página, para no perder los
@@ -41,7 +43,7 @@
   var LATIDO_MS = 30000
   /** Sin hacer nada durante este tiempo, la persona se fue. */
   var AUSENTE_MS = 120000
-  /** Tope de un visor de documentos con el puntero encima y sin otra señal. */
+  /** Tope de un visor de documentos con el foco o el puntero dentro y sin otra señal. */
   var VISOR_MS = 600000
   /** Nunca dos avisos más juntos que esto. */
   var ENTRE_AVISOS_MS = 3000
@@ -50,8 +52,9 @@
 
   var ultimaInteraccion = Date.now()
   var ultimoAviso = 0
-  /** Desde cuándo está el puntero sobre un visor de documentos; 0 si no lo está. */
+  /** Desde cuándo está el foco o el puntero en un visor de documentos; 0 si no lo están. */
   var enVisorDesde = 0
+  var punteroEnVisor = false
   var detenido = false
   var temporizador = null
 
@@ -109,6 +112,7 @@
 
   function revisar() {
     var ahora = Date.now()
+    sincronizarVisor()
     if (presente(ahora) && ahora - ultimoAviso >= LATIDO_MS) avisar(ahora)
   }
 
@@ -119,17 +123,28 @@
     document.addEventListener(nombre, interaccion, { passive: true, capture: true })
   })
 
-  // El puntero sobre un visor de documentos: el navegador no avisa de lo que se
-  // hace dentro, así que estar encima es la señal.
+  // Un visor de documentos: el navegador no avisa de lo que se hace dentro, así
+  // que la señal es tener el foco en él (un clic en el PDF se lo da) o el puntero
+  // encima. Se anota desde cuándo, para ponerle tope.
   function esVisor(nodo) {
     return !!(nodo && nodo.closest && nodo.closest('iframe, object, embed'))
   }
+  function sincronizarVisor() {
+    var dentro = punteroEnVisor || esVisor(document.activeElement)
+    if (dentro && enVisorDesde === 0) enVisorDesde = Date.now()
+    else if (!dentro) enVisorDesde = 0
+  }
   document.addEventListener('mouseover', function (e) {
-    if (esVisor(e.target) && enVisorDesde === 0) enVisorDesde = Date.now()
+    if (esVisor(e.target)) punteroEnVisor = true
+    sincronizarVisor()
   })
   document.addEventListener('mouseout', function (e) {
-    if (esVisor(e.target) && !esVisor(e.relatedTarget)) enVisorDesde = 0
+    if (esVisor(e.target) && !esVisor(e.relatedTarget)) punteroEnVisor = false
+    sincronizarVisor()
   })
+  // Al meter el foco en un visor (o sacarlo de él) la ventana lo pierde (o lo recupera).
+  window.addEventListener('blur', sincronizarVisor)
+  window.addEventListener('focus', sincronizarVisor)
 
   // Al ocultar la pestaña se avisa una última vez, para contar los segundos desde
   // el aviso anterior; al volver a verla se avisa al instante.
