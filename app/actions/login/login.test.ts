@@ -34,6 +34,19 @@ afterEach(() => {
   globalThis.fetch = originalFetch
 })
 
+describe('Iniciar sesión carga el panel como un documento nuevo', () => {
+  // Remix navega dentro del mismo documento y no ejecuta los scripts del `<head>`
+  // de la página que llega. El panel (`admin.js`), el editor de formato de los
+  // textos y la presencia de la bitácora de sesiones cuelgan de ese `<head>`: sin
+  // un documento nuevo al entrar, no se iniciaban hasta recargar a mano.
+  it('el formulario de acceso se envía como navegación completa (rmx-document)', async () => {
+    const html = await (await get('/ordena/login'))!.text()
+    const formulario = html.match(/<form[^>]*class="login__form"[^>]*>/)?.[0] ?? ''
+    expect(formulario).toContain('method="POST"')
+    expect(formulario).toMatch(/\brmx-document\b/)
+  })
+})
+
 describe('El login no ofrece crear cuenta', () => {
   it('no muestra el formulario de registro', async () => {
     const html = await (await get('/ordena/login'))!.text()

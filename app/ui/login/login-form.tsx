@@ -19,7 +19,18 @@ export function LoginForm(handle: Handle<LoginFormProps>) {
     const { errors = {}, email } = handle.props
 
     return (
-      <form class="login__form" method="POST" action={routes.login.action.href()} noValidate>
+      // `rmx-document`: iniciar sesión carga el panel como un documento nuevo. Sin
+      // esto, Remix navega dentro del mismo documento y NO ejecuta los scripts del
+      // `<head>` de la página que llega: el panel (`admin.js`), el editor de formato
+      // de los textos y la presencia de la bitácora de sesiones nunca se iniciaban
+      // para quien entraba por aquí, y solo funcionaban tras recargar a mano.
+      <form
+        class="login__form"
+        method="POST"
+        action={routes.login.action.href()}
+        rmx-document
+        noValidate
+      >
         <TextField
           id="email"
           name="email"
