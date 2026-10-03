@@ -94,6 +94,77 @@ describe('Personalización · textos del portal', () => {
     expect(html).toContain('txt_nav_enlace_inicio')
   })
 
+  describe('formato del texto', () => {
+    const pagina = async (textos: Record<string, string>) => {
+      mockFetch({ theme: { theme: { usuario: { textos } } } })
+      const res = await router.fetch(
+        new Request('http://localhost/ordena/admin/personalizacion/textos'),
+      )
+      expect(res?.status).toBe(200)
+      return (await res?.text()) ?? ''
+    }
+
+    it('los textos de párrafo llevan el editor y los títulos, etiquetas y botones, texto plano', async () => {
+      const html = await pagina({})
+      expect(html).toContain('Formato del texto')
+      expect(html.match(/data-editor-texto/g)).toHaveLength(21)
+      // Un texto de párrafo: el campo del editor conserva el nombre que espera el formulario.
+      expect(html).toMatch(/<textarea[^>]*id="editor-txt_cta_parrafo"[^>]*name="txt_cta_parrafo"/)
+      expect(html).toContain('aria-label="Formato de «Párrafo»"')
+      // Un título y un botón: la caja de siempre, sin barra de formato.
+      expect(html).toMatch(/<textarea[^>]*name="txt_hero_titulo"/)
+      expect(html).not.toContain('id="editor-txt_hero_titulo"')
+      expect(html).not.toContain('id="editor-txt_cta_boton"')
+      // 77 textos, cada uno con su campo.
+      expect(html.match(/<textarea/g)).toHaveLength(77)
+    })
+
+    it('muestra el formato guardado: negritas y alineación por párrafo', async () => {
+      const html = await pagina({
+        ctaParrafo: '<p style="text-align:justify">Tu <strong>voz</strong> cuenta</p><p>Otro</p>',
+      })
+      expect(html).toContain(
+        '<p style="text-align:justify">Tu <strong>voz</strong> cuenta</p><p>Otro</p>',
+      )
+    })
+
+    it('un texto guardado antes del editor (sin etiquetas) se muestra como párrafos y se conserva', async () => {
+      const html = await pagina({ footerContacto: 'Calle 1\nColonia Centro' })
+      expect(html).toContain('<p>Calle 1<br />Colonia Centro</p>')
+    })
+
+    it('lo guardado no se inserta como HTML en el panel', async () => {
+      const html = await pagina({
+        ctaParrafo:
+          '<p onclick="robar()">Hola</p></textarea><script>alert(1)</script><img src=x onerror=alert(2)>',
+        heroTitulo: '</textarea><script>alert(3)</script>',
+      })
+      for (const peligro of ['robar()', 'alert(1)', 'alert(2)', 'onerror']) {
+        expect(html, peligro).not.toContain(peligro)
+      }
+      // En un campo plano el texto va escapado, no ejecutable.
+      expect(html).not.toContain('<script>alert(3)')
+    })
+
+    it('al guardar, lo que manda el editor viaja tal cual: el backend lo deja canónico', async () => {
+      const capture = { called: false, body: null as Record<string, unknown> | null }
+      mockFetch({ captureThemePost: capture })
+      const fd = new FormData()
+      fd.set('motivo', 'Formato')
+      fd.set('txt_cta_parrafo', '<div style="text-align: center;">Hola <b>mundo</b></div>')
+      const res = await router.fetch(
+        new Request('http://localhost/ordena/admin/personalizacion/textos', {
+          method: 'POST',
+          body: fd,
+        }),
+      )
+      expect(res?.status).toBe(302)
+      const textos = (capture.body as { config: { usuario: { textos: Record<string, string> } } })
+        .config.usuario.textos
+      expect(textos.ctaParrafo).toBe('<div style="text-align: center;">Hola <b>mundo</b></div>')
+    })
+  })
+
   it('POST sin motivo → 302 err y NO llama al backend', async () => {
     const capture = { called: false, body: null as Record<string, unknown> | null }
     mockFetch({ captureThemePost: capture })

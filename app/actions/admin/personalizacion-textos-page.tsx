@@ -3,6 +3,7 @@ import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { adminRoutes, routes } from '../../routes.ts'
 import { Button } from '../../ui/button.tsx'
+import { EditorTexto } from '../../ui/admin/editor-texto.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
 import type { ThemeData } from '../../ui/civic-horizon.ts'
 import { GRUPOS_TEXTOS } from './personalizacion-textos-defs.ts'
@@ -51,6 +52,18 @@ export function PersonalizacionTextosPage(handle: Handle<PersonalizacionTextosPa
           {mensaje && <AdminAlert type="success" message={mensaje} />}
           {error && <AdminAlert type="error" message={error} />}
 
+          <div class="panel">
+            <h3 class="panel__title">Formato del texto</h3>
+            <p class="form-hint" style="font-size: 12px; line-height: 1.6; margin: 0;">
+              Los textos de párrafo (los que llevan barra de formato) admiten{' '}
+              <strong>negritas</strong> y alineación a la izquierda, centrada, a la derecha o
+              justificada. Selecciona el texto y elige el formato en la barra; con Enter empiezas un
+              párrafo nuevo y con Mayús + Enter, un salto de línea. El formato se conserva al
+              guardar y se ve igual en la página pública. Los títulos, botones y enlaces llevan solo
+              texto.
+            </p>
+          </div>
+
           <form method="post" action={adminRoutes.personalizacionTextos.index.href()}>
             <input type="hidden" name="section" value="usuario" />
 
@@ -64,15 +77,26 @@ export function PersonalizacionTextosPage(handle: Handle<PersonalizacionTextosPa
                       key={c.name}
                       style={c.full ? 'grid-column: 1 / -1;' : undefined}
                     >
-                      <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                        {c.label}
-                      </label>
-                      <textarea
-                        name={c.name}
-                        rows={c.rows}
-                        value={txt[c.key] || ''}
-                        style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px; width: 100%;"
-                      />
+                      {c.rico ? (
+                        <EditorTexto
+                          name={c.name}
+                          label={c.label}
+                          valor={txt[c.key] || ''}
+                          filas={c.rows}
+                        />
+                      ) : (
+                        <>
+                          <label style="font-weight: 700; font-size: 12px; color: #475569;">
+                            {c.label}
+                          </label>
+                          <textarea
+                            name={c.name}
+                            rows={c.rows}
+                            value={txt[c.key] || ''}
+                            style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px; width: 100%;"
+                          />
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>

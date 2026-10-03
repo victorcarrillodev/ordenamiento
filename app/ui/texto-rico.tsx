@@ -21,6 +21,16 @@ function tramos(parrafo: Parrafo): RemixNode[] {
 const alineacionCss = (parrafo: Parrafo) =>
   parrafo.alineacion ? `text-align:${CSS_ALINEACION[parrafo.alineacion]}` : ''
 
+/** Estilo de un párrafo que se dibuja como bloque: su alineación y, si no es el primero, el margen de arriba. */
+const estiloDeBloque = (parrafo: Parrafo, indice: number) =>
+  [
+    'display:block',
+    alineacionCss(parrafo),
+    indice > 0 ? `margin-top:${SEPARACION_ENTRE_PARRAFOS}` : '',
+  ]
+    .filter(Boolean)
+    .join(';')
+
 export interface TextoRicoProps {
   /** El texto guardado: HTML canónico o texto plano. */
   valor?: string | null
@@ -46,10 +56,7 @@ export function TextoRico(handle: Handle<TextoRicoProps>) {
     return (
       <>
         {parrafos.map((parrafo, i) => (
-          <span
-            key={i}
-            style={`display:block;${alineacionCss(parrafo)};${i > 0 ? `margin-top:${SEPARACION_ENTRE_PARRAFOS}` : ''}`}
-          >
+          <span key={i} style={estiloDeBloque(parrafo, i)}>
             {tramos(parrafo)}
           </span>
         ))}

@@ -194,6 +194,8 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
           <>
             <link rel="stylesheet" href={`${basePath}/admin.css`} />
             <script src={`${basePath}/admin.js`} defer></script>
+            {/* Barra de formato de «Textos del portal»; no hace nada donde no hay editores. */}
+            <script src={`${basePath}/editor-texto.js`} defer></script>
             {dynamicStyles && <style>{dynamicStyles}</style>}
           </>
         }
