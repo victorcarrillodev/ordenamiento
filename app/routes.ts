@@ -98,6 +98,12 @@ export const adminRoutes = route({
   proyectoArchivo: get(`${basePath}/admin/consulta/proyecto/:id/archivo`),
   estadisticas: get(`${basePath}/admin/estadisticas`),
   sesiones: get(`${basePath}/admin/sesiones`),
+  // Aviso de presencia que manda `public/presencia.js` mientras la persona tiene el
+  // panel a la vista: es lo que mide el tiempo de uso en el registro de sesiones.
+  // La ruta lleva `/api/` a propósito: `server.ts` convierte en página de error
+  // cualquier respuesta no exitosa que no sea de una ruta `/api/`, y el script
+  // necesita ver el 401 tal cual para dejar de avisar cuando la sesión terminó.
+  latido: post(`${basePath}/admin/api/sesion/latido`),
   cuenta: form(`${basePath}/admin/cuenta`),
   cuentaAvatar: get(`${basePath}/admin/cuenta/avatar`),
   personalizacion: form(`${basePath}/admin/personalizacion`),

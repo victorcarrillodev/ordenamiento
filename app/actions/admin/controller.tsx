@@ -319,6 +319,23 @@ export default createController(adminRoutes, {
       return sesionesAction(context)
     },
 
+    /**
+     * Aviso de presencia (`public/presencia.js`): «la persona sigue en el panel».
+     * Lo anota el backend contra la sesión de la cookie. Responde 204 sin cuerpo
+     * —también si el backend no está disponible: un aviso perdido no es un error
+     * para quien usa el panel— y 401 cuando la sesión ya no vale, para que el
+     * script deje de avisar.
+     */
+    async latido(context) {
+      const respuesta = await backendFetch(context.request, '/api/sessions/ping', {
+        method: 'POST',
+      })
+      return new Response(null, {
+        status: respuesta.status === 401 ? 401 : 204,
+        headers: { 'cache-control': 'no-store' },
+      })
+    },
+
     async cuentaAvatar(context) {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user

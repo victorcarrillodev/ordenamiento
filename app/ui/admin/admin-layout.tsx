@@ -196,11 +196,17 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
             <script src={`${basePath}/admin.js`} defer></script>
             {/* Barra de formato de «Textos del portal»; no hace nada donde no hay editores. */}
             <script src={`${basePath}/editor-texto.js`} defer></script>
+            {/* Presencia: mide el tiempo de uso real del panel (ver `data-latido` en `.admin`). */}
+            <script src={`${basePath}/presencia.js`} defer></script>
             {dynamicStyles && <style>{dynamicStyles}</style>}
           </>
         }
       >
-        <div class="admin">
+        {/* `data-latido`: adónde avisa `presencia.js` que la persona sigue aquí. Va en el
+            contenido y no en el `<head>` porque Remix cambia el contenido de la página
+            sin recargar el documento: así el script sabe, en cada momento, si lo que
+            se ve es una pantalla del panel. */}
+        <div class="admin" data-latido={adminRoutes.latido.href()}>
           {/* En móvil el menú se oculta y este control lo despliega. Se marca
               como checkbox para que funcione sin JavaScript. No lleva `hidden`
               (ni `display:none`) porque eso también lo saca del recorrido con
