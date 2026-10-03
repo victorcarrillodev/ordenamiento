@@ -45,9 +45,15 @@ interface Fila extends Omit<DocumentoProyecto, 'created_at'> {
 
 const COLUMNAS = `id::text AS id, seccion, titulo, nombre_original, size::int AS size, orden, ruta_local, created_at`
 
-const aDocumento = ({ ruta_local: _ruta, created_at, ...resto }: Fila): DocumentoProyecto => ({
-  ...resto,
-  created_at: new Date(created_at).toISOString(),
+/** El documento tal como lo ve el panel y el portal: sin la ruta interna del archivo. */
+const aDocumento = (f: Fila): DocumentoProyecto => ({
+  id: f.id,
+  seccion: f.seccion,
+  titulo: f.titulo,
+  nombre_original: f.nombre_original,
+  size: f.size,
+  orden: f.orden,
+  created_at: new Date(f.created_at).toISOString(),
 })
 
 /** El nombre con que se presenta un documento: una línea, sin pasarse del límite. */
