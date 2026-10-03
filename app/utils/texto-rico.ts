@@ -26,8 +26,13 @@ export const CSS_ALINEACION: Record<Alineacion, string> = {
   justificado: 'justify',
 }
 
-/** Caracteres visibles que admite un texto con formato; el backend aplica el mismo tope. */
-export const LIMITE_TEXTO_RICO = 500
+/**
+ * Caracteres visibles que admite un texto con formato. Es un tope de seguridad,
+ * no editorial: el párrafo más largo del portal tiene unos 460 y los textos
+ * sin formato nunca tuvieron límite, así que no debe recortar nada legítimo; solo
+ * impide que una entrada desmedida llegue a la base de datos. El backend aplica el mismo.
+ */
+export const LIMITE_TEXTO_RICO = 5000
 
 /** Lo más que se lee de un valor: protege al lector de entradas desmedidas. */
 const MAX_ENTRADA = 20_000

@@ -7,7 +7,7 @@
  * que existiera) y lo vuelve a escribir con solo `<p>`, `<strong>`, `<br>` y, si
  * se eligió, `style="text-align:…"`. Lo demás (otras etiquetas, atributos,
  * estilos, scripts) no se conserva, y el texto visible se limita a
- * `LIMITE_TEXTO_RICO` caracteres, como se limitaba el texto plano.
+ * `LIMITE_TEXTO_RICO` caracteres, un tope de seguridad.
  *
  * El frontend repite el lector en `app/utils/texto-rico.ts` (la web no puede
  * importar del backend) para dibujar el texto sin insertarlo nunca como HTML;
@@ -25,8 +25,13 @@ export const CSS_ALINEACION: Record<Alineacion, string> = {
   justificado: 'justify',
 }
 
-/** Caracteres visibles que admite un texto con formato; el backend aplica el mismo tope. */
-export const LIMITE_TEXTO_RICO = 500
+/**
+ * Caracteres visibles que admite un texto con formato. Es un tope de seguridad,
+ * no editorial: el párrafo más largo del portal tiene unos 460 y los textos
+ * sin formato nunca tuvieron límite, así que no debe recortar nada legítimo; solo
+ * impide que una entrada desmedida llegue a la base de datos. El backend aplica el mismo.
+ */
+export const LIMITE_TEXTO_RICO = 5000
 
 /** Lo más que se lee de un valor: protege al lector de entradas desmedidas. */
 const MAX_ENTRADA = 20_000

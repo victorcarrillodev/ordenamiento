@@ -55,10 +55,10 @@ describe('textos del portal con formato', () => {
     expect(guardado.usuario.textos).toEqual({ ctaParrafo: '', footerDesc: '', proximasVacio: '' })
   })
 
-  it('recorta a los caracteres visibles que admitía el texto plano', () => {
+  it('recorta a los caracteres visibles que admite, sin romper el formato', () => {
     const guardado = canonizarTextosConFormato(
       config({
-        queEsParrafo2: `<p style="text-align:justify"><strong>${'x'.repeat(800)}</strong></p>`,
+        queEsParrafo2: `<p style="text-align:justify"><strong>${'x'.repeat(LIMITE_TEXTO_RICO + 300)}</strong></p>`,
       }),
     )
     const texto = guardado.usuario.textos.queEsParrafo2 as string

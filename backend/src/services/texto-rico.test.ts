@@ -49,8 +49,8 @@ describe('texto con formato (backend)', () => {
 })
 
 describe('texto con formato: tope de caracteres visibles', () => {
-  it('el tope es el mismo que tenía el texto plano', () => {
-    expect(LIMITE_TEXTO_RICO).toBe(500)
+  it('el tope es de seguridad: muy por encima del párrafo más largo del portal (unos 460)', () => {
+    expect(LIMITE_TEXTO_RICO).toBeGreaterThanOrEqual(2000)
   })
 
   it('recorta a los caracteres visibles, no al tamaño del HTML', () => {

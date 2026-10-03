@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test'
 
 import { participationRateLimited } from './app.ts'
 import { DEFAULT_THEME_CONFIG, validarYSanitizarThemeConfig } from './services/customizations.ts'
+import { LIMITE_TEXTO_RICO } from './services/texto-rico.ts'
 import { clientIp, isSafeCssColor, isSafeImageUrl, rateLimit, sanitizeText } from './utils.ts'
 
 type ThemeConfig = Partial<typeof DEFAULT_THEME_CONFIG>
@@ -200,7 +201,7 @@ describe('validarYSanitizarThemeConfig', () => {
         textos: {
           ctaParrafo:
             '<div style="text-align: center;">Con <b>negrita</b><script>x()</script></div>',
-          footerDesc: 'x'.repeat(600),
+          footerDesc: 'x'.repeat(LIMITE_TEXTO_RICO + 100),
         },
       },
     }
@@ -208,7 +209,7 @@ describe('validarYSanitizarThemeConfig', () => {
     expect(config.usuario.textos.ctaParrafo).toBe(
       '<p style="text-align:center">Con <strong>negrita</strong></p>',
     )
-    expect(config.usuario.textos.footerDesc).toBe(`<p>${'x'.repeat(500)}</p>`)
+    expect(config.usuario.textos.footerDesc).toBe(`<p>${'x'.repeat(LIMITE_TEXTO_RICO)}</p>`)
   })
 
   it('acepta colores y URLs válidas', () => {
