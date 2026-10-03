@@ -6,8 +6,9 @@ import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
 import { PASSWORD_MAX } from '../../ui/login/types.ts'
-import { formatearDuracion, formatearFecha, formatearFechaHora } from '../../ui/admin/formato.ts'
-import type { SesionRegistrada } from './sesiones-page.tsx'
+import { formatearFecha, formatearFechaHora } from '../../ui/admin/formato.ts'
+import { FinDeSesion, TiempoDeUso } from './sesiones-celdas.tsx'
+import type { SesionRegistrada } from './sesiones-tipos.ts'
 
 export interface UserProfile {
   id: string
@@ -228,8 +229,10 @@ export function CuentaPage(handle: Handle<CuentaPageProps>) {
               <thead>
                 <tr>
                   <th>Inicio</th>
-                  <th>Fin</th>
-                  <th>Tiempo conectado</th>
+                  <th>Fin o último movimiento</th>
+                  <th title="Tiempo con el panel a la vista y en uso. No cuenta la pestaña oculta ni las pausas de más de 2 minutos.">
+                    Tiempo de uso
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -244,14 +247,10 @@ export function CuentaPage(handle: Handle<CuentaPageProps>) {
                     <tr key={s.id}>
                       <td>{formatearFechaHora(s.inicio)}</td>
                       <td>
-                        {s.activa ? (
-                          <span class="badge procedente">● Esta sesión</span>
-                        ) : (
-                          formatearFechaHora(s.fin)
-                        )}
+                        <FinDeSesion sesion={s} />
                       </td>
                       <td>
-                        <strong>{formatearDuracion(s.duracion_segundos)}</strong>
+                        <TiempoDeUso segundos={s.uso_segundos} />
                       </td>
                     </tr>
                   ))
@@ -259,6 +258,11 @@ export function CuentaPage(handle: Handle<CuentaPageProps>) {
               </tbody>
             </table>
           </div>
+          <p class="form-hint" style="margin: 10px 0 0;">
+            El tiempo de uso cuenta solo mientras tienes el panel a la vista y haces algo (un clic,
+            una tecla, desplazarte o mover el ratón); no cuenta la pestaña oculta ni las pausas de
+            más de 2 minutos. Solo se guarda cuándo estuviste, no qué hiciste.
+          </p>
         </div>
       </AdminLayout>
     )

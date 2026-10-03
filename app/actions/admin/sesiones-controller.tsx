@@ -11,7 +11,8 @@
 import type { RemixNode } from 'remix/ui'
 
 import { fetchJsonOr, requireAdminUser } from '../../backend.ts'
-import { SesionesPage, type ResumenSesiones, type SesionRegistrada } from './sesiones-page.tsx'
+import { SesionesPage } from './sesiones-page.tsx'
+import type { ResumenSesiones, SesionRegistrada } from './sesiones-tipos.ts'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -28,7 +29,7 @@ const VACIO: RespuestaSesiones = {
   total: 0,
   page: 1,
   limit: 25,
-  resumen: { usuarios: 0, sesiones: 0, activas: 0, segundos_totales: 0 },
+  resumen: { usuarios: 0, sesiones: 0, en_linea: 0, medidas: 0, segundos_totales: 0 },
 }
 
 function entero(valor: string | null, porDefecto: number): number {

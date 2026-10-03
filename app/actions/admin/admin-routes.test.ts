@@ -333,7 +333,7 @@ describe('Admin Routes Protection & Navigation', () => {
       expect(res?.status).toBe(200)
       const html = await res?.text()
       expect(html).toContain('Registro de sesiones')
-      expect(html).toContain('Tiempo conectado')
+      expect(html).toContain('Tiempo de uso')
     })
 
     it('POST /ordena/admin/participaciones/nueva guarda participación física y redirige con folio', async () => {

@@ -4,33 +4,11 @@ import { adminRoutes } from '../../routes.ts'
 import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
-import {
-  formatearDiaFechaHora,
-  formatearDuracion,
-  formatearFechaHora,
-} from '../../ui/admin/formato.ts'
+import { formatearDiaFechaHora, formatearDuracion } from '../../ui/admin/formato.ts'
+import { FinDeSesion, TiempoDeUso } from './sesiones-celdas.tsx'
+import type { ResumenSesiones, SesionRegistrada } from './sesiones-tipos.ts'
 
-export interface SesionRegistrada {
-  id: string
-  user_id: string
-  nombre: string
-  email: string
-  rol: string
-  inicio: string
-  fin: string | null
-  ultima_actividad: string
-  duracion_segundos: number
-  activa: boolean
-  ip: string
-  user_agent: string
-}
-
-export interface ResumenSesiones {
-  usuarios: number
-  sesiones: number
-  activas: number
-  segundos_totales: number
-}
+export type { EstadoSesion, ResumenSesiones, SesionRegistrada } from './sesiones-tipos.ts'
 
 export interface SesionesPageProps {
   user: { name: string; role: string }
@@ -115,15 +93,18 @@ export function SesionesPage(handle: Handle<SesionesPageProps>) {
     const base = usuarioFiltrado
       ? `${adminRoutes.sesiones.href()}?user_id=${encodeURIComponent(usuarioFiltrado.id)}`
       : adminRoutes.sesiones.href()
+    // El promedio es sobre las sesiones que se midieron: las anteriores a la medición
+    // no tienen tiempo, y contarlas como 0 lo bajaría sin que sea verdad.
     const promedio =
-      resumen.sesiones > 0 ? Math.round(resumen.segundos_totales / resumen.sesiones) : 0
+      resumen.medidas > 0 ? Math.round(resumen.segundos_totales / resumen.medidas) : 0
+    const sinMedir = resumen.sesiones - resumen.medidas
 
     return (
       <AdminLayout
         user={user}
         active="sesiones"
         title="Registro de sesiones"
-        subtitle="Quién entró al panel, cuándo y cuánto tiempo estuvo dentro."
+        subtitle="Quién entró al panel, cuándo y cuánto tiempo lo usó de verdad."
         actions={
           <a class="btn btn--white" href={adminRoutes.usuarios.index.href()}>
             <Icon name="mdi:account-group-outline" size={16} /> Gestionar usuarios
@@ -133,6 +114,12 @@ export function SesionesPage(handle: Handle<SesionesPageProps>) {
         <AdminAlert type="info">
           Esta bitácora registra accesos de personas identificadas. Solo la consultan las cuentas
           con rol administrador, y se usa para control de acceso, no para supervisar productividad.
+        </AdminAlert>
+        <AdminAlert type="info">
+          El tiempo de uso cuenta solo mientras la persona tiene el panel a la vista y está haciendo
+          algo (un clic, una tecla, desplazarse o mover el ratón). No cuenta la pestaña oculta ni
+          las pausas de más de 2 minutos. Una sesión que nadie cerró no se da por activa: queda como
+          «Sin cerrar», desde su último movimiento.
         </AdminAlert>
 
         <div class="cards">
@@ -153,9 +140,9 @@ export function SesionesPage(handle: Handle<SesionesPageProps>) {
             </div>
             <div>
               <div class="card__label">
-                Abiertas <span>| Ahora mismo</span>
+                En línea <span>| Ahora mismo</span>
               </div>
-              <div class="card__value">{resumen.activas}</div>
+              <div class="card__value">{resumen.en_linea}</div>
             </div>
           </div>
           <div class="card">
@@ -175,7 +162,7 @@ export function SesionesPage(handle: Handle<SesionesPageProps>) {
             </div>
             <div>
               <div class="card__label">
-                Tiempo total <span>| Promedio {formatearDuracion(promedio)}</span>
+                Tiempo de uso <span>| Promedio {formatearDuracion(promedio)} por sesión</span>
               </div>
               <div class="card__value">{formatearDuracion(resumen.segundos_totales)}</div>
             </div>
@@ -216,8 +203,10 @@ export function SesionesPage(handle: Handle<SesionesPageProps>) {
                 <tr>
                   <th>Persona</th>
                   <th>Inicio</th>
-                  <th>Fin</th>
-                  <th>Tiempo conectado</th>
+                  <th>Fin o último movimiento</th>
+                  <th title="Tiempo con el panel a la vista y en uso. No cuenta la pestaña oculta ni las pausas de más de 2 minutos.">
+                    Tiempo de uso
+                  </th>
                   <th>Equipo</th>
                 </tr>
               </thead>
@@ -251,14 +240,10 @@ export function SesionesPage(handle: Handle<SesionesPageProps>) {
                     </td>
                     <td>{formatearDiaFechaHora(s.inicio)}</td>
                     <td>
-                      {s.activa ? (
-                        <span class="badge procedente">● En curso</span>
-                      ) : (
-                        formatearFechaHora(s.fin)
-                      )}
+                      <FinDeSesion sesion={s} />
                     </td>
                     <td>
-                      <strong>{formatearDuracion(s.duracion_segundos)}</strong>
+                      <TiempoDeUso segundos={s.uso_segundos} />
                     </td>
                     <td>
                       <span class="user-cell__name">{dispositivo(s.user_agent)}</span>
@@ -269,6 +254,14 @@ export function SesionesPage(handle: Handle<SesionesPageProps>) {
               </tbody>
             </table>
           </div>
+
+          {sinMedir > 0 ? (
+            <p class="form-hint">
+              {sinMedir === 1
+                ? '1 sesión es anterior a la medición del uso real: se muestra «Sin medir» y no suma al tiempo total.'
+                : `${sinMedir} sesiones son anteriores a la medición del uso real: se muestran «Sin medir» y no suman al tiempo total.`}
+            </p>
+          ) : null}
 
           <Paginacion page={page} limit={limit} total={total} base={base} />
         </div>

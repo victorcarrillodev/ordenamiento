@@ -12,7 +12,7 @@ import { backendFetch, fetchJsonOr, requireAdminUser } from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
 import { PASSWORD_MAX } from '../../ui/login/types.ts'
 import { CuentaPage, type CuentaFeedback, type UserProfile } from './cuenta-page.tsx'
-import type { SesionRegistrada } from './sesiones-page.tsx'
+import type { SesionRegistrada } from './sesiones-tipos.ts'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 

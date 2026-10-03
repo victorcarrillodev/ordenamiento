@@ -101,7 +101,8 @@ describe('Pantalla de Mi cuenta', () => {
             inicio: '2026-09-01T10:00:00Z',
             fin: null,
             ultima_actividad: '2026-09-01T11:00:00Z',
-            duracion_segundos: 3600,
+            uso_segundos: 3600,
+            estado: 'en_linea',
             activa: true,
             ip: '',
             user_agent: '',
@@ -115,7 +116,8 @@ describe('Pantalla de Mi cuenta', () => {
             inicio: '2026-09-01T10:00:00Z',
             fin: null,
             ultima_actividad: '2026-09-01T11:00:00Z',
-            duracion_segundos: 60,
+            uso_segundos: 60,
+            estado: 'inactiva',
             activa: false,
             ip: '',
             user_agent: '',
@@ -126,8 +128,49 @@ describe('Pantalla de Mi cuenta', () => {
 
     const html = await (await get('/ordena/admin/cuenta'))!.text()
 
-    expect(html).toContain('Esta sesión')
+    expect(html).toContain('● En línea')
     expect(html).not.toContain('Juan Ajeno')
+  })
+
+  it('«Mi cuenta» dice a la persona cómo se mide su tiempo de uso, y qué no se guarda', async () => {
+    backend()
+    const html = await (await get('/ordena/admin/cuenta'))!.text()
+    expect(html).toContain('solo mientras tienes el panel a la vista y haces algo')
+    expect(html).toContain('pausas de más de 2 minutos')
+    expect(html).toContain('no qué hiciste')
+  })
+
+  it('en «Mi cuenta» una sesión abandonada no se muestra como en curso y una sin medir lo dice', async () => {
+    const sesion = (extra: Record<string, unknown>) => ({
+      id: 's1',
+      user_id: 'u1',
+      nombre: 'Ada Root',
+      email: 'ada@x.mx',
+      rol: 'admin',
+      inicio: '2026-09-01T10:00:00Z',
+      fin: null,
+      ultima_actividad: '2026-09-01T11:00:00Z',
+      ip: '',
+      user_agent: '',
+      ...extra,
+    })
+    backend({
+      '/api/sessions': json({
+        items: [
+          sesion({ id: 'a', uso_segundos: 600, estado: 'inactiva', activa: false }),
+          sesion({ id: 'b', uso_segundos: null, estado: 'inactiva', activa: false }),
+        ],
+      }),
+    })
+
+    const html = await (await get('/ordena/admin/cuenta'))!.text()
+
+    expect(html).not.toContain('En línea')
+    expect(html).not.toContain('En curso')
+    expect(html).toContain('Sin cerrar: dejó de usarla')
+    expect(html).toContain('10 min')
+    expect(html).toContain('Sin medir')
+    expect(html).toContain('Tiempo de uso')
   })
 })
 
