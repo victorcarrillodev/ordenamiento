@@ -113,6 +113,22 @@ expuesto a internet directamente. Al arrancar, el backend migra el schema y
 siembra la cuenta ROOT (`ROOT_PASSWORD`) y cualquier cuenta extra que definas
 en `backend/seed-admins.json` (ver `backend/README.md`).
 
+### Registro de sesiones: tiempo de uso real
+
+«Registro de sesiones» ya no muestra cuánto lleva abierta una sesión sino cuánto
+se **usó** el panel (pestaña a la vista y con actividad), y una sesión que nadie
+cerró deja de aparecer «en curso» (cómo se mide: `backend/README.md`). Al
+actualizar una instalación existente:
+
+- La columna `user_sessions.active_seconds` se crea sola al arrancar el backend.
+- Las sesiones anteriores se muestran «Sin cerrar» desde su último movimiento y
+  «Sin medir»: no suman al tiempo total, porque no se sabe cuánto se usaron.
+- Quien tenga la sesión abierta al desplegar aparecerá «En línea» cuando la use,
+  pero esa sesión seguirá «Sin medir»: la medición empieza con la siguiente que se
+  inicie.
+- El aviso es `POST /ordena/admin/api/sesion/latido`: el proxy de enfrente no
+  necesita ninguna regla especial, pero no debe cachearlo ni bloquear los POST.
+
 ## Migración: se retiró pgvector
 
 La búsqueda ya no usa embeddings: el texto de los PDF vive en

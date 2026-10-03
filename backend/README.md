@@ -59,6 +59,10 @@ folio es el mismo desde el principio hasta la respuesta.
 - `participacion_documentos` – los PDF de cada participación: `formato_escaneado`,
   `version_publica`, `oficio` (firmado, interno) y `oficio_publico`; los dos
   públicos llevan su bandera de publicación y el oficio, número y fecha
+- `user_sessions` – una fila por sesión iniciada: quién, cuándo, desde dónde, el
+  último aviso de presencia (`last_seen_at`), el tiempo de uso medido
+  (`active_seconds`, NULL en las sesiones anteriores a la medición) y el cierre
+  (`ended_at`, solo si la persona pulsó «Cerrar sesión»). Ver «Bitácora de sesiones»
 - `participacion_envios` – bitácora de los correos de acuse y de respuesta
   (fecha, hora, destinatario y resultado, también cuando falla)
 - `proyecto_documentos` – documento técnico y documentos gráficos del Proyecto
@@ -98,6 +102,56 @@ mínimo y canónico (`<p>`, `<strong>`, `<br>`, `text-align`); lo canoniza
 `services/texto-rico.ts` al guardar (`saveCustomizations`) y el portal los dibuja
 sin insertarlos nunca como HTML. Los textos sin formato de antes se leen igual,
 así que no hace falta migrar nada.
+
+## Bitácora de sesiones: cómo se mide el tiempo
+
+El tiempo de una sesión **no** es lo que pasa entre que se inicia y se cierra. La
+cookie dura 7 días y casi nadie pulsa «Cerrar sesión» (se cierra la pestaña, se
+va a comer, se apaga la computadora): medir así dejaba «en curso» para siempre
+las sesiones abandonadas y les sumaba horas que nadie estuvo. Lo que se mide es
+la **presencia**:
+
+- **El navegador avisa** (`public/presencia.js`, cargado por la plantilla del
+  panel) con un `POST /admin/api/sesion/latido` sin cuerpo, que el frente pasa a
+  `POST /api/sessions/ping`. Avisa solo si hay una pestaña del panel **a la
+  vista** y la persona **hizo algo en los últimos 2 minutos** (clic, tecla,
+  desplazarse, mover el puntero); si el foco o el puntero están en un visor de
+  documentos (PDF), que no avisa de lo que pasa dentro, cuenta hasta 10 minutos.
+  Cada 30 s mientras está, de inmediato al cargar una pantalla o al volver, y una
+  vez más al ocultar la pestaña o salir de la página. Nunca manda duraciones ni
+  qué hace la persona: es un «sigo aquí».
+- **El servidor cuenta** (`services/sesiones.ts`): suma el tiempo entre avisos
+  seguidos con el reloj de Postgres, solo si no se separan más de
+  `HUECO_MAXIMO_S` (90 s). Un hueco mayor es una ausencia y no suma. Varias
+  pestañas no cuentan doble: el tiempo corre por sesión, no por pestaña.
+- **El estado se calcula al consultar**, no se guarda: `en_linea` (aviso de hace
+  menos de `EN_LINEA_S` = 90 s), `inactiva` (abierta pero nadie la usa: se fue sin
+  cerrar), `cerrada`, `expirada` (pasaron los 7 días) y `revocada` (se cambió la
+  contraseña de la cuenta después de abrirla). Ya no hay «en curso» eterno.
+- **Las sesiones anteriores a la medición** quedan con `active_seconds` NULL: se
+  muestran «Sin medir» y no suman al total ni al promedio. No se inventa un
+  tiempo, ni siquiera cuando esa sesión sigue en uso tras actualizar (se mide a
+  partir de la siguiente sesión que se inicie).
+- Sin JavaScript no hay medición: la sesión queda en 0 s y sin «En línea». Es lo
+  correcto cuando no se sabe.
+
+Lo que cuenta como «pausa» tiene tolerancia: las interrupciones de hasta 90 s no
+cortan el tiempo, y tras la última actividad corren hasta 2 minutos más (es lo que
+se tarda en dar a alguien por ausente). Los valores están en `public/presencia.js`
+(`LATIDO_MS`, `AUSENTE_MS`, `VISOR_MS`) y en `services/sesiones.ts`
+(`HUECO_MAXIMO_S`, `EN_LINEA_S`); una prueba de contrato vigila que el servidor
+tolere al menos dos avisos perdidos del navegador.
+
+Dos detalles de arquitectura que importan para que esto funcione:
+
+- Iniciar sesión se envía con `rmx-document` (navegación completa). Remix navega
+  dentro del mismo documento y **no ejecuta los scripts del `<head>`** de la página
+  que llega; los scripts del panel (`admin.js`, `editor-texto.js`,
+  `presencia.js`) cuelgan de ese `<head>`, así que entrar al panel por una
+  navegación interna los dejaba sin cargar hasta recargar a mano.
+- La ruta del aviso cuelga de `/api/`: `server.ts` convierte en página de error las
+  respuestas no exitosas de las rutas que no lo son, y el script necesita ver el
+  401 tal cual para dejar de avisar cuando la sesión terminó.
 
 ## Arranque
 
@@ -184,6 +238,8 @@ Configura un valor real en un archivo `.env` local (no versionado).
 | PUT               | `/api/consulta`                                                     | Iniciar, concluir o dejar pendiente la consulta (admin)                                    |
 | GET               | `/api/acuse/:folio?t=…`                                             | Acuse en PDF con el enlace firmado que recibe quien participa                              |
 | GET               | `/api/participations/:id/acuse`                                     | Acuse en PDF desde el panel (admin)                                                        |
+| POST              | `/api/sessions/ping`                                                | Aviso de presencia del panel (204): suma tiempo de uso y marca «en línea»                  |
+| GET               | `/api/sessions`                                                     | Bitácora de sesiones: estado, tiempo de uso medido y resumen (admin)                       |
 | GET/POST          | `/api/formatos`                                                     | Formatos para llenar a mano: listado (`?estado=pendiente`) / generar uno con su folio      |
 | GET               | `/api/formatos/:id/pdf`                                             | Formato en blanco con su folio, para imprimir (admin)                                      |
 | GET               | `/api/participations/:id/documentos[/:tipo]`                        | Documentos de la participación y correos enviados / el PDF (`?download=1`) (admin)         |
