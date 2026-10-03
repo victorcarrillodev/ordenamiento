@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test'
 import * as pool from '../db/pool.ts'
 import * as folios from '../services/folio.ts'
+import * as consultaSvc from '../services/consulta.ts'
 import * as mail from '../services/mail.ts'
 import { acuseFirmaValida } from '../services/acuse-token.ts'
 import { GENEROS, TEMATICAS, TIPOS_PARTICIPANTE } from '../services/participacion-campos.ts'
@@ -28,7 +29,18 @@ beforeEach(() => {
   ) => work(tx)) as never)
   const folio = spyOn(folios, 'nextFolio').mockResolvedValue('PRUEBA-1')
   const correo = spyOn(mail, 'mailConfigurado').mockReturnValue(false)
-  restore = [() => begin.mockRestore(), () => folio.mockRestore(), () => correo.mockRestore()]
+  // Salvo que una prueba diga otra cosa, la consulta está abierta y recibe participaciones.
+  const consulta = spyOn(consultaSvc, 'leerEstadoConsulta').mockResolvedValue({
+    etapa: 'abierta',
+    inicio: null,
+    cierre: null,
+  })
+  restore = [
+    () => begin.mockRestore(),
+    () => folio.mockRestore(),
+    () => correo.mockRestore(),
+    () => consulta.mockRestore(),
+  ]
 })
 afterEach(() => restore.forEach((fn) => fn()))
 
@@ -483,5 +495,52 @@ describe('al registrar, la respuesta trae el enlace firmado del acuse', () => {
     expect(cuerpo.folio).toBe('PRUEBA-1')
     expect(acuseFirmaValida('PRUEBA-1', cuerpo.acuse_token)).toBe(true)
     expect(acuseFirmaValida('PRUEBA-2', cuerpo.acuse_token)).toBe(false)
+  })
+})
+
+describe('solo se reciben participaciones con la consulta abierta', () => {
+  const conEtapa = (etapa: 'pendiente' | 'abierta' | 'concluida', datos = form()) =>
+    handleCreateParticipation(
+      new Request('http://local/api/participations', { method: 'POST', body: datos }),
+      null,
+      async () => etapa,
+    )
+
+  it('abierta: se registra', async () => {
+    expect((await conEtapa('abierta')).status).toBe(201)
+  })
+
+  it('pendiente: se rechaza con 403 y no se guarda nada', async () => {
+    const res = await conEtapa('pendiente')
+    expect(res.status).toBe(403)
+    expect(await res.json()).toEqual({
+      error: expect.stringContaining('aún no inicia'),
+      codigo: 'consulta_no_abierta',
+      etapa: 'pendiente',
+    })
+    expect(saved).toEqual({})
+  })
+
+  it('concluida: se rechaza con 403 y no se guarda nada', async () => {
+    const res = await conEtapa('concluida')
+    expect(res.status).toBe(403)
+    expect(await res.json()).toEqual({
+      error: expect.stringContaining('concluyó'),
+      codigo: 'consulta_no_abierta',
+      etapa: 'concluida',
+    })
+    expect(saved).toEqual({})
+  })
+
+  it('tampoco el personal captura participaciones fuera del periodo', async () => {
+    const datos = form()
+    datos.set('origen', 'fisica')
+    const res = await handleCreateParticipation(
+      new Request('http://local/api/participations', { method: 'POST', body: datos }),
+      { id: 'a1', name: 'Admin', email: 'a@x.mx', role: 'admin' },
+      async () => 'concluida',
+    )
+    expect(res.status).toBe(403)
+    expect(saved).toEqual({})
   })
 })

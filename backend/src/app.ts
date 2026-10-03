@@ -1,5 +1,6 @@
 import { getAttachment } from './routes/attachments.ts'
 import { rutasAcuse } from './routes/acuse.ts'
+import { rutasConsulta } from './routes/consulta.ts'
 import { matchPath, type ContextoRuta, type ManejadorRuta } from './routes/ruta.ts'
 import { readFile, rm } from 'node:fs/promises'
 import { join, isAbsolute } from 'node:path'
@@ -436,7 +437,7 @@ async function responderArchivoActividad(
  * Módulos de rutas, en el orden en que se prueban (ver routes/ruta.ts). Las rutas
  * nuevas se agregan aquí en su propio módulo en vez de crecer `handleRequest`.
  */
-const MANEJADORES: ManejadorRuta[] = [rutasAcuse]
+const MANEJADORES: ManejadorRuta[] = [rutasAcuse, rutasConsulta]
 
 /**
  * Router manual del backend — DECISIÓN A2 (2026-08-28, Arquitecto)

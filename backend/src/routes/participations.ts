@@ -12,6 +12,7 @@ import {
   validarAdjunto,
 } from '../files/limits.ts'
 import { acortarNombre, nombreEnDisco, sanitizarNombre } from '../files/nombres.ts'
+import { leerEstadoConsulta, type EtapaConsulta } from '../services/consulta.ts'
 import type { Alcance } from '../services/participacion-campos.ts'
 import { validateUpload } from '../services/upload-guard.ts'
 import { firmarAcuse } from '../services/acuse-token.ts'
@@ -28,6 +29,12 @@ import { json, bodyTooLarge, logger } from '../utils.ts'
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
 
+const MENSAJE_SIN_RECEPCION: Record<EtapaConsulta, string> = {
+  pendiente: 'La consulta pública aún no inicia: todavía no se reciben participaciones',
+  abierta: '',
+  concluida: 'La consulta pública concluyó: ya no se reciben participaciones nuevas',
+}
+
 function isOrigen(value: string): value is Origen {
   return value === 'digital' || value === 'fisica'
 }
@@ -43,6 +50,8 @@ function isOrigen(value: string): value is Origen {
 export async function handleCreateParticipation(
   request: Request,
   user: SessionUser | null,
+  /** Etapa de la consulta; las pruebas pasan la suya en vez de leer la configuración. */
+  leerEtapa: () => Promise<EtapaConsulta> = async () => (await leerEstadoConsulta()).etapa,
 ): Promise<Response> {
   if (bodyTooLarge(request, MAX_TOTAL_BYTES + 1024 * 1024)) {
     return json({ error: 'El cuerpo de la petición excede el tamaño máximo permitido' }, 413)
@@ -65,6 +74,13 @@ export async function handleCreateParticipation(
   // La participación física solo la crea un admin autenticado
   if (origin === 'fisica' && !puedeEntrarAlPanel(user?.role)) {
     return json({ error: 'Requiere rol admin' }, 403)
+  }
+
+  // Solo se reciben participaciones mientras la consulta está abierta: antes de
+  // iniciar no hay a qué responder y después de concluir el periodo se cerró.
+  const etapa = await leerEtapa()
+  if (etapa !== 'abierta') {
+    return json({ error: MENSAJE_SIN_RECEPCION[etapa], codigo: 'consulta_no_abierta', etapa }, 403)
   }
 
   // Consentimiento ciudadano obligatorio para origen digital

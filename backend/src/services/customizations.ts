@@ -182,6 +182,14 @@ export interface ThemeConfig {
    */
   programa: {
     aprobado: boolean
+    /**
+     * Etapa de la consulta pública. Decide si «Proyecto del Programa» se ve, si
+     * se reciben participaciones y qué mensaje se muestra (ver services/consulta.ts).
+     */
+    consulta: 'pendiente' | 'abierta' | 'concluida'
+    /** Cuándo se inició y cuándo se concluyó, en ISO 8601; null mientras no haya ocurrido. */
+    consultaInicio: string | null
+    consultaCierre: string | null
   }
 }
 
@@ -333,6 +341,9 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
   },
   programa: {
     aprobado: false,
+    consulta: 'pendiente',
+    consultaInicio: null,
+    consultaCierre: null,
   },
 }
 
@@ -526,6 +537,9 @@ export async function restoreAuditSnapshot(
   if (rows.length === 0) return null
 
   const snapshot = deepMerge(DEFAULT_THEME_CONFIG, rows[0].snapshot)
+  // El estado del Programa y de la consulta no es parte del diseño: restaurar una
+  // versión anterior no debe reabrir ni cerrar la consulta, ni quitar la aprobación.
+  snapshot.programa = (await getCustomizations()).programa
   return saveCustomizations({
     config: snapshot,
     user,

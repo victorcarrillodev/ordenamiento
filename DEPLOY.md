@@ -78,6 +78,20 @@ depende de dos variables de `.env`:
 El enlace vence en 60 minutos, solo sirve una vez, y al usarse invalida las
 sesiones abiertas de esa cuenta.
 
+### Inicio y cierre de la consulta pública
+
+La consulta pública tiene tres etapas —**pendiente**, **abierta** y
+**concluida**— que se cambian desde el panel, en **Participación ciudadana →
+Consulta pública**. Mientras esté pendiente no se reciben participaciones y el
+apartado «Proyecto del Programa» no se muestra; al iniciarla se hace visible y
+se abre el formulario; al concluirla se cierra la recepción y el portal muestra
+el mensaje «Consulta pública concluida».
+
+> **Al actualizar una instalación que ya recibía participaciones:** la consulta
+> arranca en _pendiente_ y el formulario dejará de recibir hasta que alguien con
+> acceso al panel pulse **Iniciar consulta pública**. Hazlo justo después de
+> desplegar si la recepción no debe interrumpirse.
+
 ### Correo de la consulta pública
 
 Los acuses de recepción y las respuestas a las participaciones salen de

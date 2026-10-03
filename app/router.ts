@@ -24,6 +24,7 @@ import {
   actividadNuevaController as adminActividadNuevaController,
 } from './actions/admin/actividades-controller.tsx'
 import portalIndicadoresController from './actions/admin/portal-indicadores-controller.tsx'
+import consultaController from './actions/admin/consulta-controller.tsx'
 import cuentaController from './actions/admin/cuenta-controller.tsx'
 import { render } from './middleware/render.tsx'
 import { adminRoutes, routes } from './routes.ts'
@@ -117,5 +118,6 @@ router.map(adminRoutes.actividades, adminActividadesController)
 router.map(adminRoutes.actividadNueva, adminActividadNuevaController)
 router.map(adminRoutes.actividadEditar, adminActividadEditarController)
 router.map(adminRoutes.indicadores, portalIndicadoresController)
+router.map(adminRoutes.consulta, consultaController)
 router.map(adminRoutes.cuenta, cuentaController)
 router.map(adminRoutes, adminController)

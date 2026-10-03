@@ -12,6 +12,7 @@ import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
 import { BACKEND_URL, getPublicTheme } from '../../backend.ts'
+import { avisoSinRecepcion, esEtapaConsulta, etapaDeConsulta } from '../../data/consulta.ts'
 import {
   cuerpoParaBackend,
   validarParticipacion,
@@ -38,12 +39,17 @@ export default createController(routes.participation, {
       const success = url.searchParams.get('success') === '1'
       const folio = url.searchParams.get('folio') ?? undefined
       const acuse = url.searchParams.get('acuse') ?? undefined
+      const theme = await getPublicTheme(context.request)
+      // La confirmación de quien acaba de registrarse se muestra siempre; el
+      // formulario, solo mientras la consulta recibe participaciones.
+      const aviso = success ? null : avisoSinRecepcion(etapaDeConsulta(theme))
       return context.render(
         <ParticipationPage
           success={success}
           folio={folio}
           acuseToken={acuse}
-          theme={await getPublicTheme(context.request)}
+          aviso={aviso}
+          theme={theme}
         />,
       )
     },
@@ -129,6 +135,7 @@ export default createController(routes.participation, {
 
         let backendOk = false
         let backendError: string | undefined
+        let etapaSinRecepcion: string | undefined
         let backendStatus = 0
         let createdFolio = ''
         let acuseToken = ''
@@ -156,8 +163,13 @@ export default createController(routes.participation, {
             createdFolio = data.folio ?? ''
             acuseToken = data.acuse_token ?? ''
           } else {
-            const data = (await response.json().catch(() => ({}))) as { error?: string }
+            const data = (await response.json().catch(() => ({}))) as {
+              error?: string
+              codigo?: string
+              etapa?: string
+            }
             backendError = data.error
+            if (data.codigo === 'consulta_no_abierta') etapaSinRecepcion = data.etapa
           }
         } catch (error) {
           clearTimeout(timeout)
@@ -179,6 +191,15 @@ export default createController(routes.participation, {
 
           // Si la red falló, backendOk queda en false
           backendOk = false
+        }
+
+        // La consulta cambió de etapa mientras se llenaba el formulario (o la página
+        // estaba en caché): no se pierde el trabajo en silencio, se explica.
+        if (backendStatus === 403 && esEtapaConsulta(etapaSinRecepcion)) {
+          return context.render(
+            <ParticipationPage theme={theme} aviso={avisoSinRecepcion(etapaSinRecepcion)} />,
+            { status: 403 },
+          )
         }
 
         // Fix 2: 429 con mensaje amigable en español

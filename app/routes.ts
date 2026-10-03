@@ -77,6 +77,8 @@ export const adminRoutes = route({
   actividadNueva: form(`${basePath}/admin/actividades/nueva`),
   actividadEditar: form(`${basePath}/admin/actividades/:id`),
   indicadores: form(`${basePath}/admin/indicadores`),
+  // Inicio y cierre de la consulta pública.
+  consulta: form(`${basePath}/admin/consulta`),
   estadisticas: get(`${basePath}/admin/estadisticas`),
   sesiones: get(`${basePath}/admin/sesiones`),
   cuenta: form(`${basePath}/admin/cuenta`),

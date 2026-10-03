@@ -13,6 +13,7 @@ export type AdminSection =
   | 'indicadores'
   | 'participaciones-digital'
   | 'participaciones-fisica'
+  | 'consulta'
   | 'estadisticas'
   | 'usuarios'
   | 'sesiones'
@@ -89,6 +90,12 @@ const GRUPOS: Array<{ titulo: string; items: ItemMenu[] }> = [
         href: adminRoutes.participaciones.href() + '?origen=fisica',
         label: 'Físicas',
         icon: <Icon name="mdi:clipboard-text-outline" />,
+      },
+      {
+        key: 'consulta',
+        href: adminRoutes.consulta.index.href(),
+        label: 'Consulta pública',
+        icon: <Icon name="mdi:bullhorn-outline" />,
       },
     ],
   },

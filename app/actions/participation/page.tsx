@@ -16,6 +16,7 @@ import {
   NavBar,
 } from '../../ui/nav-bar.tsx'
 import { Document } from '../document.tsx'
+import { ConsultaAviso } from './consulta-aviso.tsx'
 import { ParticipationForm } from './participation-form.tsx'
 import { SuccessDialog } from './success-dialog.tsx'
 
@@ -30,6 +31,8 @@ export interface ParticipationPageProps {
   folio?: string
   /** Firma del enlace de descarga del acuse, emitida por el backend al registrar. */
   acuseToken?: string
+  /** Si no se reciben participaciones (antes de iniciar o ya concluida), se explica en lugar del formulario. */
+  aviso?: { titulo: string; texto: string } | null
 }
 
 const splitStyle = css({
@@ -96,7 +99,7 @@ const formShellStyle = css({
 
 export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
   return () => {
-    const { errors = {}, values, success = false, folio, acuseToken, theme } = handle.props
+    const { errors = {}, values, success = false, folio, acuseToken, aviso, theme } = handle.props
 
     return (
       <Document
@@ -153,6 +156,8 @@ export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
                   }
                   homeHref={routes.home.href()}
                 />
+              ) : aviso ? (
+                <ConsultaAviso titulo={aviso.titulo} texto={aviso.texto} />
               ) : (
                 <ParticipationForm errors={errors} values={values} />
               )}

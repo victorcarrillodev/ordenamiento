@@ -1,15 +1,21 @@
 import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { olvidarTemaPublico } from '../../backend.ts'
 import { router } from '../../router.ts'
 import { routes } from '../../routes.ts'
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  olvidarTemaPublico()
+})
 
+/** El portal con la consulta abierta: es cuando el formulario se muestra. */
 async function paginaDelFormulario(): Promise<string> {
+  olvidarTemaPublico()
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => Response.json({})),
+    vi.fn(async () => Response.json({ theme: { programa: { consulta: 'abierta' } } })),
   )
   const res = await router.fetch(
     new Request(`http://localhost${routes.participation.index.href()}`),
