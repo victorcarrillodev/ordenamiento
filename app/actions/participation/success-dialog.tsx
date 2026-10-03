@@ -5,6 +5,8 @@ import { SuccessDialogBoost } from './public/success-dialog-boost.tsx'
 
 export interface SuccessDialogProps {
   folio?: string
+  /** Enlace firmado para descargar el acuse en PDF; sin él, no se ofrece la descarga. */
+  acuseHref?: string
   homeHref: string
   poetdumHref?: string
 }
@@ -33,7 +35,7 @@ const dialogStyle = css({
 
 export function SuccessDialog(handle: Handle<SuccessDialogProps>) {
   return () => {
-    const { folio, homeHref, poetdumHref = '/ordena/poetdum' } = handle.props
+    const { folio, acuseHref, homeHref, poetdumHref = '/ordena/poetdum' } = handle.props
     const titleId = `${handle.id}-title`
 
     return (
@@ -55,8 +57,8 @@ export function SuccessDialog(handle: Handle<SuccessDialogProps>) {
         </h2>
 
         <p style="font-size: 14.5px; line-height: 1.6; color: #334155; margin: 0 0 20px;">
-          Tu aportación ciudadana ha sido recibida y archivada en el expediente técnico del Programa
-          de Ordenamiento Territorial y Desarrollo Urbano (POETDUM) de San Pedro Tlaquepaque.
+          Tu participación quedó registrada. Puedes descargar tu acuse en PDF; también lo recibirás
+          en el correo electrónico que registraste.
         </p>
 
         {folio ? (
@@ -74,9 +76,24 @@ export function SuccessDialog(handle: Handle<SuccessDialogProps>) {
         ) : null}
 
         <div style="display: flex; flex-direction: column; gap: 10px;">
+          {acuseHref ? (
+            <a
+              href={acuseHref}
+              download={folio ? `Acuse ${folio}.pdf` : 'Acuse.pdf'}
+              style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #8c1d3d; color: #ffffff; font-family: Montserrat, sans-serif; font-size: 14px; font-weight: 700; padding: 13px 28px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 14px rgba(140, 29, 61, 0.3); transition: all 160ms ease;"
+            >
+              <iconify-icon icon="mdi:file-download-outline" width="18" height="18" />
+              <span>Descargar acuse PDF</span>
+            </a>
+          ) : null}
+
           <a
             href={homeHref}
-            style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #8c1d3d; color: #ffffff; font-family: Montserrat, sans-serif; font-size: 14px; font-weight: 700; padding: 13px 28px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 14px rgba(140, 29, 61, 0.3); transition: all 160ms ease;"
+            style={
+              acuseHref
+                ? 'display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #ffffff; color: #8c1d3d; font-family: Montserrat, sans-serif; font-size: 14px; font-weight: 700; padding: 11px 28px; border-radius: 8px; text-decoration: none; border: 1.5px solid #8c1d3d; transition: all 160ms ease;'
+                : 'display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #8c1d3d; color: #ffffff; font-family: Montserrat, sans-serif; font-size: 14px; font-weight: 700; padding: 13px 28px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 14px rgba(140, 29, 61, 0.3); transition: all 160ms ease;'
+            }
           >
             <iconify-icon icon="mdi:home" width="18" height="18" />
             <span>Volver al inicio</span>

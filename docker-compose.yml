@@ -59,6 +59,9 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       MAIL_FROM: ${MAIL_FROM:-}
+      # Remitente de los acuses y de las respuestas a las participaciones. Por
+      # omisión, consulta.poetdum@tlaquepaque.gob.mx (ver DEPLOY.md).
+      MAIL_FROM_CONSULTA: ${MAIL_FROM_CONSULTA:-}
       # Origen público del portal. Solo lo usa el correo de recuperación de
       # contraseña, para construir el enlace de restablecimiento. Se toma de
       # aquí y NUNCA de la cabecera `Host` de la petición: un `Host` falsificado

@@ -22,6 +22,8 @@ export const routes = route({
   participationLogin: get(`${basePath}/participation/login`),
   logout: post(`${basePath}/logout`),
   participation: form(`${basePath}/participation`),
+  // Descarga del acuse en PDF con el enlace firmado que recibe quien acaba de participar.
+  acuse: get(`${basePath}/participation/acuse/:folio`),
   // Información y avances del Programa (POETDUM). Cada actividad se registra
   // una vez en el panel y aparece sola donde corresponde según su estado.
   poetdum: {
@@ -64,6 +66,8 @@ export const adminRoutes = route({
   participacionEnviar: form(`${basePath}/admin/participaciones/:id/enviar`),
   participacionResolver: form(`${basePath}/admin/participaciones/:id/resolucion`),
   word: get(`${basePath}/admin/participaciones/:id/word`),
+  // Acuse en PDF de una participación, para imprimirlo e integrarlo al expediente.
+  participacionAcuse: get(`${basePath}/admin/participaciones/:id/acuse`),
   adjunto: get(`${basePath}/admin/participaciones/:id/adjuntos/:aid`),
   adjuntoVista: get(`${basePath}/admin/participaciones/:id/adjuntos/:aid/vista`),
   participacionDetalle: get(`${basePath}/admin/participaciones/:id`),

@@ -28,6 +28,8 @@ export interface ParticipationPageProps {
   values?: ValoresParticipacion
   success?: boolean
   folio?: string
+  /** Firma del enlace de descarga del acuse, emitida por el backend al registrar. */
+  acuseToken?: string
 }
 
 const splitStyle = css({
@@ -94,7 +96,7 @@ const formShellStyle = css({
 
 export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
   return () => {
-    const { errors = {}, values, success = false, folio, theme } = handle.props
+    const { errors = {}, values, success = false, folio, acuseToken, theme } = handle.props
 
     return (
       <Document
@@ -142,7 +144,15 @@ export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
           <div mix={formPanelStyle}>
             <div mix={formShellStyle}>
               {success ? (
-                <SuccessDialog folio={folio} homeHref={routes.home.href()} />
+                <SuccessDialog
+                  folio={folio}
+                  acuseHref={
+                    folio && acuseToken
+                      ? `${routes.acuse.href({ folio })}?t=${encodeURIComponent(acuseToken)}`
+                      : undefined
+                  }
+                  homeHref={routes.home.href()}
+                />
               ) : (
                 <ParticipationForm errors={errors} values={values} />
               )}

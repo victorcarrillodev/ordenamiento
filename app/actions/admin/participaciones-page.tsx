@@ -195,6 +195,15 @@ export function ParticipacionesPage(handle: Handle<ParticipacionesPageProps>) {
                           >
                             👁 Ver
                           </a>
+                          <a
+                            class="btn btn--white"
+                            href={adminRoutes.participacionAcuse.href({ id: p.id })}
+                            download={`Acuse ${p.folio}.pdf`}
+                            title={`Descargar el acuse PDF del folio ${p.folio}`}
+                            aria-label={`Descargar el acuse PDF del folio ${p.folio}`}
+                          >
+                            📄 Acuse
+                          </a>
                           {p.adjuntos.length > 0 ? (
                             <a
                               class="btn btn--excel"

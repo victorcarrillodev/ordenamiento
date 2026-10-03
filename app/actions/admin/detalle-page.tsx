@@ -240,6 +240,35 @@ function PanelAdjuntos(handle: Handle<{ p: Detalle }>) {
   }
 }
 
+/**
+ * Acuse de recepción en PDF: se imprime e integra al expediente como constancia
+ * física de la participación. Es el mismo documento que recibe quien participó:
+ * una sola hoja carta, con el folio en el nombre del archivo.
+ */
+function PanelAcuse(handle: Handle<{ p: Detalle }>) {
+  return () => {
+    const { p } = handle.props
+    return (
+      <div class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">📄 Acuse de recepción</h2>
+          <a
+            class="btn btn--green"
+            href={adminRoutes.participacionAcuse.href({ id: p.id })}
+            download={`Acuse ${p.folio}.pdf`}
+          >
+            ⬇ Descargar acuse PDF
+          </a>
+        </div>
+        <p class="breadcrumb">
+          Una hoja tamaño carta, lista para imprimir e integrar al expediente. Es el mismo acuse que
+          recibe quien participa.
+        </p>
+      </div>
+    )
+  }
+}
+
 function fmtFechaHora(v: string | null): string {
   if (!v) return '—'
   const d = new Date(v)
@@ -481,6 +510,7 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
             {dictamen === 'estado' ? (
               <AdminAlert type="warning">Elige si la participación es procedente o no.</AdminAlert>
             ) : null}
+            <PanelAcuse p={p} />
             <LineaEtapas p={p} />
             <div class="detalle-split">
               <div class="panel">

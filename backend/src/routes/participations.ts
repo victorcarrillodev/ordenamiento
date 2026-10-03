@@ -14,6 +14,7 @@ import {
 import { acortarNombre, nombreEnDisco, sanitizarNombre } from '../files/nombres.ts'
 import type { Alcance } from '../services/participacion-campos.ts'
 import { validateUpload } from '../services/upload-guard.ts'
+import { firmarAcuse } from '../services/acuse-token.ts'
 import { nextFolio } from '../services/folio.ts'
 import { ingestParticipation, type IngestFile } from '../services/ingest.ts'
 import { enviarAcuseReciboParticipacion, mailConfigurado } from '../services/mail.ts'
@@ -208,7 +209,15 @@ export async function handleCreateParticipation(
     }
 
     // El spread ya aporta folio y participationId; `id` es el alias que espera el cliente.
-    return json({ ...resultado, id: resultado.participationId }, 201)
+    // `acuse_token` es el enlace firmado para descargar el acuse (ver acuse-token.ts).
+    return json(
+      {
+        ...resultado,
+        id: resultado.participationId,
+        acuse_token: firmarAcuse(resultado.folio),
+      },
+      201,
+    )
   } finally {
     // Cubre tanto la excepción como los `return` de rechazo (400/415).
     if (!persistido) {

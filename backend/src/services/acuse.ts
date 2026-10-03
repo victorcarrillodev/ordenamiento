@@ -91,7 +91,7 @@ type Doc = InstanceType<typeof PDFDocument>
 
 // ── Textos fijos del modelo aprobado ────────────────────────────────────────
 
-const T = {
+export const TEXTOS_ACUSE = {
   cintillo: 'GOBIERNO MUNICIPAL DE SAN PEDRO TLAQUEPAQUE · POETDUM',
   titulo: 'Recibimos tu observación',
   subtitulo: 'Acuse de recepción de participación ciudadana',
@@ -118,6 +118,8 @@ const T = {
     'Las respuestas estarán disponibles para consulta en la Bitácora, mediante el folio asignado, y de forma presencial en las oficinas de la Dirección de Gestión Territorial y Planeación Urbana, ubicadas en calle Juárez 28, colonia Centro, San Pedro Tlaquepaque, Jalisco. Asimismo, se enviará una notificación al correo electrónico registrado.',
   pie: 'Bitácora · Gobierno Municipal de San Pedro Tlaquepaque',
 } as const
+
+const T = TEXTOS_ACUSE
 
 // ── Formato de la fecha ─────────────────────────────────────────────────────
 

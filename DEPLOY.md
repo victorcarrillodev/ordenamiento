@@ -78,6 +78,21 @@ depende de dos variables de `.env`:
 El enlace vence en 60 minutos, solo sirve una vez, y al usarse invalida las
 sesiones abiertas de esa cuenta.
 
+### Correo de la consulta pública
+
+Los acuses de recepción y las respuestas a las participaciones salen de
+**`consulta.poetdum@tlaquepaque.gob.mx`**, para que las personas que participan
+vean esa dirección como origen. Se puede cambiar con `MAIL_FROM_CONSULTA` en
+`.env` (por omisión es esa). El resto de los correos del sistema (recuperación
+de contraseña, avisos) siguen saliendo de `MAIL_FROM`.
+
+El servidor SMTP tiene que **estar autorizado para enviar como esa dirección**
+(que el buzón exista y que SPF/DKIM del dominio `tlaquepaque.gob.mx` lo
+permitan, o que el relay lo acepte con el usuario de `SMTP_USER`). Si no, el
+servidor rechazará el envío o los mensajes caerán en spam. Cada envío de
+respuesta queda registrado con su fecha, hora y resultado, y el panel muestra
+el error si el servidor lo rechaza.
+
 Esto levanta 3 contenedores en una red interna (`db`, `backend`, `web`).
 Solo `web` publica un puerto, y solo en `127.0.0.1:44100` — no queda
 expuesto a internet directamente. Al arrancar, el backend migra el schema y

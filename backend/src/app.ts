@@ -1,4 +1,6 @@
 import { getAttachment } from './routes/attachments.ts'
+import { rutasAcuse } from './routes/acuse.ts'
+import { matchPath, type ContextoRuta, type ManejadorRuta } from './routes/ruta.ts'
 import { readFile, rm } from 'node:fs/promises'
 import { join, isAbsolute } from 'node:path'
 import {
@@ -431,6 +433,12 @@ async function responderArchivoActividad(
 }
 
 /**
+ * Módulos de rutas, en el orden en que se prueban (ver routes/ruta.ts). Las rutas
+ * nuevas se agregan aquí en su propio módulo en vez de crecer `handleRequest`.
+ */
+const MANEJADORES: ManejadorRuta[] = [rutasAcuse]
+
+/**
  * Router manual del backend — DECISIÓN A2 (2026-08-28, Arquitecto)
  *
  * Se evaluó migrar `handleRequest` (hoy ~800 líneas, 24 ramas `if (method+pathname)`)
@@ -453,24 +461,11 @@ async function responderArchivoActividad(
  *
  * Si se reintroduce búsqueda, usar el flujo canónico `GET /api/participations?q=...`
  * con ranking en vez de resucitar `GET /api/search` aislado.
+ *
+ * Actualización (2026-10): las rutas de acuse, respuestas, consulta y Proyecto del
+ * Programa viven en `routes/*.ts` como módulos (`MANEJADORES`), con el mismo
+ * `matchPath`; `handleRequest` conserva solo las rutas anteriores.
  */
-function matchPath(pathname: string, pattern: string): Record<string, string> | null {
-  const pathParts = pathname.split('/').filter(Boolean)
-  const patternParts = pattern.split('/').filter(Boolean)
-  if (pathParts.length !== patternParts.length) return null
-
-  const params: Record<string, string> = {}
-  for (let i = 0; i < patternParts.length; i++) {
-    const p = patternParts[i]
-    if (p.startsWith(':')) {
-      params[p.slice(1)] = pathParts[i]
-    } else if (p !== pathParts[i]) {
-      return null
-    }
-  }
-  return params
-}
-
 export async function handleRequest(request: Request): Promise<Response> {
   const url = new URL(request.url)
   const { pathname } = url
@@ -701,6 +696,15 @@ export async function handleRequest(request: Request): Promise<Response> {
   // `root` está por encima de `admin`: donde entra un administrador, entra él.
   const requireAdmin = (): Response | null =>
     puedeEntrarAlPanel(user?.role) ? null : json({ error: 'Requiere rol admin' }, 403)
+
+  // Módulos de rutas propios (acuse, respuestas…): cada uno responde si la
+  // petición le toca. Van antes de las rutas de abajo porque algunas comparten
+  // prefijo con ellas (`/api/participations/:id/acuse`).
+  const contexto: ContextoRuta = { request, url, method, user }
+  for (const manejador of MANEJADORES) {
+    const respuesta = await manejador(contexto)
+    if (respuesta) return respuesta
+  }
 
   // Listado con filtros + paginación — expone PII de participantes: solo admin.
   if (method === 'GET' && pathname === '/api/participations') {

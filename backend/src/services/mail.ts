@@ -1,12 +1,16 @@
 import nodemailer from 'nodemailer'
-import { readFile, stat } from 'node:fs/promises'
-import { join } from 'node:path'
 
 import { sql } from '../db/pool.ts'
-import { attachmentPath } from '../files/attachment-path.ts'
 import { obtenerActividadGestion } from './actividades.ts'
-
-const UPLOAD_DIR = join(process.cwd(), 'uploads')
+import { datosDeParticipacion } from './acuse-datos.ts'
+import {
+  filasDelAcuse,
+  generarAcuse,
+  nombreArchivoAcuse,
+  SIN_ADJUNTOS,
+  TEXTOS_ACUSE,
+} from './acuse.ts'
+import { textoDeOpcion } from './participacion-campos.ts'
 
 const SMTP_HOST = process.env.SMTP_HOST || '127.0.0.1'
 const SMTP_PORT = Number(process.env.SMTP_PORT || 25)
@@ -17,6 +21,15 @@ const MAIL_FROM =
   (SMTP_USER
     ? `"Bitácora Tlaquepaque" <${SMTP_USER}>`
     : '"Bitácora Tlaquepaque" <no-reply@tlaquepaque.gob.mx>')
+
+/**
+ * Remitente de los acuses y de las notificaciones de la consulta pública, para
+ * que las personas que participan vean ese origen en lo que reciben. Debe ser un
+ * buzón que el servidor SMTP tenga autorizado para enviar (ver DEPLOY.md).
+ */
+export const REMITENTE_CONSULTA =
+  process.env.MAIL_FROM_CONSULTA ||
+  '"Consulta pública POETDUM" <consulta.poetdum@tlaquepaque.gob.mx>'
 
 /**
  * true si hay configuración SMTP suficiente para enviar.
@@ -82,6 +95,7 @@ function renderPlantillaBase({
   badgeColor = '#8B1E3F',
   contenidoHtml,
   pieExtra,
+  pieEntidad = 'Dirección de Medio Ambiente y Ecología',
 }: {
   titulo: string
   subtitulo?: string
@@ -89,6 +103,8 @@ function renderPlantillaBase({
   badgeColor?: string
   contenidoHtml: string
   pieExtra?: string
+  /** Dependencia que firma el pie. Los mensajes de la consulta pública llevan la que recibe y responde. */
+  pieEntidad?: string
 }): string {
   const anio = new Date().getFullYear()
 
@@ -153,6 +169,8 @@ function renderPlantillaBase({
     }
     .content-body {
       padding: 32px;
+      /* El contenedor es una celda centrada: sin esto, párrafos y tablas heredan el centrado. */
+      text-align: left;
     }
     .badge {
       display: inline-block;
@@ -312,7 +330,7 @@ function renderPlantillaBase({
 
             <!-- Footer -->
             <div class="footer">
-              <div class="footer-highlight">Dirección de Medio Ambiente y Ecología</div>
+              <div class="footer-highlight">${escapeHtml(pieEntidad)}</div>
               <div>Bitácora &bull; Programa de Ordenamiento Ecológico y Territorial de San Pedro Tlaquepaque</div>
               <div style="margin-top: 10px; font-size: 11px; color: #94A3B8;">
                 Este acuse digital tiene validez oficial de confirmación de recepción ciudadana. &copy; ${anio} San Pedro Tlaquepaque, Jalisco.
@@ -327,131 +345,109 @@ function renderPlantillaBase({
 </html>`
 }
 
+const DIRECCION_RESPONSABLE = 'Dirección de Gestión Territorial y Planeación Urbana'
+
+/** Una fila de la tabla de información del correo. */
+const filaDeCorreo = (etiqueta: string, valor: string) =>
+  `<tr><td class="label-col">${escapeHtml(etiqueta)}</td><td class="val-col">${escapeHtml(valor || '—')}</td></tr>`
+
 /**
- * Envía el Acuse de Recibo Oficial formal al ciudadano (modalidad digital o física).
+ * Envía al participante la confirmación de su participación: toda la
+ * información registrada —incluidos los datos complementarios, que no van en el
+ * acuse— y el acuse en PDF adjunto. Sale de `REMITENTE_CONSULTA`.
  */
 export async function enviarAcuseReciboParticipacion(
   participationId: string,
   para: string,
+  /** De dónde salen los datos; las pruebas pasan los suyos en vez de leer la base. */
+  cargar: typeof datosDeParticipacion = datosDeParticipacion,
 ): Promise<{ enviado: true; adjuntos: number; folio: string }> {
   if (!mailConfigurado()) {
     throw new Error('SMTP_NO_CONFIGURADO')
   }
 
-  const rows = await sql<ParticipacionCorreo[]>`
-    SELECT folio, origen, nombre, correo, municipio, colonia, institucion, ocupacion, estado, fuente, genero, tematica, observacion, created_at
-    FROM participations WHERE id = ${participationId}
-  `
-  if (rows.length === 0) throw new Error('NO_ENCONTRADA')
-  const p = rows[0]
+  const p = await cargar({ id: participationId })
+  if (!p) throw new Error('NO_ENCONTRADA')
 
-  const adjuntos = await sql<Array<{ nombre_original: string; ruta_local: string }>>`
-    SELECT nombre_original, ruta_local FROM attachments WHERE participation_id = ${participationId}
-  `
+  const { pdf } = await generarAcuse(p)
 
-  const attachments: Array<{ filename: string; content: Buffer }> = []
-  let bytesCorreo = 0
-  // El acuse debe llegar aunque el expediente contenga archivos de 100 MB.
-  const MAX_ADJUNTOS_CORREO = 10 * 1024 * 1024
-  for (const a of adjuntos) {
-    try {
-      const ruta = await attachmentPath(UPLOAD_DIR, a.ruta_local)
-      const { size } = await stat(ruta)
-      if (bytesCorreo + size > MAX_ADJUNTOS_CORREO) continue
-      attachments.push({ filename: a.nombre_original, content: await readFile(ruta) })
-      bytesCorreo += size
-    } catch {
-      // Si el adjunto no se lee, se envía el resumen
-    }
-  }
+  const filas = [
+    ...filasDelAcuse(p),
+    ['Tipo de participante', textoDeOpcion(p.fuente, p.fuente_otra)],
+    ['Género', p.genero],
+    ['Domicilio de quien participa', p.domicilio],
+    ['Municipio de residencia', p.municipio_participante],
+    ['Ocupación o puesto', p.ocupacion],
+  ] as Array<[string, string]>
 
-  const fechaFormateada = p.created_at
-    ? new Date(p.created_at).toLocaleString('es-MX', {
-        dateStyle: 'full',
-        timeStyle: 'medium',
-      })
-    : '—'
-
-  const esDigital = p.origen === 'digital'
-  const modalidadLabel = esDigital
-    ? 'Participación Ciudadana Digital (Vía Portal Web Oficial)'
-    : 'Participación Física (Ventanilla Oficial / Oficialía de Partes)'
+  const adjuntosHtml =
+    p.adjuntos.length > 0
+      ? p.adjuntos.map((n) => `<div class="attachment-pill">📎 ${escapeHtml(n)}</div>`).join(' ')
+      : `<p style="font-size:13.5px;color:#475569;margin:0;">${escapeHtml(SIN_ADJUNTOS)}</p>`
 
   const contenidoHtml = `
-    <!-- Folio Destacado -->
     <div class="folio-box">
-      <div class="folio-label">Folio Oficial Asignado</div>
+      <div class="folio-label">Tu folio</div>
       <div class="folio-value">${escapeHtml(p.folio)}</div>
+      <div style="font-size:12px;color:#6B21A8;margin-top:6px;">${escapeHtml(TEXTOS_ACUSE.folioNota)}</div>
     </div>
 
     <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-top: 0;">
-      Estimado(a) <strong>${escapeHtml(p.nombre || 'Ciudadano(a)')}</strong>:
+      <strong>Hola, ${escapeHtml(p.nombre || 'participante')}:</strong>
     </p>
     <p style="font-size: 14px; line-height: 1.6; color: #334155;">
-      Por medio del presente documento oficial, la <strong>Dirección de Medio Ambiente y Ecología</strong> del Municipio de San Pedro Tlaquepaque hace constar la <strong>recepción formal</strong> de su propuesta para la elaboración del <em>Programa de Ordenamiento Ecológico y Territorial (POETDUM)</em>.
+      ${escapeHtml(TEXTOS_ACUSE.intro)} Adjuntamos tu acuse de recepción en formato PDF.
     </p>
+    <p style="font-size: 12.5px; color: #64748B; line-height: 1.5;">${escapeHtml(TEXTOS_ACUSE.aviso)}</p>
 
-    <!-- Ficha de Datos Recibidos -->
-    <div class="section-heading">1. Resumen de la Información Registrada</div>
+    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.informacion)}</div>
     <table class="info-table">
-      <tr><td class="label-col">Folio de Registro</td><td class="val-col"><strong>${escapeHtml(p.folio)}</strong></td></tr>
-      <tr><td class="label-col">Modalidad</td><td class="val-col">${escapeHtml(modalidadLabel)}</td></tr>
-      <tr><td class="label-col">Nombre del Promovente</td><td class="val-col">${escapeHtml(p.nombre || '—')}</td></tr>
-      <tr><td class="label-col">Correo Registrado</td><td class="val-col">${escapeHtml(p.correo || '—')}</td></tr>
-      <tr><td class="label-col">Municipio / Localidad</td><td class="val-col">${escapeHtml(p.municipio || 'San Pedro Tlaquepaque')}</td></tr>
-      <tr><td class="label-col">Colonia / Zona de Interés</td><td class="val-col">${escapeHtml(p.colonia || '—')}</td></tr>
-      ${p.institucion ? `<tr><td class="label-col">Institución / Organización</td><td class="val-col">${escapeHtml(p.institucion)}</td></tr>` : ''}
-      ${p.fuente ? `<tr><td class="label-col">Sector / Actor</td><td class="val-col">${escapeHtml(p.fuente)}</td></tr>` : ''}
-      <tr><td class="label-col">Eje Temático</td><td class="val-col"><strong>${escapeHtml(p.tematica || 'General / Medio Ambiente')}</strong></td></tr>
-      <tr><td class="label-col">Fecha y Hora de Recepción</td><td class="val-col">${escapeHtml(fechaFormateada)}</td></tr>
-      <tr><td class="label-col">Estatus Inicial</td><td class="val-col"><span style="color:#D97706;font-weight:700;">● ${escapeHtml(p.estado || 'En proceso')}</span></td></tr>
+      ${filas.map(([etiqueta, valor]) => filaDeCorreo(etiqueta, valor)).join('\n      ')}
     </table>
 
-    <!-- Contenido de la Observación -->
-    <div class="section-heading">2. Observación, Propuesta o Planteamiento</div>
-    <div class="observation-box">${escapeHtml(p.observacion || '(Sin texto de observación capturado)')}</div>
+    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.observacion)}</div>
+    <div class="observation-box">${escapeHtml(p.observacion)}</div>
+    <p style="font-size: 12.5px; color: #64748B; line-height: 1.5;">${escapeHtml(TEXTOS_ACUSE.publicas)}</p>
 
-    <!-- Archivos Adjuntos -->
-    ${
-      adjuntos.length > 0
-        ? `<div class="section-heading">3. Documentos y Anexos Recibidos (${adjuntos.length})</div>
-           <div style="margin-bottom: 20px;">${adjuntos.map((a) => `<div class="attachment-pill">📎 ${escapeHtml(a.nombre_original)}</div>`).join(' ')}</div>`
-        : ''
-    }
+    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.adjuntos)}</div>
+    <div style="margin-bottom: 20px;">${adjuntosHtml}</div>
 
-    <!-- Protocolo Oficial de Atención -->
-    ${attachments.length < adjuntos.length ? '<p>Los documentos que no se adjuntan a este correo se conservan en el expediente de la participación. El correo incluye hasta 10 MB de adjuntos.</p>' : ''}
-    <div class="section-heading">${adjuntos.length > 0 ? '4' : '3'}. Protocolo de Seguimiento y Próximos Pasos</div>
+    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.queSigue)}</div>
     <div class="protocol-box">
-      <div class="protocol-title">Etapas del Proceso de Consulta y Dictamen:</div>
-      <div class="protocol-step">✔ <strong>Paso 1: Asignación y Registro:</strong> Su propuesta ha quedado formalmente asentada en la Bitácora oficial.</div>
-      <div class="protocol-step">⏳ <strong>Paso 2: Análisis Técnico y Vectorial:</strong> El Comité Técnico del POETDUM evaluará la viabilidad ambiental, territorial y normativa del planteamiento.</div>
-      <div class="protocol-step">📋 <strong>Paso 3: Integración y Respuesta:</strong> Se integrará en la memoria técnica del programa y se emitirá el dictamen de procedencia correspondiente.</div>
+      ${TEXTOS_ACUSE.pasos
+        .map(
+          ([cabeza, cuerpo]) =>
+            `<div class="protocol-step"><strong>${escapeHtml(cabeza)}:</strong> ${escapeHtml(cuerpo)}</div>`,
+        )
+        .join('\n      ')}
     </div>
 
-    <p style="font-size: 12.5px; color: #64748B; line-height: 1.5; margin-top: 16px;">
-      <em>Fundamento: Artículos 19, 20 y 20 BIS de la Ley General del Equilibrio Ecológico y la Protección al Ambiente, y el Reglamento de Planeación y Ordenamiento Territorial de San Pedro Tlaquepaque, Jalisco.</em>
-    </p>
+    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.consulta)}</div>
+    <p style="font-size: 13.5px; line-height: 1.6; color: #334155;">${escapeHtml(TEXTOS_ACUSE.consulta1)}</p>
+    <p style="font-size: 13.5px; line-height: 1.6; color: #334155;">${escapeHtml(TEXTOS_ACUSE.consulta2)}</p>
   `
 
   const html = renderPlantillaBase({
-    titulo: `Acuse Oficial de Participación`,
-    subtitulo: `Confirmación de Recepción y Registro en la Bitácora`,
+    titulo: TEXTOS_ACUSE.titulo,
+    subtitulo: TEXTOS_ACUSE.subtitulo,
     badge: `Folio: ${p.folio}`,
     badgeColor: '#7A1A37',
     contenidoHtml,
+    pieEntidad: DIRECCION_RESPONSABLE,
   })
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: MAIL_FROM,
+    from: REMITENTE_CONSULTA,
     to: para,
-    subject: `[Acuse Oficial POETDUM] Recepción de Participación Ciudadana — Folio ${p.folio}`,
+    subject: `Acuse de recepción de tu participación · Folio ${p.folio}`,
     html,
-    attachments,
+    attachments: [
+      { filename: nombreArchivoAcuse(p.folio), content: pdf, contentType: 'application/pdf' },
+    ],
   })
 
-  return { enviado: true, adjuntos: attachments.length, folio: p.folio }
+  return { enviado: true, adjuntos: 1, folio: p.folio }
 }
 
 interface ResolucionCorreo extends ParticipacionCorreo {
@@ -563,7 +559,7 @@ export async function enviarResolucionParticipacion(
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: MAIL_FROM,
+    from: REMITENTE_CONSULTA,
     to: para,
     subject: `[Resolución POETDUM] Participación ${p.folio} — ${p.estado}`,
     html,

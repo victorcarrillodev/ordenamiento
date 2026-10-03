@@ -1,10 +1,16 @@
-import { describe, expect, it, spyOn, beforeEach, afterEach, mock } from 'bun:test'
-import * as pool from '../db/pool.ts'
+import { describe, expect, it, beforeEach, afterEach, mock } from 'bun:test'
 
 // Mockeamos nodemailer para no conectar a SMTP real.
-const sendMailCalls: Array<{ to: string; html: string }> = []
-const sendMailMock = (opts: { to: string; html: string }) => {
-  sendMailCalls.push({ to: opts.to, html: opts.html })
+interface CorreoEnviado {
+  from: string
+  to: string
+  subject: string
+  html: string
+  attachments: Array<{ filename: string; content: Buffer; contentType?: string }>
+}
+const sendMailCalls: CorreoEnviado[] = []
+const sendMailMock = (opts: CorreoEnviado) => {
+  sendMailCalls.push(opts)
   return Promise.resolve({})
 }
 const nodemailerMock = {
@@ -15,7 +21,13 @@ const nodemailerMock = {
 }
 mock.module('nodemailer', () => nodemailerMock)
 
-const { mailConfigurado, escapeHtml, enviarAcuseReciboParticipacion } = await import('./mail.ts')
+// Los datos de la participación se leen de la base: aquí se sustituyen por un
+// expediente de prueba que cada caso puede modificar.
+let expediente: Record<string, unknown> | null = null
+const cargar = (() => Promise.resolve(expediente)) as never
+
+const { mailConfigurado, escapeHtml, enviarAcuseReciboParticipacion, REMITENTE_CONSULTA } =
+  await import('./mail.ts')
 
 describe('mailConfigurado', () => {
   const orig = process.env.SMTP_HOST
@@ -43,96 +55,141 @@ describe('escapeHtml (anti-XSS en correos)', () => {
   })
 })
 
-describe('enviarAcuseReciboParticipacion', () => {
-  let sqlMock: ReturnType<typeof spyOn> | undefined
+/** Una participación completa, con los datos complementarios que el acuse no muestra. */
+const participacion = (cambios: Record<string, unknown> = {}) => ({
+  id: 'id-1',
+  folio: 'POE-2026-0001',
+  origen: 'digital',
+  nombre: 'Juan Pérez',
+  correo: 'juan@ejemplo.com',
+  fechaRecepcion: new Date('2026-01-15T16:00:00Z'),
+  alcance_ubicacion: 'especifico',
+  calle: 'Av. Juárez 100',
+  colonia: 'Centro',
+  codigo_postal: '45500',
+  institucion: 'Colectivo Ambiental',
+  tematica: 'Movilidad',
+  tematica_otra: '',
+  observacion: 'Propuesta de parque lineal sobre el arroyo',
+  adjuntos: [] as string[],
+  estado: 'En proceso',
+  fuente: 'Otra',
+  fuente_otra: 'Colectivo vecinal',
+  genero: 'Hombre',
+  domicilio: 'Calle del hogar 42, Santa Anita',
+  municipio_participante: 'Guadalajara',
+  ocupacion: 'Arquitecto',
+  ...cambios,
+})
 
+describe('enviarAcuseReciboParticipacion', () => {
   beforeEach(() => {
     process.env.SMTP_HOST = 'smtp.example.com'
-    // mail.ts usa el template tag `sql\`...\`` (la función sql misma, no .unsafe)
-    sqlMock = spyOn(pool, 'sql')
+    expediente = participacion()
     sendMailCalls.length = 0
   })
   afterEach(() => {
-    sqlMock?.mockRestore()
     delete process.env.SMTP_HOST
   })
 
   it('lanza si no hay SMTP configurado', async () => {
     delete process.env.SMTP_HOST
-    await expect(enviarAcuseReciboParticipacion('x', 'a@b.com')).rejects.toThrow(
+    await expect(enviarAcuseReciboParticipacion('x', 'a@b.com', cargar)).rejects.toThrow(
       'SMTP_NO_CONFIGURADO',
     )
   })
 
-  it('arma el correo con folio y nombre del participante', async () => {
-    sqlMock!.mockImplementation(async (strings: TemplateStringsArray) => {
-      const sql = strings.join('')
-      if (sql.includes('FROM participations')) {
-        return [
-          {
-            folio: 'POE-2026-0001',
-            origen: 'digital',
-            nombre: 'Juan Pérez',
-            correo: 'juan@ejemplo.com',
-            municipio: 'San Pedro Tlaquepaque',
-            colonia: 'Centro',
-            institucion: null,
-            ocupacion: null,
-            estado: 'En proceso',
-            fuente: null,
-            genero: null,
-            tematica: 'General',
-            observacion: 'Propuesta de parque',
-            created_at: new Date('2026-01-15T10:00:00Z'),
-          },
-        ] as Array<Record<string, unknown>>
-      }
-      if (sql.includes('FROM attachments')) return [] as Array<Record<string, unknown>>
-      return [] as Array<Record<string, unknown>>
-    })
+  it('lanza NO_ENCONTRADA si la participación no existe', async () => {
+    expediente = null
+    await expect(enviarAcuseReciboParticipacion('x', 'a@b.com', cargar)).rejects.toThrow(
+      'NO_ENCONTRADA',
+    )
+  })
 
-    const res = await enviarAcuseReciboParticipacion('id-1', 'juan@ejemplo.com')
-    expect(res.enviado).toBe(true)
-    expect(res.folio).toBe('POE-2026-0001')
-    // El html enviado debe contener el folio y nombre escapados correctamente.
-    const sent = sendMailCalls[0]
-    expect(sent.to).toBe('juan@ejemplo.com')
-    expect(sent.html).toContain('POE-2026-0001')
-    expect(sent.html).toContain('Juan Pérez')
-    expect(sent.html).toContain('Dirección de Medio Ambiente y Ecología')
-    expect(sent.html).not.toContain('Dirección General de Transformación')
+  it('sale del correo de la consulta pública, no del remitente general', async () => {
+    await enviarAcuseReciboParticipacion('id-1', 'juan@ejemplo.com', cargar)
+    expect(REMITENTE_CONSULTA).toContain('consulta.poetdum@tlaquepaque.gob.mx')
+    expect(sendMailCalls[0].from).toBe(REMITENTE_CONSULTA)
+  })
+
+  it('lleva el folio en el asunto y el acuse en PDF como adjunto', async () => {
+    const res = await enviarAcuseReciboParticipacion('id-1', 'juan@ejemplo.com', cargar)
+    expect(res).toEqual({ enviado: true, adjuntos: 1, folio: 'POE-2026-0001' })
+    const enviado = sendMailCalls[0]
+    expect(enviado.to).toBe('juan@ejemplo.com')
+    expect(enviado.subject).toBe('Acuse de recepción de tu participación · Folio POE-2026-0001')
+    expect(enviado.attachments).toHaveLength(1)
+    const [acuse] = enviado.attachments
+    expect(acuse.filename).toBe('Acuse POE-2026-0001.pdf')
+    expect(acuse.contentType).toBe('application/pdf')
+    expect(acuse.content.subarray(0, 5).toString('latin1')).toBe('%PDF-')
+  })
+
+  it('incluye toda la información registrada, también los datos complementarios', async () => {
+    await enviarAcuseReciboParticipacion('id-1', 'juan@ejemplo.com', cargar)
+    const { html } = sendMailCalls[0]
+    for (const dato of [
+      'POE-2026-0001',
+      'Juan Pérez',
+      'juan@ejemplo.com',
+      'En línea, mediante la Bitácora',
+      'Av. Juárez 100, Centro, C.P. 45500',
+      'Colectivo Ambiental',
+      'Movilidad',
+      'Propuesta de parque lineal sobre el arroyo',
+      // complementarios: se conservan en el sistema y van en este correo
+      'Otra: Colectivo vecinal',
+      'Hombre',
+      'Calle del hogar 42, Santa Anita',
+      'Guadalajara',
+      'Arquitecto',
+    ]) {
+      expect(html, dato).toContain(dato)
+    }
+  })
+
+  it('con archivos, lista sus nombres; sin ellos, lo dice', async () => {
+    expediente = participacion({ adjuntos: ['plano.dwg', 'estudio.pdf'] })
+    await enviarAcuseReciboParticipacion('id-1', 'juan@ejemplo.com', cargar)
+    expect(sendMailCalls[0].html).toContain('plano.dwg')
+    expect(sendMailCalls[0].html).toContain('estudio.pdf')
+    expect(sendMailCalls[0].html).not.toContain('Sin archivos adjuntos')
+
+    expediente = participacion({ adjuntos: [] })
+    await enviarAcuseReciboParticipacion('id-1', 'juan@ejemplo.com', cargar)
+    expect(sendMailCalls[1].html).toContain('Sin archivos adjuntos')
+  })
+
+  it('no adjunta los archivos del participante: solo el acuse', async () => {
+    expediente = participacion({ adjuntos: ['plano.dwg'] })
+    await enviarAcuseReciboParticipacion('id-1', 'juan@ejemplo.com', cargar)
+    expect(sendMailCalls[0].attachments.map((a) => a.filename)).toEqual(['Acuse POE-2026-0001.pdf'])
+  })
+
+  it('firma con la dirección que recibe y responde las participaciones', async () => {
+    await enviarAcuseReciboParticipacion('id-1', 'juan@ejemplo.com', cargar)
+    const { html } = sendMailCalls[0]
+    expect(html).toContain('Dirección de Gestión Territorial y Planeación Urbana')
+    expect(html).not.toContain('Dirección de Medio Ambiente y Ecología')
+  })
+
+  it('una participación presencial lo dice en la modalidad', async () => {
+    expediente = participacion({ origen: 'fisica' })
+    await enviarAcuseReciboParticipacion('id-1', 'juan@ejemplo.com', cargar)
+    expect(sendMailCalls[0].html).toContain('Presencial')
   })
 
   it('escapa HTML inyectado en campos del participante', async () => {
-    sqlMock!.mockImplementation(async (strings: TemplateStringsArray) => {
-      const sql = strings.join('')
-      if (sql.includes('FROM participations')) {
-        return [
-          {
-            folio: 'X',
-            origen: 'digital',
-            nombre: '<img src=x onerror=alert(1)>',
-            correo: 'a@b.com',
-            municipio: 'San Pedro Tlaquepaque',
-            colonia: 'Centro',
-            institucion: null,
-            ocupacion: null,
-            estado: 'En proceso',
-            fuente: null,
-            genero: null,
-            tematica: 'General',
-            observacion: '<b>hack</b>',
-            created_at: new Date(),
-          },
-        ] as Array<Record<string, unknown>>
-      }
-      if (sql.includes('FROM attachments')) return [] as Array<Record<string, unknown>>
-      return [] as Array<Record<string, unknown>>
+    expediente = participacion({
+      nombre: '<img src=x onerror=alert(1)>',
+      observacion: '<b>hack</b>',
+      ocupacion: '<script>1</script>',
     })
-
-    await enviarAcuseReciboParticipacion('id-2', 'a@b.com')
-    const sent = sendMailCalls[0]
-    expect(sent.html).toContain('&lt;img src=x onerror=alert(1)&gt;')
-    expect(sent.html).not.toContain('<img src=x onerror=alert(1)>')
+    await enviarAcuseReciboParticipacion('id-2', 'a@b.com', cargar)
+    const { html } = sendMailCalls[0]
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;')
+    expect(html).not.toContain('<img src=x onerror=alert(1)>')
+    expect(html).not.toContain('<b>hack</b>')
+    expect(html).not.toContain('<script>1</script>')
   })
 })

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test'
 import * as pool from '../db/pool.ts'
 import * as folios from '../services/folio.ts'
 import * as mail from '../services/mail.ts'
+import { acuseFirmaValida } from '../services/acuse-token.ts'
 import { GENEROS, TEMATICAS, TIPOS_PARTICIPANTE } from '../services/participacion-campos.ts'
 import { handleCreateParticipation } from './participations.ts'
 
@@ -471,5 +472,16 @@ describe('listas con «Otra» y límites de lo que llega al acuse', () => {
     saved = {}
     expect((await enviar(data)).status).toBe(422)
     expect(saved).toEqual({})
+  })
+})
+
+describe('al registrar, la respuesta trae el enlace firmado del acuse', () => {
+  it('la firma sirve para el folio asignado y para ningún otro', async () => {
+    const response = await enviar(form())
+    expect(response.status).toBe(201)
+    const cuerpo = (await response.json()) as { folio: string; acuse_token: string }
+    expect(cuerpo.folio).toBe('PRUEBA-1')
+    expect(acuseFirmaValida('PRUEBA-1', cuerpo.acuse_token)).toBe(true)
+    expect(acuseFirmaValida('PRUEBA-2', cuerpo.acuse_token)).toBe(false)
   })
 })

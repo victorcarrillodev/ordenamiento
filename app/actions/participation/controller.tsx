@@ -37,10 +37,12 @@ export default createController(routes.participation, {
       const url = new URL(context.request.url)
       const success = url.searchParams.get('success') === '1'
       const folio = url.searchParams.get('folio') ?? undefined
+      const acuse = url.searchParams.get('acuse') ?? undefined
       return context.render(
         <ParticipationPage
           success={success}
           folio={folio}
+          acuseToken={acuse}
           theme={await getPublicTheme(context.request)}
         />,
       )
@@ -129,6 +131,7 @@ export default createController(routes.participation, {
         let backendError: string | undefined
         let backendStatus = 0
         let createdFolio = ''
+        let acuseToken = ''
 
         // El reenvío y procesamiento de un lote grande comparten este plazo.
         const abortCtrl = new AbortController()
@@ -146,8 +149,12 @@ export default createController(routes.participation, {
           backendOk = response.ok
 
           if (response.ok) {
-            const data = (await response.json().catch(() => ({}))) as { folio?: string }
+            const data = (await response.json().catch(() => ({}))) as {
+              folio?: string
+              acuse_token?: string
+            }
             createdFolio = data.folio ?? ''
+            acuseToken = data.acuse_token ?? ''
           } else {
             const data = (await response.json().catch(() => ({}))) as { error?: string }
             backendError = data.error
@@ -209,6 +216,8 @@ export default createController(routes.participation, {
         const successUrl = new URL(routes.participation.index.href(), 'http://localhost')
         successUrl.searchParams.set('success', '1')
         if (createdFolio) successUrl.searchParams.set('folio', createdFolio)
+        // El enlace firmado para descargar el acuse viaja solo a la pantalla de confirmación.
+        if (createdFolio && acuseToken) successUrl.searchParams.set('acuse', acuseToken)
         return redirect(successUrl.pathname + successUrl.search)
       } finally {
         // Limpieza de archivos temporales en disco

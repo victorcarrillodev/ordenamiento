@@ -8,6 +8,7 @@
 import { createController } from 'remix/router'
 
 import { backendFetch, fetchJsonOr, requireAdminUser } from '../../backend.ts'
+import { respuestaDeArchivo } from '../../utils/archivo-proxy.ts'
 import { adminRoutes } from '../../routes.ts'
 import {
   AdminPage,
@@ -381,6 +382,19 @@ export default createController(adminRoutes, {
       )
 
       return context.render(<DetallePage user={user} p={p} mail={mail} dictamen={dictamen} />)
+    },
+
+    /** Acuse en PDF de una participación, siempre como descarga: es para imprimirlo. */
+    async participacionAcuse(context) {
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
+
+      const response = await backendFetch(
+        context.request,
+        `/api/participations/${encodeURIComponent(context.params.id)}/acuse`,
+      )
+      if (!response.ok) return new Response('Not Found', { status: response.status })
+      return respuestaDeArchivo(response, true)
     },
 
     async word(context) {

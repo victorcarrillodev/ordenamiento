@@ -9,6 +9,7 @@ import { routes } from '../routes.ts'
 import type { ActividadPublica, AvisoPortada } from '../data/programa.ts'
 import { HomePage } from './home-page.tsx'
 import { marcaAction } from './marca-controller.tsx'
+import { acuseCiudadanoAction } from './participation/acuse.ts'
 import { ErrorPage } from './error-page.tsx'
 
 /** Cuántas sugerencias devuelve el autocompletado por consulta. */
@@ -54,6 +55,9 @@ export default createController(routes, {
     },
     homeSlash(context) {
       return renderHome(context)
+    },
+    acuse(context) {
+      return acuseCiudadanoAction(context.request, context.params.folio)
     },
     participationLogin() {
       return redirect(routes.login.index.href())
