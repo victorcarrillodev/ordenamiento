@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { readFileSync } from 'node:fs'
 import { describe, expect, it, spyOn } from 'bun:test'
 import * as pool from '../db/pool.ts'
 import { getParticipation } from './participations.ts'
@@ -38,7 +39,7 @@ describe('H2 · getParticipation SELECT explícito', () => {
   })
 
   it('coincide con Row de word.ts y SELECT de app.ts /word', async () => {
-    const wordRowFields = ['id', 'folio', 'origen', 'nombre', 'correo', 'calle', 'numero', 'colonia', 'municipio', 'domicilio', 'municipio_participante', 'institucion', 'ocupacion', 'latitud', 'longitud', 'observacion', 'estado', 'fuente', 'genero', 'tematica', 'created_at']
+    const wordRowFields = ['id', 'folio', 'origen', 'nombre', 'correo', 'calle', 'numero', 'colonia', 'municipio', 'codigo_postal', 'alcance_ubicacion', 'domicilio', 'municipio_participante', 'institucion', 'ocupacion', 'latitud', 'longitud', 'observacion', 'estado', 'fuente', 'fuente_otra', 'genero', 'tematica', 'tematica_otra', 'created_at']
     let q = ''
     const spy = spyOn(pool.sql as any, 'unsafe').mockImplementation(async (query: string) => {
       if (!q) q = query
@@ -49,5 +50,15 @@ describe('H2 · getParticipation SELECT explícito', () => {
       expect(q.toLowerCase()).toContain(f.toLowerCase())
     }
     spy.mockRestore()
+  })
+
+  it('la ruta /word trae de la base todas las columnas que usa el documento', () => {
+    const wordRowFields = ['id', 'folio', 'origen', 'nombre', 'correo', 'calle', 'numero', 'colonia', 'municipio', 'codigo_postal', 'alcance_ubicacion', 'domicilio', 'municipio_participante', 'institucion', 'ocupacion', 'latitud', 'longitud', 'observacion', 'estado', 'fuente', 'fuente_otra', 'genero', 'tematica', 'tematica_otra', 'created_at']
+    const app = readFileSync(new URL('./../app.ts', import.meta.url), 'utf8')
+    const consulta = app.match(/SELECT id::text AS id, folio, origen[\s\S]*?FROM participations WHERE id = \$\{wordMatch\.id\}/)
+    expect(consulta, 'no se encontró el SELECT de la ruta /word').not.toBeNull()
+    for (const f of wordRowFields) {
+      expect(consulta![0], f).toMatch(new RegExp(`\\b${f}\\b`))
+    }
   })
 })

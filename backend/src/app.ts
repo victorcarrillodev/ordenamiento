@@ -889,18 +889,22 @@ export async function handleRequest(request: Request): Promise<Response> {
         longitud: string
         observacion: string
         estado: string
+        codigo_postal: string
+        alcance_ubicacion: string
         domicilio: string
         municipio_participante: string
         fuente: string
+        fuente_otra: string
         genero: string
         tematica: string
+        tematica_otra: string
         created_at: Date
       }>
     >`
       SELECT id::text AS id, folio, origen, nombre, correo, calle, numero, colonia, municipio,
-             domicilio, municipio_participante,
+             codigo_postal, alcance_ubicacion, domicilio, municipio_participante,
              institucion, ocupacion, latitud, longitud, observacion, estado,
-             fuente, genero, tematica, created_at
+             fuente, fuente_otra, genero, tematica, tematica_otra, created_at
       FROM participations WHERE id = ${wordMatch.id}
     `
     if (rows.length === 0) return json({ error: 'No encontrado' }, 404)

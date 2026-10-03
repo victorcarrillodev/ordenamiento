@@ -12,7 +12,10 @@ import {
   WidthType,
 } from 'docx'
 
-interface Row {
+import { etiquetaModalidad, fechaDelAcuse } from './acuse.ts'
+import { MUNICIPIO, textoDeOpcion, textoDeUbicacion } from './participacion-campos.ts'
+
+export interface Row {
   id: string
   folio: string
   origen: string
@@ -22,6 +25,8 @@ interface Row {
   numero: string
   colonia: string
   municipio: string
+  codigo_postal: string
+  alcance_ubicacion: string
   domicilio: string
   municipio_participante: string
   institucion: string
@@ -31,8 +36,10 @@ interface Row {
   observacion: string
   estado: string
   fuente: string
+  fuente_otra: string
   genero: string
   tematica: string
+  tematica_otra: string
   created_at: Date
 }
 
@@ -90,11 +97,56 @@ function fila(label: string, valor: string, alterna: boolean) {
 }
 
 /**
+ * Los datos de la participación como se nombran en el formulario y en el acuse:
+ * la modalidad con su nombre (no el valor interno `fisica`/`digital`), «Otra»
+ * con lo que se especificó y la ubicación como la lee el acuse. Los datos que ya
+ * no se capturan (número, coordenadas, un municipio distinto del Programa) salen
+ * solo en las participaciones que los tienen.
+ */
+export function filasDeLaParticipacion(p: Row): Array<[string, string]> {
+  const registro = p.created_at instanceof Date ? fechaDelAcuse(p.created_at) : String(p.created_at)
+  const datosDelFormulario: Array<[string, string]> = [
+    ['Nombre', p.nombre],
+    ['Correo electrónico', p.correo],
+    ['Modalidad', etiquetaModalidad(p.origen)],
+    ['Estado', p.estado],
+    ['Empresa, institución u organización', p.institucion],
+    ['Tipo de participante', textoDeOpcion(p.fuente, p.fuente_otra)],
+    ['Género', p.genero],
+    ['Temática', textoDeOpcion(p.tematica, p.tematica_otra)],
+    [
+      'Ubicación de la propuesta',
+      textoDeUbicacion({
+        alcance_ubicacion: p.alcance_ubicacion,
+        calle: p.calle,
+        colonia: p.colonia,
+        codigo_postal: p.codigo_postal,
+      }),
+    ],
+  ]
+
+  const datosQueYaNoSeCapturan: Array<[string, string]> = []
+  if (p.municipio && p.municipio !== MUNICIPIO)
+    datosQueYaNoSeCapturan.push(['Municipio', p.municipio])
+  if (p.numero) datosQueYaNoSeCapturan.push(['Número', p.numero])
+  if (p.latitud || p.longitud) {
+    datosQueYaNoSeCapturan.push(['Coordenadas', [p.latitud, p.longitud].filter(Boolean).join(', ')])
+  }
+
+  return [
+    ...datosDelFormulario,
+    ...datosQueYaNoSeCapturan,
+    ['Domicilio de quien participa', p.domicilio],
+    ['Municipio de residencia', p.municipio_participante],
+    ['Ocupación o puesto', p.ocupacion],
+    ['Registro', registro],
+  ]
+}
+
+/**
  * Genera el documento Word (.docx) de una participación con sus datos.
  */
 export async function participationDocx(p: Row): Promise<Buffer> {
-  const registro = p.created_at?.toLocaleString?.('es-MX') ?? String(p.created_at)
-
   const doc = new Document({
     sections: [
       {
@@ -136,24 +188,9 @@ export async function participationDocx(p: Row): Promise<Buffer> {
                   celda('Dato', { header: true, ancho: 70 }),
                 ],
               }),
-              fila('Nombre', p.nombre, true),
-              fila('Correo', p.correo, false),
-              fila('Origen', p.origen, true),
-              fila('Estado', p.estado, false),
-              fila('Fuente', p.fuente, true),
-              fila('Género', p.genero, false),
-              fila('Temática', p.tematica, true),
-              fila('Municipio', p.municipio, false),
-              fila('Colonia', p.colonia, true),
-              fila('Domicilio', p.domicilio, false),
-              fila('Municipio de participante', p.municipio_participante, true),
-              fila('Calle', p.calle, false),
-              fila('Número', p.numero, true),
-              fila('Latitud', p.latitud, false),
-              fila('Longitud', p.longitud, true),
-              fila('Institución', p.institucion, false),
-              fila('Ocupación', p.ocupacion, true),
-              fila('Registro', registro, false),
+              ...filasDeLaParticipacion(p).map(([campo, valor], i) =>
+                fila(campo, valor, i % 2 === 0),
+              ),
             ],
           }),
           new Paragraph({
@@ -169,15 +206,13 @@ export async function participationDocx(p: Row): Promise<Buffer> {
               }),
             ],
           }),
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: p.observacion || '(sin observación)',
-                size: 22,
-                font: 'Calibri',
+          // Cada salto de línea de la observación es un renglón: en un solo TextRun Word lo ignoraría.
+          ...(p.observacion || '(sin observación)').split('\n').map(
+            (linea) =>
+              new Paragraph({
+                children: [new TextRun({ text: linea, size: 22, font: 'Calibri' })],
               }),
-            ],
-          }),
+          ),
         ],
       },
     ],
