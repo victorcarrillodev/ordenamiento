@@ -25,7 +25,8 @@ import {
 import { marcarFormatoRecibido, obtenerFormato, type Formato } from '../services/formatos.ts'
 import { nextFolio } from '../services/folio.ts'
 import { ingestParticipation, type IngestFile } from '../services/ingest.ts'
-import { enviarAcuseReciboParticipacion, mailConfigurado } from '../services/mail.ts'
+import { detalleDeError, registrarEnvio } from '../services/envios.ts'
+import { asuntoAcuse, enviarAcuseReciboParticipacion, mailConfigurado } from '../services/mail.ts'
 import {
   camposDelFormulario,
   createParticipation,
@@ -225,7 +226,7 @@ export async function handleCreateParticipation(
       folio,
     }
 
-    const resultado = await sql.begin(async (tx) => {
+    const registro = await sql.begin(async (tx) => {
       const creada = await createParticipation(
         tx,
         {
@@ -285,21 +286,37 @@ export async function handleCreateParticipation(
     })
     persistido = true
 
-    // El acuse se envía DESPUÉS del commit exitoso (fire-and-forget con catch)
+    // El acuse se envía DESPUÉS del commit exitoso (fire-and-forget con catch) y
+    // deja constancia de cómo terminó el envío.
     const userEmail = camposFormulario.correo.trim()
     if (userEmail && mailConfigurado()) {
-      void enviarAcuseReciboParticipacion(resultado.participationId, userEmail).catch((err) => {
-        logger.error('participations.acuse', err)
-      })
+      const constancia = (resultado: 'enviado' | 'error', detalle = '') =>
+        registrarEnvio({
+          participationId: registro.participationId,
+          tipo: 'acuse',
+          para: userEmail,
+          asunto: asuntoAcuse(registro.folio),
+          resultado,
+          detalle,
+          enviadoPor: user?.id ?? null,
+        })
+      void enviarAcuseReciboParticipacion(registro.participationId, userEmail)
+        .then(
+          () => constancia('enviado'),
+          (err) => {
+            logger.error('participations.acuse', err)
+            return constancia('error', detalleDeError(err))
+          },
+        )
+        .catch((err) => logger.error('participations.acuse.constancia', err))
     }
 
-    // El spread ya aporta folio y participationId; `id` es el alias que espera el cliente.
     // `acuse_token` es el enlace firmado para descargar el acuse (ver acuse-token.ts).
     return json(
       {
-        ...resultado,
-        id: resultado.participationId,
-        acuse_token: firmarAcuse(resultado.folio),
+        ...registro,
+        id: registro.participationId,
+        acuse_token: firmarAcuse(registro.folio),
       },
       201,
     )

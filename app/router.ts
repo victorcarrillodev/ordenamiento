@@ -16,6 +16,7 @@ import adminUsuariosController from './actions/admin/usuarios-controller.tsx'
 import nuevaController from './actions/admin/nueva-controller.tsx'
 import formatoNuevoController from './actions/admin/formato-nuevo-controller.tsx'
 import enviarController from './actions/admin/enviar-controller.tsx'
+import documentosParticipacionController from './actions/admin/documentos-controller.tsx'
 import resolverController from './actions/admin/resolver-controller.tsx'
 import personalizacionController from './actions/admin/personalizacion-controller.tsx'
 import personalizacionTextosController from './actions/admin/personalizacion-textos-controller.tsx'
@@ -113,6 +114,7 @@ router.map(adminRoutes.usuarios, adminUsuariosController)
 router.map(adminRoutes.participacionNueva, nuevaController)
 router.map(adminRoutes.formatoNuevo, formatoNuevoController)
 router.map(adminRoutes.participacionEnviar, enviarController)
+router.map(adminRoutes.participacionDocumentos, documentosParticipacionController)
 router.map(adminRoutes.participacionResolver, resolverController)
 router.map(adminRoutes.personalizacion, personalizacionController)
 router.map(adminRoutes.personalizacionTextos, personalizacionTextosController)

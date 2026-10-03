@@ -241,7 +241,7 @@ export async function getParticipation(id: string): Promise<Record<string, unkno
     `--sql
       SELECT
         id, folio, origen, nombre, correo, calle, numero, colonia, municipio,
-        codigo_postal, alcance_ubicacion, domicilio, municipio_participante, institucion,
+        codigo_postal, alcance_ubicacion, captura, domicilio, municipio_participante, institucion,
         ocupacion, latitud, longitud, observacion, estado, fuente, fuente_otra, genero,
         tematica, tematica_otra, created_at,
         resolucion_motivo, resolucion_direccion, resolucion_cita, resolucion_en,

@@ -347,6 +347,10 @@ function renderPlantillaBase({
 
 const DIRECCION_RESPONSABLE = 'Dirección de Gestión Territorial y Planeación Urbana'
 
+/** Asunto del correo de confirmación que acompaña al acuse. */
+export const asuntoAcuse = (folio: string) =>
+  `Acuse de recepción de tu participación · Folio ${folio}`
+
 /** Una fila de la tabla de información del correo. */
 const filaDeCorreo = (etiqueta: string, valor: string) =>
   `<tr><td class="label-col">${escapeHtml(etiqueta)}</td><td class="val-col">${escapeHtml(valor || '—')}</td></tr>`
@@ -440,7 +444,7 @@ export async function enviarAcuseReciboParticipacion(
   await transporter.sendMail({
     from: REMITENTE_CONSULTA,
     to: para,
-    subject: `Acuse de recepción de tu participación · Folio ${p.folio}`,
+    subject: asuntoAcuse(p.folio),
     html,
     attachments: [
       { filename: nombreArchivoAcuse(p.folio), content: pdf, contentType: 'application/pdf' },
@@ -448,6 +452,61 @@ export async function enviarAcuseReciboParticipacion(
   })
 
   return { enviado: true, adjuntos: 1, folio: p.folio }
+}
+
+/** Asunto del correo con la respuesta del área responsable. */
+export const asuntoRespuesta = (folio: string) => `Respuesta a tu participación · Folio ${folio}`
+
+/** El texto acordado del correo: avisa dónde recoger la respuesta y que el oficio va adjunto. */
+export const textoRespuesta = (folio: string) =>
+  `La respuesta correspondiente a su participación, registrada con el folio ${folio}, se encuentra disponible para recoger en las oficinas de la ${DIRECCION_RESPONSABLE}. Se adjunta el oficio de respuesta en formato PDF.`
+
+/**
+ * Envía a quien participó la notificación de que su respuesta está lista para
+ * recoger, con el oficio de respuesta íntegro en PDF adjunto. Sale de
+ * `REMITENTE_CONSULTA`. El oficio es el documento íntegro y firmado, no la
+ * versión pública que se muestra en el portal.
+ */
+export async function enviarCorreoRespuesta(input: {
+  para: string
+  folio: string
+  oficio: Buffer
+  nombreArchivo: string
+}): Promise<{ asunto: string }> {
+  if (!mailConfigurado()) {
+    throw new Error('SMTP_NO_CONFIGURADO')
+  }
+
+  const asunto = asuntoRespuesta(input.folio)
+  const contenidoHtml = `
+    <div class="folio-box">
+      <div class="folio-label">Folio de tu participación</div>
+      <div class="folio-value">${escapeHtml(input.folio)}</div>
+    </div>
+    <p style="font-size: 15px; line-height: 1.7; color: #334155;">
+      ${escapeHtml(textoRespuesta(input.folio))}
+    </p>
+  `
+  const html = renderPlantillaBase({
+    titulo: 'Respuesta a tu participación',
+    subtitulo: 'Consulta pública del Proyecto del Programa',
+    badge: `Folio: ${input.folio}`,
+    badgeColor: '#7A1A37',
+    contenidoHtml,
+    pieEntidad: DIRECCION_RESPONSABLE,
+  })
+
+  const transporter = getTransporter()
+  await transporter.sendMail({
+    from: REMITENTE_CONSULTA,
+    to: input.para,
+    subject: asunto,
+    html,
+    attachments: [
+      { filename: input.nombreArchivo, content: input.oficio, contentType: 'application/pdf' },
+    ],
+  })
+  return { asunto }
 }
 
 interface ResolucionCorreo extends ParticipacionCorreo {

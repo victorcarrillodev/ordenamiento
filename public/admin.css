@@ -3445,3 +3445,79 @@ a.lista-avisos__titulo:hover {
     padding: 0 8px;
   }
 }
+
+/* ── Documentos PDF de una participación (respuesta, publicación, formato) ── */
+.doc-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: 16px;
+}
+
+.doc-tarjeta {
+  border: 1px solid var(--a-line, #e2e8f0);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fff;
+  min-width: 0;
+}
+
+.doc-tarjeta .panel__head {
+  margin-bottom: 0;
+}
+
+.doc-bloque {
+  border-top: 1px dashed var(--a-line, #e2e8f0);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.doc-vista {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.doc-vista details {
+  flex: 1 1 100%;
+  order: 3;
+}
+
+.doc-vista summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+}
+
+.doc-vista summary::-webkit-details-marker {
+  display: none;
+}
+
+.doc-vista details[open] summary {
+  margin-bottom: 10px;
+}
+
+.doc-envio {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.doc-accion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.doc-subida {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}

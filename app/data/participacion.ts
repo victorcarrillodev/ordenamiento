@@ -284,3 +284,30 @@ export function cuerpoParaBackend(valores: ValoresParticipacion): FormData {
   }
   return cuerpo
 }
+
+/**
+ * Cómo se lee la ubicación de la propuesta: «Todo el municipio» o el domicilio y
+ * la colonia. Es la misma redacción que el acuse (backend: `textoDeUbicacion`).
+ */
+export function textoDeUbicacion(p: {
+  alcance_ubicacion?: string
+  calle?: string
+  colonia?: string
+  codigo_postal?: string
+}): string {
+  const partes = [p.calle, p.colonia, p.codigo_postal ? `C.P. ${p.codigo_postal}` : ''].filter(
+    (parte): parte is string => Boolean(parte),
+  )
+  if (p.alcance_ubicacion === 'municipio') {
+    return partes.length > 0
+      ? `${ETIQUETA_ALCANCE.municipio} · ${partes.join(', ')}`
+      : ETIQUETA_ALCANCE.municipio
+  }
+  return partes.join(', ') || '—'
+}
+
+/** «Otra: lo que se especificó», o solo la opción elegida. */
+export function textoDeOpcion(opcion: string, otra: string): string {
+  if (!opcion) return ''
+  return opcion === OTRA && otra ? `${OTRA}: ${otra}` : opcion
+}

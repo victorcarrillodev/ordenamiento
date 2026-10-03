@@ -70,6 +70,10 @@ export const adminRoutes = route({
   formatoPdf: get(`${basePath}/admin/participaciones/formatos/:id/pdf`),
   participaciones: get(`${basePath}/admin/participaciones`),
   participacionEnviar: form(`${basePath}/admin/participaciones/:id/enviar`),
+  // Documentos PDF de la participación (oficio de respuesta, versiones públicas,
+  // formato escaneado): una sola acción con varias intenciones, y el archivo aparte.
+  participacionDocumentos: form(`${basePath}/admin/participaciones/:id/documentos`),
+  participacionDocumento: get(`${basePath}/admin/participaciones/:id/documentos/:tipo/archivo`),
   participacionResolver: form(`${basePath}/admin/participaciones/:id/resolucion`),
   word: get(`${basePath}/admin/participaciones/:id/word`),
   // Acuse en PDF de una participación, para imprimirlo e integrarlo al expediente.

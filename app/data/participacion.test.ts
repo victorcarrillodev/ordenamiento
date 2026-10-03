@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   cuerpoParaBackend,
   LIMITES,
+  textoDeOpcion,
+  textoDeUbicacion,
   validarParticipacion,
   valoresDeFormulario,
 } from './participacion.ts'
@@ -191,5 +193,39 @@ describe('cuerpoParaBackend', () => {
     expect(cuerpo.get('municipio')).toBe('San Pedro Tlaquepaque')
     expect(cuerpo.get('direccion_origen')).toBe('manual')
     expect(cuerpo.has('email')).toBe(false)
+  })
+})
+
+describe('textoDeUbicacion', () => {
+  it('«Todo el municipio» se lee tal cual, con sus datos si se dieron', () => {
+    expect(textoDeUbicacion({ alcance_ubicacion: 'municipio' })).toBe('Todo el municipio')
+    expect(
+      textoDeUbicacion({
+        alcance_ubicacion: 'municipio',
+        calle: 'Av. Juárez 100',
+        colonia: 'Centro',
+      }),
+    ).toBe('Todo el municipio · Av. Juárez 100, Centro')
+  })
+
+  it('un lugar específico es el domicilio, la colonia y el código postal', () => {
+    expect(
+      textoDeUbicacion({
+        alcance_ubicacion: 'especifico',
+        calle: 'Junto al puente',
+        colonia: 'Santa Anita',
+        codigo_postal: '45640',
+      }),
+    ).toBe('Junto al puente, Santa Anita, C.P. 45640')
+    expect(textoDeUbicacion({ alcance_ubicacion: 'especifico' })).toBe('—')
+  })
+})
+
+describe('textoDeOpcion', () => {
+  it('«Otra» lleva lo que se especificó; las demás opciones, solo su nombre', () => {
+    expect(textoDeOpcion('Otra', 'Arbolado urbano')).toBe('Otra: Arbolado urbano')
+    expect(textoDeOpcion('Otra', '')).toBe('Otra')
+    expect(textoDeOpcion('Vivienda', 'sobra')).toBe('Vivienda')
+    expect(textoDeOpcion('', 'x')).toBe('')
   })
 })

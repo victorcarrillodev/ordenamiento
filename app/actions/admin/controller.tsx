@@ -8,7 +8,7 @@
 import { createController } from 'remix/router'
 
 import { backendFetch, fetchJsonOr, requireAdminUser } from '../../backend.ts'
-import { respuestaDeArchivo } from '../../utils/archivo-proxy.ts'
+import { pideDescarga, respuestaDeArchivo } from '../../utils/archivo-proxy.ts'
 import { adminRoutes } from '../../routes.ts'
 import {
   AdminPage,
@@ -19,6 +19,7 @@ import {
 import { ExportarPage } from './exportar-page.tsx'
 import { ParticipacionesPage } from './participaciones-page.tsx'
 import { EstadisticasPage, type DatosOrigen, type VistaEstadisticas } from './estadisticas-page.tsx'
+import { cargarDetalle } from './detalle-datos.ts'
 import { DetallePage } from './detalle-page.tsx'
 import { AdjuntoVistaPage } from './adjunto-vista-page.tsx'
 import { ETAPAS } from './etapa.ts'
@@ -337,51 +338,7 @@ export default createController(adminRoutes, {
       const user = await requireAdminUser(context.request)
       if (user instanceof Response) return user
 
-      const raw = await fetchJsonOr<Record<string, unknown> | null>(
-        context.request,
-        `/api/participations/${context.params.id}`,
-        null,
-      )
-      const p = raw
-        ? {
-            id: raw.id as string,
-            folio: raw.folio as string,
-            origen: raw.origen as string,
-            nombre: raw.nombre as string,
-            correo: raw.correo as string,
-            colonia: raw.colonia as string,
-            municipio: raw.municipio as string,
-            domicilio: raw.domicilio as string,
-            municipio_participante: raw.municipio_participante as string,
-            institucion: raw.institucion as string,
-            ocupacion: raw.ocupacion as string,
-            observacion: raw.observacion as string,
-            estado: raw.estado as string,
-            fuente: raw.fuente as string,
-            genero: raw.genero as string,
-            tematica: raw.tematica as string,
-            fecha: raw.created_at as string,
-            resolucion_motivo: (raw.resolucion_motivo as string) ?? '',
-            resolucion_direccion: (raw.resolucion_direccion as string) ?? '',
-            resolucion_cita: (raw.resolucion_cita as string) ?? '',
-            resolucion_en: (raw.resolucion_en as string) ?? null,
-            notificado_en: (raw.notificado_en as string) ?? null,
-            notificado_a: (raw.notificado_a as string) ?? '',
-            adjuntos: (
-              (raw.attachments ?? []) as Array<{
-                id: string
-                nombre_original: string
-                mime: string
-                size: number
-              }>
-            ).map((a) => ({
-              id: a.id,
-              nombre_original: a.nombre_original,
-              mime: a.mime,
-              size: a.size,
-            })),
-          }
-        : null
+      const { p, documentos, envios } = await cargarDetalle(context.request, context.params.id)
       const params = new URL(context.request.url).searchParams
       const mailParam = params.get('mail')
       const mail = mailParam === 'ok' ? 'ok' : mailParam === 'error' ? 'error' : null
@@ -391,7 +348,33 @@ export default createController(adminRoutes, {
         (v) => v === dictamenParam,
       )
 
-      return context.render(<DetallePage user={user} p={p} mail={mail} dictamen={dictamen} />)
+      const doc = new URL(context.request.url).searchParams.get('doc')
+
+      return context.render(
+        <DetallePage
+          user={user}
+          p={p}
+          documentos={documentos}
+          envios={envios}
+          mail={mail}
+          dictamen={dictamen}
+          doc={doc}
+        />,
+      )
+    },
+
+    /** Un documento PDF de la participación: se ve en el visor o, con ?download=1, se descarga. */
+    async participacionDocumento(context) {
+      const user = await requireAdminUser(context.request)
+      if (user instanceof Response) return user
+
+      const descarga = pideDescarga(context.request)
+      const response = await backendFetch(
+        context.request,
+        `/api/participations/${encodeURIComponent(context.params.id)}/documentos/${encodeURIComponent(context.params.tipo)}${descarga ? '?download=1' : ''}`,
+      )
+      if (!response.ok) return new Response('Not Found', { status: response.status })
+      return respuestaDeArchivo(response, descarga)
     },
 
     /** Acuse en PDF de una participación, siempre como descarga: es para imprimirlo. */

@@ -257,6 +257,27 @@ CREATE INDEX IF NOT EXISTS idx_participacion_documentos_publicados
   ON participacion_documentos (tipo, publicado_en DESC) WHERE publicado;
 
 -- ---------------------------------------------------------------------------
+-- Correos enviados a quien participó (constancia del envío)
+-- ---------------------------------------------------------------------------
+-- Una fila por intento: el acuse al registrar y la respuesta que envía el área
+-- responsable. Guarda cuándo, a qué dirección y cómo terminó, para que el panel
+-- diga si el correo salió o si falló y por qué.
+CREATE TABLE IF NOT EXISTS participacion_envios (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  participation_id UUID NOT NULL REFERENCES participations(id) ON DELETE CASCADE,
+  tipo             TEXT NOT NULL,
+  para             TEXT NOT NULL,
+  asunto           TEXT NOT NULL,
+  resultado        TEXT NOT NULL,
+  detalle          TEXT NOT NULL DEFAULT '',
+  enviado_por      UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT participacion_envios_tipo_check CHECK (tipo IN ('acuse','respuesta')),
+  CONSTRAINT participacion_envios_resultado_check CHECK (resultado IN ('enviado','error'))
+);
+CREATE INDEX IF NOT EXISTS idx_participacion_envios ON participacion_envios (participation_id, created_at DESC);
+
+-- ---------------------------------------------------------------------------
 -- Adjuntos (archivos subidos: PDF, DWG, JPG, SHX, ...) – relacional
 -- ---------------------------------------------------------------------------
 

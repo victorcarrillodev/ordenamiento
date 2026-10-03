@@ -4,6 +4,13 @@ import { adminRoutes } from '../../routes.ts'
 import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
+import { textoDeOpcion, textoDeUbicacion } from '../../data/participacion.ts'
+import type {
+  DocumentoParticipacion,
+  EnvioParticipacion,
+} from '../../data/participacion-documentos.ts'
+import type { DetalleParticipacion } from './detalle-datos.ts'
+import { PanelDocumentosInternos, PanelPublicacion, PanelRespuesta } from './documentos-panel.tsx'
 import { etapaDe, PASOS } from './etapa.ts'
 
 interface Adjunto {
@@ -12,40 +19,21 @@ interface Adjunto {
   mime: string
   size: number
 }
-interface Detalle {
-  id: string
-  folio: string
-  origen: string
-  nombre: string
-  correo: string
-  colonia: string
-  municipio: string
-  domicilio: string
-  municipio_participante: string
-  institucion: string
-  ocupacion: string
-  observacion: string
-  estado: string
-  fuente: string
-  genero: string
-  tematica: string
-  fecha: string
-  resolucion_motivo: string
-  resolucion_direccion: string
-  resolucion_cita: string
-  resolucion_en: string | null
-  notificado_en: string | null
-  notificado_a: string
-  adjuntos: Adjunto[]
-}
+type Detalle = DetalleParticipacion
 
 export type DictamenFeedback = 'notificado' | 'guardado' | 'error' | 'estado'
 
 export interface DetallePageProps {
   user: { name: string; role: string }
   p: Detalle | null
+  documentos?: DocumentoParticipacion[]
+  envios?: EnvioParticipacion[]
   mail?: 'ok' | 'error' | null
   dictamen?: DictamenFeedback
+  /** Confirmación de la última acción sobre los documentos. */
+  doc?: string | null
+  /** Motivo de que una acción sobre los documentos no se completara. */
+  docError?: string
 }
 
 const ESTADO_BADGE: Record<string, string> = {
@@ -64,6 +52,14 @@ function Campo(handle: Handle<{ label: string; value: string }>) {
       </div>
     )
   }
+}
+
+/** Cómo se recibió: «En línea…» o «Presencial», con su forma de captura. */
+function modalidadDe(p: Detalle): string {
+  if (p.origen !== 'fisica') return 'En línea, mediante la Bitácora'
+  if (p.captura === 'manuscrita') return 'Presencial · llenado a mano'
+  if (p.captura === 'asistida') return 'Presencial · captura asistida'
+  return 'Presencial'
 }
 
 function fmtFecha(v: string): string {
@@ -453,7 +449,7 @@ function PanelDictamen(handle: Handle<{ p: Detalle }>) {
 
 export function DetallePage(handle: Handle<DetallePageProps>) {
   return () => {
-    const { user, p, mail, dictamen } = handle.props
+    const { user, p, documentos = [], envios = [], mail, dictamen, doc, docError } = handle.props
     const titulo = p ? `Participación ${p.folio}` : 'Participación no encontrada'
 
     return (
@@ -522,17 +518,23 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
                 </div>
                 <div class="detalle-grid">
                   <Campo label="Folio" value={p.folio} />
+                  <Campo label="Modalidad" value={modalidadDe(p)} />
                   <Campo label="Nombre" value={p.nombre} />
                   <Campo label="Correo" value={p.correo} />
-                  <Campo label="Municipio" value={p.municipio} />
-                  <Campo label="Colonia" value={p.colonia} />
-                  <Campo label="Domicilio" value={p.domicilio} />
-                  <Campo label="Municipio de participante" value={p.municipio_participante} />
-                  <Campo label="Tipo de participante" value={p.fuente} />
+                  <Campo label="Ubicación de la propuesta" value={textoDeUbicacion(p)} />
+                  <Campo label="Empresa, institución u organización" value={p.institucion} />
+                  <Campo
+                    label="Temática de la propuesta"
+                    value={textoDeOpcion(p.tematica, p.tematica_otra)}
+                  />
+                  <Campo
+                    label="Tipo de participante"
+                    value={textoDeOpcion(p.fuente, p.fuente_otra)}
+                  />
                   <Campo label="Género" value={p.genero} />
-                  <Campo label="Temática" value={p.tematica} />
-                  <Campo label="Institución" value={p.institucion} />
-                  <Campo label="Ocupación" value={p.ocupacion} />
+                  <Campo label="Domicilio de quien participa" value={p.domicilio} />
+                  <Campo label="Municipio de residencia" value={p.municipio_participante} />
+                  <Campo label="Ocupación o puesto" value={p.ocupacion} />
                   <Campo label="Registro" value={fmtFecha(p.fecha)} />
                 </div>
                 <div class="campo campo--full">
@@ -543,6 +545,22 @@ export function DetallePage(handle: Handle<DetallePageProps>) {
 
               <PanelAdjuntos p={p} />
             </div>
+
+            <PanelRespuesta
+              p={p}
+              documentos={documentos}
+              envios={envios}
+              doc={doc}
+              docError={docError}
+            />
+            <PanelPublicacion
+              p={p}
+              documentos={documentos}
+              envios={envios}
+              doc={doc}
+              docError={docError}
+            />
+            <PanelDocumentosInternos p={p} documentos={documentos} envios={envios} />
 
             <PanelDictamen p={p} />
             <div class="panel">
