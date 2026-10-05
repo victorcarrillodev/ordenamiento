@@ -7,10 +7,12 @@ const mapa = css({
   height: '500px',
   borderRadius: '12px',
   overflow: 'hidden',
+  // Mantiene las capas y controles de Leaflet debajo de la barra de navegación.
+  isolation: 'isolate',
 })
 
-/** Centro por omisión del mapa del territorio. */
-const CENTRO_TERRITORIO: [number, number] = [20.6767, -103.3475]
+/** Ayuntamiento de San Pedro Tlaquepaque, Independencia 58. */
+const CENTRO_TERRITORIO: [number, number] = [20.6393228, -103.3106462]
 
 export interface MapaProps extends SerializableProps {
   /**
@@ -61,7 +63,7 @@ export const Mapa = clientEntry(
               ? [latitud as number, longitud as number]
               : null
 
-          map = L.map(elemento).setView(punto ?? CENTRO_TERRITORIO, punto ? 16 : 13)
+          map = L.map(elemento).setView(punto ?? CENTRO_TERRITORIO, 16)
 
           // ==========================================
           // MAPA NORMAL - OPENSTREETMAP
@@ -138,13 +140,24 @@ export const Mapa = clientEntry(
             const marcador = L.marker(punto).addTo(map)
             if (etiqueta) marcador.bindPopup(rotulo).openPopup()
           } else {
-            L.marker(CENTRO_TERRITORIO).addTo(map).bindPopup('<b>Guadalajara</b>').openPopup()
+            L.marker(CENTRO_TERRITORIO)
+              .addTo(map)
+              .bindPopup('<b>San Pedro Tlaquepaque</b>')
+              .openPopup()
           }
         })
       }
 
       const { alto } = handle.props
-      return <div id={handle.id} mix={alto ? [mapa, css({ height: alto })] : mapa} />
+      // Leaflet administra los hijos: Remix no debe reconciliarlos al actualizar.
+      return (
+        <div
+          id={handle.id}
+          mix={alto ? [mapa, css({ height: alto })] : mapa}
+          innerHTML=""
+          rmx-preserve-dom
+        />
+      )
     }
   },
 )

@@ -24,14 +24,18 @@ const hmrProxyPort = process.env.HMR_PROXY_PORT
 
 function withCacheHeaders(response: Response, request: Request): Response {
   const headers = new Headers(response.headers)
-  const url = request.url
+  const pathname = new URL(request.url).pathname
 
-  // Assets con hash: cache de 1 año (versionado automático)
-  if (url.includes('/assets/') || /\.[a-f0-9]{8}\.(js|css|jpg|png|webp|woff|woff2)$/.test(url)) {
+  // Solo los archivos versionados pueden conservarse sin revalidar.
+  if (/\.[a-f0-9]{8}\.(js|css|jpg|png|webp|woff|woff2)$/.test(pathname)) {
     headers.set('Cache-Control', 'public, max-age=31536000, immutable')
   }
+  // Remix sirve módulos con URLs estables: un cambio debe llegar al navegador.
+  else if (pathname.includes('/assets/') || /\.(js|css)$/.test(pathname)) {
+    headers.set('Cache-Control', 'no-cache')
+  }
   // Documentos estáticos: cache de 1 semana
-  else if (/\.(pdf|xlsx|docx|txt)$/.test(url)) {
+  else if (/\.(pdf|xlsx|docx|txt)$/.test(pathname)) {
     headers.set('Cache-Control', 'public, max-age=604800')
   }
   // HTML: no cachear (siempre fresh)
