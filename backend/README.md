@@ -270,6 +270,25 @@ Configura un valor real en un archivo `.env` local (no versionado).
 > cableado a `app/actions/admin/personalizacion-controller.tsx` + `personalizacion-page.tsx`
 > (form `testMail`) de forma CSP-compliant.
 
+## Estadísticas: cómo se arman las cifras de las gráficas
+
+`GET /api/stats` (solo panel; `?origen=digital|fisica` filtra las distribuciones) devuelve lo que
+dibujan la vista general y Estadísticas. Las cifras de participaciones salen de
+`services/estadisticas.ts`, que fija tres reglas para que una gráfica no cambie entre consultas:
+
+- **Orden estable**: las categorías van de mayor a menor total y, si empatan, por nombre; el
+  resultado del dictamen siempre es Procedente, En proceso, No procedente. Las que no se clasificaron
+  (texto vacío) no entran.
+- **Meses en la hora de Tlaquepaque** (`America/Mexico_City`), no en la del servidor de base de
+  datos: una participación del 31 de octubre a las 8 de la noche es de octubre aunque en UTC ya sea
+  noviembre.
+- **Serie mensual sin huecos**: desde el primer mes con participaciones hasta el mes en curso, con 0
+  en los meses vacíos (si no, enero y abril se dibujan como meses seguidos); como máximo los últimos
+  24 meses.
+
+`digitales` y `fisicas` van siempre sin filtrar: la pestaña «Totales» los suma y cada pestaña
+muestra el suyo.
+
 ## Cuentas nuevas: alta por root y primer acceso
 
 Solo una cuenta **root** da de alta cuentas (`POST /api/users`; `puedeCrearCuentas` en

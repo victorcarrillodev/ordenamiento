@@ -162,6 +162,7 @@ import {
   DEFAULT_THEME_CONFIG,
 } from './services/customizations.ts'
 import { errorDelCorreoDelPie } from './services/remitente.ts'
+import { estadisticasDeParticipaciones } from './services/estadisticas.ts'
 import { sql } from './db/pool.ts'
 import { json, bodyTooLarge, clientIp, rateLimit, logger } from './utils.ts'
 
@@ -1650,80 +1651,29 @@ export async function handleRequest(request: Request): Promise<Response> {
   }
 
   // ── Stats para el dashboard — solo admin ─────────────────────────────
+  // Las cifras de las gráficas de participaciones salen de services/estadisticas.ts
+  // (orden estable y meses sin huecos); aquí solo se les suman los conteos de
+  // cuentas, indicadores y actividades que enseña la vista general.
   if (method === 'GET' && pathname === '/api/stats') {
     const authError = requireAdmin()
     if (authError) return authError
     const origenParam = url.searchParams.get('origen')
     if (origenParam && !isOrigen(origenParam)) return json({ error: 'origen inválido' }, 400)
     const filtroOrigen = origenParam as Origen | null
-    const [
-      users,
-      digital,
-      fisica,
-      estados,
-      fuente,
-      genero,
-      tematica,
-      cntIndicadores,
-      partMes,
-      actividades,
-    ] = await Promise.all([
+    const [users, cntIndicadores, participaciones, actividades] = await Promise.all([
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM users`,
-      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM participations WHERE origen = 'digital'`,
-      sql<{ n: string }[]>`SELECT count(*)::text AS n FROM participations WHERE origen = 'fisica'`,
-      filtroOrigen
-        ? sql<
-            { estado: string; n: string }[]
-          >`SELECT estado, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY estado`
-        : sql<
-            { estado: string; n: string }[]
-          >`SELECT estado, count(*)::text AS n FROM participations GROUP BY estado`,
-      filtroOrigen
-        ? sql<
-            { k: string; n: string }[]
-          >`SELECT fuente AS k, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY fuente ORDER BY count(*) DESC`
-        : sql<
-            { k: string; n: string }[]
-          >`SELECT fuente AS k, count(*)::text AS n FROM participations GROUP BY fuente ORDER BY count(*) DESC`,
-      filtroOrigen
-        ? sql<
-            { k: string; n: string }[]
-          >`SELECT genero AS k, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY genero ORDER BY count(*) DESC`
-        : sql<
-            { k: string; n: string }[]
-          >`SELECT genero AS k, count(*)::text AS n FROM participations GROUP BY genero ORDER BY count(*) DESC`,
-      filtroOrigen
-        ? sql<
-            { k: string; n: string }[]
-          >`SELECT tematica AS k, count(*)::text AS n FROM participations WHERE origen = ${filtroOrigen} GROUP BY tematica ORDER BY count(*) DESC`
-        : sql<
-            { k: string; n: string }[]
-          >`SELECT tematica AS k, count(*)::text AS n FROM participations GROUP BY tematica ORDER BY count(*) DESC`,
       sql<{ n: string }[]>`SELECT count(*)::text AS n FROM indicadores`,
-      // La serie por mes también respeta `origen`: sin esto, la pestaña
-      // «Digitales» mostraba una gráfica mensual con las físicas incluidas.
-      filtroOrigen
-        ? sql<{ mes: string; n: string }[]>`
-            SELECT to_char(date_trunc('month', created_at),'YYYY-MM') AS mes, count(*)::text AS n
-            FROM participations WHERE origen = ${filtroOrigen} GROUP BY 1 ORDER BY 1 ASC
-          `
-        : sql<{ mes: string; n: string }[]>`
-            SELECT to_char(date_trunc('month', created_at),'YYYY-MM') AS mes, count(*)::text AS n
-            FROM participations GROUP BY 1 ORDER BY 1 ASC
-          `,
+      estadisticasDeParticipaciones(filtroOrigen),
       resumenActividades(),
     ])
-    const tu: Array<[string, number]> = fuente.filter((r) => r.k).map((r) => [r.k, Number(r.n)])
-    const tg: Array<[string, number]> = genero.filter((r) => r.k).map((r) => [r.k, Number(r.n)])
-    const tt: Array<[string, number]> = tematica.filter((r) => r.k).map((r) => [r.k, Number(r.n)])
     return json({
       usuarios: Number(users[0].n),
-      digitales: Number(digital[0].n),
-      fisicas: Number(fisica[0].n),
-      resultado: estados.map((r) => ({ estado: r.estado, total: Number(r.n) })),
-      fuente: tu,
-      genero: tg,
-      tematica: tt,
+      digitales: participaciones.digitales,
+      fisicas: participaciones.fisicas,
+      resultado: participaciones.resultado,
+      fuente: participaciones.fuente,
+      genero: participaciones.genero,
+      tematica: participaciones.tematica,
       contenido: {
         actividades: actividades.total,
         proximas: actividades.proximas,
@@ -1732,7 +1682,7 @@ export async function handleRequest(request: Request): Promise<Response> {
         avisosVigentes: actividades.avisosVigentes,
         indicadores: Number(cntIndicadores[0].n),
       },
-      participacionesPorMes: partMes.map((r) => ({ mes: r.mes, total: Number(r.n) })),
+      participacionesPorMes: participaciones.participacionesPorMes,
       proximaActividad: actividades.proxima,
       avisos: actividades.avisos,
     })
