@@ -217,8 +217,10 @@ Configura un valor real en un archivo `.env` local (no versionado).
 | Método            | Ruta                                                                | Descripción                                                                                |
 | ----------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | GET               | `/api/health`                                                       | Health check                                                                               |
-| POST              | `/api/auth/register`                                                | Crear usuario (body: email, name, password, role?)                                         |
-| POST              | `/api/auth/login`                                                   | Login → cookie HttpOnly                                                                    |
+| POST              | `/api/users`                                                        | Alta de cuenta, solo root: nombre, correo y contraseña provisional                         |
+| POST              | `/api/users/:id/invitation`                                         | Reenviar la invitación de una cuenta por configurar (solo root)                            |
+| GET/POST          | `/api/auth/account-setup`                                           | Primer acceso, con el enlace: comprobarlo / completar la configuración                     |
+| POST              | `/api/auth/login`                                                   | Login → cookie HttpOnly; una cuenta por configurar recibe un enlace, no sesión             |
 | POST              | `/api/auth/logout`                                                  | Cerrar sesión                                                                              |
 | GET               | `/api/auth/me`                                                      | Usuario actual                                                                             |
 | GET               | `/api/participations`                                               | Listado con filtros + paginación                                                           |
@@ -267,6 +269,32 @@ Configura un valor real en un archivo `.env` local (no versionado).
 > `participations.ts:updateEstado` eliminado. `POST /api/mail/test` se mantiene y ahora está
 > cableado a `app/actions/admin/personalizacion-controller.tsx` + `personalizacion-page.tsx`
 > (form `testMail`) de forma CSP-compliant.
+
+## Cuentas nuevas: alta por root y primer acceso
+
+Solo una cuenta **root** da de alta cuentas (`POST /api/users`; `puedeCrearCuentas` en
+`auth/roles.ts`). El root escribe el nombre, el correo y una contraseña **provisional**; la cuenta
+nace «por configurar» (`users.setup_pending`) y la persona recibe un correo con un enlace a su panel
+de configuración (`/configurar-cuenta` en el portal), donde captura nombre(s) y apellidos, crea su
+contraseña (con confirmación) y, si quiere, su foto. Todo lo hace `auth/configuracion-cuenta.ts`:
+
+- **La contraseña provisional no viaja en el correo**: quien da de alta se la entrega por otro
+  medio. Una cuenta por configurar no abre sesión ni con ella: `POST /api/auth/login` devuelve
+  `{ configurar: true, token }` (un enlace de 60 minutos al mismo panel) y no pone cookie.
+- **El enlace del correo** vale 7 días (`INVITACION_TTL_DIAS`) y un solo uso; solo se guarda su
+  SHA-256 (`account_setups`). Abrirlo (`GET /api/auth/account-setup`) no lo gasta; lo gasta el
+  `POST` que completa la configuración, en una transacción condicionada a que la cuenta siga por
+  configurar (dos envíos simultáneos con el mismo enlace: gana uno y el otro recibe 410).
+- La contraseña provisional también vale 7 días (`users.setup_expires_at`). Pasado ese plazo ni
+  ella ni el enlace sirven y el root usa **Reenviar invitación** (`POST /api/users/:id/invitation`):
+  renueva el plazo y emite un enlace nuevo (el anterior deja de servir). Restablecer la contraseña de
+  una cuenta por configurar también renueva el plazo.
+- La contraseña nueva no puede ser la provisional. Al terminar se abre la sesión.
+- La foto (opcional) pasa por las mismas reglas que la de «Mi cuenta» (`services/avatar.ts`): imagen
+  de hasta 5 MB y que supere la revisión de archivos. Si no sirve, se avisa y no se gasta el enlace.
+- Si el correo de bienvenida no se puede enviar (SMTP sin configurar o caído) la cuenta queda creada
+  y la respuesta lo dice (`correo: { enviado: false, motivo }`); con la contraseña provisional la
+  persona ya puede entrar a configurarla.
 
 ## Env
 

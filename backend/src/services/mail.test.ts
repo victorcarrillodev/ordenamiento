@@ -36,6 +36,7 @@ const {
   enviarAviso,
   enviarAvisoCorreoCambiado,
   enviarConfirmacionCorreoNuevo,
+  enviarCorreoBienvenida,
   enviarCorreoPrueba,
   enviarCorreoRecuperacion,
   enviarCorreoRespuesta,
@@ -87,6 +88,16 @@ describe('escapeHtml (anti-XSS en correos)', () => {
     expect(escapeHtml('Folio 12345 — Tlaquepaque')).toBe('Folio 12345 — Tlaquepaque')
   })
 })
+
+/** Una cuenta recién dada de alta por un root. */
+const BIENVENIDA = {
+  para: 'nueva@tlaquepaque.gob.mx',
+  nombre: 'Nueva Persona',
+  rango: 'Administrador',
+  creadoPor: 'Dueña del Sistema',
+  url: 'https://portal.test/ordena/configurar-cuenta?token=abc123',
+  expiraDias: 7,
+}
 
 /** Una participación completa, con los datos complementarios que el acuse no muestra. */
 const participacion = (cambios: Record<string, unknown> = {}) => ({
@@ -281,6 +292,11 @@ describe('remitente de los correos: el correo de contacto del pie de página', (
         }),
     ],
     [
+      'la bienvenida de una cuenta nueva',
+      'Bitácora Tlaquepaque',
+      () => enviarCorreoBienvenida(BIENVENIDA),
+    ],
+    [
       'el aviso del correo cambiado',
       'Bitácora Tlaquepaque',
       () =>
@@ -356,5 +372,73 @@ describe('remitente de los correos: el correo de contacto del pie de página', (
     correoDelPie = 'contacto.poetdum@tlaquepaque.gob.mx'
     await enviarCorreoPrueba('a@b.com')
     expect(sendMailCalls[0].html).toContain('contacto.poetdum@tlaquepaque.gob.mx')
+  })
+})
+
+describe('enviarCorreoBienvenida', () => {
+  beforeEach(() => {
+    process.env.SMTP_HOST = 'smtp.example.com'
+    sendMailCalls.length = 0
+  })
+  afterEach(() => {
+    delete process.env.SMTP_HOST
+  })
+
+  it('lanza si no hay SMTP configurado', async () => {
+    delete process.env.SMTP_HOST
+    await expect(enviarCorreoBienvenida(BIENVENIDA)).rejects.toThrow('SMTP_NO_CONFIGURADO')
+  })
+
+  it('va a la persona, con el enlace de configuración como botón y como texto', async () => {
+    await enviarCorreoBienvenida(BIENVENIDA)
+    const { to, subject, html } = sendMailCalls[0]
+    expect(to).toBe('nueva@tlaquepaque.gob.mx')
+    expect(subject).toBe('[Bitácora] Configure su cuenta')
+    expect(html).toContain('Configurar mi cuenta')
+    // El enlace aparece en el botón y escrito, por si el botón no funciona.
+    expect(html.split('https://portal.test/ordena/configurar-cuenta?token=abc123').length - 1).toBe(
+      2,
+    )
+    expect(html).toContain('href="https://portal.test/ordena/configurar-cuenta?token=abc123"')
+  })
+
+  it('dice quién dio de alta, con qué rango y qué se hará en la configuración', async () => {
+    await enviarCorreoBienvenida(BIENVENIDA)
+    const { html } = sendMailCalls[0]
+    expect(html).toContain('Nueva Persona')
+    expect(html).toContain('Dueña del Sistema')
+    expect(html).toContain('Administrador')
+    expect(html).toContain('nueva@tlaquepaque.gob.mx')
+    expect(html).toContain('nombre y apellidos')
+    expect(html).toContain('foto de perfil')
+  })
+
+  it('no lleva ninguna contraseña: explica que la provisional se entrega por otro medio', async () => {
+    await enviarCorreoBienvenida(BIENVENIDA)
+    const { html } = sendMailCalls[0]
+    expect(html).toContain('no incluye ninguna contraseña')
+    expect(html).toContain('contraseña provisional')
+    expect(html).toContain('por otro medio')
+  })
+
+  it('dice cuánto dura el enlace, en singular y en plural', async () => {
+    await enviarCorreoBienvenida(BIENVENIDA)
+    expect(sendMailCalls[0].html).toContain('<strong>7 días</strong>')
+    await enviarCorreoBienvenida({ ...BIENVENIDA, expiraDias: 1 })
+    expect(sendMailCalls[1].html).toContain('<strong>1 día</strong>')
+  })
+
+  it('escapa el HTML del nombre, de quien dio de alta y de la dirección', async () => {
+    await enviarCorreoBienvenida({
+      ...BIENVENIDA,
+      nombre: '<img src=x onerror=alert(1)>',
+      creadoPor: '<script>alert(2)</script>',
+      url: 'https://portal.test/x?a=1&b="2"',
+    })
+    const { html } = sendMailCalls[0]
+    expect(html).not.toContain('<img src=x')
+    expect(html).not.toContain('<script>alert(2)')
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;')
+    expect(html).toContain('a=1&amp;b=&quot;2&quot;')
   })
 })

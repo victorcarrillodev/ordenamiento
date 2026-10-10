@@ -57,12 +57,18 @@ export interface CuentaListada {
   name: string
   role: string
   created_at: string
+  /** La cuenta existe pero su titular todavía no completa el primer acceso. */
+  setup_pending: boolean
+  /** Está por configurar y la contraseña provisional ya no sirve (hay que reenviar la invitación). */
+  setup_vencida: boolean
 }
 
 /** Todas las cuentas, con los rangos altos primero y luego por nombre. */
 export async function listarUsuarios(): Promise<CuentaListada[]> {
   return sql<CuentaListada[]>`--sql
-    SELECT id::text AS id, email, name, role, created_at::text AS created_at
+    SELECT id::text AS id, email, name, role, created_at::text AS created_at,
+           setup_pending,
+           (setup_pending AND setup_expires_at IS NOT NULL AND setup_expires_at < now()) AS setup_vencida
     FROM users
     ORDER BY CASE role WHEN 'root' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, name
   `

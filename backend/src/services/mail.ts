@@ -957,6 +957,87 @@ export async function enviarAvisoCorreoCambiado(input: {
   return { enviado: true }
 }
 
+/**
+ * Da la bienvenida a una cuenta que acaba de dar de alta un root y le lleva a su
+ * panel de configuración (nombre, apellidos, contraseña propia y foto).
+ *
+ * La contraseña provisional NO va en el correo: quien dio de alta la cuenta se la
+ * entrega por otro medio. Por eso el mensaje solo trae el enlace, que es de un
+ * solo uso y vence. El enlace lo construye quien llama (ver `urlConfigurarCuenta`
+ * en app.ts); aquí solo se escribe el correo.
+ */
+export async function enviarCorreoBienvenida(input: {
+  para: string
+  nombre: string
+  /** Rango con el que se creó la cuenta, tal como lo muestra el panel. */
+  rango: string
+  /** Quién dio de alta la cuenta. */
+  creadoPor: string
+  url: string
+  expiraDias: number
+}): Promise<{ enviado: true }> {
+  if (!mailConfigurado()) {
+    throw new Error('SMTP_NO_CONFIGURADO')
+  }
+
+  const url = escapeHtml(input.url)
+  const dias = `${input.expiraDias} ${input.expiraDias === 1 ? 'día' : 'días'}`
+
+  const contenidoHtml = `
+    <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-top: 0;">
+      Estimado(a) <strong>${escapeHtml(input.nombre || 'usuario(a)')}</strong>:
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+      <strong>${escapeHtml(input.creadoPor)}</strong> le dio de alta en la <strong>Bitácora</strong>
+      del Municipio de San Pedro Tlaquepaque, con el rango de <strong>${escapeHtml(input.rango)}</strong>,
+      usando esta dirección de correo (<strong>${escapeHtml(input.para)}</strong>).
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+      Para empezar a usar su cuenta debe configurarla: capturar su nombre y apellidos, crear su
+      propia contraseña y, si lo desea, agregar su foto de perfil. Use el siguiente botón:
+    </p>
+
+    <div style="text-align:center; margin: 28px 0;">
+      <a href="${url}"
+         style="display:inline-block; padding:14px 28px; background:#7A1A37; color:#FFFFFF;
+                font-size:15px; font-weight:700; text-decoration:none; border-radius:10px;
+                letter-spacing:0.3px;">
+        Configurar mi cuenta
+      </a>
+    </div>
+
+    <p style="font-size: 12.5px; line-height: 1.6; color: #64748B; text-align:center;">
+      Si el botón no funciona, copie y pegue esta dirección en su navegador:<br>
+      <span style="word-break:break-all; color:#7A1A37;">${url}</span>
+    </p>
+
+    <div class="protocol-box" style="background-color:#FFFBEB; border-color:#FDE68A;">
+      <div class="protocol-title" style="color:#92400E;">Importante</div>
+      <div class="protocol-step" style="color:#78350F;">⏱ El enlace vence en <strong>${escapeHtml(dias)}</strong> y solo puede usarse una vez. Si vence, pida que le reenvíen la invitación.</div>
+      <div class="protocol-step" style="color:#78350F;">🔑 Este mensaje no incluye ninguna contraseña. La <strong>contraseña provisional</strong> se la entrega, por otro medio, quien le dio de alta; si prefiere entrar con ella, al iniciar sesión lo llevaremos a esta misma configuración.</div>
+      <div class="protocol-step" style="color:#78350F;">🔒 Si usted no esperaba este mensaje, ignórelo y avise a la Dirección de Medio Ambiente y Ecología. Nunca comparta este enlace.</div>
+    </div>
+  `
+
+  const html = renderPlantillaBase({
+    titulo: 'Configure su cuenta',
+    subtitulo: 'Alta de cuenta · Bitácora',
+    badge: 'Cuenta nueva',
+    badgeColor: '#16A34A',
+    contenidoHtml,
+  })
+
+  const transporter = getTransporter()
+  await transporter.sendMail({
+    from: await remitenteDelPortal(),
+    to: input.para,
+    subject: '[Bitácora] Configure su cuenta',
+    html,
+  })
+
+  return { enviado: true }
+}
+
 export function escapeHtml(s: string): string {
   return String(s).replace(
     /[&<>"']/g,

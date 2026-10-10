@@ -159,12 +159,21 @@ export async function registerUser(input: {
   name: string
   password: string
   role?: Rol
+  /**
+   * Crea la cuenta «por configurar»: la contraseña es provisional hasta esta
+   * fecha y no se puede iniciar sesión hasta que su titular complete el panel
+   * de primer acceso (ver auth/configuracion-cuenta.ts). Sin esto la cuenta
+   * queda lista para usarse, que es lo que necesitan el sembrado y las pruebas.
+   */
+  configurarAntesDe?: Date
 }): Promise<{ id: string }> {
   const password_hash = await hashPassword(input.password)
+  const porConfigurar = input.configurarAntesDe !== undefined
 
   const rows = await sql<{ id: string }[]>`--sql
-    INSERT INTO users (email, name, password_hash, role)
-    VALUES (${input.email.toLowerCase()}, ${input.name}, ${password_hash}, ${input.role ?? 'user'})
+    INSERT INTO users (email, name, password_hash, role, setup_pending, setup_expires_at)
+    VALUES (${input.email.toLowerCase()}, ${input.name}, ${password_hash}, ${input.role ?? 'user'},
+            ${porConfigurar}, ${input.configurarAntesDe ?? null})
     ON CONFLICT (email) DO NOTHING
     RETURNING id::text AS id
   `

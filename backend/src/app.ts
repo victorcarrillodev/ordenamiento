@@ -35,6 +35,18 @@ import {
   type SessionUser,
 } from './auth/auth.ts'
 import {
+  completarConfiguracion,
+  emitirEnlaceDeConfiguracion,
+  enlaceDeConfiguracionValido,
+  ENTRADA_PROVISIONAL_TTL_MINUTOS,
+  estadoDeConfiguracion,
+  INVITACION_TTL_DIAS,
+  renovarInvitacion,
+  renovarVigenciaProvisional,
+  validarDatosDeConfiguracion,
+  vigenciaDeInvitacion,
+} from './auth/configuracion-cuenta.ts'
+import {
   confirmarCambioEmail,
   solicitarCambioEmail,
   EMAIL_TTL_MINUTOS,
@@ -49,9 +61,11 @@ import {
 import {
   comoRol,
   esRolValido,
+  etiquetaDeRol,
   puedeCambiarPassword,
   puedeCambiarRol,
-  puedeCrearConRol,
+  puedeCrearCuenta,
+  puedeCrearCuentas,
   puedeEliminar,
   puedeEntrarAlPanel,
   puedeVerBitacoraDeSesiones,
@@ -108,7 +122,8 @@ import {
   deleteIndicador,
   validarIndicador,
 } from './services/indicadores.ts'
-import { nombreEnDisco, sanitizarNombre } from './files/nombres.ts'
+import { escribirAvatar, validarAvatar, type AvatarValidado } from './services/avatar.ts'
+import { AVATAR_MAX_BYTES } from './services/users.ts'
 import { MAX_TOTAL_BYTES } from './files/limits.ts'
 import { exportTableToXlsx, isExportable } from './services/export.ts'
 import { participationDocx } from './services/word.ts'
@@ -120,6 +135,7 @@ import {
   enviarCorreoRecuperacion,
   enviarConfirmacionCorreoNuevo,
   enviarAvisoCorreoCambiado,
+  enviarCorreoBienvenida,
   mailConfigurado,
 } from './services/mail.ts'
 import {
@@ -205,6 +221,10 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function urlRestablecer(token: string): string {
   return `${APP_PUBLIC_URL}${APP_BASE_PATH}/restablecer?token=${encodeURIComponent(token)}`
+}
+
+function urlConfigurarCuenta(token: string): string {
+  return `${APP_PUBLIC_URL}${APP_BASE_PATH}/configurar-cuenta?token=${encodeURIComponent(token)}`
 }
 
 function urlConfirmarCorreo(token: string): string {
@@ -522,6 +542,29 @@ export async function handleRequest(request: Request): Promise<Response> {
     }
     clearLoginAttempts(body.email)
 
+    // Una cuenta recién dada de alta que aún no se configura NO abre sesión: la
+    // contraseña provisional solo sirve para llegar al panel de configuración
+    // (nombre, apellidos y contraseña propia). Se llega con un enlace de corta
+    // vida, el mismo mecanismo que el del correo de bienvenida; sin cookie.
+    const configuracion = await estadoDeConfiguracion(user.id)
+    if (configuracion.pendiente) {
+      if (configuracion.vencida) {
+        return json(
+          {
+            error:
+              'Tu acceso provisional venció. Pide a quien administra el portal que te reenvíe la invitación.',
+            motivo: 'invitacion_vencida',
+          },
+          403,
+        )
+      }
+      const enlace = await emitirEnlaceDeConfiguracion(user.id, {
+        vigenciaMs: ENTRADA_PROVISIONAL_TTL_MINUTOS * 60_000,
+        invalidarAnteriores: false,
+      })
+      return json({ configurar: true, token: enlace.token, user: null })
+    }
+
     const token = await createSessionToken(user.id)
     const emitido = sessionIssuedAt(token)
     if (emitido !== null) {
@@ -683,6 +726,152 @@ export async function handleRequest(request: Request): Promise<Response> {
     return json({ ok: true, email: resultado.emailNuevo })
   }
 
+  // ── Primer acceso de una cuenta dada de alta por un root ──────────────
+  // Sin sesión: quien llega trae el enlace de un solo uso del correo de
+  // bienvenida (o el que emitió el inicio de sesión con la contraseña
+  // provisional). El GET solo comprueba que el enlace sirva y NO lo gasta, para
+  // que los previsualizadores de enlaces de los clientes de correo no lo quemen;
+  // lo gasta el POST que completa la configuración.
+  if (method === 'GET' && pathname === '/api/auth/account-setup') {
+    const token = url.searchParams.get('token') ?? ''
+    if (!token) return json({ valido: false, motivo: 'invalido' }, 400)
+    if (rateLimit(`setup-check:${token.slice(0, 16)}`, RESET_MAX_INTENTOS, RESET_WINDOW_MS)) {
+      return json({ error: 'Demasiados intentos. Intenta de nuevo en unos minutos.' }, 429)
+    }
+    const estado = await enlaceDeConfiguracionValido(token)
+    if (!estado.valido) return json(estado, 410)
+    // Solo lo que el panel muestra: nada que sirva para identificar la cuenta por dentro.
+    const { name, email, role } = estado.usuario
+    return json({ valido: true, usuario: { name, email, rol: role } })
+  }
+
+  if (method === 'POST' && pathname === '/api/auth/account-setup') {
+    if (bodyTooLarge(request, AVATAR_MAX_BYTES + 256 * 1024)) {
+      return json({ error: 'El envío supera el tamaño máximo permitido' }, 413)
+    }
+    let form: FormData
+    try {
+      form = await request.formData()
+    } catch {
+      return json({ error: 'Formulario inválido' }, 400)
+    }
+    const campo = (nombre: string): string => {
+      const valor = form.get(nombre)
+      return typeof valor === 'string' ? valor : ''
+    }
+    const token = campo('token')
+    if (!token) return json({ error: 'Enlace inválido', motivo: 'invalido' }, 400)
+
+    if (rateLimit(`setup:${token.slice(0, 16)}`, RESET_MAX_INTENTOS, RESET_WINDOW_MS)) {
+      return json({ error: 'Demasiados intentos. Intenta de nuevo en unos minutos.' }, 429)
+    }
+
+    // Primero lo que no toca la base ni el disco: así un dato mal escrito se
+    // corrige con el mismo enlace, sin haberlo gastado.
+    const validacion = validarDatosDeConfiguracion({
+      nombres: campo('nombres'),
+      apellidos: campo('apellidos'),
+      password: campo('password'),
+      confirmacion: campo('confirmacion'),
+    })
+    if (!validacion.ok) {
+      return json(
+        { error: 'Revisa los datos marcados', motivo: 'datos', campos: validacion.campos },
+        422,
+      )
+    }
+
+    // La foto es opcional: sin archivo se sigue sin ella; con un archivo que no
+    // sirve se avisa, no se descarta en silencio.
+    let foto: AvatarValidado | undefined
+    const archivo = form.get('avatar')
+    if (archivo instanceof File && archivo.size > 0) {
+      const revisada = await validarAvatar(archivo)
+      if (!revisada.ok) {
+        return json(
+          { error: revisada.error, motivo: 'avatar', campos: { avatar: revisada.error } },
+          revisada.status,
+        )
+      }
+      foto = revisada.avatar
+    }
+
+    const estado = await enlaceDeConfiguracionValido(token)
+    if (!estado.valido) {
+      return json(
+        {
+          error:
+            estado.motivo === 'expirado'
+              ? 'El enlace de configuración ya venció. Pide a quien administra el portal que te reenvíe la invitación.'
+              : 'El enlace de configuración no es válido o ya se usó.',
+          motivo: estado.motivo,
+        },
+        410,
+      )
+    }
+
+    let rutaFoto: string | undefined
+    try {
+      if (foto) rutaFoto = await escribirAvatar(foto)
+      const resultado = await completarConfiguracion(
+        token,
+        validacion.datos,
+        foto && rutaFoto ? { validado: foto, ruta: rutaFoto } : undefined,
+      )
+      if (!resultado.ok) {
+        if (rutaFoto) await rm(rutaFoto, { force: true })
+        if (resultado.motivo === 'password_provisional') {
+          return json(
+            {
+              error: 'Revisa los datos marcados',
+              motivo: 'datos',
+              campos: { password: 'La contraseña nueva debe ser distinta de la provisional.' },
+            },
+            422,
+          )
+        }
+        return json(
+          {
+            error:
+              resultado.motivo === 'expirado'
+                ? 'El enlace de configuración ya venció. Pide a quien administra el portal que te reenvíe la invitación.'
+                : 'El enlace de configuración no es válido o ya se usó.',
+            motivo: resultado.motivo,
+          },
+          410,
+        )
+      }
+
+      // Quien acaba de configurar su cuenta no debe seguir bloqueado por intentos
+      // fallidos anteriores, y entra directo: ya demostró el enlace y eligió su
+      // propia contraseña.
+      clearLoginAttempts(resultado.usuario.email)
+      const sesion = await createSessionToken(resultado.usuario.id)
+      const emitido = sessionIssuedAt(sesion)
+      if (emitido !== null) {
+        anotarSesion(
+          registrarInicioSesion(resultado.usuario.id, emitido, datosCliente(request)),
+          'sesiones.inicio',
+        )
+      }
+      logger.info('users.setup', `${resultado.usuario.email} configuró su cuenta`)
+      return json(
+        {
+          ok: true,
+          user: {
+            id: resultado.usuario.id,
+            name: resultado.usuario.name,
+            role: resultado.usuario.role,
+          },
+        },
+        { headers: { 'set-cookie': sessionCookie(sesion) } },
+      )
+    } catch (err) {
+      if (rutaFoto) await rm(rutaFoto, { force: true }).catch(() => undefined)
+      throw err
+    }
+  }
+
   if (method === 'POST' && pathname === '/api/auth/logout') {
     // Se cierra la fila de la bitácora ANTES de invalidar la cookie: después
     // ya no habría forma de saber qué sesión terminó.
@@ -708,9 +897,10 @@ export async function handleRequest(request: Request): Promise<Response> {
   // `root` está por encima de `admin`: donde entra un administrador, entra él.
   const requireAdmin = (): Response | null =>
     puedeEntrarAlPanel(user?.role) ? null : json({ error: 'Requiere rol admin' }, 403)
-  // Lo que solo ve el root: ni un administrador, aunque entre al panel.
-  const requireRoot = (): Response | null =>
-    puedeVerBitacoraDeSesiones(user?.role) ? null : json({ error: 'Requiere rol root' }, 403)
+  // Lo que solo concede una política de auth/roles.ts (p. ej. «solo root»): ni un
+  // administrador, aunque entre al panel.
+  const requirePolitica = (permitido: (rol: unknown) => boolean): Response | null =>
+    permitido(user?.role) ? null : json({ error: 'Requiere rol root' }, 403)
 
   // Módulos de rutas propios (acuse, respuestas…): cada uno responde si la
   // petición le toca. Van antes de las rutas de abajo porque algunas comparten
@@ -1027,41 +1217,19 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (authError) return authError
     let escritos: string[] = []
     try {
-      // Validación 5MB inline antes de validateUpload (el límite general de adjuntos es mayor).
+      // Las reglas de la imagen (5 MB, formato, revisión del archivo) son las
+      // mismas que en el panel de primer acceso: viven en services/avatar.ts.
       const form = await request.formData()
-      const raw = form.get('avatar') as unknown as File | null
-      if (!(raw instanceof File) || raw.size === 0) {
-        return json({ error: 'No se recibió ninguna imagen' }, 400)
-      }
-      if (raw.size > 5 * 1024 * 1024) {
-        return json({ error: 'Archivo demasiado grande (máx 5 MB)' }, 413)
-      }
-      const buf = Buffer.from(await raw.arrayBuffer())
-      const verdict = validateUpload({ filename: String(raw.name), buffer: buf })
-      if (!verdict.ok) {
-        return json(
-          { error: `Archivo rechazado (${sanitizarNombre(String(raw.name))}): ${verdict.reason}` },
-          415,
-        )
-      }
-      if (!isImageExtension(getExtension(String(raw.name)))) {
-        return json({ error: 'El archivo debe ser una imagen (JPG, PNG, WEBP o GIF)' }, 415)
-      }
-      // Escribir a disco (reusando helpers de nombres)
-      const { mkdir, writeFile } = await import('node:fs/promises')
-      await mkdir(UPLOAD_DIR, { recursive: true })
-      const disco = nombreEnDisco(String(raw.name))
-      const ruta = join(UPLOAD_DIR, disco)
-      await writeFile(ruta, buf)
+      const validado = await validarAvatar(form.get('avatar'))
+      if (!validado.ok) return json({ error: validado.error }, validado.status)
+      const ruta = await escribirAvatar(validado.avatar)
       escritos = [ruta]
-      const archivo = {
-        nombreOriginal: sanitizarNombre(String(raw.name)),
-        mime: verdict.safeMime!,
-        size: raw.size,
-        rutaLocal: ruta,
-      }
       const { setUserAvatar } = await import('./services/users.ts')
-      const saved = await setUserAvatar(user!.id, archivo)
+      const saved = await setUserAvatar(user!.id, {
+        nombreOriginal: validado.avatar.nombreOriginal,
+        mime: validado.avatar.mime,
+        rutaLocal: ruta,
+      })
       if (!saved) {
         await Promise.allSettled(escritos.map((f) => rm(f, { force: true })))
         return json({ error: 'No encontrado' }, 404)
@@ -1196,7 +1364,7 @@ export async function handleRequest(request: Request): Promise<Response> {
   // vigilancia sobre personas, no un dato operativo cualquiera. Un administrador
   // no la ve; lo suyo está en GET /api/users/me/sessions.
   if (method === 'GET' && pathname === '/api/sessions') {
-    const authError = requireRoot()
+    const authError = requirePolitica(puedeVerBitacoraDeSesiones)
     if (authError) return authError
 
     const usuarioParam = url.searchParams.get('user_id')
@@ -1226,6 +1394,7 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (veredicto.permitido) return null
     const mensajes: Record<string, [string, number]> = {
       sin_permiso: ['No tienes permiso para gestionar cuentas', 403],
+      solo_root_crea_cuentas: ['Solo una cuenta root puede crear cuentas', 403],
       solo_root_sobre_root: ['Solo una cuenta root puede modificar a otra cuenta root', 403],
       solo_root_asigna_root: ['Solo una cuenta root puede otorgar el rango root', 403],
       ultimo_root: ['No se puede dejar el sistema sin ninguna cuenta root', 409],
@@ -1244,6 +1413,11 @@ export async function handleRequest(request: Request): Promise<Response> {
     return json({ users: await listarUsuarios() })
   }
 
+  // Alta de una cuenta. Solo un root puede darla: quien la crea escribe el nombre,
+  // el correo y una contraseña PROVISIONAL, y la persona recibe un correo con el
+  // enlace a su panel de configuración (nombre, apellidos, contraseña propia y
+  // foto). La cuenta no abre sesión hasta que lo completa. La contraseña
+  // provisional no viaja en el correo: quien da de alta la entrega por otro medio.
   if (method === 'POST' && pathname === '/api/users') {
     const authError = requireAdmin()
     if (authError) return authError
@@ -1260,17 +1434,25 @@ export async function handleRequest(request: Request): Promise<Response> {
     // `comoRol` descarta cualquier valor que no sea un rango conocido: el rol
     // no puede salir tal cual de un formulario.
     const rol = comoRol(body.role)
-    const veredicto = denegado(puedeCrearConRol(user!, rol))
+    const veredicto = denegado(puedeCrearCuenta(user!))
     if (veredicto) return veredicto
 
+    const email = String(body.email).trim().toLowerCase()
+    if (!EMAIL_RE.test(email)) return json({ error: 'Correo electrónico inválido' }, 400)
+    const nombre = String(body.name).trim().replace(/\s+/g, ' ')
+    if (nombre.length < 2 || nombre.length > 120) {
+      return json({ error: 'El nombre debe tener entre 2 y 120 caracteres' }, 422)
+    }
+
+    let id: string
     try {
-      const { id } = await registerUser({
-        email: body.email,
-        name: body.name,
+      ;({ id } = await registerUser({
+        email,
+        name: nombre,
         password: body.password,
         role: rol,
-      })
-      return json({ ok: true, id }, 201)
+        configurarAntesDe: vigenciaDeInvitacion(),
+      }))
     } catch (err) {
       if (err instanceof Error && err.message === 'EMAIL_TAKEN') {
         return json({ error: 'El correo ya está registrado' }, 409)
@@ -1280,6 +1462,89 @@ export async function handleRequest(request: Request): Promise<Response> {
       }
       throw err
     }
+
+    // El correo de bienvenida se espera: quien da de alta tiene que saber en el
+    // momento si le llegó a la persona o si hay que entregarle la invitación de
+    // otra forma. Que falle NO deshace el alta; el panel ofrece reenviarla.
+    let correo: { enviado: boolean; motivo?: 'smtp_no_configurado' | 'envio_fallido' }
+    if (!mailConfigurado()) {
+      correo = { enviado: false, motivo: 'smtp_no_configurado' }
+    } else {
+      try {
+        const enlace = await emitirEnlaceDeConfiguracion(id, {
+          vigenciaMs: INVITACION_TTL_DIAS * 24 * 60 * 60 * 1000,
+          invalidarAnteriores: true,
+        })
+        await enviarCorreoBienvenida({
+          para: email,
+          nombre,
+          rango: etiquetaDeRol(rol),
+          creadoPor: user!.name,
+          url: urlConfigurarCuenta(enlace.token),
+          expiraDias: INVITACION_TTL_DIAS,
+        })
+        correo = { enviado: true }
+      } catch (err) {
+        logger.error('users.create.correo', err)
+        correo = { enviado: false, motivo: 'envio_fallido' }
+      }
+    }
+
+    logger.info(
+      'users.create',
+      `${user!.email} dio de alta a ${email} (${rol}); correo de bienvenida: ${correo.enviado ? 'enviado' : correo.motivo}`,
+    )
+    return json({ ok: true, id, correo }, 201)
+  }
+
+  // Reenviar la invitación de una cuenta que sigue por configurar: renueva la
+  // vigencia de la contraseña provisional y manda un enlace nuevo (el anterior
+  // deja de servir). Solo root, igual que el alta.
+  const invitacionMatch =
+    method === 'POST' ? matchPath(pathname, '/api/users/:id/invitation') : null
+  if (invitacionMatch) {
+    const authError = requirePolitica(puedeCrearCuentas)
+    if (authError) return authError
+    const idError = requireUuidParam(invitacionMatch.id)
+    if (idError) return idError
+
+    // Se comprueba ANTES de renovar: sin correo configurado no tiene sentido
+    // invalidar el enlace anterior ni mover la vigencia.
+    if (!mailConfigurado()) {
+      return json({ error: 'El envío de correo no está configurado en el servidor' }, 503)
+    }
+    const objetivo = await obtenerCuenta(invitacionMatch.id)
+    if (!objetivo) return json({ error: 'Cuenta no encontrada' }, 404)
+
+    const invitacion = await renovarInvitacion(invitacionMatch.id)
+    if (!invitacion) {
+      return json(
+        {
+          error: 'La cuenta ya está configurada: no hay ninguna invitación pendiente',
+          motivo: 'no_pendiente',
+        },
+        409,
+      )
+    }
+    try {
+      await enviarCorreoBienvenida({
+        para: invitacion.usuario.email,
+        nombre: invitacion.usuario.name,
+        rango: etiquetaDeRol(invitacion.usuario.role),
+        creadoPor: user!.name,
+        url: urlConfigurarCuenta(invitacion.token),
+        expiraDias: INVITACION_TTL_DIAS,
+      })
+    } catch (err) {
+      logger.error('users.invitation.correo', err)
+      return json(
+        { error: 'No se pudo enviar el correo. Intenta de nuevo.', motivo: 'envio_fallido' },
+        502,
+      )
+    }
+
+    logger.info('users.invitation', `${user!.email} reenvió la invitación a ${objetivo.email}`)
+    return json({ ok: true, email: objetivo.email })
   }
 
   // Restablecer la contraseña de otra cuenta sin conocer la anterior. Es lo
@@ -1311,6 +1576,10 @@ export async function handleRequest(request: Request): Promise<Response> {
       }
       throw err
     }
+
+    // En una cuenta por configurar esa contraseña es la provisional nueva: se
+    // renueva su vigencia para que sirva. En una ya configurada no hace nada.
+    await renovarVigenciaProvisional(passwordMatch.id)
 
     logger.info('users.password.reset', `${user!.email} restableció la de ${objetivo.email}`)
     return json({ ok: true, email: objetivo.email })
