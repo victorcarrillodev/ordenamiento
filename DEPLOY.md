@@ -66,9 +66,9 @@ cuenta, que es lo que se quiere si estaba comprometida.
 «¿Olvidaste tu contraseña?» manda un enlace de un solo uso por correo, así que
 depende de dos variables de `.env`:
 
-- **`SMTP_HOST`** (y `SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`MAIL_FROM`). Sin
-  `SMTP_HOST` el formulario responde «el envío de correo no está disponible»
-  en vez de fallar en silencio.
+- **`SMTP_HOST`** (y `SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`). Sin `SMTP_HOST` el
+  formulario responde «el envío de correo no está disponible» en vez de fallar
+  en silencio.
 - **`APP_PUBLIC_URL`**: origen público con el que se construye el enlace del
   correo. En este despliegue, `https://ac.tlaquepaque.gob.mx` (sin barra final
   y sin `/ordena`). Si se deja el valor por omisión, los correos saldrán con
@@ -92,20 +92,30 @@ el mensaje «Consulta pública concluida».
 > acceso al panel pulse **Iniciar consulta pública**. Hazlo justo después de
 > desplegar si la recepción no debe interrumpirse.
 
-### Correo de la consulta pública
+### Remitente de los correos
 
-Los acuses de recepción y las respuestas a las participaciones salen de
-**`consulta.poetdum@tlaquepaque.gob.mx`**, para que las personas que participan
-vean esa dirección como origen. Se puede cambiar con `MAIL_FROM_CONSULTA` en
-`.env` (por omisión es esa). El resto de los correos del sistema (recuperación
-de contraseña, avisos) siguen saliendo de `MAIL_FROM`.
+Todos los correos del portal —acuses de recepción, respuestas a las
+participaciones, avisos, recuperación de contraseña, confirmación de correo y
+bienvenida de cuentas nuevas— salen del **correo de contacto del pie de
+página**: el mismo que se publica en el portal. Se cambia en el panel, en
+**Personalización → Textos del portal → Pie de página → Correo de contacto
+oficial**, y el cambio aplica desde el siguiente correo, sin reiniciar nada. Si
+el campo está vacío se usa `ordenamiento@tlaquepaque.gob.mx`. Los mensajes de la
+consulta pública firman como «Consulta pública POETDUM» y el resto como
+«Bitácora Tlaquepaque»; la dirección es la misma.
+
+> **Al actualizar:** las variables `MAIL_FROM` y `MAIL_FROM_CONSULTA` ya no se
+> leen. Si el `.env` las tenía para que el servidor SMTP aceptara el envío,
+> hay que dar de alta esa autorización para la dirección del pie (o poner en el
+> pie la dirección que el SMTP ya acepta).
 
 El servidor SMTP tiene que **estar autorizado para enviar como esa dirección**
 (que el buzón exista y que SPF/DKIM del dominio `tlaquepaque.gob.mx` lo
 permitan, o que el relay lo acepte con el usuario de `SMTP_USER`). Si no, el
 servidor rechazará el envío o los mensajes caerán en spam. Cada envío de
 respuesta queda registrado con su fecha, hora y resultado, y el panel muestra
-el error si el servidor lo rechaza.
+el error si el servidor lo rechaza. Solo se acepta una dirección en ese campo:
+al guardar, el panel rechaza textos que no lo sean.
 
 Esto levanta 3 contenedores en una red interna (`db`, `backend`, `web`).
 Solo `web` publica un puerto, y solo en `127.0.0.1:44100` — no queda

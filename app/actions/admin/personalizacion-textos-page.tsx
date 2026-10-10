@@ -95,6 +95,11 @@ export function PersonalizacionTextosPage(handle: Handle<PersonalizacionTextosPa
                             value={txt[c.key] || ''}
                             style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px; width: 100%;"
                           />
+                          {c.ayuda ? (
+                            <span class="form-hint" style="font-size: 12px; line-height: 1.5;">
+                              {c.ayuda}
+                            </span>
+                          ) : null}
                         </>
                       )}
                     </div>

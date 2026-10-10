@@ -14,6 +14,8 @@ function mockFetch(opts: {
   theme?: unknown
   captureThemePost?: { called: boolean; body: Record<string, unknown> | null }
   themePostStatus?: number
+  /** Mensaje con el que el backend rechaza el guardado (cuando el estado no es 200). */
+  themePostError?: string
 }) {
   const authed = opts.authed ?? true
   globalThis.fetch = vi
@@ -52,7 +54,11 @@ function mockFetch(opts: {
           const status = opts.themePostStatus ?? 200
           return Promise.resolve(
             new Response(
-              JSON.stringify(status === 200 ? { ok: true } : { error: 'Error al guardar' }),
+              JSON.stringify(
+                status === 200
+                  ? { ok: true }
+                  : { error: opts.themePostError ?? 'Error al guardar' },
+              ),
               { status, headers: { 'content-type': 'application/json' } },
             ),
           )
@@ -162,6 +168,35 @@ describe('Personalización · textos del portal', () => {
       const textos = (capture.body as { config: { usuario: { textos: Record<string, string> } } })
         .config.usuario.textos
       expect(textos.ctaParrafo).toBe('<div style="text-align: center;">Hola <b>mundo</b></div>')
+    })
+  })
+
+  describe('correo de contacto del pie de página (también es el remitente)', () => {
+    it('el campo explica que de él salen todos los correos del portal', async () => {
+      mockFetch({})
+      const res = await router.fetch(
+        new Request('http://localhost/ordena/admin/personalizacion/textos'),
+      )
+      const html = (await res?.text()) ?? ''
+      expect(html).toMatch(/<textarea[^>]*name="txt_footer_email"/)
+      expect(html).toContain('remitente de todos los correos que envía el portal')
+      expect(html).toContain('ordenamiento@tlaquepaque.gob.mx')
+    })
+
+    it('si el backend lo rechaza por no ser una dirección, el motivo llega a la pantalla', async () => {
+      const motivo = 'El correo de contacto oficial no es una dirección válida.'
+      mockFetch({ themePostStatus: 400, themePostError: motivo })
+      const fd = new FormData()
+      fd.set('motivo', 'Cambio del correo')
+      fd.set('txt_footer_email', 'ordenamiento@tlaquepaque.gob.mx / 33 1234 5678')
+      const res = await router.fetch(
+        new Request('http://localhost/ordena/admin/personalizacion/textos', {
+          method: 'POST',
+          body: fd,
+        }),
+      )
+      expect(res?.status).toBe(302)
+      expect(res?.headers.get('location')).toContain(`err=${encodeURIComponent(motivo)}`)
     })
   })
 

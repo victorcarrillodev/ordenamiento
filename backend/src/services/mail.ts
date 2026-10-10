@@ -11,25 +11,16 @@ import {
   TEXTOS_ACUSE,
 } from './acuse.ts'
 import { textoDeOpcion } from './participacion-campos.ts'
+import { NOMBRE_REMITENTE, remitenteDelPortal } from './remitente.ts'
 
 const SMTP_HOST = process.env.SMTP_HOST || '127.0.0.1'
 const SMTP_PORT = Number(process.env.SMTP_PORT || 25)
 const SMTP_USER = process.env.SMTP_USER || ''
 const SMTP_PASS = process.env.SMTP_PASS || ''
-const MAIL_FROM =
-  process.env.MAIL_FROM ||
-  (SMTP_USER
-    ? `"Bitácora Tlaquepaque" <${SMTP_USER}>`
-    : '"Bitácora Tlaquepaque" <no-reply@tlaquepaque.gob.mx>')
-
-/**
- * Remitente de los acuses y de las notificaciones de la consulta pública, para
- * que las personas que participan vean ese origen en lo que reciben. Debe ser un
- * buzón que el servidor SMTP tenga autorizado para enviar (ver DEPLOY.md).
+/*
+ * El remitente no es una constante: es el correo de contacto del pie de página,
+ * que se edita en el panel (ver services/remitente.ts). Se lee al enviar.
  */
-export const REMITENTE_CONSULTA =
-  process.env.MAIL_FROM_CONSULTA ||
-  '"Consulta pública POETDUM" <consulta.poetdum@tlaquepaque.gob.mx>'
 
 /**
  * true si hay configuración SMTP suficiente para enviar.
@@ -358,7 +349,7 @@ const filaDeCorreo = (etiqueta: string, valor: string) =>
 /**
  * Envía al participante la confirmación de su participación: toda la
  * información registrada —incluidos los datos complementarios, que no van en el
- * acuse— y el acuse en PDF adjunto. Sale de `REMITENTE_CONSULTA`.
+ * acuse— y el acuse en PDF adjunto. Sale del correo de contacto del pie de página.
  */
 export async function enviarAcuseReciboParticipacion(
   participationId: string,
@@ -442,7 +433,7 @@ export async function enviarAcuseReciboParticipacion(
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: REMITENTE_CONSULTA,
+    from: await remitenteDelPortal(NOMBRE_REMITENTE.consulta),
     to: para,
     subject: asuntoAcuse(p.folio),
     html,
@@ -463,9 +454,9 @@ export const textoRespuesta = (folio: string) =>
 
 /**
  * Envía a quien participó la notificación de que su respuesta está lista para
- * recoger, con el oficio de respuesta íntegro en PDF adjunto. Sale de
- * `REMITENTE_CONSULTA`. El oficio es el documento íntegro y firmado, no la
- * versión pública que se muestra en el portal.
+ * recoger, con el oficio de respuesta íntegro en PDF adjunto. Sale del correo
+ * de contacto del pie de página. El oficio es el documento íntegro y firmado, no
+ * la versión pública que se muestra en el portal.
  */
 export async function enviarCorreoRespuesta(input: {
   para: string
@@ -498,7 +489,7 @@ export async function enviarCorreoRespuesta(input: {
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: REMITENTE_CONSULTA,
+    from: await remitenteDelPortal(NOMBRE_REMITENTE.consulta),
     to: input.para,
     subject: asunto,
     html,
@@ -618,7 +609,7 @@ export async function enviarResolucionParticipacion(
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: REMITENTE_CONSULTA,
+    from: await remitenteDelPortal(NOMBRE_REMITENTE.consulta),
     to: para,
     subject: `[Resolución POETDUM] Participación ${p.folio} — ${p.estado}`,
     html,
@@ -723,7 +714,7 @@ export async function enviarAviso(
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: MAIL_FROM,
+    from: await remitenteDelPortal(),
     to: para,
     subject: `[Aviso POETDUM Tlaquepaque] ${titulo}`,
     html,
@@ -740,6 +731,7 @@ export async function enviarCorreoPrueba(para: string): Promise<{ enviado: true 
     throw new Error('SMTP_NO_CONFIGURADO')
   }
 
+  const remitente = await remitenteDelPortal()
   const contenidoHtml = `
     <div class="section-heading">Verificación de Conectividad SMTP</div>
     <p style="font-size: 14px; line-height: 1.6; color: #334155;">
@@ -748,7 +740,7 @@ export async function enviarCorreoPrueba(para: string): Promise<{ enviado: true 
     <div class="observation-box">
       <strong>Servidor SMTP:</strong> ${escapeHtml(SMTP_HOST)}<br>
       <strong>Puerto:</strong> ${SMTP_PORT}<br>
-      <strong>Remitente configurado:</strong> ${escapeHtml(MAIL_FROM)}<br>
+      <strong>Remitente (correo del pie de página):</strong> ${escapeHtml(remitente)}<br>
       <strong>Fecha y hora:</strong> ${new Date().toLocaleString('es-MX', { timeStyle: 'medium', dateStyle: 'full' })}
     </div>
     <p style="font-size: 13px; color: #16A34A; font-weight: 600;">
@@ -766,7 +758,7 @@ export async function enviarCorreoPrueba(para: string): Promise<{ enviado: true 
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: MAIL_FROM,
+    from: remitente,
     to: para,
     subject: `[Bitácora] Verificación de Sistema de Correo`,
     html,
@@ -836,7 +828,7 @@ export async function enviarCorreoRecuperacion(input: {
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: MAIL_FROM,
+    from: await remitenteDelPortal(),
     to: input.para,
     subject: '[Bitácora] Restablecimiento de contraseña',
     html,
@@ -906,7 +898,7 @@ export async function enviarConfirmacionCorreoNuevo(input: {
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: MAIL_FROM,
+    from: await remitenteDelPortal(),
     to: input.para,
     subject: '[Bitácora] Confirme su nuevo correo de acceso',
     html,
@@ -956,7 +948,7 @@ export async function enviarAvisoCorreoCambiado(input: {
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: MAIL_FROM,
+    from: await remitenteDelPortal(),
     to: input.para,
     subject: '[Bitácora] El correo de acceso de su cuenta cambió',
     html,

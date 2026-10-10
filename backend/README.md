@@ -263,14 +263,18 @@ Configura un valor real en un archivo `.env` local (no versionado).
 
 ## Env
 
-| Variable                                              | Default                                                                             | Uso                                                                            |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `DATABASE_URL`                                        | `postgres://postgres:postgres@localhost:5432/ordenamiento`                          | Conexión                                                                       |
-| `SESSION_SECRET`                                      | (cambiar en prod)                                                                   | Firma de cookie                                                                |
-| `PORT`                                                | `5920`                                                                              | Puerto                                                                         |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | (sin `SMTP_HOST` no se envía correo) / `25`                                         | Servidor de correo                                                             |
-| `MAIL_FROM`                                           | `"Bitácora Tlaquepaque" <SMTP_USER>`, o `<no-reply@tlaquepaque.gob.mx>` sin usuario | Remitente de avisos y recuperación de contraseña                               |
-| `MAIL_FROM_CONSULTA`                                  | `"Consulta pública POETDUM" <consulta.poetdum@tlaquepaque.gob.mx>`                  | Remitente de los acuses y de las respuestas; el servidor SMTP debe autorizarlo |
-| `APP_PUBLIC_URL`                                      | `http://localhost:44100`                                                            | Origen público del portal (enlaces de los correos)                             |
-| `TRUST_PROXY`                                         | (vacío)                                                                             | `true` si hay un proxy que pone la IP real del visitante                       |
-| `MAX_UPLOAD_MB` / `MAX_UPLOAD_FILES`                  | `100` / `5`                                                                         | Tamaño por archivo y archivos por participación                                |
+| Variable                                              | Default                                                    | Uso                                                      |
+| ----------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------- |
+| `DATABASE_URL`                                        | `postgres://postgres:postgres@localhost:5432/ordenamiento` | Conexión                                                 |
+| `SESSION_SECRET`                                      | (cambiar en prod)                                          | Firma de cookie                                          |
+| `PORT`                                                | `5920`                                                     | Puerto                                                   |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | (sin `SMTP_HOST` no se envía correo) / `25`                | Servidor de correo                                       |
+| `APP_PUBLIC_URL`                                      | `http://localhost:44100`                                   | Origen público del portal (enlaces de los correos)       |
+| `TRUST_PROXY`                                         | (vacío)                                                    | `true` si hay un proxy que pone la IP real del visitante |
+| `MAX_UPLOAD_MB` / `MAX_UPLOAD_FILES`                  | `100` / `5`                                                | Tamaño por archivo y archivos por participación          |
+
+El **remitente** de los correos no es una variable de entorno: es el correo de contacto del pie de
+página (`usuario.textos.footerEmail`, en Personalización → Textos del portal), el mismo que se
+publica en el portal. `services/remitente.ts` lo lee en cada envío; sin valor, usa
+`ordenamiento@tlaquepaque.gob.mx`. `MAIL_FROM` y `MAIL_FROM_CONSULTA` ya no se leen. El servidor
+SMTP debe tener autorizado enviar con esa dirección (ver `DEPLOY.md`).

@@ -144,6 +144,7 @@ import {
   saveUploadedBrandingImage,
   DEFAULT_THEME_CONFIG,
 } from './services/customizations.ts'
+import { errorDelCorreoDelPie } from './services/remitente.ts'
 import { sql } from './db/pool.ts'
 import { json, bodyTooLarge, clientIp, rateLimit, logger } from './utils.ts'
 
@@ -1468,6 +1469,9 @@ export async function handleRequest(request: Request): Promise<Response> {
     if (!body.config) return json({ error: 'Falta config' }, 400)
     const motivo = (body.motivo ?? '').trim()
     if (!motivo) return json({ error: 'Debes indicar el motivo del cambio por seguridad' }, 400)
+    // El correo del pie de página también es el remitente de los correos del portal.
+    const errorCorreo = errorDelCorreoDelPie(body.config)
+    if (errorCorreo) return json({ error: errorCorreo }, 400)
 
     const updated = await saveCustomizations({
       config: body.config,
