@@ -241,7 +241,7 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
                   Ver detalle →
                 </a>
               </div>
-              <Donut datos={resultado} etiqueta="Dictaminadas" tamano={190} />
+              <Donut datos={resultado} etiqueta="Participaciones" tamano={190} />
             </div>
 
             <div class="panel">

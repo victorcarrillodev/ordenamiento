@@ -85,7 +85,7 @@ export default createController(adminRoutes, {
 
       const stats = await fetchJsonOr<Stats>(context.request, '/api/stats', STATS_VACIAS)
 
-      // Obtener hora y fecha real de MÃ©xico (America/Mexico_City)
+      // Obtener hora y fecha real de México (America/Mexico_City)
       const parts = new Intl.DateTimeFormat('es-MX', {
         timeZone: 'America/Mexico_City',
         weekday: 'long',
@@ -105,7 +105,7 @@ export default createController(adminRoutes, {
       const displayHour12 = rawHour % 12 === 0 ? 12 : rawHour % 12
       const formattedHour = `${String(displayHour12).padStart(2, '0')}:${rawMin} ${ampm}`
 
-      let saludo = 'Buenos dÃ­as'
+      let saludo = 'Buenos días'
       if (rawHour >= 12 && rawHour < 19) {
         saludo = 'Buenas tardes'
       } else if (rawHour >= 19 || rawHour < 5) {

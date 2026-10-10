@@ -138,7 +138,7 @@ function Vista(
         <div class="grid-2">
           <div class="panel">
             <h2 class="panel__title">Resultado del dictamen</h2>
-            <Donut datos={datos.resultado} etiqueta="Dictaminadas" />
+            <Donut datos={datos.resultado} etiqueta="Participaciones" />
           </div>
           <div class="panel">
             <h2 class="panel__title">
