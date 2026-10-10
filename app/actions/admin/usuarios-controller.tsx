@@ -1,9 +1,12 @@
 /**
  * Usuarios Controller — GET/POST de /admin/usuarios.
  *
- * Alta, baja, cambio de rango y restablecimiento de contraseña. Quién puede
- * hacer qué sobre quién lo decide el backend (backend/src/auth/roles.ts); aquí
- * solo se traducen sus respuestas a acuses en pantalla.
+ * Alta, baja, cambio de rango, restablecimiento de contraseña y reenvío de la
+ * invitación. Quién puede hacer qué sobre quién lo decide el backend
+ * (backend/src/auth/roles.ts); aquí solo se traducen sus respuestas a acuses en
+ * pantalla. El alta es solo de root: crea la cuenta «por configurar» con la
+ * contraseña provisional que escribe quien da de alta y manda el correo con el
+ * enlace al panel de configuración de la cuenta.
  */
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
@@ -19,7 +22,43 @@ import { UsuariosPage, type UsuarioFeedback, type UsuarioRow } from './usuarios-
  * (redirect POST → GET) para que recargar no reenvíe el formulario.
  */
 const FEEDBACK: Record<string, UsuarioFeedback> = {
-  ok: { type: 'success', message: 'La cuenta se creó correctamente.' },
+  ok: {
+    type: 'success',
+    message:
+      'La cuenta se creó y se le envió el correo de bienvenida. Entrégale por otro medio la contraseña provisional: no viaja en el correo.',
+  },
+  'ok-sin-smtp': {
+    type: 'warning',
+    message:
+      'La cuenta se creó, pero el correo no está configurado en el servidor, así que no se envió la bienvenida. Entrega la contraseña provisional por otro medio (con ella entra directo a configurar su cuenta) y usa «Reenviar invitación» cuando el correo funcione.',
+  },
+  'ok-envio-fallido': {
+    type: 'warning',
+    message:
+      'La cuenta se creó, pero no se pudo enviar el correo de bienvenida. Entrega la contraseña provisional por otro medio y usa «Reenviar invitación» para volver a intentarlo.',
+  },
+  'invitacion-ok': {
+    type: 'success',
+    message:
+      'Se reenvió la invitación con un enlace nuevo; el anterior ya no sirve. La contraseña provisional vale otros 7 días.',
+  },
+  'invitacion-no-pendiente': {
+    type: 'error',
+    message: 'Esa cuenta ya está configurada: no hay ninguna invitación pendiente.',
+  },
+  'invitacion-sin-smtp': {
+    type: 'error',
+    message:
+      'El correo no está configurado en el servidor: no se pudo enviar la invitación. No se cambió nada.',
+  },
+  'invitacion-error': {
+    type: 'error',
+    message: 'No se pudo enviar el correo de la invitación. Intenta de nuevo.',
+  },
+  'solo-root-crea': {
+    type: 'error',
+    message: 'Solo una cuenta root puede dar de alta cuentas.',
+  },
   'password-ok': {
     type: 'success',
     message:
@@ -29,7 +68,7 @@ const FEEDBACK: Record<string, UsuarioFeedback> = {
   'eliminada-ok': { type: 'success', message: 'La cuenta se eliminó.' },
   datos: {
     type: 'error',
-    message: `Faltan datos: nombre, correo y una contraseña de entre ${PASSWORD_MIN} y ${PASSWORD_MAX} caracteres.`,
+    message: `Faltan datos: nombre, correo y una contraseña provisional de entre ${PASSWORD_MIN} y ${PASSWORD_MAX} caracteres.`,
   },
   'password-corta': {
     type: 'error',
@@ -53,6 +92,7 @@ const FEEDBACK: Record<string, UsuarioFeedback> = {
 
 /** Traduce el motivo que devuelve el backend a la clave del acuse. */
 function claveDeRespuesta(status: number, motivo?: string): string {
+  if (motivo === 'solo_root_crea_cuentas') return 'solo-root-crea'
   if (motivo === 'ultimo_root' || motivo === 'no_puede_autodegradarse') return 'ultimo-root'
   if (motivo === 'solo_root_sobre_root' || motivo === 'solo_root_asigna_root') return 'permiso'
   if (motivo === 'sin_permiso' || status === 403) return 'permiso'
@@ -128,6 +168,18 @@ export default createController(adminRoutes.usuarios, {
         )
       }
 
+      if (intent === 'invitacion') {
+        const res = await backendFetch(context.request, `/api/users/${id}/invitation`, {
+          method: 'POST',
+        })
+        if (res.ok) return volver('invitacion-ok')
+        const data = (await res.json().catch(() => ({}))) as { motivo?: string }
+        if (data.motivo === 'no_pendiente') return volver('invitacion-no-pendiente')
+        if (res.status === 503) return volver('invitacion-sin-smtp')
+        if (res.status === 502) return volver('invitacion-error')
+        return volver(claveDeRespuesta(res.status, data.motivo))
+      }
+
       if (intent === 'eliminar') {
         return acusar(
           await backendFetch(context.request, `/api/users/${id}`, { method: 'DELETE' }),
@@ -144,19 +196,30 @@ export default createController(adminRoutes.usuarios, {
         return volver('datos')
       }
 
-      return acusar(
-        await backendFetch(context.request, '/api/users', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            name,
-            email,
-            password,
-            role: comoRol(formData.get('role')),
-          }),
+      const alta = await backendFetch(context.request, '/api/users', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role: comoRol(formData.get('role')),
         }),
-        'ok',
-      )
+      })
+      if (!alta.ok) {
+        const data = (await alta.json().catch(() => ({}))) as { motivo?: string }
+        return volver(claveDeRespuesta(alta.status, data.motivo))
+      }
+      // La cuenta se creó; el acuse depende de si le llegó el correo de bienvenida.
+      const cuerpo = (await alta.json().catch(() => ({}))) as {
+        correo?: { enviado?: boolean; motivo?: string }
+      }
+      if (cuerpo.correo?.enviado === false) {
+        return volver(
+          cuerpo.correo.motivo === 'smtp_no_configurado' ? 'ok-sin-smtp' : 'ok-envio-fallido',
+        )
+      }
+      return volver('ok')
     },
   },
 })

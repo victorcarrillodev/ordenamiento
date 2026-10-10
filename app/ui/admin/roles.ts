@@ -23,6 +23,11 @@ export function puedeEntrarAlPanel(rol: unknown): boolean {
   return rol === 'root' || rol === 'admin'
 }
 
+/** ¿Puede dar de alta cuentas? Solo el root (espejo de backend/src/auth/roles.ts). */
+export function puedeCrearCuentas(rol: unknown): boolean {
+  return esRoot(rol)
+}
+
 /**
  * ¿Ve la bitácora de sesiones de todas las cuentas? Solo el root; cada cuenta ve
  * las suyas en «Mi cuenta».

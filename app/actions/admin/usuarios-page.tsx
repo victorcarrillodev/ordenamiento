@@ -11,6 +11,7 @@ import {
   esRoot,
   etiquetaDeRol,
   puedeActuarSobre,
+  puedeCrearCuentas,
   puedeVerBitacoraDeSesiones,
 } from '../../ui/admin/roles.ts'
 import { PASSWORD_MAX, PASSWORD_MIN } from '../../ui/login/types.ts'
@@ -21,10 +22,14 @@ export interface UsuarioRow {
   name: string
   role: string
   created_at: string
+  /** La cuenta existe pero su titular todavía no completa el primer acceso. */
+  setup_pending?: boolean
+  /** Está por configurar y la contraseña provisional ya no sirve. */
+  setup_vencida?: boolean
 }
 
 export interface UsuarioFeedback {
-  type: 'success' | 'error'
+  type: 'success' | 'error' | 'warning'
   message: string
 }
 
@@ -52,17 +57,36 @@ function AccionesDeCuenta(handle: Handle<{ cuenta: UsuarioRow; actorEsRoot: bool
   return () => {
     const { cuenta, actorEsRoot } = handle.props
     const accion = adminRoutes.usuarios.action.href()
+    const porConfigurar = cuenta.setup_pending === true
 
     return (
       <details class="acciones">
         <summary class="btn btn--white btn--sm">Gestionar</summary>
         <div class="acciones__panel">
+          {/* Una cuenta por configurar todavía no tiene su contraseña propia: lo que
+              se ofrece es reenviar el correo con el enlace a su panel de configuración. */}
+          {porConfigurar && actorEsRoot ? (
+            <form method="post" action={accion} class="acciones__form">
+              <input type="hidden" name="intent" value="invitacion" />
+              <input type="hidden" name="id" value={cuenta.id} />
+              <Button buttonType="submit" variant="dark" size="sm" fullWidth>
+                <Icon name="mdi:email-fast-outline" size={15} /> Reenviar invitación
+              </Button>
+              <span class="form-hint">
+                Manda otro correo con un enlace nuevo (vale 7 días) y renueva la contraseña
+                provisional. El enlace anterior deja de servir.
+              </span>
+            </form>
+          ) : null}
+
           {/* Restablecer contraseña: no pide la anterior, que es justo para
               lo que sirve — la persona perdió el acceso. */}
           <form method="post" action={accion} class="acciones__form">
             <input type="hidden" name="intent" value="password" />
             <input type="hidden" name="id" value={cuenta.id} />
-            <label for={`pass-${cuenta.id}`}>Contraseña nueva</label>
+            <label for={`pass-${cuenta.id}`}>
+              {porConfigurar ? 'Contraseña provisional nueva' : 'Contraseña nueva'}
+            </label>
             <div class="acciones__fila">
               <input
                 id={`pass-${cuenta.id}`}
@@ -79,7 +103,9 @@ function AccionesDeCuenta(handle: Handle<{ cuenta: UsuarioRow; actorEsRoot: bool
               </Button>
             </div>
             <span class="form-hint">
-              Se le cierran las sesiones abiertas. Entrégasela por un medio seguro.
+              {porConfigurar
+                ? 'Renueva también el plazo para configurar la cuenta. Entrégasela por un medio seguro.'
+                : 'Se le cierran las sesiones abiertas. Entrégasela por un medio seguro.'}
             </span>
           </form>
 
@@ -141,8 +167,8 @@ export function UsuariosPage(handle: Handle<UsuariosPageProps>) {
         title="Usuarios"
         subtitle={
           actorEsRoot
-            ? 'Como root puedes crear, editar, dar de baja y restablecer la contraseña de cualquier cuenta.'
-            : 'Cuentas con acceso al portal. Las cuentas root solo las gestiona otra cuenta root.'
+            ? 'Como root das de alta cuentas y puedes editar, dar de baja y restablecer la contraseña de cualquiera.'
+            : 'Cuentas con acceso al portal. Solo una cuenta root da de alta cuentas nuevas y gestiona a otros root.'
         }
         actions={
           puedeVerBitacoraDeSesiones(user.role) ? (
@@ -201,58 +227,73 @@ export function UsuariosPage(handle: Handle<UsuariosPageProps>) {
           </div>
         </div>
 
-        <div class="panel" id="usuarios-nuevo">
-          <div class="panel__head">
-            <h2 class="panel__title">
-              <Icon name="mdi:account-plus-outline" size={18} /> Crear cuenta
-            </h2>
+        {puedeCrearCuentas(user.role) ? (
+          <div class="panel" id="usuarios-nuevo">
+            <div class="panel__head">
+              <h2 class="panel__title">
+                <Icon name="mdi:account-plus-outline" size={18} /> Crear cuenta
+              </h2>
+            </div>
+            <p class="breadcrumb" style="margin: 0 0 12px;">
+              Un <strong>administrador</strong> entra al panel y ve los datos personales de las
+              participaciones. Un <strong>ciudadano</strong> solo puede enviar la suya. Un{' '}
+              <strong>root</strong> manda sobre todas las cuentas, incluidas las de otros root.
+            </p>
+            <form method="post" action={adminRoutes.usuarios.action.href()} class="form-row">
+              <input type="hidden" name="intent" value="crear" />
+              <div class="form-field">
+                <label for="u-name">Nombre</label>
+                <input id="u-name" name="name" autocomplete="off" required />
+              </div>
+              <div class="form-field">
+                <label for="u-email">Correo</label>
+                <input id="u-email" name="email" type="email" autocomplete="off" required />
+              </div>
+              <div class="form-field">
+                <label for="u-pass">Contraseña provisional</label>
+                {/* Visible a propósito: la escribe quien da de alta y se la entrega a la persona. */}
+                <input
+                  id="u-pass"
+                  name="password"
+                  type="text"
+                  minlength={PASSWORD_MIN}
+                  maxlength={PASSWORD_MAX}
+                  autocomplete="off"
+                  aria-describedby="u-pass-hint"
+                  required
+                />
+                <span class="form-hint" id="u-pass-hint">
+                  Entre {String(PASSWORD_MIN)} y {String(PASSWORD_MAX)} caracteres
+                </span>
+              </div>
+              <div class="form-field">
+                <label for="u-role">Rango</label>
+                <select id="u-role" name="role">
+                  <option value="user">Ciudadano</option>
+                  <option value="admin">Administrador</option>
+                  <option value="root">Root</option>
+                </select>
+              </div>
+              <Button buttonType="submit" variant="dark">
+                ＋ Crear cuenta y enviar correo
+              </Button>
+            </form>
+            <p class="form-hint" style="margin: 10px 0 0;">
+              La persona recibe un correo con un enlace a su panel de configuración, donde captura
+              su nombre y apellidos, crea su contraseña y, si quiere, su foto. La contraseña
+              provisional <strong>no viaja en el correo</strong>: entrégasela por otro medio. Con
+              ella puede entrar directo a ese panel, y el enlace y la contraseña provisional valen 7
+              días.
+            </p>
           </div>
-          <p class="breadcrumb" style="margin: 0 0 12px;">
-            Un <strong>administrador</strong> entra al panel y ve los datos personales de las
-            participaciones. Un <strong>ciudadano</strong> solo puede enviar la suya.
-            {actorEsRoot ? ' Un ' : null}
-            {actorEsRoot ? <strong>root</strong> : null}
-            {actorEsRoot ? ' manda sobre todas las cuentas, incluidas las de otros root.' : null}
-          </p>
-          <form method="post" action={adminRoutes.usuarios.action.href()} class="form-row">
-            <input type="hidden" name="intent" value="crear" />
-            <div class="form-field">
-              <label for="u-name">Nombre</label>
-              <input id="u-name" name="name" autocomplete="name" required />
-            </div>
-            <div class="form-field">
-              <label for="u-email">Correo</label>
-              <input id="u-email" name="email" type="email" autocomplete="email" required />
-            </div>
-            <div class="form-field">
-              <label for="u-pass">Contraseña</label>
-              <input
-                id="u-pass"
-                name="password"
-                type="password"
-                minlength={PASSWORD_MIN}
-                maxlength={PASSWORD_MAX}
-                autocomplete="new-password"
-                aria-describedby="u-pass-hint"
-                required
-              />
-              <span class="form-hint" id="u-pass-hint">
-                Entre {String(PASSWORD_MIN)} y {String(PASSWORD_MAX)} caracteres
-              </span>
-            </div>
-            <div class="form-field">
-              <label for="u-role">Rango</label>
-              <select id="u-role" name="role">
-                <option value="user">Ciudadano</option>
-                <option value="admin">Administrador</option>
-                {actorEsRoot ? <option value="root">Root</option> : null}
-              </select>
-            </div>
-            <Button buttonType="submit" variant="dark">
-              ＋ Crear cuenta
-            </Button>
-          </form>
-        </div>
+        ) : (
+          <div class="panel" id="usuarios-nuevo">
+            <p class="breadcrumb" style="margin: 0;">
+              <Icon name="mdi:lock-outline" size={15} /> Solo una cuenta <strong>root</strong> puede
+              dar de alta cuentas nuevas.
+            </p>
+          </div>
+        )}
 
         <div class="panel" id="usuarios">
           <div class="panel__head">
@@ -306,6 +347,19 @@ export function UsuariosPage(handle: Handle<UsuariosPageProps>) {
                     <td>{u.email}</td>
                     <td>
                       <span class={claseDeRol(u.role)}>{etiquetaDeRol(u.role)}</span>
+                      {u.setup_pending ? (
+                        <span
+                          class={'badge ' + (u.setup_vencida ? 'no-procedente' : 'en-proceso')}
+                          title={
+                            u.setup_vencida
+                              ? 'La contraseña provisional venció: reenvía la invitación.'
+                              : 'Aún no configura su cuenta (nombre, contraseña propia).'
+                          }
+                          style="margin-left: 6px;"
+                        >
+                          {u.setup_vencida ? 'Invitación vencida' : 'Pendiente de configurar'}
+                        </span>
+                      ) : null}
                     </td>
                     <td>{formatearFecha(u.created_at)}</td>
                     <td>

@@ -40,8 +40,33 @@ eleva a root. Así una instalación anterior no queda sin dueño al actualizar.
 
 Desde el panel, en **Usuarios**, root puede crear cuentas, cambiar rangos, dar
 de baja y **restablecer la contraseña de cualquiera sin conocer la anterior**.
-Un administrador puede lo mismo salvo tocar una cuenta root o repartir ese
-rango; y nadie puede dejar el sistema sin ninguna cuenta root.
+**Solo root da de alta cuentas**: un administrador ve la lista y puede cambiar
+rangos, dar de baja y restablecer contraseñas, salvo tocar una cuenta root o
+repartir ese rango; y nadie puede dejar el sistema sin ninguna cuenta root.
+
+### Alta de cuentas y primer acceso
+
+Al crear una cuenta, root escribe el **nombre**, el **correo** y una
+**contraseña provisional**, y elige el rango. La persona recibe un correo con un
+enlace a su panel de configuración, donde captura su nombre(s) y apellidos,
+crea su propia contraseña (con confirmación) y, si quiere, su foto de perfil;
+al terminar entra al panel.
+
+- **La contraseña provisional no va en el correo.** Root se la entrega por otro
+  medio. Si la persona prefiere entrar con ella en lugar de usar el enlace, al
+  iniciar sesión se le lleva a esa misma pantalla: una cuenta por configurar no
+  abre sesión hasta completarla.
+- El enlace y la contraseña provisional valen **7 días**. Pasado ese plazo, en
+  **Usuarios → Gestionar → Reenviar invitación** root manda un correo nuevo (el
+  enlace anterior deja de servir) y renueva el plazo. Mientras tanto la cuenta
+  aparece como «Pendiente de configurar» o «Invitación vencida».
+- Depende del correo: sin `SMTP_HOST` la cuenta se crea igual, el panel avisa de
+  que no salió la bienvenida y la persona puede entrar con la contraseña
+  provisional. El enlace usa `APP_PUBLIC_URL` (ver más abajo).
+- Al actualizar una instalación que ya tenía cuentas no cambia nada para ellas:
+  las columnas nuevas (`users.setup_pending`, `users.setup_expires_at`) y la
+  tabla `account_setups` se crean solas al arrancar el backend, y las cuentas
+  existentes quedan como ya configuradas.
 
 #### Si te quedas fuera del panel
 

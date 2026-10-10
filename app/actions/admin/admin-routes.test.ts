@@ -257,10 +257,14 @@ describe('Admin Routes Protection & Navigation', () => {
       })
     }
 
-    it('GET /ordena/admin/usuarios contiene "Crear usuario" y Vista General no', async () => {
+    it('GET /ordena/admin/usuarios: un administrador ve la lista pero no el formulario de alta, y Vista General no administra cuentas', async () => {
+      // Solo una cuenta root da de alta cuentas (ver usuarios.test.ts para el caso de root).
       const usuariosRes = await router.fetch(new Request('http://localhost/ordena/admin/usuarios'))
       expect(usuariosRes?.status).toBe(200)
-      expect(await usuariosRes?.text()).toContain('Crear cuenta')
+      const html = (await usuariosRes?.text()) ?? ''
+      expect(html).toContain('Cuentas registradas')
+      expect(html).not.toContain('＋ Crear cuenta')
+      expect(html).toContain('dar de alta cuentas nuevas')
 
       const indexRes = await router.fetch(new Request('http://localhost/ordena/admin'))
       expect(indexRes?.status).toBe(200)

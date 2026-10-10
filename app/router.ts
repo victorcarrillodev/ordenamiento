@@ -6,6 +6,7 @@ import loginController from './actions/login/controller.tsx'
 import recuperarController from './actions/recuperar/controller.tsx'
 import restablecerController from './actions/recuperar/restablecer-controller.tsx'
 import confirmarCorreoController from './actions/recuperar/confirmar-correo-controller.tsx'
+import configurarCuentaController from './actions/configurar-cuenta/controller.tsx'
 import participationController from './actions/participation/controller.tsx'
 import poetdumController from './actions/poetdum/controller.tsx'
 import actividadesController from './actions/poetdum/actividades/controller.tsx'
@@ -104,6 +105,7 @@ router.map(routes.login, loginController)
 router.map(routes.recuperar, recuperarController)
 router.map(routes.restablecer, restablecerController)
 router.map(routes.confirmarCorreo, confirmarCorreoController)
+router.map(routes.configurarCuenta, configurarCuentaController)
 router.map(routes.participation, participationController)
 router.map(routes.poetdum.actividades, actividadesController)
 router.map(routes.poetdum.documentos, documentosController)
