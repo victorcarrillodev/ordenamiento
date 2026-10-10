@@ -9,6 +9,7 @@
 import type { Handle, RemixNode } from 'remix/ui'
 
 import { Document } from '../../actions/document.tsx'
+import { urlEstatica } from '../../utils/estaticos.ts'
 import { routes } from '../../routes.ts'
 import { LoginAlert } from './login-alert.tsx'
 import { LoginFooter } from './login-footer.tsx'
@@ -75,8 +76,8 @@ export function AuthShell(handle: Handle<AuthShellProps>) {
         }
         head={
           <>
-            <link rel="stylesheet" href={`${basePath}/login.css`} />
-            <script src={`${basePath}/login.js`} defer></script>
+            <link rel="stylesheet" href={urlEstatica('login.css')} />
+            <script src={urlEstatica('login.js')} defer></script>
           </>
         }
       >

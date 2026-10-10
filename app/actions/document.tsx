@@ -2,6 +2,7 @@ import type { Handle, RemixNode } from 'remix/ui'
 import { css } from 'remix/ui'
 
 import { entryHref, entryPreloads } from '../assets.ts'
+import { urlEstatica } from '../utils/estaticos.ts'
 
 export interface DocumentProps {
   children?: RemixNode
@@ -62,13 +63,12 @@ export function Document(handle: Handle<DocumentProps>) {
             rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap"
           />
-          <script src="https://code.iconify.design/3/3.1.1/iconify-icon.min.js"></script>
-          <link rel="stylesheet" href={`${basePath}/autocomplete.css`} />
-          <script src={`${basePath}/colonias-data.js`}></script>
-          <script src={`${basePath}/autocomplete.js`} defer></script>
-          <script src={`${basePath}/participacion.js`} defer></script>
+          <link rel="stylesheet" href={urlEstatica('autocomplete.css')} />
+          <script src={urlEstatica('colonias-data.js')}></script>
+          <script src={urlEstatica('autocomplete.js')} defer></script>
+          <script src={urlEstatica('participacion.js')} defer></script>
           {/* Respaldo de las imágenes configurables; ver public/imagenes.js */}
-          <script src={`${basePath}/imagenes.js`} defer></script>
+          <script src={urlEstatica('imagenes.js')} defer></script>
           <title>{title}</title>
           {head}
           {entryPreloads.map((href) => (

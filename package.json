@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "build:catalogo": "node --import remix/node-tsx scripts/build-catalogo.ts",
+    "iconos": "node scripts/generar-iconos.mjs",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
     "storybook": "storybook dev -p 6006",

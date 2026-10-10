@@ -27,6 +27,14 @@ a {
   color: inherit;
 }
 
+/* Iconos en línea (ver app/ui/admin/icon.tsx): siguen el color del texto y se
+   alinean con la línea base como lo haría una letra. */
+.icono {
+  display: inline-block;
+  flex: none;
+  vertical-align: -0.15em;
+}
+
 /* Foco visible para navegación por teclado: sin esto, tabular por el panel
    no muestra ningún indicador y resulta inaccesible. */
 a:focus-visible,
@@ -131,7 +139,7 @@ textarea:focus-visible,
   border-left-color: var(--a-blue);
   font-weight: 700;
 }
-.sidebar__item iconify-icon {
+.sidebar__item .icono {
   width: 16px;
   height: 16px;
   flex: none;
@@ -1877,7 +1885,7 @@ a.cal__mas:hover {
 a.act-resumen__tarjeta:hover {
   border-color: var(--a-dark);
 }
-.act-resumen__tarjeta > iconify-icon {
+.act-resumen__tarjeta > .icono {
   grid-row: span 2;
   color: var(--a-dark);
 }
@@ -3051,7 +3059,7 @@ a.user-cell:hover .user-cell__name {
   background: #eff6ff;
   transform: translateY(-2px);
 }
-.atajo iconify-icon {
+.atajo .icono {
   color: var(--a-blue);
 }
 .atajo__valor {
@@ -3198,7 +3206,7 @@ a.lista-avisos__titulo:hover {
   border-color: #fde68a;
   color: #92400e;
 }
-.admin-alert iconify-icon {
+.admin-alert .icono {
   flex: none;
 }
 

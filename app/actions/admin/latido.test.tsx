@@ -88,7 +88,8 @@ describe('la plantilla del panel prepara la presencia', () => {
   it('carga el script de presencia junto a los demás del panel', async () => {
     const html = await pantalla()
     expect(html).toContain('/presencia.js')
-    expect(html).toMatch(/<script[^>]*src="[^"]*\/presencia\.js"[^>]*defer/)
+    // La dirección lleva la huella del archivo (?v=…), para no quedarse con una versión vieja.
+    expect(html).toMatch(/<script[^>]*src="[^"]*\/presencia\.js\?v=[a-f0-9]+"[^>]*defer/)
   })
 
   it('marca la pantalla con la dirección del aviso, en el contenido y no en el head', async () => {

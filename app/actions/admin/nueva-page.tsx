@@ -4,6 +4,7 @@ import type { ErroresParticipacion, ValoresParticipacion } from '../../data/part
 import { adminRoutes, routes } from '../../routes.ts'
 import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { Icon } from '../../ui/admin/icon.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Field } from '../../ui/form/field.tsx'
 import { ParticipacionCampos } from '../../ui/form/participacion-campos.tsx'
@@ -73,7 +74,7 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
         {folioRegistrado ? (
           <dialog open class="dialog-success">
             <div class="dialog-success__icon">
-              <iconify-icon icon="mdi:check-circle" width="36" height="36" />
+              <Icon name="mdi:check-circle" size={36} />
             </div>
 
             <h2 class="dialog-success__title">¡Participación física registrada con éxito!</h2>
@@ -102,7 +103,7 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
                 href={adminRoutes.presencial.href()}
                 variant="primary"
                 fullWidth
-                icon={<iconify-icon icon="mdi:plus-circle" width="18" height="18" />}
+                icon={<Icon name="mdi:plus-circle" size={18} />}
               >
                 Registrar otra participación
               </Button>
@@ -111,7 +112,7 @@ export function NuevaPage(handle: Handle<NuevaPageProps>) {
                 href={adminRoutes.participaciones.href()}
                 variant="secondary"
                 fullWidth
-                icon={<iconify-icon icon="mdi:format-list-bulleted" width="18" height="18" />}
+                icon={<Icon name="mdi:format-list-bulleted" size={18} />}
               >
                 Continuar con otras actividades
               </Button>

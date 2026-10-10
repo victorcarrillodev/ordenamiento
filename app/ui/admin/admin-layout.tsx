@@ -1,6 +1,7 @@
 import type { Handle, RemixNode } from 'remix/ui'
 
 import { Document } from '../../actions/document.tsx'
+import { urlEstatica } from '../../utils/estaticos.ts'
 import { adminRoutes, routes } from '../../routes.ts'
 import { isSafeCssColor } from '../civic-horizon.ts'
 import { Icon } from './icon.tsx'
@@ -197,12 +198,12 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
         title={`${title} – Bitácora`}
         head={
           <>
-            <link rel="stylesheet" href={`${basePath}/admin.css`} />
-            <script src={`${basePath}/admin.js`} defer></script>
+            <link rel="stylesheet" href={urlEstatica('admin.css')} />
+            <script src={urlEstatica('admin.js')} defer></script>
             {/* Barra de formato de «Textos del portal»; no hace nada donde no hay editores. */}
-            <script src={`${basePath}/editor-texto.js`} defer></script>
+            <script src={urlEstatica('editor-texto.js')} defer></script>
             {/* Presencia: mide el tiempo de uso real del panel (ver `data-latido` en `.admin`). */}
-            <script src={`${basePath}/presencia.js`} defer></script>
+            <script src={urlEstatica('presencia.js')} defer></script>
             {dynamicStyles && <style>{dynamicStyles}</style>}
           </>
         }
