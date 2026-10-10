@@ -43,8 +43,8 @@ function backend(respuestas: Record<string, Response | (() => Response)> = {}) {
       }
     }
     if (url.includes('/api/auth/me')) return Promise.resolve(json({ user: ADMIN }))
+    if (url.includes('/api/users/me/sessions')) return Promise.resolve(json({ items: [] }))
     if (url.includes('/api/users/me')) return Promise.resolve(json({ user: PERFIL }))
-    if (url.includes('/api/sessions')) return Promise.resolve(json({ items: [] }))
     return Promise.resolve(json({ ok: true }))
   })
   return llamadas
@@ -88,9 +88,9 @@ describe('Pantalla de Mi cuenta', () => {
     expect(html).toContain('con la sesión abierta no basta')
   })
 
-  it('solo muestra las sesiones de la propia cuenta', async () => {
-    backend({
-      '/api/sessions': json({
+  it('muestra las sesiones que entrega el endpoint de la propia cuenta, no la bitácora general', async () => {
+    const llamadas = backend({
+      '/api/users/me/sessions': json({
         items: [
           {
             id: 's1',
@@ -107,21 +107,6 @@ describe('Pantalla de Mi cuenta', () => {
             ip: '',
             user_agent: '',
           },
-          {
-            id: 's2',
-            user_id: 'otro',
-            nombre: 'Juan Ajeno',
-            email: 'juan@x.mx',
-            rol: 'user',
-            inicio: '2026-09-01T10:00:00Z',
-            fin: null,
-            ultima_actividad: '2026-09-01T11:00:00Z',
-            uso_segundos: 60,
-            estado: 'inactiva',
-            activa: false,
-            ip: '',
-            user_agent: '',
-          },
         ],
       }),
     })
@@ -129,7 +114,31 @@ describe('Pantalla de Mi cuenta', () => {
     const html = await (await get('/ordena/admin/cuenta'))!.text()
 
     expect(html).toContain('● En línea')
-    expect(html).not.toContain('Juan Ajeno')
+    // Pide las suyas (acotadas por el servidor a la cuenta con sesión) y nunca la bitácora de todas.
+    const urls = llamadas.map((l) => l.url)
+    expect(urls.some((u) => u.includes('/api/users/me/sessions?limit=5'))).toBe(true)
+    expect(urls.some((u) => /\/api\/sessions(\?|$)/.test(u))).toBe(false)
+  })
+
+  it('un administrador no ve el enlace al registro completo, que es solo de root', async () => {
+    backend()
+    const html = await (await get('/ordena/admin/cuenta'))!.text()
+    expect(html).toContain('Tus últimas sesiones')
+    expect(html).not.toContain('Ver el registro completo')
+    expect(html).not.toContain('/ordena/admin/sesiones')
+  })
+
+  it('una cuenta root sí ve el enlace al registro completo, y su rango como Root', async () => {
+    backend({
+      '/api/auth/me': json({ user: { ...ADMIN, role: 'root' } }),
+      '/api/users/me/sessions': json({ items: [] }),
+      '/api/users/me': json({ user: { ...PERFIL, role: 'root' } }),
+    })
+    const html = await (await get('/ordena/admin/cuenta'))!.text()
+    expect(html).toContain('Ver el registro completo')
+    expect(html).toContain('href="/ordena/admin/sesiones"')
+    expect(html).toContain('badge badge--root')
+    expect(html).not.toContain('>Ciudadano<')
   })
 
   it('«Mi cuenta» dice a la persona cómo se mide su tiempo de uso, y qué no se guarda', async () => {
@@ -155,7 +164,7 @@ describe('Pantalla de Mi cuenta', () => {
       ...extra,
     })
     backend({
-      '/api/sessions': json({
+      '/api/users/me/sessions': json({
         items: [
           sesion({ id: 'a', uso_segundos: 600, estado: 'inactiva', activa: false }),
           sesion({ id: 'b', uso_segundos: null, estado: 'inactiva', activa: false }),

@@ -9,6 +9,7 @@ import {
   puedeCrearConRol,
   puedeEliminar,
   puedeEntrarAlPanel,
+  puedeVerBitacoraDeSesiones,
 } from './roles.ts'
 
 const root = { id: 'r1', role: 'root' }
@@ -24,6 +25,17 @@ describe('Acceso al panel', () => {
     expect(puedeEntrarAlPanel('user')).toBe(false)
     expect(puedeEntrarAlPanel('inventado')).toBe(false)
     expect(puedeEntrarAlPanel(undefined)).toBe(false)
+  })
+})
+
+describe('Bitácora de sesiones', () => {
+  it('la ve solo el root', () => {
+    expect(puedeVerBitacoraDeSesiones('root')).toBe(true)
+    expect(puedeVerBitacoraDeSesiones('admin')).toBe(false)
+    expect(puedeVerBitacoraDeSesiones('user')).toBe(false)
+    expect(puedeVerBitacoraDeSesiones('inventado')).toBe(false)
+    expect(puedeVerBitacoraDeSesiones(undefined)).toBe(false)
+    expect(puedeVerBitacoraDeSesiones(null)).toBe(false)
   })
 })
 

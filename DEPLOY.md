@@ -127,8 +127,10 @@ en `backend/seed-admins.json` (ver `backend/README.md`).
 
 «Registro de sesiones» ya no muestra cuánto lleva abierta una sesión sino cuánto
 se **usó** el panel (pestaña a la vista y con actividad), y una sesión que nadie
-cerró deja de aparecer «en curso» (cómo se mide: `backend/README.md`). Al
-actualizar una instalación existente:
+cerró deja de aparecer «en curso» (cómo se mide: `backend/README.md`). **Solo
+una cuenta root puede ver ese registro** (menú, pantalla y `GET /api/sessions`):
+un administrador ya no lo ve, y cada cuenta consulta sus últimas sesiones en «Mi
+cuenta». Al actualizar una instalación existente:
 
 - La columna `user_sessions.active_seconds` se crea sola al arrancar el backend.
 - Las sesiones anteriores se muestran «Sin cerrar» desde su último movimiento y

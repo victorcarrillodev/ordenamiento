@@ -23,6 +23,14 @@ export function puedeEntrarAlPanel(rol: unknown): boolean {
   return rol === 'root' || rol === 'admin'
 }
 
+/**
+ * ¿Ve la bitácora de sesiones de todas las cuentas? Solo el root; cada cuenta ve
+ * las suyas en «Mi cuenta».
+ */
+export function puedeVerBitacoraDeSesiones(rol: unknown): boolean {
+  return esRoot(rol)
+}
+
 /** Etiqueta legible, la misma que usa el backend. */
 export function etiquetaDeRol(rol: unknown): string {
   if (rol === 'root') return 'Root'

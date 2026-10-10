@@ -43,6 +43,17 @@ export function puedeGestionarCuentas(rol: unknown): boolean {
   return puedeEntrarAlPanel(rol)
 }
 
+/**
+ * ¿Puede ver la bitácora de sesiones de todas las cuentas: quién entró, cuándo,
+ * desde qué dirección y navegador, y cuánto tiempo estuvo? Solo el root. Es
+ * información de vigilancia sobre personas, no un dato operativo del panel: un
+ * administrador puede operar el portal sin saber cuándo entra cada compañero.
+ * (Cada cuenta ve las suyas en «Mi cuenta», que es otro endpoint.)
+ */
+export function puedeVerBitacoraDeSesiones(rol: unknown): boolean {
+  return esRoot(rol)
+}
+
 export type MotivoDenegado =
   | 'sin_permiso'
   | 'solo_root_sobre_root'

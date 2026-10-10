@@ -72,7 +72,7 @@ export default createController(adminRoutes.cuenta, {
         fetchJsonOr<{ user: UserProfile | null }>(context.request, '/api/users/me', { user: null }),
         fetchJsonOr<{ items: SesionRegistrada[] }>(
           context.request,
-          `/api/sessions?limit=${SESIONES_VISIBLES}`,
+          `/api/users/me/sessions?limit=${SESIONES_VISIBLES}`,
           { items: [] },
         ),
       ])
@@ -84,17 +84,13 @@ export default createController(adminRoutes.cuenta, {
       const pendienteParam = params.get('a') ?? ''
       const pendiente = EMAIL_RE.test(pendienteParam) ? pendienteParam : undefined
 
-      // La bitácora completa es solo para administradores; aquí cada quien ve
-      // únicamente sus propias sesiones.
-      const mias = (sesiones.items ?? []).filter((s) => s.user_id === user.id)
-
       return context.render(
         <CuentaPage
           user={user}
           profile={perfil.user}
           feedback={FEEDBACK[estado]}
           correoPendiente={estado === 'correo-enviado' ? pendiente : undefined}
-          sesiones={mias}
+          sesiones={sesiones.items ?? []}
         />,
       )
     },

@@ -6,7 +6,13 @@ import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Button } from '../../ui/button.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
 import { formatearFecha } from '../../ui/admin/formato.ts'
-import { claseDeRol, esRoot, etiquetaDeRol, puedeActuarSobre } from '../../ui/admin/roles.ts'
+import {
+  claseDeRol,
+  esRoot,
+  etiquetaDeRol,
+  puedeActuarSobre,
+  puedeVerBitacoraDeSesiones,
+} from '../../ui/admin/roles.ts'
 import { PASSWORD_MAX, PASSWORD_MIN } from '../../ui/login/types.ts'
 
 export interface UsuarioRow {
@@ -139,9 +145,11 @@ export function UsuariosPage(handle: Handle<UsuariosPageProps>) {
             : 'Cuentas con acceso al portal. Las cuentas root solo las gestiona otra cuenta root.'
         }
         actions={
-          <a class="btn btn--white" href={adminRoutes.sesiones.href()}>
-            <Icon name="mdi:account-clock-outline" size={16} /> Registro de sesiones
-          </a>
+          puedeVerBitacoraDeSesiones(user.role) ? (
+            <a class="btn btn--white" href={adminRoutes.sesiones.href()}>
+              <Icon name="mdi:account-clock-outline" size={16} /> Registro de sesiones
+            </a>
+          ) : undefined
         }
       >
         {feedback ? <AdminAlert type={feedback.type} message={feedback.message} /> : null}

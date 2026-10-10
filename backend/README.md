@@ -105,6 +105,12 @@ así que no hace falta migrar nada.
 
 ## Bitácora de sesiones: cómo se mide el tiempo
 
+La bitácora de **todas** las cuentas (`GET /api/sessions`, pantalla «Registro de sesiones») es
+solo para **root**: quién entra y desde dónde es información de vigilancia sobre personas, y un
+administrador puede operar el portal sin ella. Cada cuenta ve sus propias últimas sesiones en «Mi
+cuenta» (`GET /api/users/me/sessions`, acotado por la sesión: un `user_id` en la petición se
+ignora).
+
 El tiempo de una sesión **no** es lo que pasa entre que se inicia y se cierra. La
 cookie dura 7 días y casi nadie pulsa «Cerrar sesión» (se cierra la pestaña, se
 va a comer, se apaga la computadora): medir así dejaba «en curso» para siempre
@@ -239,7 +245,8 @@ Configura un valor real en un archivo `.env` local (no versionado).
 | GET               | `/api/acuse/:folio?t=…`                                             | Acuse en PDF con el enlace firmado que recibe quien participa                              |
 | GET               | `/api/participations/:id/acuse`                                     | Acuse en PDF desde el panel (admin)                                                        |
 | POST              | `/api/sessions/ping`                                                | Aviso de presencia del panel (204): suma tiempo de uso y marca «en línea»                  |
-| GET               | `/api/sessions`                                                     | Bitácora de sesiones: estado, tiempo de uso medido y resumen (admin)                       |
+| GET               | `/api/sessions`                                                     | Bitácora de sesiones de todas las cuentas: estado, tiempo de uso y resumen (solo root)     |
+| GET               | `/api/users/me/sessions`                                            | Últimas sesiones de la propia cuenta (`?limit=`, tope 20); la usa «Mi cuenta»              |
 | GET/POST          | `/api/formatos`                                                     | Formatos para llenar a mano: listado (`?estado=pendiente`) / generar uno con su folio      |
 | GET               | `/api/formatos/:id/pdf`                                             | Formato en blanco con su folio, para imprimir (admin)                                      |
 | GET               | `/api/participations/:id/documentos[/:tipo]`                        | Documentos de la participación y correos enviados / el PDF (`?download=1`) (admin)         |

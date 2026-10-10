@@ -113,7 +113,7 @@ export function SesionesPage(handle: Handle<SesionesPageProps>) {
       >
         <AdminAlert type="info">
           Esta bitácora registra accesos de personas identificadas. Solo la consultan las cuentas
-          con rol administrador, y se usa para control de acceso, no para supervisar productividad.
+          root, y se usa para control de acceso, no para supervisar productividad.
         </AdminAlert>
         <AdminAlert type="info">
           El tiempo de uso cuenta solo mientras la persona tiene el panel a la vista y está haciendo

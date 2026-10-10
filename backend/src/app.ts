@@ -54,6 +54,7 @@ import {
   puedeCrearConRol,
   puedeEliminar,
   puedeEntrarAlPanel,
+  puedeVerBitacoraDeSesiones,
   type Veredicto,
 } from './auth/roles.ts'
 import { migrate } from './db/migrate.ts'
@@ -707,6 +708,9 @@ export async function handleRequest(request: Request): Promise<Response> {
   // `root` está por encima de `admin`: donde entra un administrador, entra él.
   const requireAdmin = (): Response | null =>
     puedeEntrarAlPanel(user?.role) ? null : json({ error: 'Requiere rol admin' }, 403)
+  // Lo que solo ve el root: ni un administrador, aunque entre al panel.
+  const requireRoot = (): Response | null =>
+    puedeVerBitacoraDeSesiones(user?.role) ? null : json({ error: 'Requiere rol root' }, 403)
 
   // Módulos de rutas propios (acuse, respuestas…): cada uno responde si la
   // petición le toca. Van antes de las rutas de abajo porque algunas comparten
@@ -1071,6 +1075,18 @@ export async function handleRequest(request: Request): Promise<Response> {
     }
   }
 
+  // Las últimas sesiones de la propia cuenta («Mi cuenta»): cada persona ve las
+  // suyas —sirve para notar un acceso que no reconoce— y de nadie más. El alcance
+  // lo decide la sesión, no la petición: un `user_id` que llegue se ignora.
+  if (method === 'GET' && pathname === '/api/users/me/sessions') {
+    const authError = requireAuth()
+    if (authError) return authError
+    const rawLimit = Number(url.searchParams.get('limit'))
+    const limit = Number.isInteger(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 20) : 5
+    const pagina = await listarSesiones({ usuarioId: user!.id, limit, page: 1 })
+    return json({ items: pagina.items, total: pagina.total })
+  }
+
   if (method === 'GET' && pathname === '/api/users/me') {
     const authError = requireAuth()
     if (authError) return authError
@@ -1175,11 +1191,12 @@ export async function handleRequest(request: Request): Promise<Response> {
     return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } })
   }
 
-  // ── Bitácora de sesiones — solo admin ────────────────────────────────
+  // ── Bitácora de sesiones — solo root ─────────────────────────────────
   // Expone cuándo entró cada cuenta y desde dónde: es información de
-  // vigilancia sobre personas, no un dato operativo cualquiera.
+  // vigilancia sobre personas, no un dato operativo cualquiera. Un administrador
+  // no la ve; lo suyo está en GET /api/users/me/sessions.
   if (method === 'GET' && pathname === '/api/sessions') {
-    const authError = requireAdmin()
+    const authError = requireRoot()
     if (authError) return authError
 
     const usuarioParam = url.searchParams.get('user_id')

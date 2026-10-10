@@ -5,6 +5,7 @@ import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
 import { BarrasMensuales, Donut, type SerieMensual } from '../../ui/admin/charts.tsx'
 import { formatearFecha } from '../../ui/admin/formato.ts'
+import { puedeVerBitacoraDeSesiones } from '../../ui/admin/roles.ts'
 
 /** Cifras de «Actividades y avances del Programa» para la vista general. */
 export interface ContenidoPortal {
@@ -342,9 +343,11 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
                 <a class="btn btn--white" href={adminRoutes.personalizacion.index.href()}>
                   <Icon name="mdi:palette-outline" size={16} /> Personalización y marca
                 </a>
-                <a class="btn btn--white" href={adminRoutes.sesiones.href()}>
-                  <Icon name="mdi:account-clock-outline" size={16} /> Registro de sesiones
-                </a>
+                {puedeVerBitacoraDeSesiones(user.role) ? (
+                  <a class="btn btn--white" href={adminRoutes.sesiones.href()}>
+                    <Icon name="mdi:account-clock-outline" size={16} /> Registro de sesiones
+                  </a>
+                ) : null}
                 <a class="btn btn--excel" href={`${adminRoutes.exportar.href()}?tabla=actividades`}>
                   <Icon name="mdi:microsoft-excel" size={16} /> Actividades a Excel
                 </a>

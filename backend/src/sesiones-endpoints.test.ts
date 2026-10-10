@@ -114,6 +114,7 @@ describe('las demás peticiones ya no cuentan como presencia', () => {
       medidas: 0,
       segundos_totales: 0,
     })
+    usuarioSpy.mockResolvedValue(cuenta({ role: 'root' }))
     try {
       const token = await createSessionToken(UID)
       const res = await handleRequest(peticion('/api/sessions', 'GET', token))
@@ -127,11 +128,45 @@ describe('las demás peticiones ya no cuentan como presencia', () => {
 })
 
 describe('GET /api/sessions', () => {
-  it('lo ven solo las cuentas con rol de administración', async () => {
-    usuarioSpy.mockResolvedValue(cuenta({ role: 'user' }))
-    const token = await createSessionToken(UID)
-    const res = await handleRequest(peticion('/api/sessions', 'GET', token))
+  it('lo ve solo el root: ni la ciudadanía ni un administrador', async () => {
+    const listarSpy = spyOn(sesiones as any, 'listarSesiones').mockResolvedValue({
+      items: [],
+      total: 0,
+    })
+    try {
+      for (const role of ['user', 'admin']) {
+        usuarioSpy.mockResolvedValue(cuenta({ role }))
+        const token = await createSessionToken(UID)
+        const res = await handleRequest(peticion('/api/sessions', 'GET', token))
+        expect(res.status, role).toBe(403)
+      }
+      expect(listarSpy).not.toHaveBeenCalled()
+    } finally {
+      listarSpy.mockRestore()
+    }
+  })
+
+  it('sin sesión tampoco', async () => {
+    const res = await handleRequest(peticion('/api/sessions', 'GET'))
     expect(res.status).toBe(403)
+  })
+
+  it('un administrador tampoco puede pedir las de otra cuenta con ?user_id=', async () => {
+    const listarSpy = spyOn(sesiones as any, 'listarSesiones').mockResolvedValue({
+      items: [],
+      total: 0,
+    })
+    try {
+      usuarioSpy.mockResolvedValue(cuenta({ role: 'admin' }))
+      const token = await createSessionToken(UID)
+      const res = await handleRequest(
+        peticion('/api/sessions?user_id=550e8400-e29b-41d4-a716-446655440999', 'GET', token),
+      )
+      expect(res.status).toBe(403)
+      expect(listarSpy).not.toHaveBeenCalled()
+    } finally {
+      listarSpy.mockRestore()
+    }
   })
 
   it('entrega el listado con el estado y el tiempo de uso, y el resumen', async () => {
@@ -156,6 +191,7 @@ describe('GET /api/sessions', () => {
       total: 1,
     })
     const resumenSpy = spyOn(sesiones as any, 'resumenSesiones').mockResolvedValue(resumen)
+    usuarioSpy.mockResolvedValue(cuenta({ role: 'root' }))
     try {
       const token = await createSessionToken(UID)
       const res = await handleRequest(peticion('/api/sessions?limit=10&page=2', 'GET', token))
@@ -169,6 +205,55 @@ describe('GET /api/sessions', () => {
     } finally {
       listarSpy.mockRestore()
       resumenSpy.mockRestore()
+    }
+  })
+})
+
+describe('GET /api/users/me/sessions · las sesiones de la propia cuenta', () => {
+  const ESTA = '550e8400-e29b-41d4-a716-446655440077'
+  const OTRA = '550e8400-e29b-41d4-a716-446655440999'
+
+  it('sin sesión responde 401', async () => {
+    const res = await handleRequest(peticion('/api/users/me/sessions', 'GET'))
+    expect(res.status).toBe(401)
+  })
+
+  it('un administrador recibe solo las suyas, aunque pida las de otra cuenta', async () => {
+    const mias = [{ id: 's1', user_id: ESTA, nombre: 'Ana', estado: 'cerrada' }]
+    const listarSpy = spyOn(sesiones as any, 'listarSesiones').mockResolvedValue({
+      items: mias,
+      total: 1,
+    })
+    try {
+      usuarioSpy.mockResolvedValue(cuenta({ role: 'admin' }))
+      const token = await createSessionToken(UID)
+      const res = await handleRequest(
+        peticion(`/api/users/me/sessions?user_id=${OTRA}&limit=3`, 'GET', token),
+      )
+      const cuerpo = (await res.json()) as any
+      expect(res.status).toBe(200)
+      expect(cuerpo.items).toEqual(mias)
+      expect(cuerpo.total).toBe(1)
+      // El alcance sale de la sesión: el `user_id` de la petición no se usa.
+      expect(listarSpy).toHaveBeenCalledWith({ usuarioId: ESTA, limit: 3, page: 1 })
+    } finally {
+      listarSpy.mockRestore()
+    }
+  })
+
+  it('el tope es de 20 y por omisión trae 5', async () => {
+    const listarSpy = spyOn(sesiones as any, 'listarSesiones').mockResolvedValue({
+      items: [],
+      total: 0,
+    })
+    try {
+      const token = await createSessionToken(UID)
+      await handleRequest(peticion('/api/users/me/sessions?limit=500', 'GET', token))
+      await handleRequest(peticion('/api/users/me/sessions', 'GET', token))
+      expect(listarSpy.mock.calls[0][0]).toMatchObject({ limit: 20 })
+      expect(listarSpy.mock.calls[1][0]).toMatchObject({ limit: 5 })
+    } finally {
+      listarSpy.mockRestore()
     }
   })
 })

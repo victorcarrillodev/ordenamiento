@@ -4,7 +4,7 @@ import { Document } from '../../actions/document.tsx'
 import { adminRoutes, routes } from '../../routes.ts'
 import { isSafeCssColor } from '../civic-horizon.ts'
 import { Icon } from './icon.tsx'
-import { etiquetaDeRol } from './roles.ts'
+import { esRoot, etiquetaDeRol } from './roles.ts'
 
 export type AdminSection =
   | 'general'
@@ -19,6 +19,8 @@ export type AdminSection =
   | 'sesiones'
   | 'exportar'
   | 'personalizacion'
+  /** Pantalla de «acceso restringido»: ninguna entrada del menú queda marcada. */
+  | 'restringido'
 
 export interface AdminLayoutProps {
   children?: RemixNode
@@ -52,6 +54,8 @@ interface ItemMenu {
   href: string
   label: string
   icon: RemixNode
+  /** Solo se muestra a las cuentas root; al resto ni se le ofrece. */
+  soloRoot?: boolean
 }
 
 /**
@@ -133,6 +137,7 @@ const GRUPOS: Array<{ titulo: string; items: ItemMenu[] }> = [
         href: adminRoutes.sesiones.href(),
         label: 'Registro de sesiones',
         icon: <Icon name="mdi:account-clock-outline" />,
+        soloRoot: true,
       },
       {
         key: 'personalizacion',
@@ -238,17 +243,19 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
               {GRUPOS.map((grupo) => (
                 <div class="sidebar__group" key={grupo.titulo}>
                   <div class="sidebar__label">{grupo.titulo}</div>
-                  {grupo.items.map((item) => (
-                    <a
-                      key={item.key}
-                      href={item.href}
-                      class={'sidebar__item' + (item.key === active ? ' active' : '')}
-                      aria-current={item.key === active ? 'page' : undefined}
-                    >
-                      {item.icon}
-                      <span>{item.label}</span>
-                    </a>
-                  ))}
+                  {grupo.items
+                    .filter((item) => !item.soloRoot || esRoot(user.role))
+                    .map((item) => (
+                      <a
+                        key={item.key}
+                        href={item.href}
+                        class={'sidebar__item' + (item.key === active ? ' active' : '')}
+                        aria-current={item.key === active ? 'page' : undefined}
+                      >
+                        {item.icon}
+                        <span>{item.label}</span>
+                      </a>
+                    ))}
                 </div>
               ))}
 
