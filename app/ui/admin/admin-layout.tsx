@@ -30,6 +30,15 @@ export interface AdminLayoutProps {
   title: string
   /** Acciones de la propia página, alineadas a la derecha del encabezado. */
   actions?: RemixNode
+  /**
+   * La pantalla se acomoda al alto de la ventana: su contenido principal reparte el
+   * espacio que sobra entre sus bloques en vez de dejar un hueco al final, y no hay
+   * barra de desplazamiento mientras todo quepa. Si la ventana es más baja de lo que
+   * el contenido necesita, la página se desplaza como cualquier otra. Es lo que usan
+   * las vistas de resumen (la vista general); las que tienen listas largas no lo
+   * necesitan.
+   */
+  ajustada?: boolean
   /** Frase corta bajo el título, para explicar de qué va la pantalla. */
   subtitle?: string
   /**
@@ -172,7 +181,8 @@ function iniciales(nombre: string): string {
 
 export function AdminLayout(handle: Handle<AdminLayoutProps>) {
   return () => {
-    const { children, user, active, title, actions, subtitle, breadcrumb, theme } = handle.props
+    const { children, user, active, title, actions, subtitle, breadcrumb, theme, ajustada } =
+      handle.props
     const customLogo = theme?.adminLogo || LOGO_POR_DEFECTO
     const customTitle = theme?.adminTitulo || 'ADMINISTRADOR BITÁCORA'
     // Estos valores vienen del formulario de Personalización y se insertan
@@ -300,7 +310,7 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
                 </span>
               </a>
             </header>
-            <main class="content">
+            <main class={'content' + (ajustada ? ' content--ajustada' : '')}>
               <div class="content__head">
                 <div class="content__heading">
                   {active === 'general' ? null : (

@@ -12,6 +12,21 @@
   --a-green: #16a34a;
   --a-red: #dc2626;
   --a-amber: #d97706;
+
+  /* Medidas comunes del panel. El margen exterior de la página y la separación
+     entre tarjetas, paneles y bloques son LAS MISMAS en horizontal y en vertical,
+     en todas las pantallas: lo que se mueve aquí se mueve en toda la aplicación. */
+  --a-topbar: 52px;
+  --a-pad: 20px;
+  --a-gap: 16px;
+  --a-pad-panel: 18px;
+}
+@media (max-width: 640px) {
+  :root {
+    --a-pad: 14px;
+    --a-gap: 12px;
+    --a-pad-panel: 14px;
+  }
 }
 * {
   box-sizing: border-box;
@@ -167,7 +182,7 @@ textarea:focus-visible,
   flex-direction: column;
 }
 .topbar {
-  height: 52px;
+  height: var(--a-topbar);
   background: var(--a-dark);
   color: #fff;
   display: flex;
@@ -244,7 +259,11 @@ textarea:focus-visible,
 }
 
 .content {
-  padding: 20px 26px 40px;
+  padding: var(--a-pad);
+}
+/* El último bloque no deja margen propio: el aire de abajo es el del contenido. */
+.content > :last-child {
+  margin-bottom: 0;
 }
 
 /* Encabezado de página */
@@ -254,7 +273,7 @@ textarea:focus-visible,
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: var(--a-gap);
 }
 .content__heading {
   min-width: 0;
@@ -305,14 +324,14 @@ span.breadcrumb {
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
+  gap: var(--a-gap);
+  margin-bottom: var(--a-gap);
 }
 .card {
   background: #fff;
   border: 1px solid var(--a-border-strong);
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 12px 16px;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -384,14 +403,25 @@ span.breadcrumb {
 .card--clock {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
 }
+/* La hora y la fecha comparten renglón: la tarjeta mide lo mismo que las demás cifras. */
+.card__linea {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.card__linea .card__label {
+  font-weight: 600;
+  color: var(--a-muted);
+}
 
 /* Paneles */
 .panel {
   background: #fff;
   border: 1px solid var(--a-border-strong);
   border-radius: 12px;
-  padding: 18px;
-  margin-bottom: 18px;
+  padding: var(--a-pad-panel);
+  margin-bottom: var(--a-gap);
   box-shadow: var(--a-shadow);
   min-width: 0;
   overflow-wrap: anywhere;
@@ -407,8 +437,8 @@ span.breadcrumb {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
-  margin: -18px -18px 12px;
-  padding: 12px 18px;
+  margin: calc(var(--a-pad-panel) * -1) calc(var(--a-pad-panel) * -1) 12px;
+  padding: 9px var(--a-pad-panel);
   background: #f7f9fc;
   border-bottom: 1px solid var(--a-border-strong);
   border-radius: 12px 12px 0 0;
@@ -419,7 +449,15 @@ span.breadcrumb {
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  gap: var(--a-gap);
+  margin-bottom: var(--a-gap);
+}
+/* En una rejilla la separación ya la pone el `gap`: sin esto cada panel sumaba su
+   margen inferior y entre filas había el doble que entre columnas. */
+.grid-2 > .panel,
+.charts-row > .panel,
+.export-grid > .panel {
+  margin-bottom: 0;
 }
 @media (max-width: 900px) {
   .grid-2 {
@@ -636,7 +674,7 @@ tr:hover td {
 .export-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
-  gap: 14px;
+  gap: var(--a-gap);
 }
 .export-card {
   background: #fff;
@@ -658,7 +696,7 @@ tr:hover td {
 .charts-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
-  gap: 16px;
+  gap: var(--a-gap);
 }
 .chart-panel {
   display: flex;
@@ -678,7 +716,7 @@ tr:hover td {
 .detalle-split {
   display: grid;
   grid-template-columns: 3fr 2fr;
-  gap: 18px;
+  gap: var(--a-gap);
   align-items: start;
 }
 .detalle-split > .panel {
@@ -1108,7 +1146,7 @@ tr:hover td {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 12px;
-  margin: 0 0 18px;
+  margin: 0 0 var(--a-gap);
   padding: 0;
 }
 .etapas__paso {
@@ -1173,7 +1211,7 @@ tr:hover td {
   background: #f0fdf4;
   border-radius: 10px;
   padding: 14px 16px;
-  margin-bottom: 18px;
+  margin-bottom: var(--a-gap);
 }
 .dictamen-opciones {
   display: grid;
@@ -1866,8 +1904,8 @@ a.cal__mas:hover {
 .act-resumen {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
-  gap: 14px;
-  margin-bottom: 16px;
+  gap: var(--a-gap);
+  margin-bottom: var(--a-gap);
 }
 .act-resumen__tarjeta {
   display: grid;
@@ -1940,7 +1978,7 @@ a.act-resumen__aviso:hover {
   flex-wrap: wrap;
   gap: 12px;
   align-items: flex-end;
-  margin-bottom: 14px;
+  margin-bottom: var(--a-gap);
 }
 .act-filtros .form-field {
   margin: 0;
@@ -2068,8 +2106,8 @@ a.act-resumen__aviso:hover {
 .act-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: var(--a-gap);
+  margin-bottom: var(--a-gap);
 }
 .act-seccion {
   margin: 0;
@@ -2233,7 +2271,7 @@ a.act-resumen__aviso:hover {
 
 /* Dónde aparece hoy la actividad */
 .act-visibilidad {
-  margin-bottom: 16px;
+  margin-bottom: var(--a-gap);
 }
 .act-visibilidad__nota {
   margin: 0 0 10px;
@@ -2423,7 +2461,7 @@ a.act-resumen__aviso:hover {
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  margin-bottom: 16px;
+  margin-bottom: var(--a-gap);
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
@@ -2626,7 +2664,7 @@ a.user-cell:hover .user-cell__name {
   gap: 6px;
   flex-wrap: wrap;
   padding: 5px;
-  margin-bottom: 18px;
+  margin-bottom: var(--a-gap);
   background: #fff;
   border: 1px solid var(--a-border-strong);
   border-radius: 12px;
@@ -2684,6 +2722,33 @@ a.user-cell:hover .user-cell__name {
 }
 .chart__svg {
   flex: none;
+}
+/* En un panel que reparte su alto la dona crece o se encoge con el espacio (sin pasar
+   de 200px), y la leyenda va a su lado en vez de debajo. */
+.panel--llena > .chart {
+  flex-wrap: nowrap;
+  justify-content: center;
+}
+.panel--llena .chart__svg {
+  /* El lado sale del ancho del panel (no del alto): así la leyenda siempre conserva
+     espacio para «No procedente» sin cortarse, también en pantallas de 1366px. */
+  width: clamp(100px, 44%, 230px);
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 1;
+}
+.panel--llena > .chart {
+  gap: 14px;
+}
+.panel--llena .chart__legend {
+  min-width: 0;
+}
+.panel--llena .chart__legend li {
+  gap: 6px;
+  font-size: 11.5px;
+}
+.panel--llena .chart__legend-pct {
+  min-width: 32px;
 }
 .chart__legend {
   flex: 1;
@@ -2783,12 +2848,12 @@ a.user-cell:hover .user-cell__name {
 .columnas {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 0 4px;
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 10px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  min-height: 160px;
 }
 .columnas__item {
   display: flex;
@@ -2810,7 +2875,10 @@ a.user-cell:hover .user-cell__name {
   display: flex;
   align-items: flex-end;
   width: 100%;
-  height: 120px;
+  /* La pista se estira con el alto que le den (en la vista general, el del panel);
+     a falta de otro, `.columnas` le deja unos 120px. */
+  flex: 1 1 auto;
+  min-height: 80px;
   border-radius: 6px;
   background: #f1f5f9;
   overflow: hidden;
@@ -3012,38 +3080,109 @@ a.user-cell:hover .user-cell__name {
    se estiren a todo el ancho quedando medio vacíos.
    -------------------------------------------------------------------------- */
 .dash {
+  --a-side: 340px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 18px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) var(--a-side);
+  gap: var(--a-gap);
+  align-items: stretch;
 }
 .dash__main,
 .dash__side {
   min-width: 0;
 }
-.dash__main > .panel:last-child,
-.dash__side > .panel:last-child {
+/* Columna principal: la serie arriba y, debajo, dos paneles lado a lado. Cada fila
+   mide lo que necesita su contenido más una parte (4 : 5) del espacio que sobre.
+   Con `flex` y no con filas `fr`: una fila `fr` con mínimo `auto` agranda TODAS las
+   filas para no romper la proporción, y la vista dejaba de caber en una ventana
+   donde sí cabía. Si la ventana es muy baja, la página crece y se desplaza. */
+.dash__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--a-gap);
+}
+.dash__main > .panel {
+  flex: 4 1 auto;
+}
+.dash__fila {
+  flex: 5 1 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--a-gap);
+  min-height: 0;
+}
+/* Columna de agenda: tres tarjetas, cada una con su contenido más una parte igual
+   del espacio sobrante. */
+.dash__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--a-gap);
+}
+.dash__side > .panel {
+  flex: 1 1 auto;
+}
+
+/* Pantallas que se acomodan al alto de la ventana (AdminLayout `ajustada`): el
+   contenido ocupa, como mínimo, lo que queda debajo de la barra superior, y la
+   rejilla estira sus filas para repartirlo. Sin `ajustada` nada de esto aplica. */
+.content--ajustada {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--a-topbar));
+  min-height: calc(100dvh - var(--a-topbar));
+}
+.content--ajustada > .dash {
+  flex: 1 0 auto;
+  grid-template-rows: 1fr;
+}
+
+/* Panel que reparte su alto: la cabecera conserva el suyo y el contenido se estira
+   a lo que quede. Sin margen inferior, porque la separación la pone el `gap`. */
+.panel--llena {
+  display: flex;
+  flex-direction: column;
   margin-bottom: 0;
+  min-height: 0;
+}
+.panel--llena > .panel__head + * {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 @media (max-width: 1100px) {
   .dash {
     grid-template-columns: minmax(0, 1fr);
   }
+  .content--ajustada > .dash {
+    grid-template-rows: none;
+  }
+}
+@media (max-width: 700px) {
+  .dash__fila {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Rejilla de contenido del portal */
+/* Seis mosaicos: siempre 3 × 2 (2 × 3 en pantallas muy estrechas). Con `auto-fit`
+   en una ventana ancha quedaban 5 en una fila y uno solo en la siguiente. */
 .atajos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
   gap: 10px;
+}
+@media (max-width: 480px) {
+  .atajos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .atajo {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
-  padding: 14px 10px;
+  padding: 10px;
   border: 1px solid var(--a-border);
   border-radius: 10px;
   background: #f8fafc;
@@ -3076,9 +3215,43 @@ a.user-cell:hover .user-cell__name {
 /* Próxima reunión */
 .reunion {
   display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* Bloque de fecha: el mes arriba y el día grande, como la hoja de un calendario. */
+.reunion__bloque {
+  flex: none;
+  width: 52px;
+  display: flex;
   flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
+  align-items: center;
+  border: 1px solid var(--a-border-strong);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  text-align: center;
+}
+.reunion__mes {
+  width: 100%;
+  padding: 2px 0;
+  background: var(--a-blue);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.reunion__dia {
+  padding: 4px 0 5px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.reunion__datos {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 .reunion__titulo {
   font-size: 14px;
@@ -3098,13 +3271,9 @@ a.lista-avisos__titulo:hover {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--a-muted);
   margin: 0;
-  text-transform: capitalize;
-}
-.reunion .btn {
-  margin-top: 6px;
 }
 
 /* Últimos avisos */
@@ -3114,12 +3283,21 @@ a.lista-avisos__titulo:hover {
   padding: 0;
   display: flex;
   flex-direction: column;
+  justify-content: center;
+}
+.lista-avisos__mas {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--a-blue);
+}
+.lista-avisos__mas a:hover {
+  text-decoration: underline;
 }
 .lista-avisos li {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 10px 0;
+  padding: 8px 0;
   border-bottom: 1px solid #eef1f7;
 }
 .lista-avisos li:last-child {
@@ -3129,24 +3307,75 @@ a.lista-avisos__titulo:hover {
 .lista-avisos__titulo {
   font-size: 13px;
   font-weight: 700;
+  /* Un título largo no estira la tarjeta: se corta en dos renglones. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 .lista-avisos__meta {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   font-size: 11px;
   color: var(--a-muted);
 }
+.lista-avisos__meta .badge {
+  flex: none;
+  white-space: nowrap;
+}
 
 /* Accesos rápidos: botones a lo ancho de la columna */
 .acciones-rapidas {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(50px, 1fr);
+  gap: 10px;
 }
-.acciones-rapidas .btn {
-  justify-content: flex-start;
-  width: 100%;
+.acceso {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--a-border);
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--a-text);
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+.acceso span {
+  min-width: 0;
+  /* El panel hereda `overflow-wrap: anywhere` (para nombres largos) y partía
+     «Personalización» a media palabra; aquí solo se corta en sílabas. */
+  overflow-wrap: normal;
+  hyphens: auto;
+}
+.acceso .icono {
+  color: var(--a-blue);
+}
+.acceso:hover {
+  border-color: var(--a-blue);
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+.acceso--excel {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.acceso--excel .icono {
+  color: #1d6f42;
+}
+.acceso--excel:hover {
+  border-color: #1d6f42;
+  background: #dcfce7;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -115,6 +115,9 @@ export default createController(adminRoutes, {
       const rawWeekday = getPart('weekday')
       const diaCapitalizado = rawWeekday.charAt(0).toUpperCase() + rawWeekday.slice(1)
       const fechaTexto = `${getPart('day')} de ${getPart('month')} de ${getPart('year')}`
+      // La tarjeta del reloj es angosta: lleva la fecha corta («10 oct 2026»). La larga
+      // ya está en el subtítulo de la página.
+      const fechaCorta = `${getPart('day')} ${getPart('month').slice(0, 3)} ${getPart('year')}`
 
       return context.render(
         <AdminPage
@@ -124,6 +127,7 @@ export default createController(adminRoutes, {
             dia: diaCapitalizado,
             saludo,
             fecha: fechaTexto,
+            fechaCorta,
             hora: formattedHour,
           }}
         />,

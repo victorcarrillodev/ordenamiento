@@ -50,7 +50,7 @@ export interface AdminPageProps {
     proximaActividad?: ProximaActividad | null
     avisos?: AvisoResumen[]
   }
-  ahora: { dia: string; saludo?: string; fecha: string; hora: string }
+  ahora: { dia: string; saludo?: string; fecha: string; fechaCorta?: string; hora: string }
 }
 
 interface AtajoContenido {
@@ -59,6 +59,9 @@ interface AtajoContenido {
   icono: string
   total: number
 }
+
+/** Avisos que enseña la tarjeta; el resto se resume en «y N más…» para que la columna no crezca. */
+const MAX_AVISOS = 2
 
 /** Tarjeta grande de cifra, con enlace a la sección que la explica. */
 function Kpi(
@@ -82,12 +85,32 @@ function Kpi(
           <div class="card__label">
             {titulo} <span>| {pie}</span>
           </div>
-          <div class="card__value">{valor}</div>
-          <div class="card__action green">Gestionar →</div>
+          <div class="card__linea">
+            <div class="card__value">{valor}</div>
+            <div class="card__action green">Gestionar →</div>
+          </div>
         </div>
       </a>
     )
   }
+}
+
+/** Día y mes corto de `YYYY-MM-DD`, para el bloque de fecha («17» y «oct»). */
+function bloqueDeFecha(valor: string): { dia: string; mes: string } | null {
+  const partes = valor.split('-')
+  if (partes.length !== 3) return null
+  const d = new Date(Date.UTC(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2])))
+  if (Number.isNaN(d.getTime())) return null
+  return {
+    dia: String(d.getUTCDate()),
+    mes: d.toLocaleDateString('es-MX', { timeZone: 'UTC', month: 'short' }).replace('.', ''),
+  }
+}
+
+/** «10 oct» a partir de `YYYY-MM-DD`; lo que no tenga esa forma se muestra como llegó. */
+function fechaBreve(valor: string): string {
+  const bloque = bloqueDeFecha(valor)
+  return bloque ? `${bloque.dia} ${bloque.mes}` : valor
 }
 
 /** Fecha de una actividad sin desplazamiento de zona: `YYYY-MM-DD` es un día, no un instante. */
@@ -160,6 +183,7 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
         active="general"
         title={`${ahora.saludo ?? 'Hola'}, ${user.name.split(' ')[0]}`}
         subtitle={`${ahora.dia} ${ahora.fecha} · Bitácora del POETDUM`}
+        ajustada
         actions={
           <>
             {/* Va directo al formulario de captura: el botón promete capturar,
@@ -184,11 +208,13 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
                 <span id="live-clock-day">{ahora.dia}</span> <span>| </span>
                 <span id="live-clock-greeting">{ahora.saludo ?? 'Buenos días'}</span>
               </div>
-              <div class="card__value" id="live-clock-time">
-                {ahora.hora}
-              </div>
-              <div class="card__label" id="live-clock-date">
-                {ahora.fecha}
+              <div class="card__linea">
+                <div class="card__value" id="live-clock-time">
+                  {ahora.hora}
+                </div>
+                <div class="card__label" id="live-clock-date">
+                  {ahora.fechaCorta ?? ahora.fecha}
+                </div>
               </div>
             </div>
           </div>
@@ -218,11 +244,12 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
           />
         </div>
 
-        {/* Analítica a la izquierda, agenda a la derecha: la columna estrecha
-            evita que los paneles cortos ocupen todo el ancho vacíos. */}
+        {/* Analítica a la izquierda y agenda a la derecha. Las dos columnas se reparten
+            el alto de la ventana (ver `.content--ajustada` y `.dash` en admin.css): ningún
+            bloque deja un hueco debajo y no hace falta desplazarse mientras todo quepa. */}
         <div class="dash">
           <div class="dash__main">
-            <div class="panel">
+            <div class="panel panel--llena">
               <div class="panel__head">
                 <h2 class="panel__title">
                   <Icon name="mdi:chart-timeline-variant" size={18} /> Participaciones por mes
@@ -232,75 +259,91 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
               <BarrasMensuales datos={stats.participacionesPorMes} />
             </div>
 
-            <div class="panel">
-              <div class="panel__head">
-                <h2 class="panel__title">
-                  <Icon name="mdi:chart-donut" size={18} /> Resultado del dictamen
-                </h2>
-                <a class="btn btn--white btn--sm" href={adminRoutes.estadisticas.href()}>
-                  Ver detalle →
-                </a>
-              </div>
-              <Donut datos={resultado} etiqueta="Participaciones" tamano={190} />
-            </div>
-
-            <div class="panel">
-              <h2 class="panel__title">
-                <Icon name="mdi:folder-multiple-outline" size={18} /> Contenido del portal
-              </h2>
-              <div class="atajos">
-                {atajos.map((a) => (
-                  <a class="atajo" href={a.href} key={a.etiqueta}>
-                    <Icon name={a.icono} size={20} />
-                    <span class="atajo__valor">{a.total}</span>
-                    <span class="atajo__etiqueta">{a.etiqueta}</span>
+            <div class="dash__fila">
+              <div class="panel panel--llena">
+                <div class="panel__head">
+                  <h2 class="panel__title">
+                    <Icon name="mdi:chart-donut" size={18} /> Resultado del dictamen
+                  </h2>
+                  <a class="btn btn--white btn--sm" href={adminRoutes.estadisticas.href()}>
+                    Detalle →
                   </a>
-                ))}
+                </div>
+                <Donut datos={resultado} etiqueta="Participaciones" tamano={170} />
+              </div>
+
+              <div class="panel panel--llena">
+                <div class="panel__head">
+                  <h2 class="panel__title">
+                    <Icon name="mdi:folder-multiple-outline" size={18} /> Contenido del portal
+                  </h2>
+                </div>
+                <div class="atajos">
+                  {atajos.map((a) => (
+                    <a class="atajo" href={a.href} key={a.etiqueta}>
+                      <Icon name={a.icono} size={20} />
+                      <span class="atajo__valor">{a.total}</span>
+                      <span class="atajo__etiqueta">{a.etiqueta}</span>
+                    </a>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
 
           <aside class="dash__side">
-            <div class="panel">
-              <h2 class="panel__title">
-                <Icon name="mdi:calendar-clock-outline" size={18} /> Próxima actividad
-              </h2>
+            <div class="panel panel--llena">
+              <div class="panel__head">
+                <h2 class="panel__title">
+                  <Icon name="mdi:calendar-clock-outline" size={18} /> Próxima actividad
+                </h2>
+                <a class="btn btn--white btn--sm" href={`${lista}?vista=calendario`}>
+                  Calendario
+                </a>
+              </div>
               {proxima ? (
                 <div class="reunion">
-                  <a
-                    class="reunion__titulo"
-                    href={adminRoutes.actividadEditar.index.href({ id: proxima.id })}
-                  >
-                    {proxima.titulo}
-                  </a>
-                  <p class="reunion__fecha">
-                    <Icon name="mdi:calendar-outline" size={14} />
-                    {fechaActividad(proxima.fecha)}
-                  </p>
-                  {proxima.hora_inicio ? (
+                  {(() => {
+                    const bloque = bloqueDeFecha(proxima.fecha)
+                    return bloque ? (
+                      <div class="reunion__bloque" aria-hidden="true">
+                        <span class="reunion__mes">{bloque.mes}</span>
+                        <span class="reunion__dia">{bloque.dia}</span>
+                      </div>
+                    ) : null
+                  })()}
+                  <div class="reunion__datos">
+                    <a
+                      class="reunion__titulo"
+                      href={adminRoutes.actividadEditar.index.href({ id: proxima.id })}
+                    >
+                      {proxima.titulo}
+                    </a>
                     <p class="reunion__fecha">
-                      <Icon name="mdi:clock-outline" size={14} />
-                      {proxima.hora_fin
-                        ? `${proxima.hora_inicio} – ${proxima.hora_fin}`
-                        : proxima.hora_inicio}
+                      <Icon name="mdi:calendar-outline" size={14} />
+                      {fechaActividad(proxima.fecha)}
+                      {proxima.hora_inicio
+                        ? ` · ${
+                            proxima.hora_fin
+                              ? `${proxima.hora_inicio} – ${proxima.hora_fin}`
+                              : proxima.hora_inicio
+                          }`
+                        : ''}
                     </p>
-                  ) : null}
-                  {proxima.lugar ? (
-                    <p class="reunion__fecha">
-                      <Icon name="mdi:map-marker-outline" size={14} />
-                      {proxima.lugar}
-                    </p>
-                  ) : null}
-                  <a class="btn btn--white btn--sm" href={`${lista}?vista=calendario`}>
-                    Ver calendario →
-                  </a>
+                    {proxima.lugar ? (
+                      <p class="reunion__fecha">
+                        <Icon name="mdi:map-marker-outline" size={14} />
+                        {proxima.lugar}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
               ) : (
                 <p class="empty">Sin actividades programadas</p>
               )}
             </div>
 
-            <div class="panel">
+            <div class="panel panel--llena">
               <div class="panel__head">
                 <h2 class="panel__title">
                   <Icon name="mdi:bullhorn-outline" size={18} /> Avisos en la portada
@@ -313,7 +356,7 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
                 <p class="empty">Sin avisos vigentes ni programados</p>
               ) : (
                 <ul class="lista-avisos">
-                  {avisos.map((a) => (
+                  {avisos.slice(0, MAX_AVISOS).map((a) => (
                     <li key={a.actividad_id}>
                       <a
                         class="lista-avisos__titulo"
@@ -322,7 +365,9 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
                         {a.titulo}
                       </a>
                       <span class="lista-avisos__meta">
-                        {fechaActividad(a.inicio)} – {fechaActividad(a.fin)}
+                        <span>
+                          {fechaBreve(a.inicio)} – {fechaBreve(a.fin)}
+                        </span>
                         <span
                           class={'badge ' + (a.estado === 'vigente' ? 'procedente' : 'en-proceso')}
                         >
@@ -331,28 +376,42 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
                       </span>
                     </li>
                   ))}
+                  {avisos.length > MAX_AVISOS ? (
+                    <li class="lista-avisos__mas">
+                      <a href={lista}>y {avisos.length - MAX_AVISOS} más…</a>
+                    </li>
+                  ) : null}
                 </ul>
               )}
             </div>
 
-            <div class="panel">
-              <h2 class="panel__title">
-                <Icon name="mdi:lightning-bolt-outline" size={18} /> Accesos rápidos
-              </h2>
+            <div class="panel panel--llena">
+              <div class="panel__head">
+                <h2 class="panel__title">
+                  <Icon name="mdi:lightning-bolt-outline" size={18} /> Accesos rápidos
+                </h2>
+              </div>
               <div class="acciones-rapidas">
-                <a class="btn btn--white" href={adminRoutes.personalizacion.index.href()}>
-                  <Icon name="mdi:palette-outline" size={16} /> Personalización y marca
+                <a class="acceso" href={adminRoutes.personalizacion.index.href()}>
+                  <Icon name="mdi:palette-outline" size={20} />
+                  <span>Personalización y marca</span>
                 </a>
                 {puedeVerBitacoraDeSesiones(user.role) ? (
-                  <a class="btn btn--white" href={adminRoutes.sesiones.href()}>
-                    <Icon name="mdi:account-clock-outline" size={16} /> Registro de sesiones
+                  <a class="acceso" href={adminRoutes.sesiones.href()}>
+                    <Icon name="mdi:account-clock-outline" size={20} />
+                    <span>Registro de sesiones</span>
                   </a>
                 ) : null}
-                <a class="btn btn--excel" href={`${adminRoutes.exportar.href()}?tabla=actividades`}>
-                  <Icon name="mdi:microsoft-excel" size={16} /> Actividades a Excel
+                <a
+                  class="acceso acceso--excel"
+                  href={`${adminRoutes.exportar.href()}?tabla=actividades`}
+                >
+                  <Icon name="mdi:microsoft-excel" size={20} />
+                  <span>Actividades a Excel</span>
                 </a>
-                <a class="btn btn--white" href={adminRoutes.exportar.href()}>
-                  <Icon name="mdi:table-arrow-down" size={16} /> Exportar otras tablas
+                <a class="acceso" href={adminRoutes.exportar.href()}>
+                  <Icon name="mdi:table-arrow-down" size={20} />
+                  <span>Exportar otras tablas</span>
                 </a>
               </div>
             </div>

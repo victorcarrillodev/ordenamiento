@@ -50,7 +50,8 @@
       if (dayEl && mapa.weekday) {
         dayEl.textContent = mapa.weekday.charAt(0).toUpperCase() + mapa.weekday.slice(1)
       }
-      if (dateEl) dateEl.textContent = mapa.day + ' de ' + mapa.month + ' de ' + mapa.year
+      // Fecha corta, igual que la que escribe el servidor: la tarjeta es angosta.
+      if (dateEl) dateEl.textContent = mapa.day + ' ' + mapa.month.slice(0, 3) + ' ' + mapa.year
     } catch (e) {
       if (timeEl) timeEl.textContent = new Date().toLocaleTimeString('es-MX')
     }
