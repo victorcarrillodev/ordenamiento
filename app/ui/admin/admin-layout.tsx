@@ -210,7 +210,13 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
         head={
           <>
             <link rel="stylesheet" href={urlEstatica('admin.css')} />
+            {/* El estudio de Personalización y marca. Va en TODAS las pantallas del panel y no
+                solo en la suya: Remix cambia el contenido sin recargar el documento y no
+                aplica los estilos ni ejecuta los scripts del `<head>` de la página que llega
+                (ver `public/personalizacion.js`, que se engancha a lo que aparezca). */}
+            <link rel="stylesheet" href={urlEstatica('personalizacion.css')} />
             <script src={urlEstatica('admin.js')} defer></script>
+            <script src={urlEstatica('personalizacion.js')} defer></script>
             {/* Barra de formato de «Textos del portal»; no hace nada donde no hay editores. */}
             <script src={urlEstatica('editor-texto.js')} defer></script>
             {/* Presencia: mide el tiempo de uso real del panel (ver `data-latido` en `.admin`). */}

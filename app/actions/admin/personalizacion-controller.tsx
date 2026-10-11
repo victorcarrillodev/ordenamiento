@@ -1,23 +1,50 @@
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { backendFetch, normalizarImagenesDelTema, requireAdminUser } from '../../backend.ts'
+import {
+  backendFetch,
+  normalizarImagenesDelTema,
+  olvidarTemaPublico,
+  requireAdminUser,
+} from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
-import { PersonalizacionPage } from './personalizacion-page.tsx'
+import { RANURAS_IMAGEN_PORTAL, RANURA_LOGO_PANEL } from './personalizacion-datos.ts'
+import { configuracionDelPanel, configuracionDelPortal } from './personalizacion-guardado.ts'
+import { PersonalizacionPage, type TabPersonalizacion } from './personalizacion-page.tsx'
 
-async function uploadFileIfNeeded(request: Request, file: File | null): Promise<string | null> {
-  if (!file || !(file instanceof File) || file.size === 0) return null
+const TABS: TabPersonalizacion[] = ['usuario', 'panel', 'historial']
+
+function esTab(valor: unknown): valor is TabPersonalizacion {
+  return typeof valor === 'string' && (TABS as string[]).includes(valor)
+}
+
+/** Dirección de la pantalla con su pestaña y un mensaje (`msg`) o un error (`err`). */
+function volverA(tab: TabPersonalizacion, aviso?: { msg?: string; err?: string }): Response {
+  const partes = [`tab=${tab}`]
+  if (aviso?.msg) partes.push(`msg=${encodeURIComponent(aviso.msg)}`)
+  if (aviso?.err) partes.push(`err=${encodeURIComponent(aviso.err)}`)
+  return redirect(`${adminRoutes.personalizacion.index.href()}?${partes.join('&')}`)
+}
+
+type Subida = { ok: true; url: string } | { ok: false; error: string }
+
+/**
+ * Sube una imagen al backend. Antes, si fallaba (pesaba de más, no era una imagen), el
+ * guardado seguía como si nada y la persona creía que su logotipo ya estaba puesto: ahora
+ * el fallo se explica y no se guarda nada a medias.
+ */
+async function subirImagen(request: Request, archivo: File): Promise<Subida> {
   const fd = new FormData()
-  fd.set('file', file)
-  const res = await backendFetch(request, '/api/settings/upload', {
-    method: 'POST',
-    body: fd,
-  })
-  if (res.ok) {
-    const data = (await res.json()) as { url: string }
-    return data.url
-  }
-  return null
+  fd.set('file', archivo)
+  const res = await backendFetch(request, '/api/settings/upload', { method: 'POST', body: fd })
+  const datos = (await res.json().catch(() => ({}))) as { url?: string; error?: string }
+  if (res.ok && datos.url) return { ok: true, url: datos.url }
+  return { ok: false, error: `${archivo.name}: ${datos.error ?? 'no se pudo subir la imagen'}` }
+}
+
+/** Los archivos reales de un campo (los vacíos que manda el navegador sin elegir nada, no cuentan). */
+function archivosDe(formData: FormData, name: string): File[] {
+  return formData.getAll(name).filter((f): f is File => f instanceof File && f.size > 0)
 }
 
 export default createController(adminRoutes.personalizacion, {
@@ -27,7 +54,8 @@ export default createController(adminRoutes.personalizacion, {
       if (user instanceof Response) return user
 
       const url = new URL(context.request.url)
-      const tab = (url.searchParams.get('tab') as 'usuario' | 'panel' | 'historial') || 'usuario'
+      const tabParam = url.searchParams.get('tab')
+      const tab = esTab(tabParam) ? tabParam : 'usuario'
       const msg = url.searchParams.get('msg') || undefined
       const err = url.searchParams.get('err') || undefined
 
@@ -62,43 +90,30 @@ export default createController(adminRoutes.personalizacion, {
 
       const formData = await context.request.formData()
       const actionType = String(formData.get('_action') ?? 'save')
-      const tab = String(formData.get('tab') ?? 'usuario')
+      const tabCrudo = formData.get('tab')
+      const tab = esTab(tabCrudo) ? tabCrudo : 'usuario'
 
       // ── Acción: Restaurar snapshot desde auditoría ──
       if (actionType === 'restore') {
         const logId = String(formData.get('log_id') ?? '').trim()
-        if (!logId) {
-          return redirect(
-            `${adminRoutes.personalizacion.index.href()}?tab=historial&err=ID+inválido`,
-          )
-        }
+        if (!logId) return volverA('historial', { err: 'ID inválido' })
         const res = await backendFetch(context.request, `/api/settings/restore/${logId}`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ motivo: `Restaurado desde registro de auditoría #${logId}` }),
         })
-        if (!res.ok) {
-          return redirect(
-            `${adminRoutes.personalizacion.index.href()}?tab=historial&err=Error+al+restaurar`,
-          )
-        }
-        return redirect(
-          `${adminRoutes.personalizacion.index.href()}?tab=historial&msg=Versión+restaurada+correctamente`,
-        )
+        if (!res.ok) return volverA('historial', { err: 'Error al restaurar' })
+        olvidarTemaPublico()
+        return volverA('historial', { msg: 'Versión restaurada correctamente' })
       }
 
       // ── Acción: Probar SMTP (usa POST /api/mail/test, expone útil de diagnóstico sin PII) ──
       if (actionType === 'testMail') {
         const para = String(formData.get('para') ?? '').trim()
-        const tabRet = String(formData.get('tab') ?? 'usuario')
         // Validación estricta anti-CRLF/XSS: bloquea \r\n y rechaza formato email inválido.
         // No basta con contains('@'): un payload con CRLF o <script> pasa ese filtro.
         const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(para) && !/[\r\n<>]/.test(para)
-        if (!para || !emailValido) {
-          return redirect(
-            `${adminRoutes.personalizacion.index.href()}?tab=${tabRet}&err=${encodeURIComponent('Correo destino inválido')}`,
-          )
-        }
+        if (!para || !emailValido) return volverA(tab, { err: 'Correo destino inválido' })
         const res = await backendFetch(context.request, '/api/mail/test', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -106,130 +121,75 @@ export default createController(adminRoutes.personalizacion, {
         })
         if (!res.ok) {
           const errData = (await res.json().catch(() => ({}))) as { error?: string }
-          const msg = errData.error || `Error SMTP (${res.status})`
-          return redirect(
-            `${adminRoutes.personalizacion.index.href()}?tab=${tabRet}&err=${encodeURIComponent(msg)}`,
-          )
+          return volverA(tab, { err: errData.error || `Error SMTP (${res.status})` })
         }
-        return redirect(
-          `${adminRoutes.personalizacion.index.href()}?tab=${tabRet}&msg=${encodeURIComponent(`Correo de prueba enviado a ${para}`)}`,
-        )
+        return volverA(tab, { msg: `Correo de prueba enviado a ${para}` })
       }
 
       // ── Acción: Guardar configuración ──
-      const section = String(formData.get('section') ?? 'usuario') as 'usuario' | 'panel'
-      const motivo = String(formData.get('motivo') ?? '').trim()
+      const section = formData.get('section') === 'panel' ? 'panel' : 'usuario'
+      const motivo = String(formData.get('motivo') ?? '')
+        .trim()
+        .slice(0, 200)
       if (!motivo) {
-        return redirect(
-          `${adminRoutes.personalizacion.index.href()}?tab=${tab}&err=El+motivo+del+cambio+es+obligatorio+por+seguridad`,
-        )
+        return volverA(tab, { err: 'El motivo del cambio es obligatorio por seguridad' })
       }
 
+      let config: object
       if (section === 'usuario') {
-        // Manejar subida de fotos
-        const fileHero = formData.get('archivo_hero') as File | null
-        const fileNavLogo = formData.get('archivo_logo_navbar') as File | null
-        const fileFooterLogo = formData.get('archivo_logo_footer') as File | null
-        const fileEcoImg = formData.get('archivo_imagen_ecologia') as File | null
-        const fileProgramaImg = formData.get('archivo_imagen_programa') as File | null
-
-        const [
-          uploadedHero,
-          uploadedNavLogo,
-          uploadedFooterLogo,
-          uploadedEcoImg,
-          uploadedProgramaImg,
-        ] = await Promise.all([
-          uploadFileIfNeeded(context.request, fileHero),
-          uploadFileIfNeeded(context.request, fileNavLogo),
-          uploadFileIfNeeded(context.request, fileFooterLogo),
-          uploadFileIfNeeded(context.request, fileEcoImg),
-          uploadFileIfNeeded(context.request, fileProgramaImg),
-        ])
-
-        const rawHeroImages = formData.getAll('hero_imagenes[]').map(String).filter(Boolean)
-        if (uploadedHero) {
-          rawHeroImages.push(uploadedHero)
-        }
-
-        const config = {
-          usuario: {
-            colores: {
-              primario: String(formData.get('color_primario') ?? '#8c1d3d'),
-              acento: String(formData.get('color_acento') ?? '#e0b84a'),
-              secundario: String(formData.get('color_secundario') ?? '#2d6a4f'),
-              navbarFondo: String(formData.get('color_navbar_fondo') ?? '#ffffff'),
-              navbarTexto: String(formData.get('color_navbar_texto') ?? '#1a1d26'),
-              footerFondo: String(formData.get('color_footer_fondo') ?? '#0f1117'),
-              footerTexto: String(formData.get('color_footer_texto') ?? '#ffffff'),
-            },
-            imagenes: {
-              logoNavbar: uploadedNavLogo || String(formData.get('logo_navbar') ?? ''),
-              logoFooter: uploadedFooterLogo || String(formData.get('logo_footer') ?? ''),
-              heroImagenes: rawHeroImages.length > 0 ? rawHeroImages : undefined,
-              imagenEcologia: uploadedEcoImg || String(formData.get('imagen_ecologia') ?? ''),
-              imagenPrograma: uploadedProgramaImg || String(formData.get('imagen_programa') ?? ''),
-            },
-            iconos: {
-              cardPrograma: String(formData.get('ico_card1') ?? '🧭'),
-              cardProceso: String(formData.get('ico_card2') ?? '📊'),
-              cardCalendario: String(formData.get('ico_card3') ?? '📅'),
-              cardDocumentos: String(formData.get('ico_card4') ?? '📈'),
-            },
-          },
-        }
-
-        const res = await backendFetch(context.request, '/api/settings/theme', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ config, motivo, section: 'usuario' }),
-        })
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}))
-          return redirect(
-            `${adminRoutes.personalizacion.index.href()}?tab=usuario&err=${encodeURIComponent(errData.error || 'Error al guardar')}`,
-          )
-        }
-
-        return redirect(
-          `${adminRoutes.personalizacion.index.href()}?tab=usuario&msg=Cambios+guardados+exitosamente`,
+        // Todas las subidas, antes de guardar nada: si una falla no se guarda a medias.
+        const hero = await Promise.all(
+          archivosDe(formData, 'archivo_hero').map((f) => subirImagen(context.request, f)),
         )
-      } else if (section === 'panel') {
-        const fileAdminLogo = formData.get('archivo_admin_logo') as File | null
-        const uploadedAdminLogo = await uploadFileIfNeeded(context.request, fileAdminLogo)
-
-        const config = {
-          panel: {
-            sidebarFondo: String(formData.get('panel_sidebar_fondo') ?? '#ffffff'),
-            sidebarTexto: String(formData.get('panel_sidebar_texto') ?? '#475066'),
-            topbarFondo: String(formData.get('panel_topbar_fondo') ?? '#2e3440'),
-            colorAcento: String(formData.get('panel_color_acento') ?? '#2563eb'),
-            adminBg: String(formData.get('panel_admin_bg') ?? '#f4f6fb'),
-            adminLogo: uploadedAdminLogo || String(formData.get('panel_admin_logo') ?? ''),
-            adminTitulo: String(formData.get('panel_admin_titulo') ?? ''),
-          },
+        const porCampo: Record<string, string> = {}
+        const fallos: string[] = []
+        for (const r of hero) if (!r.ok) fallos.push(r.error)
+        for (const ranura of RANURAS_IMAGEN_PORTAL) {
+          const archivo = archivosDe(formData, ranura.archivoName)[0]
+          if (!archivo) continue
+          const r = await subirImagen(context.request, archivo)
+          if (r.ok) porCampo[ranura.archivoName] = r.url
+          else fallos.push(r.error)
         }
-
-        const res = await backendFetch(context.request, '/api/settings/theme', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ config, motivo, section: 'panel' }),
+        if (fallos.length > 0) {
+          return volverA('usuario', { err: `No se guardó nada. ${fallos.join(' · ')}` })
+        }
+        config = configuracionDelPortal(formData, {
+          hero: hero.flatMap((r) => (r.ok ? [r.url] : [])),
+          porCampo,
         })
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}))
-          return redirect(
-            `${adminRoutes.personalizacion.index.href()}?tab=panel&err=${encodeURIComponent(errData.error || 'Error al guardar')}`,
-          )
+      } else {
+        const logo = archivosDe(formData, RANURA_LOGO_PANEL.archivoName)[0]
+        let logoSubido: string | undefined
+        if (logo) {
+          const r = await subirImagen(context.request, logo)
+          if (!r.ok) return volverA('panel', { err: `No se guardó nada. ${r.error}` })
+          logoSubido = r.url
         }
-
-        return redirect(
-          `${adminRoutes.personalizacion.index.href()}?tab=panel&msg=Cambios+del+panel+guardados+exitosamente`,
-        )
+        config = configuracionDelPanel(formData, logoSubido)
       }
 
-      return redirect(adminRoutes.personalizacion.index.href())
+      const res = await backendFetch(context.request, '/api/settings/theme', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ config, motivo, section }),
+      })
+      if (!res.ok) {
+        const errData = (await res.json().catch(() => ({}))) as { error?: string }
+        return volverA(section === 'panel' ? 'panel' : 'usuario', {
+          err: errData.error || 'Error al guardar',
+        })
+      }
+
+      // El portal guarda el tema unos segundos en memoria: se olvida para que quien acaba
+      // de guardar lo vea ya, en lugar de pensar que no se guardó.
+      olvidarTemaPublico()
+      return volverA(section === 'panel' ? 'panel' : 'usuario', {
+        msg:
+          section === 'panel'
+            ? 'Cambios del panel guardados exitosamente'
+            : 'Cambios guardados exitosamente',
+      })
     },
   },
 })

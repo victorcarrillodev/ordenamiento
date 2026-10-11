@@ -1,21 +1,30 @@
+/**
+ * Personalización y marca.
+ *
+ * Un estudio de edición: a la izquierda los controles agrupados por sección, a la derecha una
+ * maqueta que se repinta mientras se edita, y abajo el resumen de lo que se va a guardar con
+ * su motivo. Tiene tres pestañas (cada una con su dirección, para poder compartirla):
+ * «Portal ciudadano», «Panel administrativo» e «Historial de cambios».
+ *
+ * La interactividad (vista previa en vivo, contraste, deshacer, resumen de cambios, orden de
+ * las fotos…) vive en `public/personalizacion.js` y se engancha por atributos `data-pz-*`.
+ * No hay manejadores en línea (la CSP no los admite) y sin JavaScript todo sigue siendo un
+ * formulario que se envía.
+ */
 import type { Handle } from 'remix/ui'
-import { AdminAlert } from '../../ui/admin/alert.tsx'
-import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
-import { adminRoutes, routes } from '../../routes.ts'
-import { Button } from '../../ui/button.tsx'
-import { Icon } from '../../ui/admin/icon.tsx'
-import { HERO_IMAGEN_POR_DEFECTO, type ThemeData } from '../../ui/civic-horizon.ts'
-import { TextoRico } from '../../ui/texto-rico.tsx'
-import { textoDelPortal } from '../../utils/texto-rico.ts'
 
-export interface AuditLogEntry {
-  id: string
-  user_name: string
-  user_email: string
-  motivo: string
-  section: string
-  created_at: string
-}
+import { adminRoutes, routes } from '../../routes.ts'
+import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { AdminAlert } from '../../ui/admin/alert.tsx'
+import { Icon } from '../../ui/admin/icon.tsx'
+import type { ThemeData } from '../../ui/civic-horizon.ts'
+import { HistorialCambios, type AuditLogEntry } from './personalizacion-historial.tsx'
+import { FormularioPanel } from './personalizacion-panel.tsx'
+import { FormularioPortal } from './personalizacion-portal.tsx'
+
+export type { AuditLogEntry } from './personalizacion-historial.tsx'
+
+export type TabPersonalizacion = 'usuario' | 'panel' | 'historial'
 
 export interface PersonalizacionPageProps {
   user: { name: string; role: string }
@@ -23,1306 +32,160 @@ export interface PersonalizacionPageProps {
   auditLogs: AuditLogEntry[]
   mensaje?: string
   error?: string
-  tabActiva?: 'usuario' | 'panel' | 'historial'
+  tabActiva?: TabPersonalizacion
 }
 
-// Interactividad de esta página vive en public/admin.js (CSP-compliant).
-// No se usan atributos inline onclick/onchange/onerror para respetar
-// la CSP estricta (script-src 'self' sin 'unsafe-inline').
+const TABS: Array<{ clave: TabPersonalizacion; etiqueta: string; icono: string }> = [
+  { clave: 'usuario', etiqueta: 'Portal ciudadano', icono: 'mdi:web' },
+  { clave: 'panel', etiqueta: 'Panel administrativo', icono: 'mdi:view-dashboard-outline' },
+  { clave: 'historial', etiqueta: 'Historial de cambios', icono: 'mdi:history' },
+]
+
+/** Los tres pasos de siempre, a la vista: lo que más tranquiliza es saber que nada se publica sin guardar. */
+function Guia() {
+  return () => (
+    <details class="pz-guia">
+      <summary class="pz-guia__resumen">
+        <Icon name="mdi:lightbulb-on-outline" size={18} />
+        <span>
+          <strong>¿Cómo funciona?</strong> Cambia, mira la vista previa y guarda: nada se publica
+          hasta entonces.
+        </span>
+        <span class="pz-guia__flecha" aria-hidden="true">
+          <Icon name="mdi:chevron-down" size={20} />
+        </span>
+      </summary>
+      <ol class="pz-guia__pasos">
+        <li>
+          <span class="pz-guia__numero" aria-hidden="true">
+            1
+          </span>
+          <span>
+            <strong>Elige o ajusta.</strong> Parte de una paleta y afina cada color, foto o ícono.
+          </span>
+        </li>
+        <li>
+          <span class="pz-guia__numero" aria-hidden="true">
+            2
+          </span>
+          <span>
+            <strong>Revisa la vista previa.</strong> Se actualiza al instante y avisa si un texto
+            deja de leerse. Los cambios aún no están publicados.
+          </span>
+        </li>
+        <li>
+          <span class="pz-guia__numero" aria-hidden="true">
+            3
+          </span>
+          <span>
+            <strong>Guarda con un motivo.</strong> Queda en el historial y puedes volver a cualquier
+            versión anterior.
+          </span>
+        </li>
+      </ol>
+    </details>
+  )
+}
+
+/** La prueba del correo: no es de marca, pero vive aquí porque usa la plantilla institucional. */
+function PruebaDeCorreo(handle: Handle<{ tab: TabPersonalizacion }>) {
+  return () => (
+    <details class="panel pz-herramientas">
+      <summary class="pz-herramientas__resumen">
+        <Icon name="mdi:email-fast-outline" size={18} />
+        <span>
+          <strong>Herramientas · Prueba de correo</strong>
+          <small>Comprueba que el servidor puede enviar los correos del portal.</small>
+        </span>
+        <span class="pz-guia__flecha" aria-hidden="true">
+          <Icon name="mdi:chevron-down" size={20} />
+        </span>
+      </summary>
+      <div class="pz-herramientas__cuerpo">
+        <p class="pz-herramientas__texto">
+          Envía un correo de prueba con la plantilla institucional al destinatario que indiques. Si
+          el servidor de correo no está configurado, aquí verás el aviso.
+        </p>
+        <form
+          method="post"
+          action={adminRoutes.personalizacion.index.href()}
+          class="pz-herramientas__form"
+        >
+          <input type="hidden" name="_action" value="testMail" />
+          <input type="hidden" name="tab" value={handle.props.tab} />
+          <div class="form-field pz-herramientas__campo">
+            <label for="smtp-test-para">Correo destino</label>
+            <input
+              id="smtp-test-para"
+              name="para"
+              type="email"
+              required
+              placeholder="tu.correo@ejemplo.com"
+            />
+          </div>
+          <button type="submit" class="btn btn--dark">
+            <Icon name="mdi:send-outline" size={16} /> Enviar correo de prueba
+          </button>
+        </form>
+      </div>
+    </details>
+  )
+}
 
 export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
   return () => {
     const { user, theme, auditLogs, mensaje, error, tabActiva = 'usuario' } = handle.props
-    const u = theme?.usuario || {}
-    const p = theme?.panel || {}
-    const c = u.colores || {}
-    const img = u.imagenes || {}
-    const ico = u.iconos || {}
-    const txt = u.textos || {}
-    const heroImgs: string[] =
-      Array.isArray(img.heroImagenes) && img.heroImagenes.length > 0
-        ? img.heroImagenes
-        : [HERO_IMAGEN_POR_DEFECTO]
 
     return (
       <AdminLayout
         user={user}
         active="personalizacion"
         title="Personalización y marca"
-        subtitle="Colores, logotipos, carrusel de fotos, íconos y textos del portal y del panel."
+        subtitle="Colores, logotipos, fotos, íconos y textos del portal y del panel, con vista previa."
         theme={theme?.panel}
         actions={
           <>
-            <Button
-              href={routes.home.href()}
-              target="_blank"
-              rel="noreferrer"
-              variant="secondary"
-              icon={<Icon name="mdi:open-in-new" size={16} />}
-            >
-              Ver portal en vivo
-            </Button>
-            <Button
-              buttonType="button"
-              id="btn-open-preview"
-              variant="primary"
-              icon={<Icon name="mdi:eye-outline" size={16} />}
-            >
-              Previsualizar
-            </Button>
-            <Button
-              href={adminRoutes.personalizacionTextos.index.href()}
-              variant="secondary"
-              icon={<Icon name="mdi:text-box-edit-outline" size={16} />}
-            >
-              Editar textos
-            </Button>
+            <a class="btn btn--white" href={routes.home.href()} target="_blank" rel="noreferrer">
+              <Icon name="mdi:open-in-new" size={16} /> Ver portal en vivo
+            </a>
+            <a class="btn btn--white" href={adminRoutes.personalizacionTextos.index.href()}>
+              <Icon name="mdi:text-box-edit-outline" size={16} /> Editar textos
+            </a>
           </>
         }
       >
-        <div class="personalizacion">
-          {/* Feedback messages */}
-          {mensaje && <AdminAlert type="success" message={mensaje} />}
-          {error && <AdminAlert type="error" message={error} />}
+        <div class="pz-pagina" data-pz-pagina>
+          {mensaje ? <AdminAlert type="success" message={mensaje} /> : null}
+          {error ? <AdminAlert type="error" message={error} /> : null}
 
-          {/* Las pestañas son enlaces con su propia URL, igual que en
-              Estadísticas: se pueden compartir y sobreviven a una recarga. */}
-          <div class="tabs" role="tablist" aria-label="Ámbito de la personalización">
-            {(
-              [
-                { clave: 'usuario', etiqueta: 'Portal ciudadano', icono: 'mdi:web' },
-                {
-                  clave: 'panel',
-                  etiqueta: 'Panel administrativo',
-                  icono: 'mdi:view-dashboard-outline',
-                },
-                { clave: 'historial', etiqueta: 'Historial de cambios', icono: 'mdi:history' },
-              ] as const
-            ).map((t) => (
+          <Guia />
+
+          {/* Las pestañas son enlaces con su propia dirección, igual que en Estadísticas:
+              se pueden compartir y sobreviven a una recarga. */}
+          <div class="tabs" role="tablist" aria-label="Qué quieres personalizar">
+            {TABS.map((tab) => (
               <a
-                key={t.clave}
+                key={tab.clave}
                 role="tab"
-                aria-selected={tabActiva === t.clave ? 'true' : 'false'}
-                class={'tabs__item' + (tabActiva === t.clave ? ' active' : '')}
-                href={`?tab=${t.clave}`}
+                aria-selected={tabActiva === tab.clave ? 'true' : 'false'}
+                class={'tabs__item' + (tabActiva === tab.clave ? ' active' : '')}
+                href={`?tab=${tab.clave}`}
+                data-pz-pestana
               >
-                <Icon name={t.icono} size={16} />
-                {t.etiqueta}
-                {t.clave === 'historial' ? (
+                <Icon name={tab.icono} size={16} />
+                {tab.etiqueta}
+                {tab.clave === 'historial' ? (
                   <span class="tabs__count">{auditLogs.length}</span>
                 ) : null}
               </a>
             ))}
           </div>
 
-          {/* TAB 1: VISTA DE USUARIO */}
-          {tabActiva === 'usuario' && (
-            <form
-              method="post"
-              action={adminRoutes.personalizacion.index.href()}
-              enctype="multipart/form-data"
-              style="display: flex; flex-direction: column; gap: 24px;"
-            >
-              <input type="hidden" name="section" value="usuario" />
-              <input type="hidden" name="tab" value="usuario" />
+          {tabActiva === 'usuario' ? <FormularioPortal theme={theme} /> : null}
+          {tabActiva === 'panel' ? <FormularioPanel theme={theme} usuario={user.name} /> : null}
+          {tabActiva === 'historial' ? <HistorialCambios registros={auditLogs} /> : null}
 
-              {/* PALETAS PREDEFINIDAS */}
-              <div class="panel">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-                  <div>
-                    <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 4px;">
-                      🎨 Paletas Rápidas en 1 Clic (Para Dummies)
-                    </h3>
-                    <p style="font-size: 13px; color: #64748b; margin: 0;">
-                      Haz clic en un estilo para aplicar automáticamente colores armoniosos y
-                      profesionales.
-                    </p>
-                  </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 12px;">
-                  <button
-                    type="button"
-                    class="palette-btn"
-                    data-primario="#8c1d3d"
-                    data-acento="#e0b84a"
-                    data-secundario="#2d6a4f"
-                    data-nav-bg="#ffffff"
-                    data-nav-text="#1a1d26"
-                    data-footer-bg="#0f1117"
-                    data-footer-text="#ffffff"
-                    style="padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; background: #ffffff; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 8px; transition: transform 150ms ease;"
-                  >
-                    <div style="display: flex; gap: 6px;">
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #8c1d3d;"></span>
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #e0b84a;"></span>
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #2d6a4f;"></span>
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #0f1117;"></span>
-                    </div>
-                    <div>
-                      <strong style="font-size: 13px; color: #1e293b;">Tlaquepaque Oficial</strong>
-                      <div style="font-size: 11px; color: #64748b;">
-                        Vino institucional, oro y verde
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    class="palette-btn"
-                    data-primario="#1b4332"
-                    data-acento="#52b788"
-                    data-secundario="#2d6a4f"
-                    data-nav-bg="#ffffff"
-                    data-nav-text="#081c15"
-                    data-footer-bg="#081c15"
-                    data-footer-text="#d8f3dc"
-                    style="padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; background: #ffffff; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 8px; transition: transform 150ms ease;"
-                  >
-                    <div style="display: flex; gap: 6px;">
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #1b4332;"></span>
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #52b788;"></span>
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #2d6a4f;"></span>
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #081c15;"></span>
-                    </div>
-                    <div>
-                      <strong style="font-size: 13px; color: #1e293b;">Bosque Ecológico</strong>
-                      <div style="font-size: 11px; color: #64748b;">
-                        Verde esmeralda y menta natural
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    class="palette-btn"
-                    data-primario="#1e3a8a"
-                    data-acento="#38bdf8"
-                    data-secundario="#0d9488"
-                    data-nav-bg="#ffffff"
-                    data-nav-text="#0f172a"
-                    data-footer-bg="#0f172a"
-                    data-footer-text="#e2e8f0"
-                    style="padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; background: #ffffff; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 8px; transition: transform 150ms ease;"
-                  >
-                    <div style="display: flex; gap: 6px;">
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #1e3a8a;"></span>
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #38bdf8;"></span>
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #0d9488;"></span>
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #0f172a;"></span>
-                    </div>
-                    <div>
-                      <strong style="font-size: 13px; color: #1e293b;">Azul Metropolitano</strong>
-                      <div style="font-size: 11px; color: #64748b;">
-                        Azul marino, zafiro y celeste
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    class="palette-btn"
-                    data-primario="#4c0519"
-                    data-acento="#fbbf24"
-                    data-secundario="#b45309"
-                    data-nav-bg="#18181b"
-                    data-nav-text="#ffffff"
-                    data-footer-bg="#09090b"
-                    data-footer-text="#fafafa"
-                    style="padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; background: #ffffff; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 8px; transition: transform 150ms ease;"
-                  >
-                    <div style="display: flex; gap: 6px;">
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #4c0519;"></span>
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #fbbf24;"></span>
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #18181b;"></span>
-                      <span style="width: 24px; height: 24px; border-radius: 6px; background: #09090b;"></span>
-                    </div>
-                    <div>
-                      <strong style="font-size: 13px; color: #1e293b;">Noche Elegante</strong>
-                      <div style="font-size: 11px; color: #64748b;">
-                        Oscuro profundo y destellos oro
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* SECCION COLORES DEL PORTAL */}
-              <div class="panel">
-                <h3 class="panel__title">1. Colores del Portal Ciudadano</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 16px;">
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Color Primario (Botones / Encabezados)
-                    </label>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                      <input
-                        type="color"
-                        id="c-primario"
-                        name="color_primario"
-                        value={c.primario || '#8c1d3d'}
-                        style="width: 44px; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px; cursor: pointer;"
-                      />
-                      <input
-                        type="text"
-                        value={c.primario || '#8c1d3d'}
-                        class="sync-color-text"
-                        data-target="c-primario"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Color de Acento (Dorado / Resaltados)
-                    </label>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                      <input
-                        type="color"
-                        id="c-acento"
-                        name="color_acento"
-                        value={c.acento || '#e0b84a'}
-                        style="width: 44px; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px; cursor: pointer;"
-                      />
-                      <input
-                        type="text"
-                        value={c.acento || '#e0b84a'}
-                        class="sync-color-text"
-                        data-target="c-acento"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Color Secundario (Ecología)
-                    </label>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                      <input
-                        type="color"
-                        id="c-secundario"
-                        name="color_secundario"
-                        value={c.secundario || '#2d6a4f'}
-                        style="width: 44px; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px; cursor: pointer;"
-                      />
-                      <input
-                        type="text"
-                        value={c.secundario || '#2d6a4f'}
-                        class="sync-color-text"
-                        data-target="c-secundario"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Fondo del Navbar
-                    </label>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                      <input
-                        type="color"
-                        id="c-nav-bg"
-                        name="color_navbar_fondo"
-                        value={c.navbarFondo || '#ffffff'}
-                        style="width: 44px; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px; cursor: pointer;"
-                      />
-                      <input
-                        type="text"
-                        value={c.navbarFondo || '#ffffff'}
-                        class="sync-color-text"
-                        data-target="c-nav-bg"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Texto del Navbar
-                    </label>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                      <input
-                        type="color"
-                        id="c-nav-text"
-                        name="color_navbar_texto"
-                        value={c.navbarTexto || '#1a1d26'}
-                        style="width: 44px; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px; cursor: pointer;"
-                      />
-                      <input
-                        type="text"
-                        value={c.navbarTexto || '#1a1d26'}
-                        class="sync-color-text"
-                        data-target="c-nav-text"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Fondo del Footer
-                    </label>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                      <input
-                        type="color"
-                        id="c-footer-bg"
-                        name="color_footer_fondo"
-                        value={c.footerFondo || '#0f1117'}
-                        style="width: 44px; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px; cursor: pointer;"
-                      />
-                      <input
-                        type="text"
-                        value={c.footerFondo || '#0f1117'}
-                        class="sync-color-text"
-                        data-target="c-footer-bg"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Texto del Footer
-                    </label>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                      <input
-                        type="color"
-                        id="c-footer-text"
-                        name="color_footer_texto"
-                        value={c.footerTexto || '#ffffff'}
-                        style="width: 44px; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px; cursor: pointer;"
-                      />
-                      <input
-                        type="text"
-                        value={c.footerTexto || '#ffffff'}
-                        class="sync-color-text"
-                        data-target="c-footer-text"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* SECCION HERO CAROUSEL Y FOTOS */}
-              <div class="panel">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
-                  <div>
-                    <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 4px;">
-                      2. Fotos del Hero (Fondo Principal con Carrusel Automático)
-                    </h3>
-                    <p style="font-size: 13px; color: #64748b; margin: 0;">
-                      💡 <strong>Super poder:</strong> Si agregas 1 foto se muestra fija. Si agregas{' '}
-                      <strong>2 o más fotos</strong>, el fondo del Hero se convierte en un{' '}
-                      <strong>Carrusel interactivo</strong> automático con transiciones suaves.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    id="btn-add-hero"
-                    style="background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;"
-                  >
-                    ➕ Agregar otra foto al carrusel
-                  </button>
-                </div>
-
-                <div
-                  id="hero-images-container"
-                  style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;"
-                >
-                  {heroImgs.map((imgUrl, idx) => (
-                    <div
-                      class="hero-image-row"
-                      style="display: flex; gap: 10px; align-items: center; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;"
-                    >
-                      <span style="font-size: 12px; font-weight: 800; color: #64748b; width: 60px;">
-                        Foto #{idx + 1}
-                      </span>
-                      <img
-                        src={imgUrl}
-                        alt={`Vista previa de la foto ${idx + 1} del carrusel de la portada`}
-                        class="hero-img-preview"
-                        style="width: 50px; height: 35px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1;"
-                      />
-                      <input
-                        type="text"
-                        name="hero_imagenes[]"
-                        value={imgUrl}
-                        placeholder="https://ejemplo.com/foto.jpg o /ordena/assets/img/foto.webp"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
-                      />
-                      {idx > 0 && (
-                        <button
-                          type="button"
-                          class="hero-remove"
-                          style="background: #fee2e2; color: #b91c1c; border: none; border-radius: 6px; padding: 8px 12px; font-size: 12px; font-weight: 700; cursor: pointer;"
-                        >
-                          ✕ Quitar
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Subir archivo de imagen para el Hero */}
-                <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px dashed #94a3b8; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-                  <div>
-                    <strong style="font-size: 13px; color: #334155;">
-                      ¿Prefieres subir una foto desde tu computadora?
-                    </strong>
-                    <div style="font-size: 11px; color: #64748b;">
-                      Se guardará en el servidor y se sumará al carrusel automáticamente.
-                    </div>
-                  </div>
-                  <input
-                    type="file"
-                    name="archivo_hero"
-                    accept="image/*"
-                    style="font-size: 12px;"
-                  />
-                </div>
-              </div>
-
-              {/* SECCION LOGOS E IMAGENES */}
-              <div class="panel">
-                <h3 class="panel__title">3. Logotipos e Imágenes Secundarias</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px;">
-                  {/* Logo Navbar */}
-                  <div
-                    class="form-field"
-                    style="background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0;"
-                  >
-                    <label style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 6px;">
-                      Logo del Navbar (Encabezado)
-                    </label>
-                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-                      {img.logoNavbar && (
-                        <img
-                          src={img.logoNavbar}
-                          alt="Vista previa del logotipo de la barra superior del portal"
-                          style="max-height: 40px; max-width: 100px; object-fit: contain; background: #fff; padding: 4px; border-radius: 4px; border: 1px solid #e2e8f0;"
-                        />
-                      )}
-                      <input
-                        type="text"
-                        name="logo_navbar"
-                        value={img.logoNavbar || ''}
-                        placeholder="URL del logo"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
-                      />
-                    </div>
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">
-                      O subir imagen nueva:
-                    </div>
-                    <input
-                      type="file"
-                      name="archivo_logo_navbar"
-                      accept="image/*"
-                      style="font-size: 12px;"
-                    />
-                  </div>
-
-                  {/* Logo Footer */}
-                  <div
-                    class="form-field"
-                    style="background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0;"
-                  >
-                    <label style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 6px;">
-                      Logo del Footer (Pie de Página)
-                    </label>
-                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-                      {img.logoFooter && (
-                        <img
-                          src={img.logoFooter}
-                          alt="Vista previa del logotipo del pie de página del portal"
-                          style="max-height: 40px; max-width: 100px; object-fit: contain; background: #fff; padding: 4px; border-radius: 4px; border: 1px solid #e2e8f0;"
-                        />
-                      )}
-                      <input
-                        type="text"
-                        name="logo_footer"
-                        value={img.logoFooter || ''}
-                        placeholder="URL del logo footer (opcional)"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
-                      />
-                    </div>
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">
-                      O subir imagen nueva:
-                    </div>
-                    <input
-                      type="file"
-                      name="archivo_logo_footer"
-                      accept="image/*"
-                      style="font-size: 12px;"
-                    />
-                  </div>
-
-                  {/* Imagen Ecología */}
-                  <div
-                    class="form-field"
-                    style="background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0;"
-                  >
-                    <label style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 6px;">
-                      Imagen de Sección "¿Qué es este sitio?"
-                    </label>
-                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-                      {img.imagenEcologia && (
-                        <img
-                          src={img.imagenEcologia}
-                          alt="Vista previa de la ilustración de la sección «¿Qué es este sitio?»"
-                          style="max-height: 40px; max-width: 80px; object-fit: cover; border-radius: 4px;"
-                        />
-                      )}
-                      <input
-                        type="text"
-                        name="imagen_ecologia"
-                        value={img.imagenEcologia || ''}
-                        placeholder="URL imagen"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
-                      />
-                    </div>
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">
-                      O subir imagen nueva:
-                    </div>
-                    <input
-                      type="file"
-                      name="archivo_imagen_ecologia"
-                      accept="image/*"
-                      style="font-size: 12px;"
-                    />
-                  </div>
-
-                  {/* Imagen Programa */}
-                  <div
-                    class="form-field"
-                    style="background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0;"
-                  >
-                    <label style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 6px;">
-                      Imagen de Sección "¿Qué es el Programa?"
-                    </label>
-                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-                      {img.imagenPrograma && (
-                        <img
-                          src={img.imagenPrograma}
-                          alt="Vista previa de la ilustración de la sección del Programa"
-                          style="max-height: 40px; max-width: 80px; object-fit: cover; border-radius: 4px;"
-                        />
-                      )}
-                      <input
-                        type="text"
-                        name="imagen_programa"
-                        value={img.imagenPrograma || ''}
-                        placeholder="URL imagen"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
-                      />
-                    </div>
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">
-                      O subir imagen nueva:
-                    </div>
-                    <input
-                      type="file"
-                      name="archivo_imagen_programa"
-                      accept="image/*"
-                      style="font-size: 12px;"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* SECCION TEXTOS */}
-              <div class="panel">
-                <h3 class="panel__title">4. Textos del Portal</h3>
-                <p style="font-size: 13px; color: #64748b; margin: 0 0 12px;">
-                  Todos los textos visibles del portal ciudadano (navegación, portada, secciones,
-                  «Sobre el Programa», próximas actividades, avisos, proceso, llamado a participar y
-                  pie de página) se editan en una página dedicada, agrupados por sección.
-                </p>
-                <Button
-                  href={adminRoutes.personalizacionTextos.index.href()}
-                  variant="secondary"
-                  icon={<Icon name="mdi:text-box-edit-outline" size={16} />}
-                >
-                  Editar textos del portal
-                </Button>
-              </div>
-
-              {/* SECCION ICONOS */}
-              <div class="panel">
-                <h3 class="panel__title">5. Íconos de «Sobre el Programa»</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px;">
-                  {/* Tarjeta 1 */}
-                  <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="display: flex; gap: 8px; margin-bottom: 6px; align-items: center;">
-                      <input
-                        type="text"
-                        name="ico_card1"
-                        aria-label="Ícono de «Conoce las fases»"
-                        value={ico.cardPrograma || '🧭'}
-                        style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
-                      />
-                      <span style="font-size: 13px; color: #475569;">Conoce las fases</span>
-                    </div>
-                  </div>
-
-                  {/* Tarjeta 2 */}
-                  <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="display: flex; gap: 8px; margin-bottom: 6px; align-items: center;">
-                      <input
-                        type="text"
-                        name="ico_card2"
-                        aria-label="Ícono de «Avances del Programa»"
-                        value={ico.cardProceso || '📊'}
-                        style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
-                      />
-                      <span style="font-size: 13px; color: #475569;">Avances del Programa</span>
-                    </div>
-                  </div>
-
-                  {/* Tarjeta 3 */}
-                  <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="display: flex; gap: 8px; margin-bottom: 6px; align-items: center;">
-                      <input
-                        type="text"
-                        name="ico_card3"
-                        aria-label="Ícono de «Calendario de actividades»"
-                        value={ico.cardCalendario || '📅'}
-                        style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
-                      />
-                      <span style="font-size: 13px; color: #475569;">
-                        Calendario de actividades
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Tarjeta 4 */}
-                  <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="display: flex; gap: 8px; margin-bottom: 6px; align-items: center;">
-                      <input
-                        type="text"
-                        name="ico_card4"
-                        aria-label="Ícono de «Seguimiento y evaluación»"
-                        value={ico.cardDocumentos || '📈'}
-                        style="width: 44px; text-align: center; font-size: 18px; border: 1px solid #cbd5e1; border-radius: 6px;"
-                      />
-                      <span style="font-size: 13px; color: #475569;">Seguimiento y evaluación</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* MOTIVO OBLIGATORIO Y BOTON GUARDAR */}
-              <div class="panel panel--destacado">
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                  <div>
-                    <label style="font-weight: 800; font-size: 14px; color: #1e293b; display: flex; align-items: center; gap: 6px;">
-                      <span>📝</span> Motivo del Cambio{' '}
-                      <span style="color: #dc2626; font-size: 12px;">
-                        (Obligatorio para la Bitácora de Seguridad)
-                      </span>
-                    </label>
-                    <p style="font-size: 12px; color: #64748b; margin: 4px 0 8px;">
-                      Indica brevemente por qué realizas este cambio (se guardará tu nombre, fecha y
-                      hora).
-                    </p>
-                    <input
-                      type="text"
-                      id="motivo-input-usuario"
-                      name="motivo"
-                      required
-                      placeholder="Ej. Cambio de colores institucionales de temporada / nuevo logo / actualización de fotos"
-                      style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; font-size: 14px;"
-                    />
-                  </div>
-
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <span style="font-size: 12px; color: #64748b; align-self: center;">
-                      Sugerencias rápidas:
-                    </span>
-                    <button
-                      type="button"
-                      class="btn motivo-suggest"
-                      data-motivo="Actualización de colores y diseño"
-                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;"
-                    >
-                      Colores y diseño
-                    </button>
-                    <button
-                      type="button"
-                      class="btn motivo-suggest"
-                      data-motivo="Actualización de fotos del carrusel"
-                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;"
-                    >
-                      Fotos del carrusel
-                    </button>
-                    <button
-                      type="button"
-                      class="btn motivo-suggest"
-                      data-motivo="Cambio de logotipos oficiales"
-                      style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;"
-                    >
-                      Logotipos
-                    </button>
-                  </div>
-
-                  <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
-                    <Button buttonType="submit" variant="primary" size="lg">
-                      💾 Guardar Cambios de Vista de Usuario
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </form>
-          )}
-
-          {/* TAB 2: VISTA DE PANEL */}
-          {tabActiva === 'panel' && (
-            <form
-              method="post"
-              action={adminRoutes.personalizacion.index.href()}
-              enctype="multipart/form-data"
-              style="display: flex; flex-direction: column; gap: 24px;"
-            >
-              <input type="hidden" name="section" value="panel" />
-              <input type="hidden" name="tab" value="panel" />
-
-              <div class="panel">
-                <h3 class="panel__title">1. Colores y Apariencia del Panel Administrador</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 16px;">
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Fondo de la Barra Lateral (Sidebar)
-                    </label>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                      <input
-                        type="color"
-                        id="p-side-bg"
-                        name="panel_sidebar_fondo"
-                        value={p.sidebarFondo || '#ffffff'}
-                        style="width: 44px; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px; cursor: pointer;"
-                      />
-                      <input
-                        type="text"
-                        value={p.sidebarFondo || '#ffffff'}
-                        class="sync-color-text"
-                        data-target="p-side-bg"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Texto del Menú Lateral
-                    </label>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                      <input
-                        type="color"
-                        id="p-side-text"
-                        name="panel_sidebar_texto"
-                        value={p.sidebarTexto || '#475066'}
-                        style="width: 44px; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px; cursor: pointer;"
-                      />
-                      <input
-                        type="text"
-                        value={p.sidebarTexto || '#475066'}
-                        class="sync-color-text"
-                        data-target="p-side-text"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Fondo de la Barra Superior (Topbar)
-                    </label>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                      <input
-                        type="color"
-                        id="p-top-bg"
-                        name="panel_topbar_fondo"
-                        value={p.topbarFondo || '#2e3440'}
-                        style="width: 44px; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px; cursor: pointer;"
-                      />
-                      <input
-                        type="text"
-                        value={p.topbarFondo || '#2e3440'}
-                        class="sync-color-text"
-                        data-target="p-top-bg"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Color de Elementos Activos / Acento
-                    </label>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                      <input
-                        type="color"
-                        id="p-acento"
-                        name="panel_color_acento"
-                        value={p.colorAcento || '#2563eb'}
-                        style="width: 44px; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px; cursor: pointer;"
-                      />
-                      <input
-                        type="text"
-                        value={p.colorAcento || '#2563eb'}
-                        class="sync-color-text"
-                        data-target="p-acento"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                      Fondo General del Panel
-                    </label>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                      <input
-                        type="color"
-                        id="p-admin-bg"
-                        name="panel_admin_bg"
-                        value={p.adminBg || '#f4f6fb'}
-                        style="width: 44px; height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px; cursor: pointer;"
-                      />
-                      <input
-                        type="text"
-                        value={p.adminBg || '#f4f6fb'}
-                        class="sync-color-text"
-                        data-target="p-admin-bg"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 13px;"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="panel">
-                <h3 class="panel__title">2. Logotipo y Título del Administrador</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px;">
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 6px;">
-                      Logo del Menú Admin
-                    </label>
-                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-                      {p.adminLogo && (
-                        <img
-                          src={p.adminLogo}
-                          alt="Vista previa del logotipo del panel administrativo"
-                          style="max-height: 40px; max-width: 60px; object-fit: contain; background: #fff; padding: 2px; border: 1px solid #cbd5e1; border-radius: 4px;"
-                        />
-                      )}
-                      <input
-                        type="text"
-                        name="panel_admin_logo"
-                        value={p.adminLogo || ''}
-                        placeholder="URL del logo"
-                        style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
-                      />
-                    </div>
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">
-                      O subir imagen nueva:
-                    </div>
-                    <input
-                      type="file"
-                      name="archivo_admin_logo"
-                      accept="image/*"
-                      style="font-size: 12px;"
-                    />
-                  </div>
-
-                  <div class="form-field">
-                    <label style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 6px;">
-                      Título del Panel (Menú Superior)
-                    </label>
-                    <textarea
-                      name="panel_admin_titulo"
-                      rows={2}
-                      style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px;"
-                    >
-                      {p.adminTitulo || 'ADMINISTRADOR\nBITÁCORA'}
-                    </textarea>
-                  </div>
-                </div>
-              </div>
-
-              {/* MOTIVO Y GUARDAR PANEL */}
-              <div class="panel panel--destacado">
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                  <div>
-                    <label style="font-weight: 800; font-size: 14px; color: #1e293b; display: flex; align-items: center; gap: 6px;">
-                      <span>📝</span> Motivo del Cambio{' '}
-                      <span style="color: #dc2626; font-size: 12px;">
-                        (Obligatorio para la Bitácora de Seguridad)
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      id="motivo-input-panel"
-                      name="motivo"
-                      required
-                      placeholder="Ej. Cambio de colores del panel de administración"
-                      style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; font-size: 14px; margin-top: 6px;"
-                    />
-                  </div>
-
-                  <div style="display: flex; justify-content: flex-end;">
-                    <Button buttonType="submit" variant="primary" size="lg">
-                      💾 Guardar Cambios de Vista de Panel
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </form>
-          )}
-
-          {/* TAB 3: HISTORIAL Y AUDITORIA ("QUIEN Y POR QUE") */}
-          {tabActiva === 'historial' && (
-            <div class="panel">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <div>
-                  <h3 style="font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 4px;">
-                    📋 Registro de Auditoría de Personalización
-                  </h3>
-                  <p style="font-size: 13px; color: #64748b; margin: 0 0 12px;">
-                    Historial inmutable con cada cambio realizado, el autor responsable, fecha
-                    exacta y motivo.
-                  </p>
-                  <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 240px; position: relative;">
-                      <input
-                        type="text"
-                        id="historial-search"
-                        placeholder="🔍 Buscar en historial por usuario, motivo o sección..."
-                        aria-label="Buscar en el historial de personalización"
-                        data-filter-rows="historial-tbody"
-                        data-filter-empty="historial-empty"
-                        data-filter-count="historial-count"
-                        data-filter-noun="registro|registros"
-                        style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 14px 10px 36px; font-size: 13px;"
-                      />
-                      <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8;">
-                        🔍
-                      </span>
-                    </div>
-                    <span
-                      id="historial-count"
-                      style="font-size: 12px; color: #64748b; font-weight: 600;"
-                    >
-                      {auditLogs.length} registros
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="table-wrap">
-                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                  <thead>
-                    <tr style="background: #f1f5f9;">
-                      <th style="padding: 10px 12px; text-align: left; font-weight: 700; color: #475569;">
-                        #
-                      </th>
-                      <th style="padding: 10px 12px; text-align: left; font-weight: 700; color: #475569;">
-                        Administrador
-                      </th>
-                      <th style="padding: 10px 12px; text-align: left; font-weight: 700; color: #475569;">
-                        Fecha y Hora
-                      </th>
-                      <th style="padding: 10px 12px; text-align: left; font-weight: 700; color: #475569;">
-                        Sección
-                      </th>
-                      <th style="padding: 10px 12px; text-align: left; font-weight: 700; color: #475569;">
-                        Motivo / Justificación
-                      </th>
-                      <th style="padding: 10px 12px; text-align: center; font-weight: 700; color: #475569;">
-                        Acción
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody id="historial-tbody">
-                    {auditLogs.length === 0 ? (
-                      <tr id="historial-empty">
-                        <td colspan={6} style="padding: 24px; text-align: center; color: #94a3b8;">
-                          Aún no hay registros de cambios en el historial.
-                        </td>
-                      </tr>
-                    ) : (
-                      auditLogs.map((log) => {
-                        const d = new Date(log.created_at)
-                        const fechaStr = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
-
-                        const haystack =
-                          `${log.user_name} ${log.user_email} ${log.motivo} ${log.section}`.toLowerCase()
-                        return (
-                          <tr data-search={haystack} style="border-bottom: 1px solid #f1f5f9;">
-                            <td style="padding: 12px; font-weight: 700; color: #64748b;">
-                              #{log.id}
-                            </td>
-                            <td style="padding: 12px;">
-                              <div style="font-weight: 700; color: #1e293b;">
-                                👤 {log.user_name}
-                              </div>
-                              <div style="font-size: 11px; color: #64748b;">{log.user_email}</div>
-                            </td>
-                            <td style="padding: 12px; color: #334155; font-size: 12px;">
-                              {fechaStr}
-                            </td>
-                            <td style="padding: 12px;">
-                              <span style="background: #e2e8f0; color: #334155; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: uppercase;">
-                                {log.section || 'General'}
-                              </span>
-                            </td>
-                            <td style="padding: 12px; font-weight: 600; color: #1e293b; max-width: 300px;">
-                              "{log.motivo}"
-                            </td>
-                            <td style="padding: 12px; text-align: center;">
-                              <form
-                                method="post"
-                                action={adminRoutes.personalizacion.index.href()}
-                                class="restore-form"
-                              >
-                                <input type="hidden" name="_action" value="restore" />
-                                <input type="hidden" name="log_id" value={log.id} />
-                                <input type="hidden" name="tab" value="historial" />
-                                <button
-                                  type="submit"
-                                  class="btn"
-                                  style="background: #0284c7; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; border: none;"
-                                >
-                                  ⏪ Restaurar esta versión
-                                </button>
-                              </form>
-                            </td>
-                          </tr>
-                        )
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* HERRAMIENTA: PRUEBA SMTP (cablea POST /api/mail/test — antes huérfano) */}
-          <div
-            class="panel"
-            style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-top: 24px;"
-          >
-            <h3 style="font-size: 15px; font-weight: 800; color: #1e293b; margin: 0 0 8px; display: flex; align-items: center; gap: 8px;">
-              <span>✉</span> Prueba de correo SMTP
-            </h3>
-            <p style="font-size: 13px; color: #64748b; margin: 0 0 16px;">
-              Verifica que el servidor de correo esté configurado (SMTP_HOST/SMTP_USER/SMTP_PASS).
-              Envía un correo de prueba al destinatario indicado usando la plantilla institucional.
-            </p>
-            <form
-              method="post"
-              action={adminRoutes.personalizacion.index.href()}
-              style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;"
-            >
-              <input type="hidden" name="_action" value="testMail" />
-              <input type="hidden" name="tab" value={tabActiva} />
-              <div class="form-field" style="flex: 1; min-width: 240px;">
-                <label
-                  for="smtp-test-para"
-                  style="font-weight: 700; font-size: 12px; color: #475569;"
-                >
-                  Correo destino para la prueba
-                </label>
-                <input
-                  id="smtp-test-para"
-                  name="para"
-                  type="email"
-                  required
-                  placeholder="tu.correo@ejemplo.com"
-                  style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px; width: 100%;"
-                />
-              </div>
-              <Button buttonType="submit" variant="primary">
-                📨 Enviar correo de prueba
-              </Button>
-            </form>
-            <p style="font-size: 11px; color: #94a3b8; margin: 10px 0 0;">
-              Solo admin. El backend responde 503 si SMTP no está configurado y 502 si el envío
-              falla; el resultado se muestra arriba como mensaje de éxito o error.
-            </p>
-          </div>
-
-          {/* MINI PREVIEW MODAL: no es un iframe al sitio real (eso mostraría la
-              última versión guardada, no lo que se está editando). Es una maqueta
-              reducida del portal que se actualiza en vivo mientras se escribe, y
-              marca con una etiqueta cada zona que se puede personalizar. */}
-          <div id="mini-preview-modal" class="mp-modal">
-            <div class="mp-modal__box">
-              <div class="mp-modal__head">
-                <div class="mp-modal__title">
-                  <span>👁️</span> Vista previa en vivo (mini portal)
-                </div>
-                <p class="mp-modal__hint">
-                  Se actualiza mientras editas la pestaña "Vista de Usuario". Cada etiqueta marca
-                  una zona personalizable.
-                </p>
-                <button
-                  type="button"
-                  id="btn-close-preview"
-                  class="mp-modal__close"
-                  aria-label="Cerrar"
-                >
-                  ✕
-                </button>
-              </div>
-              <div class="mp-modal__body">
-                <div class="mp">
-                  <div
-                    id="mp-nav"
-                    class="mp__nav"
-                    style={`background:${c.navbarFondo || '#ffffff'};color:${c.navbarTexto || '#1a1d26'};`}
-                  >
-                    <span class="mp__tag">✎ Menú superior</span>
-                    <div class="mp__nav-brand">
-                      {img.logoNavbar ? (
-                        <img id="mp-nav-logo" src={img.logoNavbar} alt="" />
-                      ) : (
-                        <span id="mp-nav-logo" class="mp__logo-fallback">
-                          🏛️
-                        </span>
-                      )}
-                      <strong>Ordenamiento Ecológico</strong>
-                    </div>
-                    <div class="mp__nav-links">
-                      <span>Inicio</span>
-                      <span>Participa</span>
-                      <span>Documentos</span>
-                    </div>
-                  </div>
-
-                  <div
-                    id="mp-hero"
-                    class="mp__hero"
-                    style={`background-image:url("${heroImgs[0]}");`}
-                  >
-                    <span class="mp__tag mp__tag--light">✎ Portada (Hero)</span>
-                    <span id="mp-cintillo" class="mp__cintillo">
-                      {txt.heroCintillo || 'Programa de Ordenamiento Ecológico'}
-                    </span>
-                    <h2 class="mp__titulo">
-                      <span id="mp-titulo">{txt.heroTitulo || 'Participa en el ordenamiento'}</span>{' '}
-                      <span id="mp-resaltado" style={`color:${c.acento || '#e0b84a'}`}>
-                        {txt.heroTituloResaltado || 'de tu territorio'}
-                      </span>
-                    </h2>
-                    <p id="mp-subtitulo" class="mp__subtitulo">
-                      <TextoRico
-                        valor={textoDelPortal(
-                          txt.heroSubtitulo,
-                          'Consulta el proceso, revisa documentos y registra tu participación ciudadana.',
-                        )}
-                      />
-                    </p>
-                    <div class="mp__hero-actions">
-                      <span
-                        id="mp-btn1"
-                        class="mp__btn mp__btn--fill"
-                        style={`background:${c.primario || '#8c1d3d'};`}
-                      >
-                        {txt.heroBtn1 || 'Conoce el programa'}
-                      </span>
-                      <span
-                        id="mp-btn2"
-                        class="mp__btn mp__btn--outline"
-                        style={`border-color:${c.secundario || '#2d6a4f'};color:${c.secundario || '#2d6a4f'};`}
-                      >
-                        {txt.heroBtn2 || 'Registra tu participación'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div class="mp__cards">
-                    <span class="mp__tag">✎ Sobre el Programa</span>
-                    <div class="mp__cards-row">
-                      <div class="mp__card">
-                        <span
-                          id="mp-card-icon-1"
-                          class="mp__card-icon"
-                          style={`color:${c.acento || '#e0b84a'};`}
-                        >
-                          {ico.cardPrograma || '🧭'}
-                        </span>
-                        <strong id="mp-card-titulo-1">
-                          {txt.fasesTitulo || 'Conoce las fases'}
-                        </strong>
-                      </div>
-                      <div class="mp__card">
-                        <span
-                          id="mp-card-icon-2"
-                          class="mp__card-icon"
-                          style={`color:${c.acento || '#e0b84a'};`}
-                        >
-                          {ico.cardProceso || '📊'}
-                        </span>
-                        <strong id="mp-card-titulo-2">
-                          {txt.avancesTitulo || 'Avances del Programa'}
-                        </strong>
-                      </div>
-                      <div class="mp__card">
-                        <span
-                          id="mp-card-icon-3"
-                          class="mp__card-icon"
-                          style={`color:${c.acento || '#e0b84a'};`}
-                        >
-                          {ico.cardCalendario || '📅'}
-                        </span>
-                        <strong id="mp-card-titulo-3">
-                          {txt.calendarioTitulo || 'Calendario de actividades'}
-                        </strong>
-                      </div>
-                      <div class="mp__card">
-                        <span
-                          id="mp-card-icon-4"
-                          class="mp__card-icon"
-                          style={`color:${c.acento || '#e0b84a'};`}
-                        >
-                          {ico.cardDocumentos || '📈'}
-                        </span>
-                        <strong id="mp-card-titulo-4">
-                          {txt.seguimientoTitulo || 'Seguimiento y evaluación'}
-                        </strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    id="mp-footer"
-                    class="mp__footer"
-                    style={`background:${c.footerFondo || '#0f1117'};color:${c.footerTexto || '#ffffff'};`}
-                  >
-                    <span class="mp__tag mp__tag--light">✎ Pie de página</span>
-                    {img.logoFooter ? (
-                      <img id="mp-footer-logo" src={img.logoFooter} alt="" />
-                    ) : (
-                      <span id="mp-footer-logo" class="mp__logo-fallback">
-                        🏛️
-                      </span>
-                    )}
-                    <div>
-                      <strong id="mp-footer-entidad">
-                        {txt.footerEntidad || 'Municipio de San Pedro Tlaquepaque'}
-                      </strong>
-                      <div id="mp-footer-email">
-                        {txt.footerEmail || 'ordenamiento@tlaquepaque.gob.mx'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <PruebaDeCorreo tab={tabActiva} />
         </div>
       </AdminLayout>
     )

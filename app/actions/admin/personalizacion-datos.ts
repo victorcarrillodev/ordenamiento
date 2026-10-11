@@ -316,7 +316,7 @@ export const MAX_IMAGEN_MB = 20
 export const FORMATOS_IMAGEN = 'JPG, PNG, WebP o GIF'
 
 export interface RanuraImagen {
-  clave: 'logoNavbar' | 'logoFooter' | 'imagenEcologia' | 'imagenPrograma'
+  clave: 'logoNavbar' | 'logoFooter' | 'imagenEcologia' | 'imagenPrograma' | 'adminLogo'
   /** `name` del campo de texto con la dirección de la imagen. */
   urlName: string
   /** `name` del campo para subir un archivo nuevo. */
@@ -325,8 +325,8 @@ export interface RanuraImagen {
   /** Dónde se ve en el portal. */
   dondeSale: string
   recomendado: string
-  /** Sobre qué color se ve en el portal: el vista previa lo reproduce. */
-  fondo: 'menu' | 'pie' | 'claro'
+  /** Sobre qué color se ve: el selector de imagen lo reproduce detrás de la vista previa. */
+  fondo: 'menu' | 'pie' | 'claro' | 'lateral'
   forma: 'logo' | 'ilustracion'
   /** Zona de la vista previa que se ilumina al enfocar el campo. */
   zona: string
@@ -378,6 +378,19 @@ export const RANURAS_IMAGEN_PORTAL: RanuraImagen[] = [
     zona: 'secciones',
   },
 ]
+
+/** El logotipo del menú lateral del panel (pestaña «Panel administrativo»). */
+export const RANURA_LOGO_PANEL: RanuraImagen = {
+  clave: 'adminLogo',
+  urlName: 'panel_admin_logo',
+  archivoName: 'archivo_admin_logo',
+  titulo: 'Logotipo del menú lateral',
+  dondeSale: 'Parte alta del menú de la izquierda, sobre el color del menú.',
+  recomendado: 'Horizontal, con fondo transparente (PNG o WebP), de unos 400 × 120 px.',
+  fondo: 'lateral',
+  forma: 'logo',
+  zona: 'sidebar',
+}
 
 /** Cuánto tarda el carrusel de la portada en pasar a la foto siguiente (ver home-page.tsx). */
 export const SEGUNDOS_POR_FOTO = 5
