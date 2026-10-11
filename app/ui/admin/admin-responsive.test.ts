@@ -90,3 +90,60 @@ describe('Desplegable de gestión de una cuenta', () => {
     )
   })
 })
+
+describe('Listados del panel (participaciones, actividades…)', () => {
+  it('el seguimiento va en una fila: el icono al lado del título y la pista, no en cascada', () => {
+    // Con `flex-direction: column` el icono, el título y la pista se apilaban en tres
+    // renglones y cada fila de la tabla crecía sin necesidad.
+    expect(css).toMatch(/\.etapa-badge \{[^}]*display: inline-flex;[^}]*align-items: center;/)
+    expect(css).not.toMatch(/\.etapa-badge \{[^}]*flex-direction: column/)
+    // El bloque de texto sí se apila (título arriba, pista abajo) pero no se parte.
+    expect(css).toMatch(/\.etapa-badge__texto \{[^}]*flex-direction: column/)
+    expect(css).toMatch(/\.etapa-badge__texto strong \{[^}]*white-space: nowrap/)
+    expect(css).toMatch(/\.etapa-badge__texto small \{[^}]*white-space: nowrap/)
+  })
+
+  it('pasa a tarjetas por el ancho real de la tabla, no por el de la pantalla', () => {
+    // Con el menú abierto una pantalla de 1100px deja ~760px a la tabla: un corte
+    // por `max-width` de ventana no lo vería y la tabla se desplazaría de lado.
+    expect(css).toMatch(/\.table-wrap--lista \{[^}]*container: lista \/ inline-size/)
+    const tarjetas =
+      css.match(/@container lista \(max-width: 960px\) \{([\s\S]*?)\n\}\n/)?.[1] ?? ''
+    expect(tarjetas).toContain('content: attr(data-label)')
+    expect(tarjetas).toMatch(/\.tabla-lista tbody \{[^}]*display: grid/)
+    // El encabezado se oculta a la vista pero sigue en el árbol de accesibilidad.
+    expect(tarjetas).toMatch(/\.tabla-lista thead \{[^}]*position: absolute/)
+    expect(tarjetas).not.toMatch(/\.tabla-lista thead \{[^}]*display: none/)
+  })
+
+  it('sin ancho, las acciones pierden la palabra pero no su nombre accesible', () => {
+    const compacto =
+      css.match(/@container lista \(max-width: 1080px\) \{([\s\S]*?)\n\}\n/)?.[1] ?? ''
+    expect(compacto).toMatch(/\.btn--icono \.btn__texto \{[^}]*position: absolute/)
+    // `display: none` la sacaría del árbol de accesibilidad.
+    expect(compacto).not.toMatch(/\.btn__texto \{[^}]*display: none/)
+  })
+
+  it('las etiquetas de la barra no se parten a media palabra dentro del panel', () => {
+    // El `.panel` hereda `overflow-wrap: anywhere`: «Dictamen» salía como «Dicta/men».
+    expect(css).toMatch(
+      /\.lista-select > span \{[^}]*overflow-wrap: normal;[^}]*white-space: nowrap/,
+    )
+  })
+
+  it('el filtro en uso se rellena y el contador de «Todas» no se pierde sobre su fondo', () => {
+    expect(css).toMatch(
+      /\.etapa-filtro--activo \{[^}]*background: var\(--etapa-fg, var\(--a-dark\)\)/,
+    )
+    // La regla del contador de «Todas» va ANTES de la del filtro activo: con la misma
+    // especificidad, la última gana y el número queda blanco sobre el fondo oscuro.
+    const todas = css.indexOf('.etapa-filtro--todas .etapa-filtro__n')
+    const activo = css.indexOf('.etapa-filtro--activo .etapa-filtro__n')
+    expect(todas).toBeGreaterThan(-1)
+    expect(activo).toBeGreaterThan(todas)
+  })
+
+  it('existe la clase para texto solo de lectores de pantalla', () => {
+    expect(css).toMatch(/\.solo-lector \{[^}]*position: absolute;[^}]*clip: rect\(0, 0, 0, 0\)/)
+  })
+})

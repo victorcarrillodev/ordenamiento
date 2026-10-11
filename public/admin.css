@@ -1096,23 +1096,45 @@ tr:hover td {
   --etapa-borde: #86efac;
 }
 
+/* Seguimiento en la tabla: el icono a la izquierda y, a su lado, el título con la
+   pista debajo. Dos renglones como máximo: antes el icono, el título y la pista se
+   apilaban en tres y cada fila crecía sin necesidad. */
 .etapa-badge {
   display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 5px 11px;
-  border-radius: 10px;
-  font-size: 11.5px;
-  font-weight: 700;
-  line-height: 1.3;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 4px 13px 4px 4px;
+  border-radius: 999px;
+  line-height: 1.25;
   background: var(--etapa-bg);
   color: var(--etapa-fg);
   border: 1px solid var(--etapa-borde);
 }
-.etapa-badge small {
-  font-weight: 500;
+.etapa-badge__icono {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--etapa-fg);
+  color: #fff;
+}
+.etapa-badge__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.etapa-badge__texto strong {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.etapa-badge__texto small {
   font-size: 10.5px;
-  opacity: 0.85;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .etapa-filtros {
@@ -1122,22 +1144,415 @@ tr:hover td {
   gap: 8px;
   padding: 0 0 14px;
 }
+.etapa-filtros__titulo {
+  margin-right: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--a-muted);
+}
 .etapa-filtro {
-  display: inline-block;
-  padding: 5px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 5px 4px 12px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
   text-decoration: none;
-  color: var(--etapa-fg, var(--a-muted));
+  color: var(--etapa-fg, var(--a-text));
   background: var(--etapa-bg, #fff);
-  border: 1px solid var(--etapa-borde, var(--a-border));
+  border: 1px solid var(--etapa-borde, var(--a-border-strong));
+  transition:
+    filter 120ms ease,
+    background 120ms ease;
 }
 .etapa-filtro:hover {
   filter: brightness(0.96);
 }
+/* La cifra de cada filtro: cuántas participaciones hay en esa etapa. */
+.etapa-filtro__n {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--etapa-fg, var(--a-muted));
+}
+.etapa-filtro--todas .etapa-filtro__n {
+  background: #eef1f6;
+}
+/* El filtro en uso se rellena: se distingue de un vistazo, sin depender del contorno. */
 .etapa-filtro--activo {
-  box-shadow: 0 0 0 2px var(--a-dark);
+  background: var(--etapa-fg, var(--a-dark));
+  border-color: var(--etapa-fg, var(--a-dark));
+  color: #fff;
+}
+.etapa-filtro--activo .etapa-filtro__n {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------------------
+   Listados (participaciones, actividades…)
+
+   Una misma pieza para todas las tablas del panel: barra de búsqueda y filtros,
+   tabla con celdas de dos renglones, acciones con nombre, estado vacío y, en
+   teléfono, una tarjeta por fila en lugar de una tabla que se desplaza de lado.
+   --------------------------------------------------------------------------- */
+
+/* Texto solo para lectores de pantalla (queda fuera de la vista pero se anuncia). */
+.solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.lista-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.lista-barra > .btn,
+.lista-barra > .lista-select,
+.lista-barra > .lista-busqueda {
+  min-height: 38px;
+}
+.lista-busqueda {
+  position: relative;
+  display: block;
+  flex: 3 1 260px;
+  min-width: 0;
+}
+.lista-busqueda > .icono {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--a-muted);
+  pointer-events: none;
+}
+.lista-busqueda input {
+  width: 100%;
+  height: 100%;
+  min-height: 38px;
+  padding: 0 12px 0 36px;
+  border: 1px solid var(--a-border-strong);
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--a-text);
+}
+.lista-busqueda input::placeholder {
+  color: #8b95a9;
+}
+.lista-busqueda input:focus-visible,
+.lista-select:focus-within {
+  outline: none;
+  border-color: var(--a-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.lista-select {
+  display: inline-flex;
+  flex: 1 1 190px;
+  max-width: 260px;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px 0 12px;
+  border: 1px solid var(--a-border-strong);
+  border-radius: 8px;
+  background: #fff;
+}
+.lista-select > span {
+  flex: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--a-muted);
+  /* El `.panel` hereda `overflow-wrap: anywhere` y partía «Dictamen» a media palabra. */
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+.lista-select select {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 36px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--a-text);
+  cursor: pointer;
+}
+.lista-select select:focus-visible {
+  outline: none;
+}
+
+.tabla-lista {
+  font-size: 13px;
+}
+.tabla-lista th {
+  padding: 10px 12px;
+  background: #f7f9fc;
+  border-bottom: 1px solid var(--a-border-strong);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--a-muted);
+  white-space: nowrap;
+}
+.tabla-lista td {
+  padding: 11px 12px;
+  vertical-align: middle;
+}
+.tabla-lista tbody tr:last-child td {
+  border-bottom: 0;
+}
+.tabla-lista__principal {
+  min-width: 190px;
+}
+.tabla-lista__acciones {
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* Celda de dos renglones: lo principal arriba y el dato de apoyo debajo. */
+.celda-doble {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.celda-doble__titulo {
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--a-text);
+  overflow-wrap: anywhere;
+}
+a.celda-doble__titulo:hover {
+  color: var(--a-blue);
+  text-decoration: underline;
+}
+.celda-doble__titulo--fecha {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.celda-doble__sub {
+  font-size: 11.5px;
+  color: var(--a-muted);
+  font-variant-numeric: tabular-nums;
+}
+.celda-doble__sub--folio {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.02em;
+}
+
+.archivos {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  background: #f1f4fa;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.archivos--ninguno {
+  padding: 0;
+  background: none;
+  color: var(--a-muted);
+}
+
+/* Acciones de una fila: «Ver» siempre con nombre; las demás pierden la palabra
+   cuando la tabla no tiene ancho (su nombre queda en el tooltip y en aria-label). */
+.acciones-fila {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn--icono {
+  position: relative;
+}
+.table-wrap--lista {
+  container: lista / inline-size;
+}
+@container lista (max-width: 1080px) {
+  .btn--icono {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .btn--icono .btn__texto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}
+
+/* Estado vacío: dice por qué no hay nada y qué hacer. */
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 36px 16px 30px;
+  text-align: center;
+}
+.vacio__icono {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: #eef2fb;
+  color: var(--a-blue);
+}
+.vacio__titulo {
+  font-size: 15px;
+}
+.vacio__texto {
+  max-width: 46ch;
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--a-muted);
+}
+
+.paginacion__tamano {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--a-muted);
+}
+.paginacion__tamano > span {
+  margin-right: 4px;
+}
+
+/* Cuando la tabla no tiene ancho para sus seis columnas (teléfono, tableta, o
+   escritorio con el menú abierto) cada fila pasa a ser una tarjeta con sus datos
+   rotulados. Se decide por el ancho que de verdad tiene la tabla, no por el de la
+   pantalla: una tabla que se desplaza de lado esconde columnas y hace perder de vista
+   de quién es cada dato. En tableta las tarjetas se reparten en dos columnas. */
+@container lista (max-width: 960px) {
+  .table-wrap .tabla-lista {
+    display: block;
+    min-width: 0;
+  }
+  .tabla-lista thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+  .tabla-lista tbody {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+    gap: 12px;
+  }
+  .tabla-lista tr {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--a-border);
+    border-radius: 12px;
+    background: #fff;
+  }
+  .tabla-lista tr:hover td {
+    background: none;
+  }
+  .tabla-lista td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0;
+    border: 0;
+    text-align: right;
+  }
+  .tabla-lista td::before {
+    content: attr(data-label);
+    flex: 0 0 92px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: left;
+    text-transform: uppercase;
+    color: var(--a-muted);
+  }
+  .tabla-lista td.tabla-lista__principal {
+    display: block;
+    min-width: 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--a-border);
+    text-align: left;
+  }
+  .tabla-lista td.tabla-lista__principal::before,
+  .tabla-lista td.tabla-lista__acciones::before {
+    content: none;
+  }
+  .tabla-lista td.tabla-lista__acciones {
+    display: block;
+    padding-top: 4px;
+  }
+  .tabla-lista .acciones-fila {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    width: 100%;
+  }
+  .tabla-lista .acciones-fila .btn--icono {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .tabla-lista .acciones-fila .btn--icono .btn__texto {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+  }
+}
+
+/* Teléfono: la barra de búsqueda se apila (búsqueda, dictamen y botones). */
+@media (max-width: 720px) {
+  .lista-barra > .lista-busqueda {
+    flex-basis: 100%;
+  }
+  .lista-barra > .lista-select {
+    flex-basis: 100%;
+    max-width: none;
+  }
+  .lista-barra > .btn {
+    flex: 1 1 0;
+  }
 }
 
 /* Línea de tiempo del detalle */

@@ -79,6 +79,7 @@ import {
   listParticipations,
   marcarNotificada,
   registrarResolucion,
+  resumenParticipaciones,
   type Estado,
   type Etapa,
   type Origen,
@@ -953,6 +954,16 @@ export async function handleRequest(request: Request): Promise<Response> {
     })
 
     return json(result)
+  }
+
+  // Totales por etapa y por dictamen, para las etiquetas de los filtros del listado.
+  // Va ANTES del detalle: `resumen` no es un UUID y ese ramal lo rechazaría con 400.
+  if (method === 'GET' && pathname === '/api/participations/resumen') {
+    const authError = requireAdmin()
+    if (authError) return authError
+    const origen = url.searchParams.get('origen')
+    if (origen && !isOrigen(origen)) return json({ error: 'origen inválido' }, 400)
+    return json(await resumenParticipaciones((origen as Origen | null) ?? undefined))
   }
 
   // Detalle — expone PII de un participante: solo admin.
