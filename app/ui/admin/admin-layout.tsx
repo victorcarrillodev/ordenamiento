@@ -35,8 +35,9 @@ export interface AdminLayoutProps {
    * espacio que sobra entre sus bloques en vez de dejar un hueco al final, y no hay
    * barra de desplazamiento mientras todo quepa. Si la ventana es más baja de lo que
    * el contenido necesita, la página se desplaza como cualquier otra. Es lo que usan
-   * las vistas de resumen (la vista general); las que tienen listas largas no lo
-   * necesitan.
+   * la vista general e Indicadores (un formulario y una lista que casi siempre es
+   * corta); las pantallas de listas largas no lo necesitan. El contenido que reparte el
+   * alto es el que declara `.content--ajustada > …` en admin.css.
    */
   ajustada?: boolean
   /** Frase corta bajo el título, para explicar de qué va la pantalla. */

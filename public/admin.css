@@ -1482,6 +1482,25 @@ a.celda-doble__titulo:hover {
   color: var(--a-muted);
 }
 
+/* Variante en fila para un bloque que ya trae su propio título (icono a la izquierda). */
+.vacio--compacto {
+  flex: 1 1 auto;
+  flex-direction: row;
+  justify-content: center;
+  gap: 14px;
+  padding: 14px 8px;
+  text-align: left;
+}
+.vacio--compacto .vacio__icono {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+}
+.vacio--compacto .vacio__texto {
+  margin: 2px 0 0;
+}
+
 .paginacion__tamano {
   display: flex;
   align-items: center;
@@ -2899,6 +2918,191 @@ a.act-alerta:hover {
   line-height: 1.5;
 }
 
+/* ---------------------------------------------------------------------------
+   Indicadores
+
+   Tres bloques apilados con la separación común (`--a-gap`): el estado del Programa,
+   el formulario y la lista. La página se acomoda al alto de la ventana
+   (`AdminLayout ajustada`): si hay pocos indicadores NO aparece barra de desplazamiento
+   y la lista absorbe el alto que sobra; con muchos, la página crece y se desplaza como
+   cualquier otra. El formulario se reparte en una rejilla de 12 columnas que se
+   estrecha según el ancho del propio bloque, no el de la ventana.
+   --------------------------------------------------------------------------- */
+.indic {
+  container: indic / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--a-gap);
+}
+/* El hueco entre bloques lo pone el `gap`; sin esto cada panel sumaría su margen. */
+.indic > .panel {
+  margin-bottom: 0;
+}
+.indic__lista {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+.indic__lista > .panel__title {
+  flex: none;
+}
+
+.indic__programa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px var(--a-gap);
+}
+.indic__programa-texto {
+  flex: 1 1 420px;
+  min-width: 0;
+}
+.indic__programa .panel__title {
+  margin-bottom: 4px;
+}
+.indic__programa .form-hint {
+  margin: 0;
+}
+
+.indic__nuevo > .panel__title {
+  margin-bottom: 10px;
+}
+.indic-form {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 10px var(--a-gap);
+  align-items: start;
+}
+.indic-form > * {
+  grid-column: span 12;
+}
+.indic-form .form-field input,
+.indic-form .form-field select,
+.indic-form .form-field textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+.indic-form .form-field textarea {
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  resize: vertical;
+}
+.indic-form .form-field textarea:focus-visible {
+  outline: none;
+  border-color: var(--a-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.indic-form__mediciones {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px var(--a-gap);
+  min-width: 0;
+  margin: 0;
+  padding: 6px 12px 10px;
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+}
+.indic-form__mediciones > legend {
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--a-muted);
+}
+.indic-form__medicion {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+.indic-form__pie {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.vacio--compacto .vacio__texto {
+  max-width: 62ch;
+}
+/* Dos columnas cuando el bloque mide al menos 560 px. */
+@container indic (min-width: 560px) {
+  .indic-form__nombre,
+  .indic-form__descripcion,
+  .indic-form__resultado,
+  .indic-form__documento {
+    grid-column: span 6;
+  }
+  .indic-form__unidad,
+  .indic-form__meta {
+    grid-column: span 3;
+  }
+  .indic-form__fecha {
+    grid-column: span 6;
+  }
+}
+/* En dos columnas los campos cortos van juntos arriba y los de texto largo abajo,
+   para que un campo bajito no quede junto a un área de texto alta. */
+@container indic (min-width: 560px) and (max-width: 899px) {
+  .indic-form__fecha {
+    order: 1;
+  }
+  .indic-form__documento {
+    order: 1;
+  }
+  .indic-form__descripcion,
+  .indic-form__resultado {
+    order: 2;
+  }
+  .indic-form__mediciones {
+    order: 3;
+  }
+  .indic-form__pie {
+    order: 4;
+  }
+}
+/* Una sola fila de campos cortos y las mediciones junto al documento, desde 900 px. */
+@container indic (min-width: 900px) {
+  .indic-form__nombre {
+    grid-column: span 5;
+  }
+  .indic-form__unidad,
+  .indic-form__meta {
+    grid-column: span 2;
+  }
+  .indic-form__fecha {
+    grid-column: span 3;
+  }
+  .indic-form__documento {
+    grid-column: span 4;
+  }
+  .indic-form__mediciones {
+    grid-column: span 6;
+  }
+  /* El botón sube a la fila de las mediciones, alineado con sus campos. */
+  .indic-form__pie {
+    grid-column: span 2;
+    align-self: end;
+    justify-content: flex-end;
+  }
+}
+@container indic (max-width: 559px) {
+  .indic-form__mediciones {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.indic-tabla__descripcion {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .stats-section {
   margin-bottom: 22px;
 }
@@ -3600,6 +3804,9 @@ a.user-cell:hover .user-cell__name {
 .content--ajustada > .dash {
   flex: 1 0 auto;
   grid-template-rows: 1fr;
+}
+.content--ajustada > .indic {
+  flex: 1 0 auto;
 }
 
 /* Panel que reparte su alto: la cabecera conserva el suyo y el contenido se estira

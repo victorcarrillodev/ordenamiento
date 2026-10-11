@@ -58,6 +58,7 @@ describe('la separación entre bloques es la misma en horizontal y en vertical',
     '.detalle-split',
     '.dash',
     '.act-resumen',
+    '.indic',
   ]
 
   it.each(CONTENEDORES)('%s separa sus hijos con --a-gap', (selector) => {
@@ -78,6 +79,7 @@ describe('la separación entre bloques es la misma en horizontal y en vertical',
   it('en una rejilla el margen inferior del panel se anula: lo pone el gap', () => {
     // Sin esto cada panel sumaba su margen y entre filas había el doble que entre columnas.
     expect(css).toMatch(/\.grid-2 > \.panel,[\s\S]*?\{\s*margin-bottom: 0;/)
+    expect(regla('.indic > .panel')).toMatch(/margin-bottom:\s*0/)
   })
 
   it('no quedan separaciones de 14, 16 o 18 px sueltas entre bloques', () => {
@@ -107,6 +109,14 @@ describe('vista que se acomoda al alto de la ventana', () => {
     const cuerpo = regla('.content--ajustada > .dash')
     // `1 0 auto`: crece, no se encoge. Con `0` de crecimiento nunca llenaría la ventana.
     expect(cuerpo).toMatch(/flex:\s*1 0 auto/)
+  })
+
+  it('Indicadores llena la ventana: la lista absorbe el alto que sobra y nunca se encoge', () => {
+    // Sin barra de desplazamiento si hay pocos indicadores; con muchos, la página crece.
+    expect(regla('.content--ajustada > .indic')).toMatch(/flex:\s*1 0 auto/)
+    const lista = regla('.indic__lista')
+    expect(lista).toMatch(/flex:\s*1 0 auto/)
+    expect(lista).toMatch(/flex-direction:\s*column/)
   })
 
   it('cada columna reparte lo que sobra sin inflar su altura mínima', () => {

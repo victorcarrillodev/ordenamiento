@@ -176,3 +176,35 @@ describe('Listados del panel (participaciones, actividades…)', () => {
     expect(css).toMatch(/\.solo-lector \{[^}]*position: absolute;[^}]*clip: rect\(0, 0, 0, 0\)/)
   })
 })
+
+describe('Indicadores', () => {
+  it('el formulario es una rejilla de 12 columnas que se acomoda al ancho de su bloque', () => {
+    expect(css).toMatch(/\.indic \{[^}]*container: indic \/ inline-size/)
+    expect(css).toMatch(/\.indic-form \{[^}]*grid-template-columns: repeat\(12, minmax\(0, 1fr\)\)/)
+    // Una columna por omisión: lo más estrecho es el caso base, no una excepción.
+    expect(css).toMatch(/\.indic-form > \* \{[^}]*grid-column: span 12/)
+    expect(css).toMatch(/@container indic \(min-width: 560px\)/)
+    expect(css).toMatch(/@container indic \(min-width: 900px\)/)
+  })
+
+  it('en ancho el botón de guardar sube a la fila de las mediciones', () => {
+    const ancho = css.match(/@container indic \(min-width: 900px\) \{([\s\S]*?)\n\}\n/)?.[1] ?? ''
+    expect(ancho).toMatch(/\.indic-form__mediciones \{[^}]*grid-column: span 6/)
+    expect(ancho).toMatch(/\.indic-form__pie \{[^}]*grid-column: span 2/)
+  })
+
+  it('en dos columnas los campos cortos se agrupan arriba y los de texto largo abajo', () => {
+    const medio =
+      css.match(
+        /@container indic \(min-width: 560px\) and \(max-width: 899px\) \{([\s\S]*?)\n\}\n/,
+      )?.[1] ?? ''
+    expect(medio).toMatch(/\.indic-form__fecha \{[^}]*order: 1/)
+    expect(medio).toMatch(/\.indic-form__descripcion,\s*\.indic-form__resultado \{[^}]*order: 2/)
+  })
+
+  it('los campos llenan su celda en lugar de conservar el ancho mínimo de otros formularios', () => {
+    expect(css).toMatch(
+      /\.indic-form \.form-field input,[\s\S]*?\.indic-form \.form-field textarea \{[^}]*width: 100%;[^}]*max-width: none/,
+    )
+  })
+})
