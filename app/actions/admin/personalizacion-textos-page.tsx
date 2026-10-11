@@ -1,12 +1,28 @@
+/**
+ * Textos del portal.
+ *
+ * El mismo estudio que Personalización: los textos agrupados por la parte del portal en la que
+ * salen (cada grupo es una sección plegable), una maqueta del portal que cambia MIENTRAS se
+ * escribe (títulos, botones, accesos, banner y pie) y, al cierre, el resumen exacto de lo que
+ * se va a guardar con su motivo. Un campo vacío muestra en el portal el texto original; la
+ * maqueta hace lo mismo.
+ */
 import type { Handle } from 'remix/ui'
-import { AdminAlert } from '../../ui/admin/alert.tsx'
-import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+
 import { adminRoutes, routes } from '../../routes.ts'
-import { Button } from '../../ui/button.tsx'
-import { EditorTexto } from '../../ui/admin/editor-texto.tsx'
+import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
 import type { ThemeData } from '../../ui/civic-horizon.ts'
+import {
+  BarraDeCambios,
+  CampoDeTexto,
+  GuiaRapida,
+  SeccionEstudio,
+  SeccionGuardar,
+} from './personalizacion-campos.tsx'
 import { GRUPOS_TEXTOS } from './personalizacion-textos-defs.ts'
+import { VistaPortal, VistaPreviaLateral, propsDeVistaPortal } from './personalizacion-vista.tsx'
 
 export interface PersonalizacionTextosPageProps {
   user: { name: string; role: string }
@@ -15,159 +31,179 @@ export interface PersonalizacionTextosPageProps {
   error?: string
 }
 
+/** En qué parte del portal sale cada grupo de textos, y con qué icono se reconoce. */
+export const INFO_DE_GRUPO: Record<string, { icono: string; donde: string }> = {
+  navbar: { icono: 'mdi:dock-top', donde: 'La barra superior de todas las páginas del portal.' },
+  hero: {
+    icono: 'mdi:image-area',
+    donde: 'Lo primero que se ve al abrir el portal: cintillo, título, texto y botones.',
+  },
+  'que-es': {
+    icono: 'mdi:help-circle-outline',
+    donde: 'La sección que explica qué es la Bitácora, junto a su ilustración.',
+  },
+  informacion: {
+    icono: 'mdi:view-grid-outline',
+    donde: 'Los cuatro accesos de «Sobre el Programa»: fases, avances, calendario y seguimiento.',
+  },
+  programa: {
+    icono: 'mdi:book-open-variant',
+    donde: 'La sección que explica qué es el Programa de Ordenamiento.',
+  },
+  timeline: {
+    icono: 'mdi:timeline-outline',
+    donde: 'Las cinco etapas del proceso, con su línea de tiempo.',
+  },
+  cta: {
+    icono: 'mdi:bullhorn-outline',
+    donde: 'El banner que invita a registrar una participación.',
+  },
+  proximas: {
+    icono: 'mdi:calendar-clock-outline',
+    donde: 'La lista de próximas actividades de la portada.',
+  },
+  aviso: {
+    icono: 'mdi:alert-decagram-outline',
+    donde: 'La franja de avisos de la parte superior de la portada.',
+  },
+  footer: { icono: 'mdi:dock-bottom', donde: 'El pie de página con los datos de contacto.' },
+}
+
+const PASOS = [
+  {
+    titulo: 'Busca la sección.',
+    detalle: 'Los textos están agrupados por la parte del portal en la que salen.',
+  },
+  {
+    titulo: 'Escribe.',
+    detalle: 'La maqueta cambia al instante. Un campo vacío muestra el texto original del portal.',
+  },
+  {
+    titulo: 'Guarda con un motivo.',
+    detalle: 'Queda en el historial con tu nombre; los textos se publican al guardar.',
+  },
+]
+
 export function PersonalizacionTextosPage(handle: Handle<PersonalizacionTextosPageProps>) {
   return () => {
     const { user, theme, mensaje, error } = handle.props
-    const txt = theme?.usuario?.textos || {}
+    const txt: Record<string, string> = theme?.usuario?.textos || {}
+    const total = GRUPOS_TEXTOS.reduce((n, g) => n + g.campos.length, 0)
 
     return (
       <AdminLayout
         user={user}
         active="personalizacion"
         title="Textos del portal"
-        subtitle="Edita todos los textos visibles del portal ciudadano, agrupados por sección. Los campos vacíos muestran el texto por defecto. Los cambios tardan hasta 30 segundos en reflejarse (caché del tema)."
+        subtitle={`Los ${total} textos visibles del portal ciudadano, agrupados por sección y con vista previa. Un campo vacío muestra el texto por defecto.`}
         theme={theme?.panel}
         actions={
           <>
-            <Button
-              href={routes.home.href()}
-              target="_blank"
-              rel="noreferrer"
-              variant="secondary"
-              icon={<Icon name="mdi:open-in-new" size={16} />}
-            >
-              Ver portal en vivo
-            </Button>
-            <Button
-              href={adminRoutes.personalizacion.index.href()}
-              variant="secondary"
-              icon={<Icon name="mdi:arrow-left" size={16} />}
-            >
-              Volver a personalización
-            </Button>
+            <a class="btn btn--white" href={routes.home.href()} target="_blank" rel="noreferrer">
+              <Icon name="mdi:open-in-new" size={16} /> Ver portal en vivo
+            </a>
+            <a class="btn btn--white" href={adminRoutes.personalizacion.index.href()}>
+              <Icon name="mdi:arrow-left" size={16} /> Volver a personalización
+            </a>
           </>
         }
       >
-        <div class="textos">
-          {mensaje && <AdminAlert type="success" message={mensaje} />}
-          {error && <AdminAlert type="error" message={error} />}
+        <div class="pz-pagina" data-pz-pagina>
+          {mensaje ? <AdminAlert type="success" message={mensaje} /> : null}
+          {error ? <AdminAlert type="error" message={error} /> : null}
 
-          <div class="panel">
-            <h3 class="panel__title">Formato del texto</h3>
-            <p class="form-hint" style="font-size: 12px; line-height: 1.6; margin: 0;">
-              Los textos de párrafo (los que llevan barra de formato) admiten{' '}
-              <strong>negritas</strong> y alineación a la izquierda, centrada, a la derecha o
-              justificada. Selecciona el texto y elige el formato en la barra; con Enter empiezas un
-              párrafo nuevo y con Mayús + Enter, un salto de línea. El formato se conserva al
-              guardar y se ve igual en la página pública. Los títulos, botones y enlaces llevan solo
-              texto.
-            </p>
-          </div>
+          <GuiaRapida
+            titulo="¿Cómo funciona?"
+            resumen="Escribe, mira la vista previa y guarda: nada se publica hasta entonces."
+            pasos={PASOS}
+          />
 
-          <form method="post" action={adminRoutes.personalizacionTextos.index.href()}>
+          <details class="panel pz-herramientas">
+            <summary class="pz-herramientas__resumen">
+              <Icon name="mdi:format-bold" size={18} />
+              <span>
+                <strong>Formato del texto</strong>
+                <small>Negritas y alineación en los textos de párrafo.</small>
+              </span>
+              <span class="pz-guia__flecha" aria-hidden="true">
+                <Icon name="mdi:chevron-down" size={20} />
+              </span>
+            </summary>
+            <div class="pz-herramientas__cuerpo">
+              <p class="pz-herramientas__texto">
+                Los textos de párrafo (los que llevan barra de formato) admiten{' '}
+                <strong>negritas</strong> y alineación a la izquierda, centrada, a la derecha o
+                justificada. Selecciona el texto y elige el formato en la barra; con Enter empiezas
+                un párrafo nuevo y con Mayús + Enter, un salto de línea. El formato se conserva al
+                guardar y se ve igual en la página pública. Los títulos, botones y enlaces llevan
+                solo texto.
+              </p>
+            </div>
+          </details>
+
+          <form
+            class="pz"
+            data-pz="textos"
+            method="post"
+            action={adminRoutes.personalizacionTextos.index.href()}
+          >
             <input type="hidden" name="section" value="usuario" />
 
-            {GRUPOS_TEXTOS.map((g) => (
-              <div class="panel" key={g.id}>
-                <h3 class="panel__title">{g.titulo}</h3>
-                <div class="textos__grid">
-                  {g.campos.map((c) => (
-                    <div
-                      class="form-field"
-                      key={c.name}
-                      style={c.full ? 'grid-column: 1 / -1;' : undefined}
-                    >
-                      {c.rico ? (
-                        <EditorTexto
-                          name={c.name}
-                          label={c.label}
-                          valor={txt[c.key] || ''}
-                          filas={c.rows}
-                        />
-                      ) : (
-                        <>
-                          <label style="font-weight: 700; font-size: 12px; color: #475569;">
-                            {c.label}
-                          </label>
-                          <textarea
-                            name={c.name}
-                            rows={c.rows}
-                            value={txt[c.key] || ''}
-                            style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 13px; width: 100%;"
-                          />
-                          {c.ayuda ? (
-                            <span class="form-hint" style="font-size: 12px; line-height: 1.5;">
-                              {c.ayuda}
-                            </span>
-                          ) : null}
-                        </>
-                      )}
-                    </div>
+            <div class="pz-estudio">
+              <div class="pz-editor">
+                <nav class="pz-indice" aria-label="Secciones de textos">
+                  {GRUPOS_TEXTOS.map((g) => (
+                    <a key={g.id} href={`#pz-g-${g.id}`}>
+                      {g.titulo}
+                    </a>
                   ))}
-                </div>
+                  <a href="#pz-guardar">Guardar</a>
+                </nav>
+
+                {GRUPOS_TEXTOS.map((g, i) => {
+                  const info = INFO_DE_GRUPO[g.id] ?? { icono: 'mdi:text-box-outline', donde: '' }
+                  return (
+                    <SeccionEstudio
+                      key={g.id}
+                      clave={`g-${g.id}`}
+                      numero={i + 1}
+                      titulo={g.titulo}
+                      descripcion={`${info.donde} ${g.campos.length} ${g.campos.length === 1 ? 'texto' : 'textos'}.`.trim()}
+                      icono={info.icono}
+                      abierta={i < 2}
+                    >
+                      <div class="pz-textos-grid">
+                        {g.campos.map((campo) => (
+                          <CampoDeTexto
+                            key={campo.key}
+                            campo={campo}
+                            valor={txt[campo.key] || ''}
+                          />
+                        ))}
+                      </div>
+                    </SeccionEstudio>
+                  )
+                })}
+
+                <SeccionGuardar
+                  sugerencias={['textos', 'redaccion', 'programa']}
+                  textoVacio="Todavía no hay cambios. Escribe en cualquier texto para poder guardar."
+                  ejemploMotivo="Ej. Corrección de redacción en la portada"
+                />
               </div>
-            ))}
 
-            <div class="panel panel--destacado">
-              <div style="display: flex; flex-direction: column; gap: 12px;">
-                <div>
-                  <label style="font-weight: 800; font-size: 14px; color: #1e293b; display: flex; align-items: center; gap: 6px;">
-                    <span>📝</span> Motivo del Cambio{' '}
-                    <span style="color: #dc2626; font-size: 12px;">
-                      (Obligatorio para la Bitácora de Seguridad)
-                    </span>
-                  </label>
-                  <p style="font-size: 12px; color: #64748b; margin: 4px 0 8px;">
-                    Indica brevemente por qué realizas este cambio (se guardará tu nombre, fecha y
-                    hora).
-                  </p>
-                  <input
-                    type="text"
-                    id="motivo-input-textos"
-                    name="motivo"
-                    required
-                    placeholder="Ej. Actualización de textos del portal / corrección de redacción"
-                    style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 14px; font-size: 14px;"
-                  />
-                </div>
-
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                  <span style="font-size: 12px; color: #64748b; align-self: center;">
-                    Sugerencias rápidas:
-                  </span>
-                  <button
-                    type="button"
-                    class="btn motivo-suggest"
-                    data-motivo="Actualización de textos del portal"
-                    style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;"
-                  >
-                    Actualización de textos
-                  </button>
-                  <button
-                    type="button"
-                    class="btn motivo-suggest"
-                    data-motivo="Corrección de redacción"
-                    style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;"
-                  >
-                    Corrección de redacción
-                  </button>
-                  <button
-                    type="button"
-                    class="btn motivo-suggest"
-                    data-motivo="Alineación con el Programa publicado"
-                    style="background: #e2e8f0; color: #334155; padding: 4px 10px; font-size: 11px; border-radius: 999px;"
-                  >
-                    Alineación con el Programa
-                  </button>
-                </div>
-
-                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
-                  <Button buttonType="submit" variant="primary" size="lg">
-                    💾 Guardar textos del portal
-                  </Button>
-                </div>
-              </div>
+              <VistaPreviaLateral
+                titulo="Vista previa"
+                etiqueta="Vista previa del portal"
+                conDispositivos
+                pie="Los textos se ven aquí mientras los escribes. Los colores, las fotos y los íconos son los guardados."
+                enlaceEnVivo={routes.home.href()}
+              >
+                <VistaPortal {...propsDeVistaPortal(theme)} />
+              </VistaPreviaLateral>
             </div>
+
+            <BarraDeCambios />
           </form>
         </div>
       </AdminLayout>

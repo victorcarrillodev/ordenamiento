@@ -4,6 +4,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getPublicTheme, olvidarTemaPublico } from '../../backend.ts'
 import { router } from '../../router.ts'
 import { capaDePortada } from '../../utils/color.ts'
 import { PALETAS_PORTAL } from './personalizacion-datos.ts'
@@ -634,5 +635,71 @@ describe('restaurar una versión', () => {
     const res = await enviar({ _action: 'restore', log_id: ' ', tab: 'historial' })
     expect(destino(res).searchParams.get('err')).toBe('ID inválido')
     expect(llamadas.some((l) => l.url.includes('/api/settings/restore/'))).toBe(false)
+  })
+})
+
+describe('caché del tema del portal', () => {
+  const tituloEnElPortal = async () =>
+    (await getPublicTheme(new Request('http://localhost/ordena/')))?.usuario?.textos?.heroTitulo
+
+  beforeEach(() => olvidarTemaPublico())
+  afterEach(() => olvidarTemaPublico())
+
+  async function conTemaQueCambia(accion: () => Promise<Response>) {
+    const escenario: Escenario = { tema: { usuario: { textos: { heroTitulo: 'VIEJO' } } } }
+    backend(escenario)
+    expect(await tituloEnElPortal()).toBe('VIEJO')
+    // El backend ya tiene lo nuevo, pero el portal lo guarda unos segundos en memoria.
+    escenario.tema = { usuario: { textos: { heroTitulo: 'NUEVO' } } }
+    expect(await tituloEnElPortal()).toBe('VIEJO')
+    destino(await accion())
+    return tituloEnElPortal()
+  }
+
+  it('al guardar el portal quien acaba de guardar lo ve de inmediato, no tras esperar la caché', async () => {
+    expect(
+      await conTemaQueCambia(() =>
+        enviar({ section: 'usuario', tab: 'usuario', motivo: 'Prueba', color_primario: '#123456' }),
+      ),
+    ).toBe('NUEVO')
+  })
+
+  it('al guardar el panel', async () => {
+    expect(
+      await conTemaQueCambia(() =>
+        enviar({ section: 'panel', tab: 'panel', motivo: 'Prueba', panel_admin_bg: '#ffffff' }),
+      ),
+    ).toBe('NUEVO')
+  })
+
+  it('al restaurar una versión', async () => {
+    expect(
+      await conTemaQueCambia(() =>
+        enviar({
+          _action: 'restore',
+          log_id: '7a1b2c3d-0000-4000-8000-000000000001',
+          tab: 'historial',
+        }),
+      ),
+    ).toBe('NUEVO')
+  })
+
+  it('un guardado que falla no la toca', async () => {
+    const escenario: Escenario = {
+      tema: { usuario: { textos: { heroTitulo: 'VIEJO' } } },
+      guardar: { status: 400, body: { error: 'Color inválido' } },
+    }
+    backend(escenario)
+    expect(await tituloEnElPortal()).toBe('VIEJO')
+    escenario.tema = { usuario: { textos: { heroTitulo: 'NUEVO' } } }
+    destino(
+      await enviar({
+        section: 'usuario',
+        tab: 'usuario',
+        motivo: 'Prueba',
+        color_primario: 'rojo',
+      }),
+    )
+    expect(await tituloEnElPortal()).toBe('VIEJO')
   })
 })

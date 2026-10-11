@@ -562,7 +562,13 @@ export const MOTIVOS_SUGERIDOS: Record<string, string> = {
   logos: 'Cambio de logotipos e imágenes',
   iconos: 'Cambio de íconos de los accesos',
   panel: 'Ajuste de la apariencia del panel',
+  textos: 'Actualización de textos del portal',
+  redaccion: 'Corrección de redacción',
+  programa: 'Alineación con el Programa publicado',
 }
+
+/** Cuántos caracteres admite el backend en un texto plano del portal (lo recorta a 500). */
+export const MAX_TEXTO_PLANO = 500
 
 // ---------------------------------------------------------------------------
 // Lectura del tema guardado

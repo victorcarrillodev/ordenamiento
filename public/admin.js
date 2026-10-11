@@ -67,51 +67,6 @@
     if (mensaje && !confirm(mensaje)) e.preventDefault()
   })
 
-  // ── Personalización y marca ───────────────────────────────────────────────
-  // El estudio (paletas, vista previa en vivo, fotos, historial…) vive en
-  // `public/personalizacion.js`, que no depende de que esta función corra. Aquí solo queda
-  // lo de la pantalla «Textos del portal», que todavía no se ha movido allí.
-  function initPersonalizacion() {
-    initTextosAutoGrow()
-
-    // Sugerencias rápidas de motivo
-    document.addEventListener('click', function (e) {
-      var sug = e.target.closest('.motivo-suggest')
-      if (!sug) return
-      var input = document.querySelector('input[name="motivo"]')
-      if (input) {
-        input.value = sug.getAttribute('data-motivo') || ''
-        input.focus()
-      }
-    })
-  }
-
-  /**
-   * Auto-grow de los textareas de la mini-página de textos (`.textos`).
-   *
-   * Cada caja arranca con la altura justa de su contenido pre-guardado y se
-   * expande/contrae en cada `input` a su `scrollHeight`: el admin siempre ve
-   * todo lo que escribe, sin scroll interno ni tirador manual (ver
-   * `.textos textarea` en admin.css). Alcance limitado a `.textos textarea`
-   * para no tocar los textareas de otras páginas del panel.
-   */
-  function initTextosAutoGrow() {
-    var cajas = document.querySelectorAll('.textos textarea')
-    if (!cajas || cajas.length === 0) return
-
-    function ajustar(caja) {
-      caja.style.height = 'auto'
-      caja.style.height = caja.scrollHeight + 'px'
-    }
-
-    cajas.forEach(function (caja) {
-      ajustar(caja)
-      caja.addEventListener('input', function () {
-        ajustar(caja)
-      })
-    })
-  }
-
   /**
    * Filtrado en vivo de cualquier tabla del panel, declarado en el markup:
    *
@@ -271,12 +226,10 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPersonalizacion)
     document.addEventListener('DOMContentLoaded', initTableFilter)
     document.addEventListener('DOMContentLoaded', initAvatar)
     document.addEventListener('DOMContentLoaded', initEliminarCuenta)
   } else {
-    initPersonalizacion()
     initTableFilter()
     initAvatar()
     initEliminarCuenta()

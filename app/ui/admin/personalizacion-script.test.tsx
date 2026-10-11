@@ -4,8 +4,20 @@ import { resolve } from 'node:path'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { renderToString } from 'remix/ui/server'
 
+import {
+  BarraDeCambios,
+  CampoDeTexto,
+  SeccionEstudio,
+  SeccionGuardar,
+} from '../../actions/admin/personalizacion-campos.tsx'
 import { FormularioPanel } from '../../actions/admin/personalizacion-panel.tsx'
 import { FormularioPortal } from '../../actions/admin/personalizacion-portal.tsx'
+import { GRUPOS_TEXTOS } from '../../actions/admin/personalizacion-textos-defs.ts'
+import {
+  VistaPortal,
+  partirTitulo,
+  propsDeVistaPortal,
+} from '../../actions/admin/personalizacion-vista.tsx'
 import {
   HistorialCambios,
   type AuditLogEntry,
@@ -841,5 +853,222 @@ describe('las fórmulas del script dan lo mismo que app/utils/color.ts', () => {
         expect(p.capaDePortada(color, i), `${color} ${i}`).toEqual(capaDePortada(color, i))
       }
     }
+  })
+})
+
+describe('textos del portal', () => {
+  const campo = (clave: string) =>
+    GRUPOS_TEXTOS.flatMap((g) => g.campos).find((c) => c.key === clave)!
+
+  async function montarTextos(textos: Record<string, string> = {}) {
+    const tema = structuredClone(TEMA) as typeof TEMA & {
+      usuario: { textos: Record<string, string> }
+    }
+    tema.usuario.textos = {
+      heroTitulo: 'Bitácora de Ordenamiento Territorial',
+      heroTituloResaltado: 'Ordenamiento Territorial',
+      heroBtn1: 'Conoce la Bitácora',
+      heroSubtitulo: '<p>Texto <strong>rico</strong> original</p>',
+      ...textos,
+    }
+    document.body.innerHTML = await renderToString(
+      <form class="pz" data-pz="textos">
+        <SeccionEstudio
+          clave="g-hero"
+          numero={1}
+          titulo="Portada"
+          descripcion="x"
+          icono="mdi:image-area"
+        >
+          <CampoDeTexto campo={campo('heroTitulo')} valor={tema.usuario.textos.heroTitulo} />
+          <CampoDeTexto
+            campo={campo('heroTituloResaltado')}
+            valor={tema.usuario.textos.heroTituloResaltado}
+          />
+          <CampoDeTexto campo={campo('heroBtn1')} valor={tema.usuario.textos.heroBtn1} />
+          <CampoDeTexto campo={campo('heroSubtitulo')} valor={tema.usuario.textos.heroSubtitulo} />
+        </SeccionEstudio>
+        <SeccionGuardar sugerencias={['textos']} textoVacio="Sin cambios." ejemploMotivo="Ej." />
+        <BarraDeCambios />
+        <VistaPortal {...propsDeVistaPortal(tema as never)} />
+      </form>,
+    )
+    await esperar()
+    return document.querySelector<HTMLFormElement>('form.pz')!
+  }
+
+  /** Lo que hace el script del editor con formato al activarse: muestra el área y reescribe su campo. */
+  function activarEditores() {
+    for (const editor of document.querySelectorAll<HTMLElement>('[data-editor-texto]')) {
+      const area = editor.querySelector<HTMLElement>('[data-area]')!
+      const fuente = editor.querySelector<HTMLTextAreaElement>('textarea')!
+      area.hidden = false
+      fuente.hidden = true
+      editor.setAttribute('data-listo', '')
+      fuente.value = area.innerHTML
+    }
+  }
+
+  const caja = (form: HTMLFormElement, nombre: string) =>
+    form.querySelector<HTMLTextAreaElement>(`textarea[name="${nombre}"]`)!
+  const maqueta = (form: HTMLFormElement, clave: string) =>
+    form.querySelector(`[data-pz-v-texto="${clave}"]`)!
+
+  it('un texto con formato no cuenta como cambiado porque su editor reescriba el campo al activarse', async () => {
+    const form = await montarTextos()
+    expect(resumen(form)).toEqual([])
+    activarEditores()
+    await esperar()
+    expect(resumen(form)).toEqual([])
+    expect(form.querySelector('[data-pz-conteo]')!.textContent).toBe('0')
+    expect(form.querySelector<HTMLElement>('[data-pz-barra]')!.hidden).toBe(true)
+  })
+
+  it('escribir en un texto plano lo lleva a la maqueta, al contador y al resumen', async () => {
+    const form = await montarTextos()
+    const boton = caja(form, 'txt_hero_btn1')
+    escribir(boton, 'Descubre el Programa')
+    expect(maqueta(form, 'heroBtn1').textContent).toBe('Descubre el Programa')
+    expect(
+      form.querySelector('[data-pz-texto="heroBtn1"] [data-pz-contador-texto]')!.textContent,
+    ).toBe('20')
+    expect(resumen(form)).toEqual([
+      'Texto botón principal Conoce la Bitácora → Descubre el Programa',
+    ])
+    expect(
+      form.querySelector('[data-pz-texto="heroBtn1"]')!.classList.contains('pz-texto--cambiado'),
+    ).toBe(true)
+    expect(form.querySelector('[data-pz-estado-seccion="g-hero"]')!.textContent).toBe('1 cambio')
+  })
+
+  it('un campo vacío vuelve al texto de respaldo en la maqueta, como el portal', async () => {
+    const form = await montarTextos()
+    const boton = caja(form, 'txt_hero_btn1')
+    escribir(boton, 'Otro')
+    escribir(boton, '')
+    expect(maqueta(form, 'heroBtn1').textContent).toBe('Conoce la Bitácora')
+    escribir(boton, '   ')
+    expect(maqueta(form, 'heroBtn1').textContent).toBe('Conoce la Bitácora')
+  })
+
+  it('«Volver al texto guardado» devuelve el campo y se esconde', async () => {
+    const form = await montarTextos()
+    const boton = caja(form, 'txt_hero_btn1')
+    const bloque = form.querySelector('[data-pz-texto="heroBtn1"]')!
+    const volver = bloque.querySelector<HTMLButtonElement>('[data-pz-deshacer-texto]')!
+    expect(volver.hidden).toBe(true)
+    escribir(boton, 'Otro')
+    expect(volver.hidden).toBe(false)
+    clic(volver)
+    expect(boton.value).toBe('Conoce la Bitácora')
+    expect(maqueta(form, 'heroBtn1').textContent).toBe('Conoce la Bitácora')
+    expect(volver.hidden).toBe(true)
+    expect(resumen(form)).toEqual([])
+  })
+
+  it('el editor con formato lleva su texto a la maqueta y se anota cuando el editor sincroniza', async () => {
+    const form = await montarTextos()
+    activarEditores()
+    await esperar()
+    const area = form.querySelector<HTMLElement>('[data-pz-texto="heroSubtitulo"] [data-area]')!
+    const fuente = caja(form, 'txt_hero_subtitulo')
+    area.innerHTML = '<p>Un portal <strong>nuevo</strong></p>'
+    area.dispatchEvent(new Event('input', { bubbles: true }))
+    // El editor reescribe su campo después del evento: el script espera a que lo haga.
+    fuente.value = area.innerHTML
+    expect(maqueta(form, 'heroSubtitulo').textContent).toBe('Un portal nuevo')
+    await esperar()
+    expect(resumen(form)).toEqual([expect.stringContaining('Subtítulo descriptivo')])
+    expect(resumen(form)[0]).toContain('Un portal nuevo')
+  })
+
+  it('si solo cambió el formato, el resumen lo dice', async () => {
+    const form = await montarTextos()
+    activarEditores()
+    await esperar()
+    const area = form.querySelector<HTMLElement>('[data-pz-texto="heroSubtitulo"] [data-area]')!
+    area.innerHTML = '<p style="text-align:center">Texto rico original</p>'
+    area.dispatchEvent(new Event('input', { bubbles: true }))
+    caja(form, 'txt_hero_subtitulo').value = area.innerHTML
+    await esperar()
+    expect(resumen(form)[0]).toContain('(cambió el formato)')
+  })
+
+  it('el resumen no ejecuta nada de lo que traiga un texto con formato', async () => {
+    const form = await montarTextos()
+    activarEditores()
+    await esperar()
+    const fuente = caja(form, 'txt_hero_subtitulo')
+    fuente.value =
+      '<p>Hola</p><img src=x onerror="window.__pwned=1"><script>window.__pwned=1</script>'
+    fuente.dispatchEvent(new Event('input', { bubbles: true }))
+    await esperar()
+    expect((window as unknown as { __pwned?: number }).__pwned).toBeUndefined()
+    expect(document.querySelector('img[src="x"]')).toBeNull()
+  })
+
+  it('el título se parte como en el portal: lo de antes, la frase destacada y lo de después', async () => {
+    const form = await montarTextos()
+    const titulo = form.querySelector('[data-pz-v-titulo]')!
+    const partes = () => ({
+      antes: titulo.querySelector('[data-pz-v-titulo-antes]')!.textContent,
+      frase: titulo.querySelector('[data-pz-v-resaltado]')!.textContent,
+      despues: titulo.querySelector('[data-pz-v-titulo-despues]')!.textContent,
+    })
+    // Al abrir: lo guardado, sin repetir la frase.
+    expect(partes()).toEqual({
+      antes: 'Bitácora de ',
+      frase: 'Ordenamiento Territorial',
+      despues: '',
+    })
+
+    escribir(caja(form, 'txt_hero_titulo'), 'Bitácora de Ordenamiento Territorial 2026')
+    expect(partes()).toEqual({
+      antes: 'Bitácora de ',
+      frase: 'Ordenamiento Territorial',
+      despues: ' 2026',
+    })
+
+    escribir(caja(form, 'txt_hero_resaltado'), 'Otra frase')
+    // La frase no está en el título: el título va entero y nada se destaca.
+    expect(partes()).toEqual({
+      antes: 'Bitácora de Ordenamiento Territorial 2026',
+      frase: '',
+      despues: '',
+    })
+  })
+
+  it('la regla de partir el título es la misma del servidor', async () => {
+    await montarTextos()
+    const js = (window as unknown as { __pz: { partirTitulo: typeof partirTitulo } }).__pz
+      .partirTitulo
+    for (const [titulo, frase] of [
+      ['Bitácora de Ordenamiento Territorial', 'Ordenamiento Territorial'],
+      ['A B A B', 'B'],
+      ['Sin frase', ''],
+      ['Sin coincidencia', 'otra'],
+      ['', 'algo'],
+    ]) {
+      expect(js(titulo, frase), `${titulo} / ${frase}`).toEqual(partirTitulo(titulo, frase))
+    }
+  })
+
+  it('las secciones de textos sugieren el motivo de textos', async () => {
+    const form = await montarTextos()
+    const motivo = form.querySelector('[data-pz-motivo-de="textos"]')!
+    expect(motivo.classList.contains('pz-sugerencia--sugerida')).toBe(false)
+    escribir(caja(form, 'txt_hero_btn1'), 'Otro')
+    expect(motivo.classList.contains('pz-sugerencia--sugerida')).toBe(true)
+  })
+
+  it('descartar recarga la página (el editor con formato no se repinta con un simple reset)', async () => {
+    const form = await montarTextos()
+    const recargar = vi.fn()
+    ;(window as unknown as { __pz: { acciones: { recargar(): void } } }).__pz.acciones.recargar =
+      recargar
+    escribir(caja(form, 'txt_hero_btn1'), 'Otro')
+    clic(form.querySelector('[data-pz-descartar]')!)
+    expect(confirmar).toHaveBeenCalledTimes(1)
+    expect(recargar).toHaveBeenCalledTimes(1)
   })
 })

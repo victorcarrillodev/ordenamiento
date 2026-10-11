@@ -18,6 +18,7 @@ import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
 import type { ThemeData } from '../../ui/civic-horizon.ts'
+import { GuiaRapida } from './personalizacion-campos.tsx'
 import { HistorialCambios, type AuditLogEntry } from './personalizacion-historial.tsx'
 import { FormularioPanel } from './personalizacion-panel.tsx'
 import { FormularioPortal } from './personalizacion-portal.tsx'
@@ -41,51 +42,22 @@ const TABS: Array<{ clave: TabPersonalizacion; etiqueta: string; icono: string }
   { clave: 'historial', etiqueta: 'Historial de cambios', icono: 'mdi:history' },
 ]
 
-/** Los tres pasos de siempre, a la vista: lo que más tranquiliza es saber que nada se publica sin guardar. */
-function Guia() {
-  return () => (
-    <details class="pz-guia">
-      <summary class="pz-guia__resumen">
-        <Icon name="mdi:lightbulb-on-outline" size={18} />
-        <span>
-          <strong>¿Cómo funciona?</strong> Cambia, mira la vista previa y guarda: nada se publica
-          hasta entonces.
-        </span>
-        <span class="pz-guia__flecha" aria-hidden="true">
-          <Icon name="mdi:chevron-down" size={20} />
-        </span>
-      </summary>
-      <ol class="pz-guia__pasos">
-        <li>
-          <span class="pz-guia__numero" aria-hidden="true">
-            1
-          </span>
-          <span>
-            <strong>Elige o ajusta.</strong> Parte de una paleta y afina cada color, foto o ícono.
-          </span>
-        </li>
-        <li>
-          <span class="pz-guia__numero" aria-hidden="true">
-            2
-          </span>
-          <span>
-            <strong>Revisa la vista previa.</strong> Se actualiza al instante y avisa si un texto
-            deja de leerse. Los cambios aún no están publicados.
-          </span>
-        </li>
-        <li>
-          <span class="pz-guia__numero" aria-hidden="true">
-            3
-          </span>
-          <span>
-            <strong>Guarda con un motivo.</strong> Queda en el historial y puedes volver a cualquier
-            versión anterior.
-          </span>
-        </li>
-      </ol>
-    </details>
-  )
-}
+/** Los tres pasos de siempre: lo que más tranquiliza es saber que nada se publica sin guardar. */
+const PASOS_DE_LA_GUIA = [
+  {
+    titulo: 'Elige o ajusta.',
+    detalle: 'Parte de una paleta y afina cada color, foto o ícono.',
+  },
+  {
+    titulo: 'Revisa la vista previa.',
+    detalle:
+      'Se actualiza al instante y avisa si un texto deja de leerse. Los cambios aún no están publicados.',
+  },
+  {
+    titulo: 'Guarda con un motivo.',
+    detalle: 'Queda en el historial y puedes volver a cualquier versión anterior.',
+  },
+]
 
 /** La prueba del correo: no es de marca, pero vive aquí porque usa la plantilla institucional. */
 function PruebaDeCorreo(handle: Handle<{ tab: TabPersonalizacion }>) {
@@ -158,7 +130,11 @@ export function PersonalizacionPage(handle: Handle<PersonalizacionPageProps>) {
           {mensaje ? <AdminAlert type="success" message={mensaje} /> : null}
           {error ? <AdminAlert type="error" message={error} /> : null}
 
-          <Guia />
+          <GuiaRapida
+            titulo="¿Cómo funciona?"
+            resumen="Cambia, mira la vista previa y guarda: nada se publica hasta entonces."
+            pasos={PASOS_DE_LA_GUIA}
+          />
 
           {/* Las pestañas son enlaces con su propia dirección, igual que en Estadísticas:
               se pueden compartir y sobreviven a una recarga. */}

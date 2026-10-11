@@ -27,7 +27,7 @@ import {
   SelectorDeColor,
   SelectorDeImagen,
 } from './personalizacion-campos.tsx'
-import { VistaPanel } from './personalizacion-vista.tsx'
+import { VistaPanel, VistaPreviaLateral } from './personalizacion-vista.tsx'
 
 export interface FormularioPanelProps {
   theme: ThemeData
@@ -249,27 +249,13 @@ export function FormularioPanel(handle: Handle<FormularioPanelProps>) {
             />
           </div>
 
-          <aside class="pz-lateral" aria-label="Vista previa del panel">
-            <div class="pz-lateral__cuerpo">
-              <details class="pz-previa" open>
-                <summary class="pz-previa__cabecera">
-                  <span class="pz-previa__titulo">
-                    <Icon name="mdi:eye-outline" size={17} /> Vista previa del panel
-                    <span class="pz-previa__vivo" data-pz-estado-vista>
-                      Igual que lo publicado
-                    </span>
-                  </span>
-                </summary>
-                <div class="pz-previa__marco" aria-hidden="true">
-                  <VistaPanel colores={colores} logo={logo} titulo={titulo} usuario={usuario} />
-                </div>
-                <p class="pz-previa__pie">
-                  <Icon name="mdi:gesture-tap" size={14} /> Toca una parte de la maqueta para ir a
-                  lo que la cambia.
-                </p>
-              </details>
-            </div>
-          </aside>
+          <VistaPreviaLateral
+            titulo="Vista previa del panel"
+            etiqueta="Vista previa del panel"
+            pie="Toca una parte de la maqueta para ir a lo que la cambia."
+          >
+            <VistaPanel colores={colores} logo={logo} titulo={titulo} usuario={usuario} />
+          </VistaPreviaLateral>
         </div>
 
         <BarraDeCambios />

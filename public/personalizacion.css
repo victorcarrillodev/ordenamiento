@@ -1224,6 +1224,97 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Textos del portal
+   --------------------------------------------------------------------------- */
+.pz-textos-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px var(--a-gap);
+}
+@container pz (min-width: 620px) {
+  .pz-textos-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pz-texto--ancho {
+    grid-column: 1 / -1;
+  }
+}
+.pz-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding-left: 10px;
+  border-left: 3px solid transparent;
+  transition: border-color 140ms ease;
+}
+.pz-texto--cambiado {
+  border-left-color: #f59e0b;
+}
+.pz-texto__cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pz-texto__etiqueta {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+/* La etiqueta del editor con formato se ve como la de los demás campos. */
+.pz-texto .editor-texto__etiqueta {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.pz-texto__contador {
+  font-size: 11px;
+  color: var(--a-muted);
+  font-variant-numeric: tabular-nums;
+}
+/* Crece con lo que se escribe (donde el navegador lo sabe hacer); si no, `rows` y el tirador. */
+.pz-texto__campo {
+  field-sizing: content;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--a-border-strong);
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  resize: vertical;
+}
+.pz-texto__campo:focus-visible {
+  outline: none;
+  border-color: var(--a-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.pz-texto__ayuda {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--a-muted);
+}
+.pz-texto__deshacer {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--a-blue);
+  cursor: pointer;
+}
+.pz-texto__deshacer:hover {
+  text-decoration: underline;
+}
+
+/* ---------------------------------------------------------------------------
    Guardar
    --------------------------------------------------------------------------- */
 .pz-guardar {
@@ -1677,12 +1768,17 @@
   line-height: 1.1;
   letter-spacing: -0.01em;
 }
+/* El título y su frase destacada son un solo bloque: lo que va antes y lo que va después en
+   blanco, y la frase en el color de acento y en su propio renglón (como en el portal). */
+.pz-v-portada__titulo {
+  display: block;
+}
 .pz-v-portada__resaltado {
-  margin-top: -0.35em;
+  display: block;
   color: var(--v-acento);
-  font-size: 1.75em;
-  font-weight: 800;
-  line-height: 1.1;
+}
+.pz-v-portada__resaltado:empty {
+  display: none;
 }
 .pz-v-portada__subtitulo {
   display: -webkit-box;
@@ -1865,7 +1961,7 @@
   text-align: center;
   font-size: 0.95em;
 }
-.pz-v-banda strong {
+.pz-v-banda__titulo {
   font-size: 1.1em;
 }
 .pz-v-pie {
@@ -1887,6 +1983,11 @@
   flex-direction: column;
   gap: 0.2em;
   font-size: 0.8em;
+}
+.pz-v-pie__entidad,
+.pz-v-seccion__titulo,
+.pz-v-banda__titulo {
+  font-weight: 700;
 }
 
 /* ---------------------------------------------------------------------------

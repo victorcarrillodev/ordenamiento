@@ -573,7 +573,16 @@
     })
   }
 
+  /**
+   * El valor con el que se compara. Casi siempre es el que trae el HTML (`defaultValue`); el campo
+   * de respaldo del editor con formato es la excepción: el editor lo reescribe con el HTML de
+   * su área en cuanto se activa, y comparar contra el valor original marcaría como cambiado
+   * todo texto con formato sin que nadie lo hubiera tocado. Para esos se toma el valor que
+   * tienen al quedar listos (`data-pz-base`, ver `fijarBases`).
+   */
   function valorGuardado(el) {
+    var base = el.getAttribute('data-pz-base')
+    if (base !== null) return base
     if (el.type === 'checkbox' || el.type === 'radio') return el.defaultChecked ? 'on' : ''
     if (el.tagName === 'SELECT') {
       var elegida = todos('option', el).filter(function (o) {
@@ -590,10 +599,56 @@
     return el.value !== valorGuardado(el)
   }
 
+  /**
+   * Anota el valor de partida de los editores con formato que ya están activos. Devuelve si
+   * anotó alguno nuevo (entonces hay que volver a calcular lo que cambió).
+   */
+  function fijarBases(form) {
+    var nuevo = false
+    todos('[data-editor-texto][data-listo] textarea[name]', form).forEach(function (fuente) {
+      if (fuente.hasAttribute('data-pz-base')) return
+      fuente.setAttribute('data-pz-base', fuente.value)
+      nuevo = true
+    })
+    return nuevo
+  }
+
+  /** El texto sin etiquetas. Se lee con un analizador inerte: nada de lo que traiga se ejecuta. */
+  function textoPlano(valor) {
+    if (String(valor).indexOf('<') === -1) return String(valor)
+    try {
+      return new DOMParser().parseFromString(String(valor), 'text/html').body.textContent || ''
+    } catch (e) {
+      return String(valor)
+    }
+  }
+
+  /** Un fragmento corto de un texto para el resumen de cambios. */
+  function extracto(valor, maximo) {
+    var texto = textoPlano(valor).replace(/\s+/g, ' ').trim()
+    if (texto === '') return '(vacío)'
+    var letras = Array.from(texto)
+    return letras.length > maximo ? letras.slice(0, maximo - 1).join('') + '…' : texto
+  }
+
+  /** La etiqueta con la que un campo sale en el resumen (la suya o la de su bloque). */
+  function etiquetaDe(el) {
+    var propia = el.getAttribute('data-etiqueta')
+    if (propia) return propia
+    var bloque = el.closest('[data-etiqueta]')
+    return bloque ? bloque.getAttribute('data-etiqueta') : el.name
+  }
+
   /** Sección del editor (`data-pz-seccion`) en la que está un control. */
   function seccionDe(el) {
     var s = el.closest('[data-pz-seccion]')
     return s ? s.getAttribute('data-pz-seccion') : ''
+  }
+
+  /** Las secciones de «Textos del portal» se llaman `g-<grupo>`: todas piden el mismo motivo. */
+  function motivoDeSeccion(seccion) {
+    if (seccion.indexOf('g-') === 0) return 'textos'
+    return MOTIVO_DE_SECCION[seccion]
   }
 
   /** Qué clave de motivo sugerido corresponde a una sección. */
@@ -645,7 +700,7 @@
     var lista = []
     controlesSeguidos(form).forEach(function (el) {
       if (!cambioDe(el)) return
-      var etiqueta = el.getAttribute('data-etiqueta') || el.name
+      var etiqueta = etiquetaDe(el)
       var item = {
         seccion: seccionDe(el),
         etiqueta: etiqueta,
@@ -670,6 +725,11 @@
       } else if (el.hasAttribute('data-pz-capa')) {
         item.de = valorGuardado(el) + ' %'
         item.a = el.value + ' %'
+      } else if (el.tagName === 'TEXTAREA') {
+        item.de = extracto(valorGuardado(el), 44)
+        item.a = extracto(el.value, 44)
+        // Mismo texto y distinto HTML: lo que cambió es el formato (negritas, alineación).
+        if (item.de === item.a) item.a += ' (cambió el formato)'
       } else {
         item.de = valorGuardado(el) || '(vacío)'
         item.a = el.value || '(vacío)'
@@ -691,6 +751,13 @@
   }
 
   var estado = { form: null, cambios: [], enviando: false }
+
+  /** Lo que el script hace en la página y una prueba necesita poder sustituir. */
+  var acciones = {
+    recargar: function () {
+      window.location.reload()
+    },
+  }
 
   function plural(n, uno, varios) {
     return n + ' ' + (n === 1 ? uno : varios)
@@ -770,7 +837,7 @@
     var motivos = {}
     lista.forEach(function (c) {
       porSeccion[c.seccion] = (porSeccion[c.seccion] || 0) + 1
-      if (MOTIVO_DE_SECCION[c.seccion]) motivos[MOTIVO_DE_SECCION[c.seccion]] = true
+      if (motivoDeSeccion(c.seccion)) motivos[motivoDeSeccion(c.seccion)] = true
     })
     todos('[data-pz-estado-seccion]', form).forEach(function (chip) {
       var cuantos = porSeccion[chip.getAttribute('data-pz-estado-seccion')] || 0
@@ -794,6 +861,12 @@
       }
       var icono = el.closest('.pz-icono')
       if (icono) icono.classList.toggle('pz-icono--cambiado', cambiado)
+      var texto = el.closest('.pz-texto')
+      if (texto) {
+        texto.classList.toggle('pz-texto--cambiado', cambiado)
+        var deshacerTexto = texto.querySelector('[data-pz-deshacer-texto]')
+        if (deshacerTexto) deshacerTexto.hidden = !cambiado
+      }
     })
     todos('[data-pz-motivo-de]', form).forEach(function (chip) {
       chip.classList.toggle(
@@ -822,6 +895,64 @@
     refrescarCambios(form)
   }
 
+  // ── Textos del portal ──────────────────────────────────────────────────────
+
+  var TITULO_POR_DEFECTO = 'Bitácora de Ordenamiento Territorial'
+  var RESALTADO_POR_DEFECTO = 'Ordenamiento Territorial'
+
+  /** El texto que tiene un campo ahora: el del área editable si es un editor con formato. */
+  function textoDelCampo(bloque) {
+    var area = bloque.querySelector('[data-area]')
+    if (area && !area.hidden) return (area.innerText || area.textContent || '').trim()
+    var caja = bloque.querySelector('textarea')
+    return caja ? caja.value.trim() : ''
+  }
+
+  /** Parte el título como el portal: lo de antes, la frase destacada (en su renglón) y lo de después. */
+  function partirTitulo(titulo, resaltado) {
+    if (resaltado !== '' && titulo.indexOf(resaltado) !== -1) {
+      var partes = titulo.split(resaltado)
+      return { antes: partes[0], resaltado: resaltado, despues: partes[1] || '' }
+    }
+    return { antes: titulo, resaltado: '', despues: '' }
+  }
+
+  function pintarTitulo(form) {
+    var contenedor = form.querySelector('[data-pz-v-titulo]')
+    if (!contenedor) return
+    function valor(clave, defecto) {
+      var bloque = form.querySelector('[data-pz-texto="' + clave + '"]')
+      var escrito = bloque ? textoDelCampo(bloque) : ''
+      return escrito !== '' ? escrito : defecto
+    }
+    var hayCampos = form.querySelector('[data-pz-texto="heroTitulo"]')
+    if (!hayCampos) return
+    var partes = partirTitulo(
+      valor('heroTitulo', contenedor.getAttribute('data-defecto-titulo') || TITULO_POR_DEFECTO),
+      valor(
+        'heroTituloResaltado',
+        contenedor.getAttribute('data-defecto-resaltado') || RESALTADO_POR_DEFECTO,
+      ),
+    )
+    contenedor.querySelector('[data-pz-v-titulo-antes]').textContent = partes.antes
+    contenedor.querySelector('[data-pz-v-resaltado]').textContent = partes.resaltado
+    contenedor.querySelector('[data-pz-v-titulo-despues]').textContent = partes.despues
+  }
+
+  /** Lleva a la maqueta lo que se escribe en un texto del portal (y al contador, si lo tiene). */
+  function actualizarTexto(form, bloque) {
+    var clave = bloque.getAttribute('data-pz-texto')
+    var contador = bloque.querySelector('[data-pz-contador-texto]')
+    var caja = bloque.querySelector('[data-pz-texto-campo]')
+    if (contador && caja) contador.textContent = String(Array.from(caja.value).length)
+
+    if (clave === 'heroTitulo' || clave === 'heroTituloResaltado') return pintarTitulo(form)
+    var escrito = textoDelCampo(bloque)
+    todos('[data-pz-v-texto="' + clave + '"]', form).forEach(function (destino) {
+      destino.textContent = escrito !== '' ? escrito : destino.getAttribute('data-defecto') || ''
+    })
+  }
+
   function actualizarTituloDelPanel(form, campo) {
     var destino = form.querySelector('[data-pz-vp-titulo]')
     if (destino) destino.textContent = campo.value
@@ -847,6 +978,7 @@
     // Un formulario nuevo (por ejemplo, tras guardar) empieza limpio.
     estado.enviando = false
     vigilarGuardar(form)
+    fijarBases(form)
     refrescarTodo(form)
   }
 
@@ -896,6 +1028,18 @@
       actualizarIcono(form, el)
     } else if (el.hasAttribute('data-pz-titulo-panel')) {
       actualizarTituloDelPanel(form, el)
+    }
+
+    var bloqueDeTexto = el.closest('[data-pz-texto]')
+    if (bloqueDeTexto) actualizarTexto(form, bloqueDeTexto)
+
+    // El editor con formato pone al día su campo de respaldo DESPUÉS de este evento (su
+    // script se carga más tarde): se espera a que lo haga para comparar con lo guardado.
+    if (el.closest('[data-editor-texto]')) {
+      window.setTimeout(function () {
+        refrescarCambios(form)
+      }, 0)
+      return
     }
     refrescarCambios(form)
   })
@@ -1032,6 +1176,17 @@
       return
     }
 
+    var deshacerTexto = el.closest('[data-pz-deshacer-texto]')
+    if (deshacerTexto) {
+      var bloque = deshacerTexto.closest('[data-pz-texto]')
+      var caja = bloque ? bloque.querySelector('[data-pz-texto-campo]') : null
+      if (caja) {
+        caja.value = valorGuardado(caja)
+        disparar(caja, 'input')
+      }
+      return
+    }
+
     if (el.closest('[data-pz-descartar]')) {
       if (estado.cambios.length === 0) return
       if (
@@ -1040,6 +1195,13 @@
         )
       )
         return
+      // Con editores de formato no basta restablecer el formulario (su área editable no se
+      // repinta sola): se vuelve a cargar lo guardado.
+      if (form.getAttribute('data-pz') === 'textos') {
+        estado.enviando = true
+        acciones.recargar()
+        return
+      }
       form.reset()
       restaurarFotos(form)
       refrescarTodo(form)
@@ -1175,9 +1337,18 @@
 
   // ── Arranque ───────────────────────────────────────────────────────────────
 
-  new MutationObserver(arrancarPendientes).observe(document.documentElement, {
+  new MutationObserver(function () {
+    arrancarPendientes()
+    // Un editor con formato que se activa después de arrancar el formulario: su valor de
+    // partida es el que tiene al quedar listo.
+    todos('form.pz[data-pz-listo]').forEach(function (form) {
+      if (fijarBases(form)) refrescarCambios(form)
+    })
+  }).observe(document.documentElement, {
     childList: true,
     subtree: true,
+    attributes: true,
+    attributeFilter: ['data-listo'],
   })
   if (document.readyState === 'loading')
     document.addEventListener('DOMContentLoaded', arrancarPendientes)
@@ -1185,6 +1356,8 @@
 
   // Con fines de prueba: las fórmulas de color, para compararlas con app/utils/color.ts.
   window.__pz = {
+    acciones: acciones,
+    partirTitulo: partirTitulo,
     normalizarHex: normalizarHex,
     razonDeContraste: razonDeContraste,
     nivelDeContraste: nivelDeContraste,

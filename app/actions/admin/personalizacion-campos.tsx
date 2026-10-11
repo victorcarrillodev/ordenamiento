@@ -9,14 +9,17 @@
  */
 import type { Handle, RemixNode } from 'remix/ui'
 
+import { EditorTexto } from '../../ui/admin/editor-texto.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
 import { ETIQUETA_NIVEL, nivelDeContraste, razonDeContraste } from '../../utils/color.ts'
 import {
   FORMATOS_IMAGEN,
   MAX_IMAGEN_MB,
+  MAX_TEXTO_PLANO,
   MOTIVOS_SUGERIDOS,
   type RanuraImagen,
 } from './personalizacion-datos.ts'
+import type { CampoTexto } from './personalizacion-textos-defs.ts'
 
 // ---------------------------------------------------------------------------
 // Color
@@ -387,4 +390,109 @@ export function BarraDeCambios() {
       </span>
     </div>
   )
+}
+
+// ---------------------------------------------------------------------------
+// Texto
+// ---------------------------------------------------------------------------
+
+export interface CampoDeTextoProps {
+  campo: CampoTexto
+  /** El texto guardado. */
+  valor: string
+}
+
+/**
+ * Un texto del portal. Los de párrafo llevan el editor con formato (negritas y alineación);
+ * los títulos, etiquetas y botones, una caja de texto con su contador. Cada uno dice, si
+ * hace falta, de qué se trata, se marca cuando se modifica y (los de texto plano) ofrece
+ * volver al texto guardado. Mientras se escribe, lo que se ve en la maqueta cambia.
+ */
+export function CampoDeTexto(handle: Handle<CampoDeTextoProps>) {
+  return () => {
+    const { campo, valor } = handle.props
+    return (
+      <div
+        class={'pz-texto' + (campo.full ? ' pz-texto--ancho' : '')}
+        data-pz-texto={campo.key}
+        data-etiqueta={campo.label}
+      >
+        {campo.rico ? (
+          <EditorTexto name={campo.name} label={campo.label} valor={valor} filas={campo.rows} />
+        ) : (
+          <>
+            <div class="pz-texto__cabecera">
+              <label class="pz-texto__etiqueta" for={`t-${campo.name}`}>
+                {campo.label}
+              </label>
+              <span class="pz-texto__contador">
+                <span data-pz-contador-texto>{Array.from(valor).length}</span> / {MAX_TEXTO_PLANO}
+              </span>
+            </div>
+            <textarea
+              id={`t-${campo.name}`}
+              name={campo.name}
+              rows={campo.rows}
+              maxlength={MAX_TEXTO_PLANO}
+              value={valor}
+              class="pz-texto__campo"
+              data-pz-texto-campo
+            />
+          </>
+        )}
+        {campo.ayuda ? <p class="pz-texto__ayuda">{campo.ayuda}</p> : null}
+        {campo.rico ? null : (
+          <button type="button" class="pz-texto__deshacer" data-pz-deshacer-texto hidden>
+            <Icon name="mdi:undo" size={14} /> Volver al texto guardado
+          </button>
+        )}
+      </div>
+    )
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Guía rápida
+// ---------------------------------------------------------------------------
+
+export interface GuiaRapidaProps {
+  /** La frase de una línea que se ve con la guía cerrada. */
+  titulo: string
+  resumen: string
+  pasos: Array<{ titulo: string; detalle: string }>
+}
+
+/**
+ * «¿Cómo funciona?»: tres pasos plegables. Lo que más tranquiliza a quien edita el portal es
+ * saber, desde el primer vistazo, que nada se publica hasta guardar.
+ */
+export function GuiaRapida(handle: Handle<GuiaRapidaProps>) {
+  return () => {
+    const { titulo, resumen, pasos } = handle.props
+    return (
+      <details class="pz-guia">
+        <summary class="pz-guia__resumen">
+          <Icon name="mdi:lightbulb-on-outline" size={18} />
+          <span>
+            <strong>{titulo}</strong> {resumen}
+          </span>
+          <span class="pz-guia__flecha" aria-hidden="true">
+            <Icon name="mdi:chevron-down" size={20} />
+          </span>
+        </summary>
+        <ol class="pz-guia__pasos">
+          {pasos.map((paso, i) => (
+            <li key={paso.titulo}>
+              <span class="pz-guia__numero" aria-hidden="true">
+                {i + 1}
+              </span>
+              <span>
+                <strong>{paso.titulo}</strong> {paso.detalle}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </details>
+    )
+  }
 }

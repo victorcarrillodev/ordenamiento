@@ -1067,11 +1067,10 @@ tr:hover td {
   padding: 0 4px;
 }
 
-/* Botones sin variante de color propia (pestañas, sugerencias): ya traen su color
-   en línea desde la página, así que aquí solo se añade la interacción que un
-   `style` inline no puede expresar. */
-.tab-btn:hover,
-.motivo-suggest:hover {
+/* Botones sin variante de color propia (pestañas): ya traen su color en línea desde la
+   página, así que aquí solo se añade la interacción que un `style` inline no puede
+   expresar. */
+.tab-btn:hover {
   filter: brightness(0.97);
 }
 .tab-btn:hover {
@@ -3816,13 +3815,6 @@ a.lista-avisos__titulo:hover {
   }
 }
 
-/* Panel con realce: la acción que cierra el formulario (guardar cambios). */
-.panel--destacado {
-  background: #f8fafc;
-  border: 2px solid var(--a-blue);
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.1);
-}
-
 /* Cuarta variante del acuse: advertencia (ni error ni confirmación). */
 .admin-alert--warning {
   background: #fffbeb;
@@ -3918,24 +3910,6 @@ a.lista-avisos__titulo:hover {
 
 /* En pantallas estrechas el panel no cabe anclado a la derecha de la celda:
    pasa a hoja inferior, más abajo en el bloque táctil. */
-
-/* `min(320px, 100%)`: en una pantalla más estrecha que 320px la pista pedía
-   320px igualmente y el bloque desbordaba. */
-.textos__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
-  gap: 16px;
-}
-/* Auto-grow de los textareas de la mini-página de textos: el JS ajusta la
-   altura al scrollHeight en cada input, así que el tirador manual sobra
-   (pelearía con el recálculo). overflow-y auto (no hidden) para que, si
-   admin.js no cargara, el contenido largo quede navegable con scroll.
-   El min-height conserva el alto inicial de las cajas más pequeñas (rows=2). */
-.textos textarea {
-  resize: none;
-  overflow-y: auto;
-  min-height: 60px;
-}
 
 /* Editor de texto con formato de los textos de párrafo (public/editor-texto.js).
    Sin JavaScript solo se ve el campo de texto de respaldo; el script muestra la

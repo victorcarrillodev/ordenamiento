@@ -16,7 +16,7 @@ import {
   IMAGEN_POR_DEFECTO,
   type ThemeData,
 } from '../../ui/civic-horizon.ts'
-import { capaDePortada, intensidadDeCapa, CAPA_MAX, CAPA_MIN } from '../../utils/color.ts'
+import { intensidadDeCapa, CAPA_MAX, CAPA_MIN } from '../../utils/color.ts'
 import {
   GRUPOS_COLOR_PORTAL,
   ICONOS_PORTAL,
@@ -38,7 +38,7 @@ import {
   SelectorDeColor,
   SelectorDeImagen,
 } from './personalizacion-campos.tsx'
-import { VistaPortal } from './personalizacion-vista.tsx'
+import { VistaPortal, VistaPreviaLateral, propsDeVistaPortal } from './personalizacion-vista.tsx'
 import { GRUPOS_TEXTOS } from './personalizacion-textos-defs.ts'
 
 /** Lo que se ve cuando una imagen queda vacía: la que trae el proyecto. */
@@ -123,12 +123,10 @@ export function FormularioPortal(handle: Handle<FormularioPortalProps>) {
     // `ThemeData` es JSON del backend, laxo a propósito (ver civic-horizon.ts).
     const u = theme?.usuario ?? {}
     const imagenes: Record<string, string> = u.imagenes ?? {}
-    const textos: Record<string, unknown> = u.textos ?? {}
     const colores = coloresDelPortal(theme)
     const iconos = iconosDelPortal(theme)
     const fotos = fotosDeLaPortada(theme, HERO_IMAGEN_POR_DEFECTO)
     const intensidad = intensidadDeCapa(u.colores?.heroGradienteInicio)
-    const capa = capaDePortada(colores.primario, intensidad)
     const urlDe = (clave: string, porDefecto: string) => imagenes[clave] || porDefecto
     const paletaActiva = PALETAS_PORTAL.find((p) => esIgual(p.colores, colores))
     const totalCampos = GRUPOS_TEXTOS.reduce((n, g) => n + g.campos.length, 0)
@@ -461,71 +459,15 @@ export function FormularioPortal(handle: Handle<FormularioPortalProps>) {
             />
           </div>
 
-          <aside class="pz-lateral" aria-label="Vista previa del portal">
-            <div class="pz-lateral__cuerpo">
-              <details class="pz-previa" open>
-                <summary class="pz-previa__cabecera">
-                  <span class="pz-previa__titulo">
-                    <Icon name="mdi:eye-outline" size={17} /> Vista previa
-                    <span class="pz-previa__vivo" data-pz-estado-vista>
-                      Igual que lo publicado
-                    </span>
-                  </span>
-                  <span class="pz-dispositivos" role="group" aria-label="Tamaño de pantalla">
-                    <button
-                      type="button"
-                      class="pz-dispositivo"
-                      data-pz-dispositivo="escritorio"
-                      aria-pressed="true"
-                      title="Ver como en una computadora"
-                    >
-                      <Icon name="mdi:monitor" size={16} /> Computadora
-                    </button>
-                    <button
-                      type="button"
-                      class="pz-dispositivo"
-                      data-pz-dispositivo="movil"
-                      aria-pressed="false"
-                      title="Ver como en un teléfono"
-                    >
-                      <Icon name="mdi:cellphone" size={16} /> Teléfono
-                    </button>
-                  </span>
-                </summary>
-                <div class="pz-previa__marco" aria-hidden="true">
-                  <VistaPortal
-                    colores={colores}
-                    capa={capa}
-                    fotos={fotos}
-                    logoMenu={urlDe('logoNavbar', IMAGEN_POR_DEFECTO.logo)}
-                    logoPie={urlDe('logoFooter', IMAGEN_POR_DEFECTO.logo)}
-                    imagenEcologia={urlDe('imagenEcologia', IMAGEN_POR_DEFECTO.ecologia)}
-                    imagenPrograma={urlDe('imagenPrograma', IMAGEN_POR_DEFECTO.programa)}
-                    iconos={[
-                      iconos.cardPrograma,
-                      iconos.cardProceso,
-                      iconos.cardCalendario,
-                      iconos.cardDocumentos,
-                    ]}
-                    textos={textos}
-                  />
-                </div>
-                <p class="pz-previa__pie">
-                  <Icon name="mdi:gesture-tap" size={14} /> Toca una parte de la maqueta para ir a
-                  lo que la cambia. Los textos son los que ya están guardados.
-                </p>
-              </details>
-              <a
-                class="pz-lateral__en-vivo"
-                href={routes.home.href()}
-                target="_blank"
-                rel="noreferrer"
-                data-pz-portal-en-vivo
-              >
-                <Icon name="mdi:open-in-new" size={14} /> Ver el portal publicado
-              </a>
-            </div>
-          </aside>
+          <VistaPreviaLateral
+            titulo="Vista previa"
+            etiqueta="Vista previa del portal"
+            conDispositivos
+            pie="Toca una parte de la maqueta para ir a lo que la cambia. Los textos son los que ya están guardados."
+            enlaceEnVivo={routes.home.href()}
+          >
+            <VistaPortal {...propsDeVistaPortal(theme)} />
+          </VistaPreviaLateral>
         </div>
 
         <BarraDeCambios />
