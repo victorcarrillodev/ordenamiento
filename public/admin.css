@@ -569,6 +569,17 @@ tr:hover td {
   color: var(--a-text);
   border-color: var(--a-border-strong);
 }
+/* Acción que no se deshace (eliminar, quitar): contorno y texto rojos, con su palabra.
+   No es un bloque rojo sólido para no ser lo más llamativo de cada fila. */
+.btn--peligro {
+  background: #fff;
+  color: #b91c1c;
+  border-color: #f0b4b4;
+}
+.btn--peligro:hover {
+  background: #fef2f2;
+  border-color: var(--a-red);
+}
 .btn--white:hover {
   background: var(--a-bg);
 }
@@ -1235,7 +1246,7 @@ tr:hover td {
 .lista-busqueda {
   position: relative;
   display: block;
-  flex: 3 1 260px;
+  flex: 1 1 260px;
   min-width: 0;
 }
 .lista-busqueda > .icono {
@@ -1269,7 +1280,7 @@ tr:hover td {
 }
 .lista-select {
   display: inline-flex;
-  flex: 1 1 190px;
+  flex: 0 1 auto;
   max-width: 260px;
   min-width: 0;
   align-items: center;
@@ -1331,6 +1342,11 @@ tr:hover td {
 .tabla-lista__principal {
   min-width: 190px;
 }
+/* Columna que mide lo que su contenido: el ancho que sobra se lo queda la principal. */
+.tabla-lista .col-justa {
+  width: 1%;
+  white-space: nowrap;
+}
 .tabla-lista__acciones {
   text-align: left;
   white-space: nowrap;
@@ -1383,6 +1399,11 @@ a.celda-doble__titulo:hover {
   background: none;
   color: var(--a-muted);
 }
+.archivos--mini {
+  gap: 3px;
+  padding: 1px 7px 1px 5px;
+  font-size: 11px;
+}
 
 /* Acciones de una fila: «Ver» siempre con nombre; las demás pierden la palabra
    cuando la tabla no tiene ancho (su nombre queda en el tooltip y en aria-label). */
@@ -1403,6 +1424,24 @@ a.celda-doble__titulo:hover {
     padding-right: 8px;
   }
   .btn--icono .btn__texto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}
+
+/* La tabla de actividades lleva más en cada fila: su acción secundaria pierde la
+   palabra antes (en 1440 px de pantalla la tabla mide ~1100). */
+@container lista (max-width: 1300px) {
+  .act-tabla .btn--icono {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .act-tabla .btn--icono .btn__texto {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -1488,6 +1527,9 @@ a.celda-doble__titulo:hover {
   .tabla-lista tr:hover td {
     background: none;
   }
+  .tabla-lista .col-justa {
+    width: auto;
+  }
   .tabla-lista td {
     display: flex;
     align-items: center;
@@ -1508,6 +1550,7 @@ a.celda-doble__titulo:hover {
     color: var(--a-muted);
   }
   .tabla-lista td.tabla-lista__principal {
+    order: -1;
     display: block;
     min-width: 0;
     padding-bottom: 8px;
@@ -1522,10 +1565,18 @@ a.celda-doble__titulo:hover {
     display: block;
     padding-top: 4px;
   }
+  /* Las acciones se reparten el ancho de la tarjeta por igual, sean dos o tres. */
   .tabla-lista .acciones-fila {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     width: 100%;
+  }
+  .tabla-lista .acciones-fila .form-en-linea {
+    display: flex;
+  }
+  .tabla-lista .acciones-fila .form-en-linea .btn {
+    flex: 1;
   }
   .tabla-lista .acciones-fila .btn--icono {
     padding-left: 10px;
@@ -2387,56 +2438,50 @@ a.act-resumen__aviso:hover {
   line-height: 1.5;
 }
 
-/* Lista */
-.act-filtros {
+/* Lista: la tabla usa las piezas comunes de «Listados» (barra, celda doble,
+   acciones, vacío); aquí solo lo propio de las actividades. */
+.act-tabla__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-end;
-  margin-bottom: var(--a-gap);
-}
-.act-filtros .form-field {
-  margin: 0;
-  min-width: min(170px, 100%);
-}
-.act-tabla__fecha strong,
-.act-tabla__actividad strong,
-.act-tabla__fecha small,
-.act-tabla__actividad small {
-  display: block;
-}
-.act-tabla__fecha small,
-.act-tabla__actividad small {
-  font-size: 11.5px;
-  color: var(--a-muted);
-  margin-top: 2px;
-}
-.act-tabla__actividad a {
-  color: var(--a-text);
-  text-decoration: none;
-}
-.act-tabla__actividad a:hover strong {
-  text-decoration: underline;
-}
-.act-tabla__portal {
-  font-size: 12px;
-  color: var(--a-muted);
-}
-.act-tabla__acciones {
-  display: flex;
-  gap: 6px;
   align-items: center;
+  gap: 2px 8px;
 }
-.act-inline {
+.act-tabla__portal .celda-doble__sub,
+.act-aviso-chip {
+  white-space: nowrap;
+}
+.act-tabla__cuando {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+/* «Hoy», «Mañana», «En 3 días»: cuánto falta para lo que todavía va a pasar. */
+.act-pronto {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.act-pronto--ya {
+  background: #fef3c7;
+  color: #92400e;
+}
+.form-en-linea {
   margin: 0;
   display: inline-flex;
 }
-/* Sigue «programada» con la fecha ya pasada: hay que actualizar su estado. */
+/* Sigue «programada» con la fecha ya pasada: hay que actualizar su estado. Es un
+   enlace a la edición, que es donde se cambia. */
 .act-alerta {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   margin-top: 4px;
+  width: fit-content;
   font-size: 11px;
   font-weight: 700;
   color: #92400e;
@@ -2445,11 +2490,18 @@ a.act-resumen__aviso:hover {
   border-radius: 999px;
   padding: 2px 8px;
 }
+a.act-alerta:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
 
 /* Estado de la actividad y estado de publicación */
 .act-estado,
 .act-pub {
   display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
   padding: 3px 9px;
   border-radius: 999px;
   font-size: 11.5px;

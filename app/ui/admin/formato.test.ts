@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  cuantosArchivos,
   formatearDiaFechaHora,
   formatearDuracion,
   formatearFecha,
@@ -81,5 +82,13 @@ describe('formatearHora', () => {
     expect(formatearHora('no-es-fecha')).toBe('—')
     expect(formatearHora(null)).toBe('—')
     expect(formatearHora(undefined)).toBe('—')
+  })
+})
+
+describe('cuantosArchivos', () => {
+  it('cuenta en singular y en plural', () => {
+    expect(cuantosArchivos(1)).toBe('1 archivo')
+    expect(cuantosArchivos(2)).toBe('2 archivos')
+    expect(cuantosArchivos(12)).toBe('12 archivos')
   })
 })

@@ -2,7 +2,7 @@ import type { Handle } from 'remix/ui'
 
 import { adminRoutes } from '../../routes.ts'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
-import { formatearFecha, formatearHora } from '../../ui/admin/formato.ts'
+import { cuantosArchivos, formatearFecha, formatearHora } from '../../ui/admin/formato.ts'
 import { Icon } from '../../ui/admin/icon.tsx'
 import {
   DICTAMENES,
@@ -64,11 +64,6 @@ function fmtSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-/** «1 archivo» / «3 archivos». */
-function cuantosArchivos(n: number): string {
-  return n === 1 ? '1 archivo' : `${n} archivos`
 }
 
 /**

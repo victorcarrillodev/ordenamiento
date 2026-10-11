@@ -12,6 +12,7 @@ import {
 import { adminRoutes, routes } from '../../routes.ts'
 import { AdminAlert } from '../../ui/admin/alert.tsx'
 import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
+import { BotonEliminar } from '../../ui/admin/boton-eliminar.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
 import { Button } from '../../ui/button.tsx'
 import { fechaLarga } from '../../utils/calendario.ts'
@@ -120,9 +121,14 @@ function ArchivoFila(handle: Handle<{ archivo: ArchivoActividad }>) {
             placeholder={archivo.nombre_original}
             aria-label={`Nombre visible de ${nombre}`}
           />
-          <Button buttonType="submit" variant="outlined" size="sm" title="Guardar tipo y nombre">
-            <Icon name="mdi:content-save-outline" />
-          </Button>
+          <button
+            type="submit"
+            class="btn btn--white btn--sm"
+            title="Guardar el tipo y el nombre de este archivo"
+            aria-label={`Guardar el tipo y el nombre de ${nombre}`}
+          >
+            <Icon name="mdi:content-save-outline" size={15} /> Guardar
+          </button>
         </form>
         <div class="act-archivo__acciones">
           <a class="btn btn--white btn--sm" href={ver} target="_blank" rel="noopener">
@@ -131,17 +137,12 @@ function ArchivoFila(handle: Handle<{ archivo: ArchivoActividad }>) {
           <a class="btn btn--white btn--sm" href={`${ver}?download=1`}>
             <Icon name="mdi:download" /> Descargar
           </a>
-          <form
-            method="post"
-            class="act-inline"
-            data-confirmar={`¿Quitar «${nombre}» de la actividad? El archivo se elimina.`}
-          >
-            <input type="hidden" name="intent" value="archivo_quitar" />
-            <input type="hidden" name="aid" value={archivo.id} />
-            <Button buttonType="submit" variant="danger" size="sm" title={`Quitar ${nombre}`}>
-              <Icon name="mdi:trash-can-outline" />
-            </Button>
-          </form>
+          <BotonEliminar
+            etiqueta="Quitar"
+            nombre={nombre}
+            confirmacion={`¿Quitar «${nombre}» de la actividad? El archivo se elimina.`}
+            campos={{ intent: 'archivo_quitar', aid: archivo.id }}
+          />
         </div>
       </li>
     )

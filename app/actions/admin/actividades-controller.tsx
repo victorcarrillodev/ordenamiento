@@ -34,6 +34,7 @@ import {
   type ValoresActividad,
 } from './actividad-datos.ts'
 import { ActividadPage } from './actividad-page.tsx'
+import { buscarActividades, terminoDeBusqueda } from './actividades-busqueda.ts'
 import { ActividadesPage, type FiltrosLista, type ResumenGestion } from './actividades-page.tsx'
 
 const RESUMEN_VACIO: ResumenGestion = {
@@ -113,7 +114,10 @@ export const actividadesController = createController(adminRoutes.actividades, {
         if (esEstadoActividad(estado)) filtros.estado = estado
         if (esEstadoPublicacion(publicacion)) filtros.publicacion = publicacion
         if (esFasePrograma(fase)) filtros.fase = fase
+        // Estos tres filtros los resuelve el backend; el texto se busca aquí, sin acentos.
         for (const [clave, valor] of Object.entries(filtros)) consulta.set(clave, valor)
+        const q = terminoDeBusqueda(params.get('q'))
+        if (q) filtros.q = q
       } else {
         const mes = parsearMes(params.get('mes')) ?? calendario
         const clave = claveMes(mes.anio, mes.mes)
@@ -128,11 +132,15 @@ export const actividadesController = createController(adminRoutes.actividades, {
         { actividades: [], resumen: RESUMEN_VACIO },
       )
 
+      const actividades = filtros.q
+        ? buscarActividades(data.actividades ?? [], filtros.q)
+        : (data.actividades ?? [])
+
       return context.render(
         <ActividadesPage
           user={user}
           vista={vista}
-          actividades={data.actividades ?? []}
+          actividades={actividades}
           resumen={data.resumen ?? RESUMEN_VACIO}
           filtros={filtros}
           calendario={calendario}

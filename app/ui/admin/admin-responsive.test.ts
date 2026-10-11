@@ -143,6 +143,35 @@ describe('Listados del panel (participaciones, actividades…)', () => {
     expect(activo).toBeGreaterThan(todas)
   })
 
+  it('la acción que no se deshace es de contorno rojo, no un bloque sólido', () => {
+    expect(css).toMatch(
+      /\.btn--peligro \{[^}]*background: #fff;[^}]*color: #b91c1c;[^}]*border-color: #f0b4b4/,
+    )
+    expect(css).toMatch(/\.btn--peligro:hover \{[^}]*background: #fef2f2/)
+  })
+
+  it('las columnas «justas» miden lo que su contenido, salvo en tarjetas', () => {
+    expect(css).toMatch(/\.tabla-lista \.col-justa \{[^}]*width: 1%;[^}]*white-space: nowrap/)
+    const tarjetas =
+      css.match(/@container lista \(max-width: 960px\) \{([\s\S]*?)\n\}\n/)?.[1] ?? ''
+    // En tarjeta la celda es un renglón de la tarjeta: un 1% la dejaría diminuta.
+    expect(tarjetas).toMatch(/\.tabla-lista \.col-justa \{[^}]*width: auto/)
+  })
+
+  it('en tarjeta el título va primero y las acciones se reparten el ancho por igual', () => {
+    const tarjetas =
+      css.match(/@container lista \(max-width: 960px\) \{([\s\S]*?)\n\}\n/)?.[1] ?? ''
+    expect(tarjetas).toMatch(/td\.tabla-lista__principal \{[^}]*order: -1/)
+    expect(tarjetas).toMatch(/\.acciones-fila \{[^}]*grid-auto-flow: column/)
+    expect(tarjetas).toMatch(/\.acciones-fila \.form-en-linea \.btn \{[^}]*flex: 1/)
+  })
+
+  it('en actividades la acción secundaria pierde su palabra antes que en participaciones', () => {
+    const compacto =
+      css.match(/@container lista \(max-width: 1300px\) \{([\s\S]*?)\n\}\n/)?.[1] ?? ''
+    expect(compacto).toMatch(/\.act-tabla \.btn--icono \.btn__texto \{[^}]*position: absolute/)
+  })
+
   it('existe la clase para texto solo de lectores de pantalla', () => {
     expect(css).toMatch(/\.solo-lector \{[^}]*position: absolute;[^}]*clip: rect\(0, 0, 0, 0\)/)
   })

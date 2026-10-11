@@ -85,3 +85,8 @@ export function formatearHora(valor: string | null | undefined): string {
     hour12: false,
   })
 }
+
+/** «1 archivo» / «3 archivos». */
+export function cuantosArchivos(n: number): string {
+  return n === 1 ? '1 archivo' : `${n} archivos`
+}

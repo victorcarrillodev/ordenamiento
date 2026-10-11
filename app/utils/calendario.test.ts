@@ -8,12 +8,14 @@ import {
   desplazarMes,
   diaEnMexico,
   diaYMes,
+  diasEntre,
   fechaConDia,
   fechaLarga,
   horario,
   hoyEnMexico,
   isoDeDia,
   parsearMes,
+  relativoA,
 } from './calendario.ts'
 
 describe('calendario', () => {
@@ -79,5 +81,46 @@ describe('calendario', () => {
     expect(celdas.length % 7).toBe(0)
     const dia17 = celdas.find((c) => c?.fecha === '2026-09-17')
     expect(dia17?.items).toHaveLength(1)
+  })
+})
+
+describe('diasEntre y relativoA', () => {
+  it('cuenta días de calendario, también a través de fin de mes, de año y de bisiesto', () => {
+    expect(diasEntre('2026-10-10', '2026-10-10')).toBe(0)
+    expect(diasEntre('2026-10-10', '2026-10-24')).toBe(14)
+    expect(diasEntre('2026-10-10', '2026-10-09')).toBe(-1)
+    expect(diasEntre('2026-12-31', '2027-01-01')).toBe(1)
+    expect(diasEntre('2028-02-28', '2028-03-01')).toBe(2) // 2028 es bisiesto
+    expect(diasEntre('2027-02-28', '2027-03-01')).toBe(1)
+  })
+
+  it('no se corre un día con los cambios de horario ni con años de tres cifras', () => {
+    // Fechas de cambio de horario en EE. UU./Europa: el día no debe medir 23 ni 25 h.
+    expect(diasEntre('2026-03-28', '2026-03-30')).toBe(2)
+    expect(diasEntre('2026-10-24', '2026-10-26')).toBe(2)
+    expect(diasEntre('0100-03-01', '0100-03-02')).toBe(1)
+  })
+
+  it('habla de hoy, mañana y ayer', () => {
+    expect(relativoA('2026-10-10', '2026-10-10')).toBe('Hoy')
+    expect(relativoA('2026-10-10', '2026-10-11')).toBe('Mañana')
+    expect(relativoA('2026-10-10', '2026-10-09')).toBe('Ayer')
+  })
+
+  it('cuenta días hasta dos semanas, luego semanas, meses y años', () => {
+    expect(relativoA('2026-10-10', '2026-10-12')).toBe('En 2 días')
+    expect(relativoA('2026-10-10', '2026-10-23')).toBe('En 13 días')
+    expect(relativoA('2026-10-10', '2026-10-24')).toBe('En 2 semanas')
+    expect(relativoA('2026-10-10', '2026-11-20')).toBe('En 5 semanas')
+    expect(relativoA('2026-10-10', '2026-12-09')).toBe('En 2 meses')
+    expect(relativoA('2026-10-10', '2027-10-10')).toBe('En 1 año')
+    expect(relativoA('2026-10-10', '2029-10-11')).toBe('En 3 años')
+  })
+
+  it('el pasado va con «Hace» y la misma escala', () => {
+    expect(relativoA('2026-10-10', '2026-10-07')).toBe('Hace 3 días')
+    expect(relativoA('2026-10-10', '2026-09-19')).toBe('Hace 3 semanas')
+    expect(relativoA('2026-10-10', '2026-06-12')).toBe('Hace 4 meses')
+    expect(relativoA('2026-10-10', '2025-10-10')).toBe('Hace 1 año')
   })
 })
