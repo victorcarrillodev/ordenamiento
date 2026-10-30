@@ -90,6 +90,13 @@ export interface ThemeConfig {
     }
     textos: {
       navbarTitulo: string
+      consultaPendienteTitulo: string
+      consultaPendienteTexto: string
+      consultaConcluidaTitulo: string
+      consultaConcluidaTexto: string
+      documentosTitulo: string
+      documentosTexto: string
+      documentosBoton: string
       navEnlaceInicio: string
       navEnlacePoetdum: string
       navCtaRegistrar: string
@@ -192,6 +199,8 @@ export interface ThemeConfig {
     /** Cuándo se inició y cuándo se concluyó, en ISO 8601; null mientras no haya ocurrido. */
     consultaInicio: string | null
     consultaCierre: string | null
+    /** Periodo automático en ISO 8601; null conserva el control manual. */
+    consultaProgramacion?: { inicio: string; cierre: string } | null
   }
 }
 
@@ -320,6 +329,16 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
       ctaParrafo:
         'Registra tus observaciones, propuestas y documentos técnicos. Tu participación es fundamental para construir el Programa de Ordenamiento que refleje las necesidades reales del municipio.',
       ctaBoton: 'Registra tu participación',
+      consultaPendienteTitulo: 'La consulta pública aún no ha iniciado',
+      consultaPendienteTexto:
+        'El formulario para enviar observaciones y propuestas estará disponible durante el periodo de consulta pública. Las fechas se darán a conocer en este portal.',
+      consultaConcluidaTitulo: 'El periodo de consulta pública ha concluido.',
+      consultaConcluidaTexto:
+        'El periodo para recibir observaciones y propuestas sobre el Proyecto del Programa ha finalizado. Agradecemos su participación.\nPuede consultar las participaciones publicadas y las respuestas disponibles en este portal.',
+      documentosTitulo: 'Consulta los documentos del Programa',
+      documentosTexto:
+        'Consulta y descarga las convocatorias, actas, acuerdos, dictámenes y demás documentos generados durante el proceso',
+      documentosBoton: 'Ver documentos',
       footerEntidad: 'Municipio de San Pedro Tlaquepaque',
       footerDesc:
         'Portal oficial de la Bitácora del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano.',

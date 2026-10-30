@@ -46,8 +46,8 @@ describe('el formulario según la etapa de la consulta', () => {
     const { html } = await paginaDelFormulario()
     expect(html).not.toContain('id="participation-form"')
     const texto = textoDe(html)
-    expect(texto).toContain('Consulta pública concluida')
-    expect(texto).toContain(TEXTO_CONSULTA_CONCLUIDA)
+    expect(texto).toContain(TITULO_CONSULTA_CONCLUIDA)
+    expect(texto).toContain(TEXTO_CONSULTA_CONCLUIDA.replace(/\s+/g, ' '))
   })
 
   it('pendiente (o sin dato): se explica que aún no inicia, sin formulario', async () => {
@@ -55,7 +55,7 @@ describe('el formulario según la etapa de la consulta', () => {
       conEtapa(etapa)
       const { html } = await paginaDelFormulario()
       expect(html, String(etapa)).not.toContain('id="participation-form"')
-      expect(textoDe(html), String(etapa)).toContain('La consulta pública aún no inicia')
+      expect(textoDe(html), String(etapa)).toContain('La consulta pública aún no ha iniciado')
     }
   })
 
@@ -110,7 +110,7 @@ describe('etapaDeConsulta', () => {
 
   it('el mensaje de cierre es el acordado, palabra por palabra', () => {
     expect(TEXTO_CONSULTA_CONCLUIDA).toBe(
-      'Gracias por participar en la consulta pública del Proyecto del Programa. El periodo para recibir observaciones y propuestas ha concluido. En el apartado ‘Participaciones y respuestas’ podrás consultar las versiones públicas de las participaciones recibidas y, conforme se publiquen, los oficios de respuesta correspondientes.',
+      'El periodo para recibir observaciones y propuestas sobre el Proyecto del Programa ha finalizado. Agradecemos su participación.\nPuede consultar las participaciones publicadas y las respuestas disponibles en este portal.',
     )
   })
 })

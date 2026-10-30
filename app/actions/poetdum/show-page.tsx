@@ -26,6 +26,7 @@ import { ConsultaConcluidaAviso } from './sections/consulta-concluida.tsx'
 import { ParticipacionesSection } from './sections/participaciones.tsx'
 import { ProyectoSection } from './sections/proyecto.tsx'
 import { DescargasSection } from './sections/descargas.tsx'
+import { ConsultaProgramada } from '../../ui/consulta-programada.tsx'
 import { DocumentosSection } from './sections/documentos.tsx'
 import { IndicadoresLista, SeguimientoPendiente } from './sections/seguimiento.tsx'
 import type { Indicador } from './types.ts'
@@ -130,6 +131,7 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
         descripcion="Sigue el avance del Programa de Ordenamiento Ecológico y Territorial y de Desarrollo Urbano. Consulta las actividades programadas, los avances, los documentos y el seguimiento en un solo lugar."
         head={<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />}
       >
+        <ConsultaProgramada theme={theme} />
         <section
           aria-labelledby="mapa-heading"
           mix={css({ background: colors.gray50, padding: '48px 0' })}
@@ -199,7 +201,7 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
           </div>
         </section>
 
-        <ConsultaConcluidaAviso visible={etapaConsulta === 'concluida'} />
+        <ConsultaConcluidaAviso visible={etapaConsulta === 'concluida'} theme={theme} />
         <ProyectoSection proyecto={proyecto} />
         <ParticipacionesSection pagina={participaciones} busqueda={busqueda} />
 
@@ -269,7 +271,7 @@ export function PoetdumPage(handle: Handle<PoetdumPageProps>) {
           id="descargas"
           mix={css({ maxWidth: '1100px', margin: '0 auto', padding: '48px 24px 0' })}
         >
-          <DescargasSection />
+          <DescargasSection theme={theme} />
         </section>
 
         <section id="documentos" mix={seccionStyle}>

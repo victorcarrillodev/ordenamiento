@@ -214,7 +214,18 @@ describe('enviarAcuseReciboParticipacion', () => {
   it('firma con la dirección que recibe y responde las participaciones', async () => {
     await enviarAcuseReciboParticipacion('id-1', 'juan@ejemplo.com', cargar)
     const { html } = sendMailCalls[0]
-    expect(html).toContain('Dirección de Gestión Territorial y Planeación Urbana')
+    expect(html).toContain('Secretaría de Planificación, Análisis y Gestión Urbana')
+    expect(html).toContain(
+      'Bitácora · Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano de San Pedro Tlaquepaque',
+    )
+    expect(html).toContain(
+      'Este acuse acredita la recepción de su participación en la consulta pública',
+    )
+    expect(html).not.toContain('Este acuse digital tiene validez oficial')
+    expect(html).toContain('href="https://goo.gl/maps/vaTCrEB6qjQpMq1o9"')
+    expect(html).toContain(
+      'calle Juárez 28, colonia Centro, C. P. 45500, San Pedro Tlaquepaque, Jalisco',
+    )
     expect(html).not.toContain('Dirección de Medio Ambiente y Ecología')
   })
 
@@ -240,6 +251,22 @@ describe('enviarAcuseReciboParticipacion', () => {
 })
 
 describe('remitente de los correos: el correo de contacto del pie de página', () => {
+  it('la respuesta lleva la nueva firma y su propia leyenda, sin cambiar el remitente', async () => {
+    await enviarCorreoRespuesta({
+      para: 'a@b.com',
+      folio: 'SPAGU-DGTPU-P-0001',
+      oficio: Buffer.from('%PDF-1.4'),
+      nombreArchivo: 'oficio.pdf',
+    })
+    const enviado = sendMailCalls[0]
+    expect(enviado.html).toContain('Secretaría de Planificación, Análisis y Gestión Urbana')
+    expect(enviado.html).toContain(
+      'Este correo contiene la respuesta a su participación presentada durante la consulta pública',
+    )
+    expect(enviado.html).not.toContain('Este acuse digital tiene validez oficial')
+    expect(enviado.attachments[0].filename).toBe('oficio.pdf')
+    expect(enviado.from).toContain('ordenamiento@tlaquepaque.gob.mx')
+  })
   beforeEach(() => {
     process.env.SMTP_HOST = 'smtp.example.com'
     expediente = participacion()

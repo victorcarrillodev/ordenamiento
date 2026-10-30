@@ -1,17 +1,16 @@
-import { css } from 'remix/ui'
+import { css, type Handle } from 'remix/ui'
 import { routes } from '../../../routes.ts'
-import { btnGoldProps, btnSecondaryProps, colors, FONT_STACK } from '../../../ui/civic-horizon.ts'
+import { TEXTOS_CONSULTA_PORTAL as originales } from '../../../data/consulta.ts'
+import { btnGoldProps, colors, FONT_STACK, type ThemeData } from '../../../ui/civic-horizon.ts'
 
 /**
- * Los botones llevan al repositorio de documentos (los archivos de las
- * actividades), ya filtrado por lo que anuncia cada uno. Los documentos
- * oficiales son los que se marcan como «Documento aprobado» en su actividad.
+ * Un único acceso al listado de documentos y sus filtros.
  */
-const HREF_APROBADOS = `${routes.poetdum.show.href()}?tipo=${encodeURIComponent('Documento aprobado')}#documentos`
 const HREF_TODOS = `${routes.poetdum.show.href()}#documentos`
 
-export function DescargasSection() {
+export function DescargasSection(handle: Handle<{ theme?: ThemeData }>) {
   return () => {
+    const textos = handle.props.theme?.usuario?.textos ?? {}
     return (
       <div
         mix={css({
@@ -36,7 +35,7 @@ export function DescargasSection() {
             lineHeight: 1.1,
           })}
         >
-          OBTÉN LOS DOCUMENTOS OFICIALES
+          {textos.documentosTitulo || originales.documentosTitulo}
         </h2>
         <p
           mix={css({
@@ -47,8 +46,7 @@ export function DescargasSection() {
             maxWidth: '640px',
           })}
         >
-          Consulta y descarga los documentos del Programa: convocatorias, actas, acuerdos,
-          dictámenes y documentos aprobados, cada uno con la actividad en que se generó.
+          {textos.documentosTexto || originales.documentosTexto}
         </p>
         <div
           mix={css({
@@ -59,11 +57,8 @@ export function DescargasSection() {
             marginTop: '12px',
           })}
         >
-          <a href={HREF_APROBADOS} mix={css(btnGoldProps)}>
-            Documentos aprobados
-          </a>
-          <a href={HREF_TODOS} mix={css(btnSecondaryProps)}>
-            Todos los documentos
+          <a href={HREF_TODOS} mix={css(btnGoldProps)}>
+            {textos.documentosBoton || originales.documentosBoton}
           </a>
         </div>
       </div>

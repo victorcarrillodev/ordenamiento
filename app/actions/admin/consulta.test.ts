@@ -31,6 +31,38 @@ function backend(rol: string | null, etapa = 'pendiente') {
 const textoDe = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
 
 describe('Admin · consulta pública', () => {
+  it('revisa fechas y duración antes de guardar y muestra la confirmación', async () => {
+    const pedidos = backend('admin')
+    const fd = new FormData()
+    fd.set('accion', 'revisar')
+    fd.set('inicio', '2026-11-01T09:00')
+    fd.set('cierre', '2026-11-03T10:30')
+    const res = await router.fetch(new Request(URL_CONSULTA, { method: 'POST', body: fd }))
+    const html = await res!.text()
+    expect(html).toContain('2 días, 1 hora y 30 minutos')
+    expect(html).toContain('Confirmar programación')
+    expect(pedidos.some((p) => p.method === 'PUT')).toBe(false)
+    fd.set('accion', 'programar')
+    const confirmacion = await router.fetch(new Request(URL_CONSULTA, { method: 'POST', body: fd }))
+    expect(confirmacion!.headers.get('location')).toContain('programada=1')
+    expect(JSON.parse(pedidos.find((p) => p.method === 'PUT')!.body!)).toEqual({
+      accion: 'programar',
+      inicio: '2026-11-01T15:00:00.000Z',
+      cierre: '2026-11-03T16:30:00.000Z',
+    })
+  })
+
+  it('un periodo invertido no se envía al backend', async () => {
+    const pedidos = backend('admin')
+    const fd = new FormData()
+    fd.set('accion', 'programar')
+    fd.set('inicio', '2026-11-03T09:00')
+    fd.set('cierre', '2026-11-01T09:00')
+    expect(
+      (await router.fetch(new Request(URL_CONSULTA, { method: 'POST', body: fd })))!.status,
+    ).toBe(400)
+    expect(pedidos.some((p) => p.method === 'PUT')).toBe(false)
+  })
   beforeEach(() => vi.restoreAllMocks())
   afterEach(() => (globalThis.fetch = ORIGINAL_FETCH))
 

@@ -47,7 +47,7 @@ const SELECT = `SELECT f.id::text AS id, f.folio, f.created_at, u.name AS genera
 /** Reserva el siguiente folio para un formato nuevo. */
 export async function crearFormato(generadoPor: string): Promise<Formato> {
   return sql.begin(async (tx) => {
-    const folio = await nextFolio(tx)
+    const folio = await nextFolio(tx, 'fisica')
     const filas = await tx<{ id: string }[]>`
       INSERT INTO formatos_presenciales (folio, generado_por) VALUES (${folio}, ${generadoPor})
       RETURNING id::text AS id

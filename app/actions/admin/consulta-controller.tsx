@@ -14,6 +14,7 @@ import { esEtapaConsulta, type EtapaConsulta } from '../../data/consulta.ts'
 import { adminRoutes } from '../../routes.ts'
 import { datosDeConsulta } from './consulta-datos.ts'
 import { ConsultaPage } from './consulta-page.tsx'
+import { instanteDeConsulta } from '../../utils/periodo-consulta.ts'
 
 export default createController(adminRoutes.consulta, {
   actions: {
@@ -28,6 +29,7 @@ export default createController(adminRoutes.consulta, {
           {...await datosDeConsulta(context.request)}
           cambio={esEtapaConsulta(cambio) ? (cambio as EtapaConsulta) : undefined}
           proyectoCambio={params.get('proyecto') ?? undefined}
+          programada={params.get('programada') === '1'}
         />,
       )
     },
@@ -37,6 +39,49 @@ export default createController(adminRoutes.consulta, {
       if (user instanceof Response) return user
 
       const formData = await context.request.formData()
+      const accion = String(formData.get('accion') ?? '')
+      if (accion === 'revisar' || accion === 'programar') {
+        const inicio = instanteDeConsulta(String(formData.get('inicio') ?? ''))
+        const cierre = instanteDeConsulta(String(formData.get('cierre') ?? ''))
+        if (!inicio || !cierre || Date.parse(cierre) <= Date.parse(inicio)) {
+          return context.render(
+            <ConsultaPage
+              user={user}
+              {...await datosDeConsulta(context.request)}
+              error="Indica inicio y término válidos; el término debe ser posterior al inicio."
+            />,
+            { status: 400 },
+          )
+        }
+        if (accion === 'revisar') {
+          return context.render(
+            <ConsultaPage
+              user={user}
+              {...await datosDeConsulta(context.request)}
+              revision={{ inicio, cierre }}
+            />,
+          )
+        }
+        const respuesta = await backendFetch(context.request, '/api/consulta', {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ accion: 'programar', inicio, cierre }),
+        })
+        if (!respuesta.ok) {
+          const datos = (await respuesta.json().catch(() => ({}))) as { error?: string }
+          return context.render(
+            <ConsultaPage
+              user={user}
+              {...await datosDeConsulta(context.request)}
+              revision={{ inicio, cierre }}
+              error={datos.error ?? 'No se pudo guardar el periodo.'}
+            />,
+            { status: respuesta.status },
+          )
+        }
+        olvidarTemaPublico()
+        return redirect(`${adminRoutes.consulta.index.href()}?programada=1`)
+      }
       const etapa = String(formData.get('etapa') ?? '')
       if (!esEtapaConsulta(etapa)) {
         return context.render(

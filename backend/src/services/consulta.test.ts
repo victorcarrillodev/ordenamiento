@@ -7,6 +7,7 @@ import {
   leerEstadoConsulta,
   puedePasarA,
   recibeParticipaciones,
+  programarConsulta,
 } from './consulta.ts'
 
 const USUARIO = { id: 'u1', name: 'Admin', email: 'admin@x.mx' }
@@ -82,6 +83,62 @@ describe('etapas de la consulta', () => {
 })
 
 describe('cambiar la etapa', () => {
+  it('programa el periodo con autor y sin alterar la etapa manual guardada', async () => {
+    tema({})
+    const resultado = await programarConsulta(
+      '2026-11-01T09:00:00-06:00',
+      '2026-11-30T18:00:00-06:00',
+      USUARIO,
+    )
+    expect(resultado.ok).toBe(true)
+    expect(guardado[0].config).toEqual({
+      programa: {
+        consultaProgramacion: {
+          inicio: '2026-11-01T15:00:00.000Z',
+          cierre: '2026-12-01T00:00:00.000Z',
+        },
+      },
+    })
+    expect(guardado[0].user).toEqual(USUARIO)
+  })
+
+  it('rechaza fechas sin zona horaria, vacías o con término no posterior', async () => {
+    tema({})
+    for (const [inicio, cierre] of [
+      ['', ''],
+      ['2026-11-01T09:00', '2026-11-02T09:00'],
+      ['2026-11-02T09:00:00Z', '2026-11-01T09:00:00Z'],
+      ['2026-02-31T09:00:00Z', '2026-03-04T09:00:00Z'],
+    ]) {
+      expect((await programarConsulta(inicio, cierre, USUARIO)).ok).toBe(false)
+    }
+    expect(guardado).toEqual([])
+  })
+
+  it('abre al inicio exacto y cierra al término exacto, incluso tras un reinicio', async () => {
+    tema({
+      consulta: 'pendiente',
+      consultaProgramacion: { inicio: '2026-11-01T15:00:00Z', cierre: '2026-11-02T15:00:00Z' },
+    })
+    for (const [instante, etapa] of [
+      ['2026-11-01T14:59:59Z', 'pendiente'],
+      ['2026-11-01T15:00:00Z', 'abierta'],
+      ['2026-11-02T14:59:59Z', 'abierta'],
+      ['2026-11-02T15:00:00Z', 'concluida'],
+    ] as const)
+      expect((await leerEstadoConsulta(new Date(instante))).etapa).toBe(etapa)
+    expect(guardado).toEqual([])
+  })
+
+  it('el control manual elimina la programación para que no se revierta solo', async () => {
+    tema({
+      consultaProgramacion: { inicio: '2026-10-01T00:00:00Z', cierre: '2026-10-06T00:00:00Z' },
+    })
+    await cambiarEtapaConsulta('concluida', USUARIO, AHORA)
+    expect(guardado[0].config).toMatchObject({
+      programa: { consultaProgramacion: null, consulta: 'concluida' },
+    })
+  })
   it('iniciar fija el inicio y lo deja en la bitácora de cambios', async () => {
     tema({ consulta: 'pendiente' })
     const r = await cambiarEtapaConsulta('abierta', USUARIO, AHORA)

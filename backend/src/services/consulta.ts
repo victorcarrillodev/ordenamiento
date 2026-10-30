@@ -9,8 +9,7 @@
  *    responsable puede seguir cargando y publicando respuestas.
  *
  * La etapa vive en la configuración del portal (`programa.consulta`), junto a la
- * aprobación del Programa, y la cambia una persona del panel; no se calcula por
- * fechas porque el inicio y el cierre los decide el área responsable.
+ * aprobación del Programa. El panel permite control manual o un periodo programado.
  */
 import { getCustomizations, saveCustomizations } from './customizations.ts'
 
@@ -24,6 +23,7 @@ export interface EstadoConsulta {
   etapa: EtapaConsulta
   inicio: string | null
   cierre: string | null
+  programacion?: { inicio: string; cierre: string } | null
 }
 
 /**
@@ -41,8 +41,22 @@ export const puedePasarA = (de: EtapaConsulta, a: EtapaConsulta): boolean =>
   TRANSICIONES[de].includes(a)
 
 /** Lee la etapa actual. Un valor desconocido en la configuración se trata como «pendiente»: nunca abre sola. */
-export async function leerEstadoConsulta(): Promise<EstadoConsulta> {
+export async function leerEstadoConsulta(ahora: Date = new Date()): Promise<EstadoConsulta> {
   const { programa } = await getCustomizations()
+  const periodo = programa?.consultaProgramacion
+  if (periodo && Date.parse(periodo.inicio) < Date.parse(periodo.cierre)) {
+    return {
+      etapa:
+        ahora.getTime() < Date.parse(periodo.inicio)
+          ? 'pendiente'
+          : ahora.getTime() < Date.parse(periodo.cierre)
+            ? 'abierta'
+            : 'concluida',
+      inicio: periodo.inicio,
+      cierre: periodo.cierre,
+      programacion: periodo,
+    }
+  }
   return {
     etapa: esEtapaConsulta(programa?.consulta) ? programa.consulta : 'pendiente',
     inicio: programa?.consultaInicio ?? null,
@@ -57,6 +71,53 @@ export async function recibeParticipaciones(): Promise<boolean> {
 
 export type ResultadoCambio = { ok: true; estado: EstadoConsulta } | { ok: false; error: string }
 
+/** Valida instantes explícitos: el servidor nunca interpreta la zona horaria del navegador. */
+export function periodoValido(inicio: unknown, cierre: unknown): boolean {
+  const iso = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/
+  const valido = (valor: unknown): valor is string => {
+    if (typeof valor !== 'string' || !iso.test(valor) || !Number.isFinite(Date.parse(valor)))
+      return false
+    const dia = new Date(`${valor.slice(0, 10)}T00:00:00Z`)
+    return (
+      dia.toISOString().slice(0, 10) === valor.slice(0, 10) &&
+      Number(valor.slice(11, 13)) < 24 &&
+      Number(valor.slice(14, 16)) < 60
+    )
+  }
+  return valido(inicio) && valido(cierre) && Date.parse(inicio) < Date.parse(cierre)
+}
+
+export async function programarConsulta(
+  inicio: unknown,
+  cierre: unknown,
+  user: { id: string; name: string; email: string },
+): Promise<ResultadoCambio> {
+  if (!periodoValido(inicio, cierre)) {
+    return {
+      ok: false,
+      error: 'Indica inicio y término válidos; el término debe ser posterior al inicio.',
+    }
+  }
+  const periodo = {
+    inicio: new Date(inicio as string).toISOString(),
+    cierre: new Date(cierre as string).toISOString(),
+  }
+  await saveCustomizations({
+    config: { programa: { consultaProgramacion: periodo } } as never,
+    user,
+    section: 'general',
+    motivo: `Consulta pública programada: ${periodo.inicio} a ${periodo.cierre}`,
+  })
+  const ahora = Date.now()
+  const etapa =
+    ahora < Date.parse(periodo.inicio)
+      ? 'pendiente'
+      : ahora < Date.parse(periodo.cierre)
+        ? 'abierta'
+        : 'concluida'
+  return { ok: true, estado: { etapa, ...periodo, programacion: periodo } }
+}
+
 const MOTIVO: Record<EtapaConsulta, string> = {
   pendiente: 'Consulta pública: se deshizo el inicio',
   abierta: 'Consulta pública: se inició (se reciben participaciones)',
@@ -69,17 +130,19 @@ export async function cambiarEtapaConsulta(
   user: { id: string; name: string; email: string },
   ahora: Date = new Date(),
 ): Promise<ResultadoCambio> {
-  const actual = await leerEstadoConsulta()
-  if (actual.etapa === nueva) return { ok: true, estado: actual }
-  if (!puedePasarA(actual.etapa, nueva)) {
+  const actual = await leerEstadoConsulta(ahora)
+  if (actual.etapa === nueva && !actual.programacion) return { ok: true, estado: actual }
+  if (actual.etapa !== nueva && !puedePasarA(actual.etapa, nueva)) {
     return { ok: false, error: `No se puede pasar de «${actual.etapa}» a «${nueva}»` }
   }
 
   const marca = ahora.toISOString()
   const programa = {
     consulta: nueva,
+    ...(actual.programacion ? { consultaProgramacion: null } : {}),
     // Iniciar (o reabrir) fija el inicio la primera vez y limpia el cierre; concluir fija el cierre.
-    consultaInicio: nueva === 'pendiente' ? null : (actual.inicio ?? marca),
+    consultaInicio:
+      nueva === 'pendiente' ? null : actual.inicio && actual.inicio < marca ? actual.inicio : marca,
     consultaCierre: nueva === 'concluida' ? marca : null,
   }
   await saveCustomizations({

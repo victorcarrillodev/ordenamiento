@@ -87,6 +87,7 @@ function renderPlantillaBase({
   contenidoHtml,
   pieExtra,
   pieEntidad = 'Dirección de Medio Ambiente y Ecología',
+  leyenda = 'Este acuse digital tiene validez oficial de confirmación de recepción ciudadana.',
 }: {
   titulo: string
   subtitulo?: string
@@ -96,6 +97,7 @@ function renderPlantillaBase({
   pieExtra?: string
   /** Dependencia que firma el pie. Los mensajes de la consulta pública llevan la que recibe y responde. */
   pieEntidad?: string
+  leyenda?: string
 }): string {
   const anio = new Date().getFullYear()
 
@@ -322,9 +324,9 @@ function renderPlantillaBase({
             <!-- Footer -->
             <div class="footer">
               <div class="footer-highlight">${escapeHtml(pieEntidad)}</div>
-              <div>Bitácora &bull; Programa de Ordenamiento Ecológico y Territorial de San Pedro Tlaquepaque</div>
+              <div>Bitácora · Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano de San Pedro Tlaquepaque</div>
               <div style="margin-top: 10px; font-size: 11px; color: #94A3B8;">
-                Este acuse digital tiene validez oficial de confirmación de recepción ciudadana. &copy; ${anio} San Pedro Tlaquepaque, Jalisco.
+                ${leyenda ? escapeHtml(leyenda) : ''} &copy; ${anio} San Pedro Tlaquepaque, Jalisco.
               </div>
             </div>
           </div>
@@ -336,7 +338,13 @@ function renderPlantillaBase({
 </html>`
 }
 
-const DIRECCION_RESPONSABLE = 'Dirección de Gestión Territorial y Planeación Urbana'
+const DIRECCION_RESPONSABLE = 'Secretaría de Planificación, Análisis y Gestión Urbana'
+const DIRECCION_OFICINAS =
+  'calle Juárez 28, colonia Centro, C. P. 45500, San Pedro Tlaquepaque, Jalisco'
+// Ubicación publicada para Juárez 28 por el directorio municipal:
+// https://transparencia.tlaquepaque.gob.mx/8_i_j_directorio/
+export const ENLACE_OFICINAS = 'https://goo.gl/maps/vaTCrEB6qjQpMq1o9'
+const ubicacionOficinas = `<a href="${escapeHtml(ENLACE_OFICINAS)}">${escapeHtml(DIRECCION_OFICINAS)}</a>`
 
 /** Asunto del correo de confirmación que acompaña al acuse. */
 export const asuntoAcuse = (folio: string) =>
@@ -419,7 +427,7 @@ export async function enviarAcuseReciboParticipacion(
 
     <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.consulta)}</div>
     <p style="font-size: 13.5px; line-height: 1.6; color: #334155;">${escapeHtml(TEXTOS_ACUSE.consulta1)}</p>
-    <p style="font-size: 13.5px; line-height: 1.6; color: #334155;">${escapeHtml(TEXTOS_ACUSE.consulta2)}</p>
+    <p style="font-size: 13.5px; line-height: 1.6; color: #334155;">Las respuestas estarán disponibles para consulta en la Bitácora, mediante el folio asignado, y de forma presencial en las oficinas de la ${escapeHtml(DIRECCION_RESPONSABLE)}, ubicadas en ${ubicacionOficinas}. Asimismo, se enviará una notificación al correo electrónico registrado.</p>
   `
 
   const html = renderPlantillaBase({
@@ -429,6 +437,8 @@ export async function enviarAcuseReciboParticipacion(
     badgeColor: '#7A1A37',
     contenidoHtml,
     pieEntidad: DIRECCION_RESPONSABLE,
+    leyenda:
+      'Este acuse acredita la recepción de su participación en la consulta pública del Proyecto del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano de San Pedro Tlaquepaque',
   })
 
   const transporter = getTransporter()
@@ -485,6 +495,8 @@ export async function enviarCorreoRespuesta(input: {
     badgeColor: '#7A1A37',
     contenidoHtml,
     pieEntidad: DIRECCION_RESPONSABLE,
+    leyenda:
+      'Este correo contiene la respuesta a su participación presentada durante la consulta pública del Proyecto del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano de San Pedro Tlaquepaque',
   })
 
   const transporter = getTransporter()

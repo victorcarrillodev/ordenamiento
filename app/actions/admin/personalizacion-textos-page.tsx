@@ -33,6 +33,14 @@ export interface PersonalizacionTextosPageProps {
 
 /** En qué parte del portal sale cada grupo de textos, y con qué icono se reconoce. */
 export const INFO_DE_GRUPO: Record<string, { icono: string; donde: string }> = {
+  consulta: {
+    icono: 'mdi:calendar-clock-outline',
+    donde: 'Los avisos que sustituyen al formulario antes del inicio y después del cierre.',
+  },
+  documentos: {
+    icono: 'mdi:file-document-outline',
+    donde: 'El recuadro guinda que abre el listado de documentos del Programa.',
+  },
   navbar: { icono: 'mdi:dock-top', donde: 'La barra superior de todas las páginas del portal.' },
   hero: {
     icono: 'mdi:image-area',
@@ -199,7 +207,7 @@ export function PersonalizacionTextosPage(handle: Handle<PersonalizacionTextosPa
                 pie="Los textos se ven aquí mientras los escribes. Los colores, las fotos y los íconos son los guardados."
                 enlaceEnVivo={routes.home.href()}
               >
-                <VistaPortal {...propsDeVistaPortal(theme)} />
+                <VistaPortal {...propsDeVistaPortal(theme)} mostrarConsulta />
               </VistaPreviaLateral>
             </div>
 

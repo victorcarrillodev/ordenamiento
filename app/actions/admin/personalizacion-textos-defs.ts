@@ -23,6 +23,53 @@ export interface GrupoTextos {
 
 export const GRUPOS_TEXTOS: GrupoTextos[] = [
   {
+    id: 'consulta',
+    titulo: 'Avisos de la consulta pública',
+    campos: [
+      {
+        key: 'consultaPendienteTitulo',
+        name: 'txt_consulta_pendiente_titulo',
+        label: 'Antes del inicio · título',
+        rows: 1,
+      },
+      {
+        key: 'consultaPendienteTexto',
+        name: 'txt_consulta_pendiente_texto',
+        label: 'Antes del inicio · mensaje',
+        rows: 4,
+        full: true,
+      },
+      {
+        key: 'consultaConcluidaTitulo',
+        name: 'txt_consulta_concluida_titulo',
+        label: 'Al concluir · título',
+        rows: 1,
+      },
+      {
+        key: 'consultaConcluidaTexto',
+        name: 'txt_consulta_concluida_texto',
+        label: 'Al concluir · mensaje',
+        rows: 4,
+        full: true,
+      },
+    ],
+  },
+  {
+    id: 'documentos',
+    titulo: 'Recuadro de documentos del Programa',
+    campos: [
+      { key: 'documentosTitulo', name: 'txt_documentos_titulo', label: 'Título', rows: 1 },
+      {
+        key: 'documentosTexto',
+        name: 'txt_documentos_texto',
+        label: 'Descripción',
+        rows: 3,
+        full: true,
+      },
+      { key: 'documentosBoton', name: 'txt_documentos_boton', label: 'Botón', rows: 1 },
+    ],
+  },
+  {
     id: 'navbar',
     titulo: 'Barra de navegación',
     campos: [

@@ -276,8 +276,8 @@ describe('Elaboración del POETDUM · Proyecto del Programa y Participaciones y 
         },
         items: [{ folio: 'SPAGU-DGTPU-E-0018', fecha: '2026-09-24', oficio: null }],
       })
-      expect(texto).toContain('Consulta pública concluida')
-      expect(texto).toContain(TEXTO_CONSULTA_CONCLUIDA)
+      expect(texto).toContain('El periodo de consulta pública ha concluido.')
+      expect(texto).toContain(TEXTO_CONSULTA_CONCLUIDA.replace(/\s+/g, ' '))
       expect(texto).toContain('Documento técnico')
       expect(texto).toContain('SPAGU-DGTPU-E-0018')
     })

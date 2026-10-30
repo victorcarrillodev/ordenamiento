@@ -8,11 +8,13 @@ import { AdminLayout } from '../../ui/admin/admin-layout.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
 import { Button } from '../../ui/button.tsx'
 import { PanelProyecto } from './proyecto-panel.tsx'
+import { duracionConsulta, fechaParaCampo } from '../../utils/periodo-consulta.ts'
 
 export interface EstadoConsultaAdmin {
   etapa: EtapaConsulta
   inicio: string | null
   cierre: string | null
+  programacion?: { inicio: string; cierre: string } | null
 }
 
 export interface ConsultaPageProps {
@@ -25,6 +27,8 @@ export interface ConsultaPageProps {
   /** Acción que se acaba de hacer sobre los documentos del Proyecto, para confirmarla. */
   proyectoCambio?: string
   error?: string
+  revision?: { inicio: string; cierre: string }
+  programada?: boolean
 }
 
 const CONFIRMACION_PROYECTO: Record<string, string> = {
@@ -114,7 +118,8 @@ function Accion(
 
 export function ConsultaPage(handle: Handle<ConsultaPageProps>) {
   return () => {
-    const { user, estado, proyecto, cambio, proyectoCambio, error } = handle.props
+    const { user, estado, proyecto, cambio, proyectoCambio, error, revision, programada } =
+      handle.props
     const { etapa } = estado
     return (
       <AdminLayout
@@ -134,6 +139,86 @@ export function ConsultaPage(handle: Handle<ConsultaPageProps>) {
         }
       >
         {error ? <AdminAlert type="error" message={error} /> : null}
+        {programada ? (
+          <AdminAlert
+            type="success"
+            message="Periodo programado. El inicio y el cierre se aplicarán automáticamente."
+          />
+        ) : null}
+        <section class="panel">
+          <h2 class="panel__title">Programar la consulta pública</h2>
+          <p>
+            Las fechas y horas corresponden a San Pedro Tlaquepaque (hora del centro de México).
+          </p>
+          {estado.programacion ? (
+            <p>
+              Periodo vigente: {fecha(estado.programacion.inicio)} a{' '}
+              {fecha(estado.programacion.cierre)}. Duración:{' '}
+              {duracionConsulta(estado.programacion.inicio, estado.programacion.cierre)}.
+            </p>
+          ) : (
+            <p>Actualmente se usa el control manual.</p>
+          )}
+          <form method="post">
+            <input type="hidden" name="accion" value="revisar" />
+            <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+              <label>
+                Inicio
+                <input
+                  type="datetime-local"
+                  name="inicio"
+                  required
+                  value={fechaParaCampo(revision?.inicio ?? estado.programacion?.inicio)}
+                />
+              </label>
+              <label>
+                Término
+                <input
+                  type="datetime-local"
+                  name="cierre"
+                  required
+                  value={fechaParaCampo(revision?.cierre ?? estado.programacion?.cierre)}
+                />
+              </label>
+            </div>
+            <Button buttonType="submit" variant="outlined">
+              Revisar periodo
+            </Button>
+          </form>
+          {revision ? (
+            <div class="campo" style="margin-top:16px;">
+              <h3>Revisa antes de confirmar</h3>
+              <p>
+                Inicio: {fecha(revision.inicio)}. Término: {fecha(revision.cierre)}.
+              </p>
+              <p>Duración: {duracionConsulta(revision.inicio, revision.cierre)}.</p>
+              <p>
+                Al inicio se mostrarán el formulario y los documentos del Proyecto. Al término se
+                cerrará la recepción y seguirán disponibles los documentos y las respuestas
+                publicadas.
+              </p>
+              <form method="post">
+                <input type="hidden" name="accion" value="programar" />
+                <input type="hidden" name="inicio" value={fechaParaCampo(revision.inicio)} />
+                <input type="hidden" name="cierre" value={fechaParaCampo(revision.cierre)} />
+                <Button buttonType="submit" variant="dark">
+                  Confirmar programación
+                </Button>
+              </form>
+            </div>
+          ) : null}
+          {estado.programacion ? (
+            <>
+              <p>Las acciones manuales sustituyen la programación vigente.</p>
+              <Accion
+                etapa={etapa}
+                texto="Usar control manual"
+                variante="outlined"
+                confirmar="¿Quitar la programación automática y conservar la etapa actual?"
+              />
+            </>
+          ) : null}
+        </section>
         {cambio ? <AdminAlert type="success" message={CONFIRMACION[cambio]} /> : null}
         {proyectoCambio && CONFIRMACION_PROYECTO[proyectoCambio] && !error ? (
           <AdminAlert type="success" message={CONFIRMACION_PROYECTO[proyectoCambio]} />

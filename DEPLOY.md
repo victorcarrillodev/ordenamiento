@@ -110,7 +110,24 @@ La consulta pública tiene tres etapas —**pendiente**, **abierta** y
 Consulta pública**. Mientras esté pendiente no se reciben participaciones y el
 apartado «Proyecto del Programa» no se muestra; al iniciarla se hace visible y
 se abre el formulario; al concluirla se cierra la recepción y el portal muestra
-el mensaje «Consulta pública concluida».
+el mensaje «El periodo de consulta pública ha concluido».
+
+Desde esa misma pantalla se puede programar inicio y término con hora de San Pedro
+Tlaquepaque. **Revisar periodo** muestra ambas fechas y la duración antes de
+**Confirmar programación**. La API calcula la etapa en cada petición, incluso
+si el servidor se reinicia o estuvo apagado durante un límite. Las páginas del
+formulario y del Programa se recargan al llegar al inicio o al cierre si quedaron abiertas.
+Una acción manual sustituye la programación; las fechas siguen editables desde el panel.
+
+En **Personalización → Textos del portal** se editan los avisos y el recuadro de
+documentos. Por defecto llevan los textos acordados en las observaciones de la
+Bitácora; un campo vacío recupera ese texto. Al cerrar siguen disponibles los
+documentos del Proyecto y se pueden cargar y publicar respuestas.
+
+Los nuevos folios electrónicos usan la secuencia existente (`E`) y los nuevos
+presenciales una secuencia independiente (`P`). Al arrancar el backend se crea
+la secuencia presencial y se avanza hasta el mayor folio P ya emitido o reservado.
+No se renumeran registros ni formatos anteriores: sus acuses y enlaces se conservan.
 
 > **Al actualizar una instalación que ya recibía participaciones:** la consulta
 > arranca en _pendiente_ y el formulario dejará de recibir hasta que alguien con

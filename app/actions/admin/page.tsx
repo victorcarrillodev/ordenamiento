@@ -243,6 +243,10 @@ export function AdminPage(handle: Handle<AdminPageProps>) {
             icono="mdi:account-group-outline"
           />
         </div>
+        <p class="meta-label">
+          Participaciones electrónicas: {stats.digitales} · Presenciales: {stats.fisicas} · Total
+          general: {totalParticipaciones}
+        </p>
 
         {/* Analítica a la izquierda y agenda a la derecha. Las dos columnas se reparten
             el alto de la ventana (ver `.content--ajustada` y `.dash` en admin.css): ningún

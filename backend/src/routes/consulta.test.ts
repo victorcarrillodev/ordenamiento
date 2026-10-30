@@ -50,6 +50,17 @@ describe('GET /api/consulta', () => {
 })
 
 describe('PUT /api/consulta', () => {
+  it('solo el panel puede programar y se rechazan fechas inválidas', async () => {
+    const cuerpo = {
+      accion: 'programar',
+      inicio: '2026-11-01T15:00:00Z',
+      cierre: '2026-11-02T15:00:00Z',
+    }
+    expect((await pedir('PUT', null, cuerpo))?.status).toBe(403)
+    expect((await pedir('PUT', CIUDADANO, cuerpo))?.status).toBe(403)
+    expect((await pedir('PUT', ADMIN, { ...cuerpo, cierre: cuerpo.inicio }))?.status).toBe(400)
+    expect((await pedir('PUT', ADMIN, cuerpo))?.status).toBe(200)
+  })
   it('un admin inicia la consulta', async () => {
     const res = await pedir('PUT', ADMIN, { etapa: 'abierta' })
     expect(res?.status).toBe(200)

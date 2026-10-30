@@ -4,10 +4,10 @@
  */
 import { css, type Handle } from 'remix/ui'
 
-import { TEXTO_CONSULTA_CONCLUIDA, TITULO_CONSULTA_CONCLUIDA } from '../../../data/consulta.ts'
-import { colors, FONT_STACK } from '../../../ui/civic-horizon.ts'
+import { avisoSinRecepcion } from '../../../data/consulta.ts'
+import { colors, FONT_STACK, type ThemeData } from '../../../ui/civic-horizon.ts'
 
-export function ConsultaConcluidaAviso(handle: Handle<{ visible: boolean }>) {
+export function ConsultaConcluidaAviso(handle: Handle<{ visible: boolean; theme?: ThemeData }>) {
   return () => {
     if (!handle.props.visible) return null
     return (
@@ -41,7 +41,7 @@ export function ConsultaConcluidaAviso(handle: Handle<{ visible: boolean }>) {
               margin: '0 0 10px',
             })}
           >
-            {TITULO_CONSULTA_CONCLUIDA}
+            {avisoSinRecepcion('concluida', handle.props.theme)!.titulo}
           </h2>
           <p
             mix={css({
@@ -51,9 +51,10 @@ export function ConsultaConcluidaAviso(handle: Handle<{ visible: boolean }>) {
               color: colors.gray700,
               margin: 0,
               textAlign: 'justify',
+              whiteSpace: 'pre-line',
             })}
           >
-            {TEXTO_CONSULTA_CONCLUIDA}
+            {avisoSinRecepcion('concluida', handle.props.theme)!.texto}
           </p>
         </div>
       </section>

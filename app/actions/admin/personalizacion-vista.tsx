@@ -13,6 +13,7 @@
  * un clic en la maqueta lleva al campo que lo cambia (`data-ir`).
  */
 import type { Handle, RemixNode } from 'remix/ui'
+import { TEXTOS_CONSULTA_PORTAL } from '../../data/consulta.ts'
 
 import { Icon } from '../../ui/admin/icon.tsx'
 import {
@@ -35,6 +36,7 @@ import {
 // ---------------------------------------------------------------------------
 
 export interface VistaPortalProps {
+  mostrarConsulta?: boolean
   colores: ColoresPortal
   capa: CapaDePortada
   fotos: string[]
@@ -345,6 +347,16 @@ export function VistaPortal(handle: Handle<VistaPortalProps>) {
             />
           </div>
 
+          {handle.props.mostrarConsulta ? (
+            <details style="padding:16px;background:#fff;color:#334155;">
+              <summary>Avisos de consulta y documentos</summary>
+              {Object.entries(TEXTOS_CONSULTA_PORTAL).map(([clave, respaldo]) => (
+                <div key={clave} style="margin-top:10px;white-space:pre-line;">
+                  <Tx textos={textos} clave={clave} respaldo={respaldo} />
+                </div>
+              ))}
+            </details>
+          ) : null}
           <div class="pz-v-pie" data-zona="pie" data-ir="pz-colores">
             <img
               class="pz-v-pie__logo"

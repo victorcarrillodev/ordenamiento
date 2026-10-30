@@ -5,7 +5,12 @@
  *    decidir qué mostrar.
  *  · `PUT /api/consulta` — admin: `{ "etapa": "abierta" | "concluida" | "pendiente" }`.
  */
-import { cambiarEtapaConsulta, esEtapaConsulta, leerEstadoConsulta } from '../services/consulta.ts'
+import {
+  cambiarEtapaConsulta,
+  esEtapaConsulta,
+  leerEstadoConsulta,
+  programarConsulta,
+} from '../services/consulta.ts'
 import { bodyTooLarge, json, logger } from '../utils.ts'
 import { exigirAdmin, type ManejadorRuta } from './ruta.ts'
 
@@ -20,7 +25,23 @@ export const rutasConsulta: ManejadorRuta = async (ctx) => {
     if (bodyTooLarge(ctx.request, 4 * 1024))
       return json({ error: 'Petición demasiado grande' }, 413)
 
-    const cuerpo = (await ctx.request.json().catch(() => ({}))) as { etapa?: unknown }
+    const cuerpo = (await ctx.request.json().catch(() => ({}))) as {
+      etapa?: unknown
+      accion?: unknown
+      inicio?: unknown
+      cierre?: unknown
+    }
+    if (cuerpo.accion === 'programar') {
+      try {
+        const resultado = await programarConsulta(cuerpo.inicio, cuerpo.cierre, ctx.user!)
+        return resultado.ok
+          ? json(await leerEstadoConsulta())
+          : json({ error: resultado.error }, 400)
+      } catch (err) {
+        logger.error('consulta.programar', err)
+        return json({ error: 'No se pudo guardar la programación' }, 500)
+      }
+    }
     if (!esEtapaConsulta(cuerpo.etapa)) {
       return json({ error: 'etapa inválida: pendiente, abierta o concluida' }, 400)
     }

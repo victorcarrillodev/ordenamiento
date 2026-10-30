@@ -196,7 +196,7 @@ export async function handleCreateParticipation(
       })
     }
 
-    const folio = formato?.folio ?? (await nextFolio())
+    const folio = formato?.folio ?? (await nextFolio(sql, origin))
 
     // El formato escaneado, junto a los adjuntos: si algo falla, se borra con ellos.
     let rutaEscaneado: string | null = null

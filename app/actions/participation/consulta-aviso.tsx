@@ -60,6 +60,7 @@ export function ConsultaAviso(handle: Handle<ConsultaAvisoProps>) {
             color: '#334155',
             margin: '0 0 18px',
             textAlign: 'justify',
+            whiteSpace: 'pre-line',
           })}
         >
           {texto}

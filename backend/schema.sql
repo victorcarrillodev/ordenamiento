@@ -132,7 +132,7 @@ CREATE INDEX IF NOT EXISTS idx_user_sessions_fecha ON user_sessions (started_at 
 
 CREATE TABLE IF NOT EXISTS participations (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  folio        TEXT NOT NULL UNIQUE,             -- autogenerado SPAGU-DGTPU-E-000X
+  folio        TEXT NOT NULL UNIQUE,             -- autogenerado SPAGU-DGTPU-E/P-000X
   origen       TEXT NOT NULL DEFAULT 'digital',  -- 'digital' | 'fisica'
   nombre       TEXT NOT NULL,
   correo       TEXT NOT NULL,
@@ -229,6 +229,9 @@ ALTER TABLE participations ADD COLUMN IF NOT EXISTS captura TEXT NOT NULL DEFAUL
 -- para un formato que todavía no regresa.
 
 CREATE SEQUENCE IF NOT EXISTS folios_participacion;
+-- A partir de esta versión, la secuencia anterior se usa solo para electrónicas.
+-- Los folios ya emitidos y los formatos reservados conservan su identificador.
+CREATE SEQUENCE IF NOT EXISTS folios_participacion_presencial;
 
 -- Formato de participación que se imprime con su folio para que la persona lo
 -- llene de su puño y letra. El folio queda reservado desde que se genera y
@@ -254,10 +257,24 @@ DECLARE
   actual bigint;
 BEGIN
   SELECT COALESCE(MAX((regexp_match(folio, '(\d+)$'))[1]::bigint), 0) INTO maximo
-  FROM (SELECT folio FROM participations UNION ALL SELECT folio FROM formatos_presenciales) f;
+  FROM (SELECT folio FROM participations UNION ALL SELECT folio FROM formatos_presenciales) f
+  WHERE folio ~ '^SPAGU-DGTPU-E-[0-9]+$';
   SELECT CASE WHEN is_called THEN last_value ELSE 0 END INTO actual FROM folios_participacion;
   IF maximo > actual THEN
     PERFORM setval('folios_participacion', maximo, true);
+  END IF;
+END
+$$;
+
+DO $$
+DECLARE maximo bigint; actual bigint;
+BEGIN
+  SELECT COALESCE(MAX((regexp_match(folio, '(\d+)$'))[1]::bigint), 0) INTO maximo
+  FROM (SELECT folio FROM participations UNION ALL SELECT folio FROM formatos_presenciales) f
+  WHERE folio ~ '^SPAGU-DGTPU-P-[0-9]+$';
+  SELECT CASE WHEN is_called THEN last_value ELSE 0 END INTO actual FROM folios_participacion_presencial;
+  IF maximo > actual THEN
+    PERFORM setval('folios_participacion_presencial', maximo, true);
   END IF;
 END
 $$;

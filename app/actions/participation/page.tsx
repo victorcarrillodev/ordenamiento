@@ -17,6 +17,7 @@ import {
 } from '../../ui/nav-bar.tsx'
 import { Document } from '../document.tsx'
 import { ConsultaAviso } from './consulta-aviso.tsx'
+import { ConsultaProgramada } from '../../ui/consulta-programada.tsx'
 import { ParticipationForm } from './participation-form.tsx'
 import { SuccessDialog } from './success-dialog.tsx'
 
@@ -125,6 +126,7 @@ export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
         description="Formulario de participación ciudadana para el Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano de San Pedro Tlaquepaque."
       >
         <NavBar theme={theme} />
+        <ConsultaProgramada theme={theme} />
         <div mix={splitStyle}>
           <aside mix={imagePanelStyle}>
             <div mix={imageStickyStyle}>

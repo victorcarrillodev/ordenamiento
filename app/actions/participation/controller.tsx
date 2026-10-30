@@ -42,7 +42,7 @@ export default createController(routes.participation, {
       const theme = await getPublicTheme(context.request)
       // La confirmación de quien acaba de registrarse se muestra siempre; el
       // formulario, solo mientras la consulta recibe participaciones.
-      const aviso = success ? null : avisoSinRecepcion(etapaDeConsulta(theme))
+      const aviso = success ? null : avisoSinRecepcion(etapaDeConsulta(theme), theme)
       return context.render(
         <ParticipationPage
           success={success}
@@ -197,7 +197,7 @@ export default createController(routes.participation, {
         // estaba en caché): no se pierde el trabajo en silencio, se explica.
         if (backendStatus === 403 && esEtapaConsulta(etapaSinRecepcion)) {
           return context.render(
-            <ParticipationPage theme={theme} aviso={avisoSinRecepcion(etapaSinRecepcion)} />,
+            <ParticipationPage theme={theme} aviso={avisoSinRecepcion(etapaSinRecepcion, theme)} />,
             { status: 403 },
           )
         }

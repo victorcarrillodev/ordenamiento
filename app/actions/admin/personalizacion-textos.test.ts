@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { router } from '../../router.ts'
+import { GRUPOS_TEXTOS } from './personalizacion-textos-defs.ts'
 
 /**
  * Mini-página de textos del portal (personalizacion-textos-controller).
  * Cubre: protección auth, render con valores del tema, motivo obligatorio,
- * y guardado con las 77 claves + section==='usuario'.
+ * y guardado con todas las claves del catálogo + section==='usuario'.
  */
 
 const ORIGINAL_FETCH = globalThis.fetch
@@ -121,8 +122,10 @@ describe('Personalización · textos del portal', () => {
       expect(html).toMatch(/<textarea[^>]*name="txt_hero_titulo"/)
       expect(html).not.toContain('id="editor-txt_hero_titulo"')
       expect(html).not.toContain('id="editor-txt_cta_boton"')
-      // 77 textos, cada uno con su campo.
-      expect(html.match(/<textarea/g)).toHaveLength(77)
+      // Cada texto del catálogo tiene su campo.
+      expect(html.match(/<textarea/g)).toHaveLength(
+        GRUPOS_TEXTOS.reduce((n, g) => n + g.campos.length, 0),
+      )
     })
 
     it('muestra el formato guardado: negritas y alineación por párrafo', async () => {
@@ -218,7 +221,7 @@ describe('Personalización · textos del portal', () => {
     expect(capture.called).toBe(false)
   })
 
-  it('POST con motivo guarda las 77 claves con section usuario', async () => {
+  it('POST con motivo guarda las claves del catálogo con section usuario', async () => {
     const capture = { called: false, body: null as Record<string, unknown> | null }
     mockFetch({ captureThemePost: capture })
     const fd = new FormData()
@@ -246,7 +249,9 @@ describe('Personalización · textos del portal', () => {
     expect(body.config.usuario.textos.proximasVacio).toBe('')
     expect(body.config.usuario.textos).not.toHaveProperty('card1Titulo')
     expect(body.config.usuario.textos.programaParrafo3).toBe('Párrafo independiente')
-    expect(Object.keys(body.config.usuario.textos)).toHaveLength(77)
+    expect(Object.keys(body.config.usuario.textos)).toHaveLength(
+      GRUPOS_TEXTOS.reduce((n, g) => n + g.campos.length, 0),
+    )
     expect(body.section).toBe('usuario')
   })
 })
