@@ -1,6 +1,7 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { colors, FONT_STACK, type ThemeData } from '../ui/civic-horizon.ts'
+import { Icon } from '../ui/admin/icon.tsx'
 import { NAVBAR_ALTURA, NAVBAR_ALTURA_MOVIL, NAVBAR_CORTE_MOVIL, NavBar } from '../ui/nav-bar.tsx'
 import { Document } from './document.tsx'
 
@@ -378,13 +379,13 @@ export function ErrorPage(handle: Handle<ErrorPageProps>) {
 
                 <div mix={actionsContainerStyle}>
                   <a href={info.primaryAction.href} mix={primaryBtnStyle}>
-                    <iconify-icon icon={info.primaryAction.icon} width="18" height="18" />
+                    <Icon name={info.primaryAction.icon} size={18} />
                     <span>{info.primaryAction.label}</span>
                   </a>
 
                   {info.secondaryAction && (
                     <a href={info.secondaryAction.href} mix={secondaryBtnStyle}>
-                      <iconify-icon icon={info.secondaryAction.icon} width="18" height="18" />
+                      <Icon name={info.secondaryAction.icon} size={18} />
                       <span>{info.secondaryAction.label}</span>
                     </a>
                   )}

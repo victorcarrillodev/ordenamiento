@@ -121,6 +121,45 @@ export function diaYMes(iso: string): { dia: string; mes: string } {
   return { dia: String(dia), mes: (MESES[mes] ?? '').slice(0, 3) }
 }
 
+/**
+ * Días de calendario de `desde` a `fecha` (ambas `YYYY-MM-DD`): positivo si `fecha` es
+ * posterior. Se cuenta en UTC sobre la fecha sola, así que ni la zona horaria ni el
+ * cambio de horario mueven el resultado un día.
+ */
+export function diasEntre(desde: string, fecha: string): number {
+  const dia = (iso: string) => {
+    const { anio, mes, dia } = parsearFecha(iso)
+    // `Date.UTC` toma los años 0-99 como 1900-1999: se fija el año aparte.
+    const t = new Date(Date.UTC(2000, mes, dia))
+    t.setUTCFullYear(anio)
+    return t.getTime()
+  }
+  return Math.round((dia(fecha) - dia(desde)) / 86_400_000)
+}
+
+/**
+ * Cuánto falta o cuánto pasó, en palabras: «Hoy», «Mañana», «Ayer», «En 5 días»,
+ * «Hace 3 semanas», «En 2 meses», «Hace 1 año». Sirve para decidir de un vistazo qué
+ * actividad es la siguiente; por eso la unidad crece con la distancia (a tres meses
+ * ya no importa si faltan 92 o 93 días).
+ */
+export function relativoA(hoy: string, fecha: string): string {
+  const d = diasEntre(hoy, fecha)
+  if (d === 0) return 'Hoy'
+  if (d === 1) return 'Mañana'
+  if (d === -1) return 'Ayer'
+  const n = Math.abs(d)
+  const [cantidad, unidad] =
+    n < 14
+      ? [n, n === 1 ? 'día' : 'días']
+      : n < 60
+        ? [Math.floor(n / 7), 'semanas']
+        : n < 365
+          ? [Math.floor(n / 30), 'meses'] // desde los 60 días son 2 meses o más
+          : [Math.floor(n / 365), Math.floor(n / 365) === 1 ? 'año' : 'años']
+  return d > 0 ? `En ${cantidad} ${unidad}` : `Hace ${cantidad} ${unidad}`
+}
+
 /** '10:00 – 12:00'; solo el inicio si no hay fin; '' si no hay horario. */
 export function horario(inicio: string, fin: string): string {
   if (inicio && fin) return `${inicio} – ${fin}`

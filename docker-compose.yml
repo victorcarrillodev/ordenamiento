@@ -58,10 +58,8 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
-      MAIL_FROM: ${MAIL_FROM:-}
-      # Remitente de los acuses y de las respuestas a las participaciones. Por
-      # omisión, consulta.poetdum@tlaquepaque.gob.mx (ver DEPLOY.md).
-      MAIL_FROM_CONSULTA: ${MAIL_FROM_CONSULTA:-}
+      # El remitente de los correos no se configura aquí: es el correo de
+      # contacto del pie de página (Personalización → Textos del portal).
       # Origen público del portal. Solo lo usa el correo de recuperación de
       # contraseña, para construir el enlace de restablecimiento. Se toma de
       # aquí y NUNCA de la cabecera `Host` de la petición: un `Host` falsificado
@@ -107,7 +105,6 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
-      MAIL_FROM: ${MAIL_FROM:-}
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-100}
       MAX_UPLOAD_FILES: ${MAX_UPLOAD_FILES:-5}
     ports:

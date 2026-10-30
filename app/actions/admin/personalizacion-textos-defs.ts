@@ -11,6 +11,8 @@ export interface CampoTexto {
    * botones quedan como texto plano porque su aspecto lo decide la página.
    */
   rico?: boolean
+  /** Nota bajo el campo, para lo que no se adivina con la etiqueta. */
+  ayuda?: string
 }
 
 export interface GrupoTextos {
@@ -439,6 +441,8 @@ export const GRUPOS_TEXTOS: GrupoTextos[] = [
         name: 'txt_footer_email',
         label: 'Correo de contacto oficial',
         rows: 1,
+        ayuda:
+          'Es la dirección que se publica en el pie de página y también el remitente de todos los correos que envía el portal (acuses, respuestas, avisos, restablecimiento de contraseña y bienvenida de cuentas nuevas). Escribe solo la dirección; el servidor de correo debe tener autorizado enviar con ella. Vacío = ordenamiento@tlaquepaque.gob.mx.',
       },
       { key: 'footerCopyright', name: 'txt_footer_copyright', label: 'Aviso de derechos', rows: 1 },
       { key: 'footerFirma', name: 'txt_footer_firma', label: 'Firma del portal', rows: 1 },

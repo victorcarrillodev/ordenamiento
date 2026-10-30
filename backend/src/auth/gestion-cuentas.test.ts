@@ -3,6 +3,7 @@ import { describe, expect, it, spyOn, beforeEach, afterEach } from 'bun:test'
 
 import { handleRequest } from '../app.ts'
 import * as auth from './auth.ts'
+import * as configuracion from './configuracion-cuenta.ts'
 import * as users from '../services/users.ts'
 
 /**
@@ -53,6 +54,7 @@ let rootsSpy: any
 let passwordSpy: any
 let rolSpy: any
 let borrarSpy: any
+let vigenciaSpy: any
 
 /** Quién está autenticado en la petición. */
 function sesion(quien: typeof ROOT) {
@@ -67,10 +69,22 @@ beforeEach(() => {
   passwordSpy = spyOn(auth as any, 'updateUserPassword').mockImplementation(async () => true)
   rolSpy = spyOn(users as any, 'cambiarRol').mockImplementation(async () => true)
   borrarSpy = spyOn(users as any, 'eliminarUsuario').mockImplementation(async () => true)
+  vigenciaSpy = spyOn(configuracion as any, 'renovarVigenciaProvisional').mockImplementation(
+    async () => undefined,
+  )
 })
 
 afterEach(() => {
-  for (const s of [verifySpy, userSpy, cuentaSpy, rootsSpy, passwordSpy, rolSpy, borrarSpy]) {
+  for (const s of [
+    verifySpy,
+    userSpy,
+    cuentaSpy,
+    rootsSpy,
+    passwordSpy,
+    rolSpy,
+    borrarSpy,
+    vigenciaSpy,
+  ]) {
     s.mockRestore()
   }
 })
@@ -217,44 +231,60 @@ describe('Eliminar cuentas', () => {
   })
 })
 
-describe('Crear cuentas', () => {
-  it('admin no puede crear una cuenta root', async () => {
+describe('Crear cuentas: solo el root', () => {
+  const ALTA = {
+    email: 'nuevo@x.mx',
+    name: 'Nuevo',
+    password: 'contrasena-larga',
+    role: 'user',
+  }
+
+  it('un administrador no puede crear ninguna cuenta: ni de ciudadanía, ni de administración, ni root', async () => {
     sesion(ADMIN)
     const registrar = spyOn(auth as any, 'registerUser').mockImplementation(async () => ({
       id: 'x',
     }))
+    try {
+      for (const role of ['user', 'admin', 'root']) {
+        const res = await handleRequest(req('/api/users', 'POST', { ...ALTA, role }))
+        expect(res.status, role).toBe(403)
+        expect(((await res.json()) as any).motivo).toBe('solo_root_crea_cuentas')
+      }
+      expect(registrar).not.toHaveBeenCalled()
+    } finally {
+      registrar.mockRestore()
+    }
+  })
 
-    const res = await handleRequest(
-      req('/api/users', 'POST', {
-        email: 'nuevo@x.mx',
-        name: 'Nuevo',
-        password: 'contrasena-larga',
-        role: 'root',
-      }),
-    )
-
-    expect(res.status).toBe(403)
-    expect(registrar).not.toHaveBeenCalled()
-    registrar.mockRestore()
+  it('sin sesión tampoco', async () => {
+    userSpy.mockImplementation(async () => null)
+    const registrar = spyOn(auth as any, 'registerUser').mockImplementation(async () => ({
+      id: 'x',
+    }))
+    try {
+      const res = await handleRequest(req('/api/users', 'POST', ALTA))
+      expect(res.status).toBe(403)
+      expect(registrar).not.toHaveBeenCalled()
+    } finally {
+      registrar.mockRestore()
+    }
   })
 
   it('un rol inventado no asciende a nadie: cae a ciudadanía', async () => {
-    sesion(ADMIN)
+    sesion(ROOT)
     const registrar = spyOn(auth as any, 'registerUser').mockImplementation(async () => ({
       id: 'x',
     }))
-
-    await handleRequest(
-      req('/api/users', 'POST', {
-        email: 'nuevo@x.mx',
-        name: 'Nuevo',
-        password: 'contrasena-larga',
-        role: 'root ',
-      }),
+    const enlace = spyOn(configuracion as any, 'emitirEnlaceDeConfiguracion').mockImplementation(
+      async () => ({ token: 't'.repeat(43), expiraEn: new Date() }),
     )
-
-    const alta = registrar.mock.calls[0][0] as { role: string }
-    expect(alta.role).toBe('user')
-    registrar.mockRestore()
+    try {
+      await handleRequest(req('/api/users', 'POST', { ...ALTA, role: 'root ' }))
+      const alta = registrar.mock.calls[0][0] as { role: string }
+      expect(alta.role).toBe('user')
+    } finally {
+      registrar.mockRestore()
+      enlace.mockRestore()
+    }
   })
 })

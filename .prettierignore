@@ -6,3 +6,6 @@ dist/
 tmp/
 storybook-static/
 package-lock.json
+
+# Generado por scripts/generar-iconos.mjs (npm run iconos)
+app/ui/admin/iconos.ts

@@ -1,6 +1,7 @@
 import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { FONT_STACK } from '../../ui/civic-horizon.ts'
+import { Icon } from '../../ui/admin/icon.tsx'
 import { SuccessDialogBoost } from './public/success-dialog-boost.tsx'
 
 export interface SuccessDialogProps {
@@ -46,7 +47,7 @@ export function SuccessDialog(handle: Handle<SuccessDialogProps>) {
           aria-hidden="true"
           style="width: 68px; height: 68px; border-radius: 50%; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 34px; margin: 0 auto 18px; box-shadow: 0 0 0 8px rgba(220, 252, 231, 0.5);"
         >
-          <iconify-icon icon="mdi:check-circle" width="40" height="40" />
+          <Icon name="mdi:check-circle" size={40} />
         </div>
 
         <h2
@@ -82,7 +83,7 @@ export function SuccessDialog(handle: Handle<SuccessDialogProps>) {
               download={folio ? `Acuse ${folio}.pdf` : 'Acuse.pdf'}
               style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #8c1d3d; color: #ffffff; font-family: Montserrat, sans-serif; font-size: 14px; font-weight: 700; padding: 13px 28px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 14px rgba(140, 29, 61, 0.3); transition: all 160ms ease;"
             >
-              <iconify-icon icon="mdi:file-download-outline" width="18" height="18" />
+              <Icon name="mdi:file-download-outline" size={18} />
               <span>Descargar acuse PDF</span>
             </a>
           ) : null}
@@ -95,7 +96,7 @@ export function SuccessDialog(handle: Handle<SuccessDialogProps>) {
                 : 'display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #8c1d3d; color: #ffffff; font-family: Montserrat, sans-serif; font-size: 14px; font-weight: 700; padding: 13px 28px; border-radius: 8px; text-decoration: none; box-shadow: 0 4px 14px rgba(140, 29, 61, 0.3); transition: all 160ms ease;'
             }
           >
-            <iconify-icon icon="mdi:home" width="18" height="18" />
+            <Icon name="mdi:home" size={18} />
             <span>Volver al inicio</span>
           </a>
 
@@ -103,7 +104,7 @@ export function SuccessDialog(handle: Handle<SuccessDialogProps>) {
             href={poetdumHref}
             style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #f1f5f9; color: #334155; font-family: Montserrat, sans-serif; font-size: 13.5px; font-weight: 600; padding: 11px 24px; border-radius: 8px; text-decoration: none; border: 1px solid #cbd5e1; transition: all 160ms ease;"
           >
-            <iconify-icon icon="mdi:map-search" width="18" height="18" />
+            <Icon name="mdi:map-search" size={18} />
             <span>Consultar avances del POETDUM</span>
           </a>
         </div>

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  cuantosArchivos,
   formatearDiaFechaHora,
   formatearDuracion,
   formatearFecha,
   formatearFechaHora,
+  formatearHora,
 } from './formato.ts'
 
 describe('formatearDuracion', () => {
@@ -67,5 +69,26 @@ describe('formatearDiaFechaHora', () => {
   it('tolera valores que no son fechas', () => {
     expect(formatearDiaFechaHora('no-es-fecha')).toBe('—')
     expect(formatearDiaFechaHora(null)).toBe('—')
+  })
+})
+
+describe('formatearHora', () => {
+  it('escribe la hora del municipio en 24 horas', () => {
+    // 2026-09-02T18:24:00Z son las 12:24 en America/Mexico_City (UTC-6).
+    expect(formatearHora('2026-09-02T18:24:00Z')).toBe('12:24')
+  })
+
+  it('tolera valores que no son fechas', () => {
+    expect(formatearHora('no-es-fecha')).toBe('—')
+    expect(formatearHora(null)).toBe('—')
+    expect(formatearHora(undefined)).toBe('—')
+  })
+})
+
+describe('cuantosArchivos', () => {
+  it('cuenta en singular y en plural', () => {
+    expect(cuantosArchivos(1)).toBe('1 archivo')
+    expect(cuantosArchivos(2)).toBe('2 archivos')
+    expect(cuantosArchivos(12)).toBe('12 archivos')
   })
 })

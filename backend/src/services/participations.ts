@@ -236,6 +236,50 @@ export async function listParticipations(filters: ListFilters): Promise<ListResu
   return { items, total, page: filters.page, limit: filters.limit }
 }
 
+/** Cuántas participaciones hay en cada etapa del trámite y con cada dictamen. */
+export interface ResumenParticipaciones {
+  total: number
+  /** Etapa derivada (ver `etapaDe`): sale de `estado` y `notificado_en`, no de una columna. */
+  etapas: Record<Etapa, number>
+  estados: Record<Estado, number>
+}
+
+/**
+ * Totales para los filtros del listado del panel («En proceso 3», «Terminada 2»…).
+ * Una sola consulta con `FILTER`, no una por etapa: es lo que se pide en cada carga de
+ * la pantalla. Las condiciones de cada etapa son las mismas que usa `listParticipations`
+ * para filtrar, de modo que el número de la etiqueta es el de filas que enseña el filtro.
+ */
+export async function resumenParticipaciones(origen?: Origen): Promise<ResumenParticipaciones> {
+  const filas = await sql.unsafe<Array<Record<string, string>>>(
+    `SELECT count(*)::text AS total,
+            count(*) FILTER (WHERE estado = 'En proceso' AND notificado_en IS NULL)::text AS en_proceso,
+            count(*) FILTER (WHERE estado <> 'En proceso' AND notificado_en IS NULL)::text AS dictaminada,
+            count(*) FILTER (WHERE notificado_en IS NOT NULL)::text AS notificada,
+            count(*) FILTER (WHERE estado = 'Procedente')::text AS procedente,
+            count(*) FILTER (WHERE estado = 'En proceso')::text AS estado_en_proceso,
+            count(*) FILTER (WHERE estado = 'No procedente')::text AS no_procedente
+       FROM participations
+      WHERE ($1::text IS NULL OR origen = $1::text)`,
+    [origen ?? null],
+  )
+  const f = filas[0] ?? {}
+  const n = (clave: string) => Number(f[clave] ?? 0)
+  return {
+    total: n('total'),
+    etapas: {
+      'En proceso': n('en_proceso'),
+      Dictaminada: n('dictaminada'),
+      Notificada: n('notificada'),
+    },
+    estados: {
+      Procedente: n('procedente'),
+      'En proceso': n('estado_en_proceso'),
+      'No procedente': n('no_procedente'),
+    },
+  }
+}
+
 export async function getParticipation(id: string): Promise<Record<string, unknown> | null> {
   const rows = await sql.unsafe<Array<Record<string, unknown>>>(
     `--sql

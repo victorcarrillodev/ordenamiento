@@ -7,6 +7,7 @@ import { Button } from '../../ui/button.tsx'
 import { Icon } from '../../ui/admin/icon.tsx'
 import { PASSWORD_MAX } from '../../ui/login/types.ts'
 import { formatearFecha, formatearFechaHora } from '../../ui/admin/formato.ts'
+import { claseDeRol, etiquetaDeRol, puedeVerBitacoraDeSesiones } from '../../ui/admin/roles.ts'
 import { FinDeSesion, TiempoDeUso } from './sesiones-celdas.tsx'
 import type { SesionRegistrada } from './sesiones-tipos.ts'
 
@@ -90,9 +91,7 @@ export function CuentaPage(handle: Handle<CuentaPageProps>) {
             <h2 class="perfil__nombre">{nombre}</h2>
             <p class="perfil__correo">{correo}</p>
             <div class="perfil__chips">
-              <span class={'badge ' + (rol === 'admin' ? 'procedente' : 'en-proceso')}>
-                {rol === 'admin' ? 'Administrador' : 'Ciudadano'}
-              </span>
+              <span class={claseDeRol(rol)}>{etiquetaDeRol(rol)}</span>
               <span class="chip">
                 <Icon name="mdi:calendar-account-outline" size={14} />
                 Miembro desde {formatearFecha(profile?.created_at)}
@@ -144,7 +143,7 @@ export function CuentaPage(handle: Handle<CuentaPageProps>) {
               </h2>
             </div>
             <p class="breadcrumb">
-              Es el nombre que aparece en el panel y en la bitácora de sesiones.
+              Es el nombre que aparece en el panel y en los registros del sistema.
             </p>
             <form method="post" action={adminRoutes.cuenta.action.href()} class="form-stack">
               <input type="hidden" name="intent" value="nombre" />
@@ -218,7 +217,7 @@ export function CuentaPage(handle: Handle<CuentaPageProps>) {
             <h2 class="panel__title">
               <Icon name="mdi:history" size={18} /> Tus últimas sesiones
             </h2>
-            {rol === 'admin' ? (
+            {puedeVerBitacoraDeSesiones(user.role) ? (
               <a class="btn btn--white btn--sm" href={adminRoutes.sesiones.href()}>
                 Ver el registro completo →
               </a>

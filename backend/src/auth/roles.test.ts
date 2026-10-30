@@ -6,9 +6,11 @@ import {
   etiquetaDeRol,
   puedeCambiarPassword,
   puedeCambiarRol,
-  puedeCrearConRol,
+  puedeCrearCuenta,
+  puedeCrearCuentas,
   puedeEliminar,
   puedeEntrarAlPanel,
+  puedeVerBitacoraDeSesiones,
 } from './roles.ts'
 
 const root = { id: 'r1', role: 'root' }
@@ -24,6 +26,17 @@ describe('Acceso al panel', () => {
     expect(puedeEntrarAlPanel('user')).toBe(false)
     expect(puedeEntrarAlPanel('inventado')).toBe(false)
     expect(puedeEntrarAlPanel(undefined)).toBe(false)
+  })
+})
+
+describe('Bitácora de sesiones', () => {
+  it('la ve solo el root', () => {
+    expect(puedeVerBitacoraDeSesiones('root')).toBe(true)
+    expect(puedeVerBitacoraDeSesiones('admin')).toBe(false)
+    expect(puedeVerBitacoraDeSesiones('user')).toBe(false)
+    expect(puedeVerBitacoraDeSesiones('inventado')).toBe(false)
+    expect(puedeVerBitacoraDeSesiones(undefined)).toBe(false)
+    expect(puedeVerBitacoraDeSesiones(null)).toBe(false)
   })
 })
 
@@ -65,16 +78,25 @@ describe('Cambiar la contraseña de otra cuenta', () => {
 })
 
 describe('Crear cuentas', () => {
-  it('solo root crea otros root', () => {
-    expect(puedeCrearConRol(root, 'root').permitido).toBe(true)
-    const v = puedeCrearConRol(admin, 'root')
-    expect(v.permitido).toBe(false)
-    expect(v.permitido === false && v.motivo).toBe('solo_root_asigna_root')
+  it('solo el root da de alta cuentas', () => {
+    expect(puedeCrearCuentas('root')).toBe(true)
+    expect(puedeCrearCuentas('admin')).toBe(false)
+    expect(puedeCrearCuentas('user')).toBe(false)
+    expect(puedeCrearCuentas('inventado')).toBe(false)
+    expect(puedeCrearCuentas(undefined)).toBe(false)
+    expect(puedeCrearCuenta(root).permitido).toBe(true)
   })
 
-  it('admin crea administradores y ciudadanía', () => {
-    expect(puedeCrearConRol(admin, 'admin').permitido).toBe(true)
-    expect(puedeCrearConRol(admin, 'user').permitido).toBe(true)
+  it('un administrador no puede crear ninguna cuenta, ni de ciudadanía ni de administración', () => {
+    const v = puedeCrearCuenta(admin)
+    expect(v.permitido).toBe(false)
+    expect(v.permitido === false && v.motivo).toBe('solo_root_crea_cuentas')
+  })
+
+  it('la ciudadanía tampoco', () => {
+    const v = puedeCrearCuenta(ciudadano)
+    expect(v.permitido).toBe(false)
+    expect(v.permitido === false && v.motivo).toBe('solo_root_crea_cuentas')
   })
 })
 

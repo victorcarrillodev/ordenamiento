@@ -5,12 +5,17 @@
  * principal del admin (igual que `estadisticas` o `exportar`); la lógica vive
  * aquí para no engordar aquel archivo.
  *
- * `requireAdminUser` deja fuera a las cuentas sin rol administrador, que es la
- * condición para poder ver quién entró y cuándo.
+ * Es solo para cuentas root: quién entró y cuándo es información de vigilancia
+ * sobre personas. `requireAdminUser` deja fuera a quien no entra al panel y,
+ * dentro del panel, un administrador que escribe la dirección ve «acceso
+ * restringido» (403). El backend vuelve a comprobarlo en GET /api/sessions: esto
+ * solo evita enseñar una pantalla vacía.
  */
 import type { RemixNode } from 'remix/ui'
 
 import { fetchJsonOr, requireAdminUser } from '../../backend.ts'
+import { AccesoRestringido } from '../../ui/admin/acceso-restringido.tsx'
+import { puedeVerBitacoraDeSesiones } from '../../ui/admin/roles.ts'
 import { SesionesPage } from './sesiones-page.tsx'
 import type { ResumenSesiones, SesionRegistrada } from './sesiones-tipos.ts'
 
@@ -46,6 +51,17 @@ interface ContextoRender {
 export async function sesionesAction(context: ContextoRender): Promise<Response> {
   const user = await requireAdminUser(context.request)
   if (user instanceof Response) return user
+
+  if (!puedeVerBitacoraDeSesiones(user.role)) {
+    return context.render(
+      <AccesoRestringido
+        user={user}
+        title="Registro de sesiones"
+        mensaje="El registro de sesiones solo lo puede ver una cuenta root. Tus propias sesiones están en «Mi cuenta»."
+      />,
+      { status: 403 },
+    )
+  }
 
   const params = new URL(context.request.url).searchParams
   const usuarioParam = params.get('user_id') ?? ''

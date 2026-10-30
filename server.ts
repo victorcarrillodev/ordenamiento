@@ -30,6 +30,12 @@ function withCacheHeaders(response: Response, request: Request): Response {
   if (/\.[a-f0-9]{8}\.(js|css|jpg|png|webp|woff|woff2)$/.test(pathname)) {
     headers.set('Cache-Control', 'public, max-age=31536000, immutable')
   }
+  // Hojas de estilo y scripts de public/ con su huella en la dirección (?v=<hash>,
+  // ver app/utils/estaticos.ts): la dirección cambia cuando cambia el contenido,
+  // así que el navegador puede guardarlos un año sin quedarse con una versión vieja.
+  else if (/\.(css|js)\?v=[a-f0-9]+$/.test(pathname + new URL(request.url).search)) {
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable')
+  }
   // Remix sirve módulos con URLs estables: un cambio debe llegar al navegador.
   else if (pathname.includes('/assets/') || /\.(js|css)$/.test(pathname)) {
     headers.set('Cache-Control', 'no-cache')
@@ -84,11 +90,11 @@ function withSecurityHeaders(response: Response): Response {
   if (!headers.has('Content-Security-Policy')) {
     const cspDirectives = [
       "default-src 'self'",
-      "script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://code.iconify.design",
+      "script-src 'self' https://unpkg.com https://cdn.jsdelivr.net",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://unpkg.com https:",
-      "connect-src 'self' http://localhost:* ws://localhost:* ws: wss: https://api.iconify.design",
+      "connect-src 'self' http://localhost:* ws://localhost:* ws: wss:",
       "frame-ancestors 'self'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -136,7 +142,9 @@ const server = http.createServer(
         return withSecurityHeaders(withCacheHeaders(errorRes, request))
       }
 
-      return withSecurityHeaders(withCacheHeaders(res || new Response('Not Found', { status: 404 }), request))
+      return withSecurityHeaders(
+        withCacheHeaders(res || new Response('Not Found', { status: 404 }), request),
+      )
     } catch (error) {
       if (!(request.signal.aborted && error === request.signal.reason)) {
         console.error(error)

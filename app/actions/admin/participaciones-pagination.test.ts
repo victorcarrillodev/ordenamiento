@@ -24,6 +24,21 @@ function mockParticipacionesBackend(capture: {
         }),
       )
     }
+    // Las cifras de los filtros se piden aparte del listado. Se contestan por separado
+    // para que `capture.url` sea siempre la petición del LISTADO, pase lo que pase con
+    // el orden en que la pantalla lance las dos.
+    if (u.includes('/api/participations/resumen')) {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            total: 0,
+            etapas: { 'En proceso': 0, Dictaminada: 0, Notificada: 0 },
+            estados: { Procedente: 0, 'En proceso': 0, 'No procedente': 0 },
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      )
+    }
     if (u.includes('/api/participations')) {
       capture.url = u
       // Echo back page/limit from query for verification, but allow override via capture.response

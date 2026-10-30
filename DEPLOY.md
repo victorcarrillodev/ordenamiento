@@ -40,8 +40,33 @@ eleva a root. Así una instalación anterior no queda sin dueño al actualizar.
 
 Desde el panel, en **Usuarios**, root puede crear cuentas, cambiar rangos, dar
 de baja y **restablecer la contraseña de cualquiera sin conocer la anterior**.
-Un administrador puede lo mismo salvo tocar una cuenta root o repartir ese
-rango; y nadie puede dejar el sistema sin ninguna cuenta root.
+**Solo root da de alta cuentas**: un administrador ve la lista y puede cambiar
+rangos, dar de baja y restablecer contraseñas, salvo tocar una cuenta root o
+repartir ese rango; y nadie puede dejar el sistema sin ninguna cuenta root.
+
+### Alta de cuentas y primer acceso
+
+Al crear una cuenta, root escribe el **nombre**, el **correo** y una
+**contraseña provisional**, y elige el rango. La persona recibe un correo con un
+enlace a su panel de configuración, donde captura su nombre(s) y apellidos,
+crea su propia contraseña (con confirmación) y, si quiere, su foto de perfil;
+al terminar entra al panel.
+
+- **La contraseña provisional no va en el correo.** Root se la entrega por otro
+  medio. Si la persona prefiere entrar con ella en lugar de usar el enlace, al
+  iniciar sesión se le lleva a esa misma pantalla: una cuenta por configurar no
+  abre sesión hasta completarla.
+- El enlace y la contraseña provisional valen **7 días**. Pasado ese plazo, en
+  **Usuarios → Gestionar → Reenviar invitación** root manda un correo nuevo (el
+  enlace anterior deja de servir) y renueva el plazo. Mientras tanto la cuenta
+  aparece como «Pendiente de configurar» o «Invitación vencida».
+- Depende del correo: sin `SMTP_HOST` la cuenta se crea igual, el panel avisa de
+  que no salió la bienvenida y la persona puede entrar con la contraseña
+  provisional. El enlace usa `APP_PUBLIC_URL` (ver más abajo).
+- Al actualizar una instalación que ya tenía cuentas no cambia nada para ellas:
+  las columnas nuevas (`users.setup_pending`, `users.setup_expires_at`) y la
+  tabla `account_setups` se crean solas al arrancar el backend, y las cuentas
+  existentes quedan como ya configuradas.
 
 #### Si te quedas fuera del panel
 
@@ -66,9 +91,9 @@ cuenta, que es lo que se quiere si estaba comprometida.
 «¿Olvidaste tu contraseña?» manda un enlace de un solo uso por correo, así que
 depende de dos variables de `.env`:
 
-- **`SMTP_HOST`** (y `SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`MAIL_FROM`). Sin
-  `SMTP_HOST` el formulario responde «el envío de correo no está disponible»
-  en vez de fallar en silencio.
+- **`SMTP_HOST`** (y `SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`). Sin `SMTP_HOST` el
+  formulario responde «el envío de correo no está disponible» en vez de fallar
+  en silencio.
 - **`APP_PUBLIC_URL`**: origen público con el que se construye el enlace del
   correo. En este despliegue, `https://ac.tlaquepaque.gob.mx` (sin barra final
   y sin `/ordena`). Si se deja el valor por omisión, los correos saldrán con
@@ -92,20 +117,30 @@ el mensaje «Consulta pública concluida».
 > acceso al panel pulse **Iniciar consulta pública**. Hazlo justo después de
 > desplegar si la recepción no debe interrumpirse.
 
-### Correo de la consulta pública
+### Remitente de los correos
 
-Los acuses de recepción y las respuestas a las participaciones salen de
-**`consulta.poetdum@tlaquepaque.gob.mx`**, para que las personas que participan
-vean esa dirección como origen. Se puede cambiar con `MAIL_FROM_CONSULTA` en
-`.env` (por omisión es esa). El resto de los correos del sistema (recuperación
-de contraseña, avisos) siguen saliendo de `MAIL_FROM`.
+Todos los correos del portal —acuses de recepción, respuestas a las
+participaciones, avisos, recuperación de contraseña, confirmación de correo y
+bienvenida de cuentas nuevas— salen del **correo de contacto del pie de
+página**: el mismo que se publica en el portal. Se cambia en el panel, en
+**Personalización → Textos del portal → Pie de página → Correo de contacto
+oficial**, y el cambio aplica desde el siguiente correo, sin reiniciar nada. Si
+el campo está vacío se usa `ordenamiento@tlaquepaque.gob.mx`. Los mensajes de la
+consulta pública firman como «Consulta pública POETDUM» y el resto como
+«Bitácora Tlaquepaque»; la dirección es la misma.
+
+> **Al actualizar:** las variables `MAIL_FROM` y `MAIL_FROM_CONSULTA` ya no se
+> leen. Si el `.env` las tenía para que el servidor SMTP aceptara el envío,
+> hay que dar de alta esa autorización para la dirección del pie (o poner en el
+> pie la dirección que el SMTP ya acepta).
 
 El servidor SMTP tiene que **estar autorizado para enviar como esa dirección**
 (que el buzón exista y que SPF/DKIM del dominio `tlaquepaque.gob.mx` lo
 permitan, o que el relay lo acepte con el usuario de `SMTP_USER`). Si no, el
 servidor rechazará el envío o los mensajes caerán en spam. Cada envío de
 respuesta queda registrado con su fecha, hora y resultado, y el panel muestra
-el error si el servidor lo rechaza.
+el error si el servidor lo rechaza. Solo se acepta una dirección en ese campo:
+al guardar, el panel rechaza textos que no lo sean.
 
 Esto levanta 3 contenedores en una red interna (`db`, `backend`, `web`).
 Solo `web` publica un puerto, y solo en `127.0.0.1:44100` — no queda
@@ -117,8 +152,10 @@ en `backend/seed-admins.json` (ver `backend/README.md`).
 
 «Registro de sesiones» ya no muestra cuánto lleva abierta una sesión sino cuánto
 se **usó** el panel (pestaña a la vista y con actividad), y una sesión que nadie
-cerró deja de aparecer «en curso» (cómo se mide: `backend/README.md`). Al
-actualizar una instalación existente:
+cerró deja de aparecer «en curso» (cómo se mide: `backend/README.md`). **Solo
+una cuenta root puede ver ese registro** (menú, pantalla y `GET /api/sessions`):
+un administrador ya no lo ve, y cada cuenta consulta sus últimas sesiones en «Mi
+cuenta». Al actualizar una instalación existente:
 
 - La columna `user_sessions.active_seconds` se crea sola al arrancar el backend.
 - Las sesiones anteriores se muestran «Sin cerrar» desde su último movimiento y

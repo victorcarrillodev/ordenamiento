@@ -56,6 +56,20 @@ const imagePanelStyle = css({
   '@media (max-width: 860px)': { display: 'none' },
 })
 
+/**
+ * Lo que se queda a la vista mientras se baja por el formulario: la foto y la
+ * frase. Sin esto la frase quedaba centrada en una columna tan alta como el
+ * formulario (más de 1600 px con los campos aprobados), y quien abría la página
+ * no la veía sin bajar casi hasta el final.
+ */
+const imageStickyStyle = css({
+  position: 'sticky',
+  top: 0,
+  height: '100vh',
+  display: 'flex',
+  flexDirection: 'column',
+})
+
 const imageFotoStyle = css({
   display: 'block',
   width: '100%',
@@ -81,6 +95,10 @@ const formPanelStyle = css({
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
+  // Fondo propio: sin él la columna dependía del color de lienzo del navegador. Con
+  // uno oscuro (un panel incrustado, el modo oscuro forzado de un teléfono) el texto
+  // azul oscuro del formulario quedaba sobre negro y no se leía.
+  background: colors.white,
   padding: `calc(${NAVBAR_ALTURA} + 12px) 36px 28px`,
   // El corte es el mismo con el que la barra encoge: usar 768px dejaba, entre
   // 769 y 900px, un hueco de 21px bajo un encabezado que ya medía 64.
@@ -109,38 +127,40 @@ export function ParticipationPage(handle: Handle<ParticipationPageProps>) {
         <NavBar theme={theme} />
         <div mix={splitStyle}>
           <aside mix={imagePanelStyle}>
-            <img
-              src={`${basePath}/assets/img/participacion/territorio.webp`}
-              alt="Vista aérea del centro de San Pedro Tlaquepaque, con la Parroquia de San Pedro y el jardín"
-              width="860"
-              height="516"
-              mix={imageFotoStyle}
-            />
-            <div mix={imageCaptionStyle}>
-              <span
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  color: colors.gold300,
-                })}
-              >
-                Bitácora
-              </span>
-              <p
-                mix={css({
-                  fontFamily: FONT_STACK,
-                  fontSize: 'clamp(24px, 2.4vw, 32px)',
-                  fontWeight: 700,
-                  lineHeight: 1.3,
-                  margin: '12px 0 0',
-                  maxWidth: '420px',
-                })}
-              >
-                Tu voz ayuda a construir el futuro de San Pedro Tlaquepaque.
-              </p>
+            <div mix={imageStickyStyle}>
+              <img
+                src={`${basePath}/assets/img/participacion/territorio.webp`}
+                alt="Vista aérea del centro de San Pedro Tlaquepaque, con la Parroquia de San Pedro y el jardín"
+                width="860"
+                height="516"
+                mix={imageFotoStyle}
+              />
+              <div mix={imageCaptionStyle}>
+                <span
+                  mix={css({
+                    fontFamily: FONT_STACK,
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: colors.gold300,
+                  })}
+                >
+                  Bitácora
+                </span>
+                <p
+                  mix={css({
+                    fontFamily: FONT_STACK,
+                    fontSize: 'clamp(24px, 2.4vw, 32px)',
+                    fontWeight: 700,
+                    lineHeight: 1.3,
+                    margin: '12px 0 0',
+                    maxWidth: '420px',
+                  })}
+                >
+                  Tu voz ayuda a construir el futuro de San Pedro Tlaquepaque.
+                </p>
+              </div>
             </div>
           </aside>
 

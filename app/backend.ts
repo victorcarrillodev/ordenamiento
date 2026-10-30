@@ -33,6 +33,13 @@ export interface LoginResponse {
   user?: { id: string; name: string; role: string } | null
   error?: string
   setCookie?: string
+  /**
+   * La contraseña es la provisional de una cuenta recién dada de alta: no se abre
+   * sesión y se trae un enlace de corta vida al panel de configuración de la cuenta.
+   */
+  configurar?: { token: string }
+  /** Motivo con el que el backend rechazó el acceso, cuando lo hay (p. ej. `invitacion_vencida`). */
+  motivo?: string
 }
 
 /**
@@ -55,10 +62,17 @@ export async function loginBackend(
     const data = (await response.json().catch(() => ({}))) as {
       user?: { id: string; name: string; role: string }
       error?: string
+      configurar?: boolean
+      token?: string
+      motivo?: string
     }
 
     if (!response.ok) {
-      return { ok: false, status: response.status, error: data.error }
+      return { ok: false, status: response.status, error: data.error, motivo: data.motivo }
+    }
+
+    if (data.configurar === true && typeof data.token === 'string') {
+      return { ok: true, status: response.status, configurar: { token: data.token } }
     }
 
     return {
@@ -146,6 +160,79 @@ export async function restablecerPassword(
     body: JSON.stringify({ token, password }),
   })
   return { ok: data.ok === true, status, error: data.error }
+}
+
+export interface CuentaPorConfigurar {
+  name: string
+  email: string
+  rol: string
+}
+
+/** ¿Sigue vivo el enlace del primer acceso? Si sí, quién es la cuenta a la que da paso. */
+export async function validarEnlaceDeConfiguracion(
+  token: string,
+): Promise<
+  { valido: true; usuario: CuentaPorConfigurar } | { valido: false; motivo?: MotivoTokenInvalido }
+> {
+  const { status, data } = await publicBackendJson<{
+    valido?: boolean
+    motivo?: MotivoTokenInvalido
+    usuario?: CuentaPorConfigurar
+  }>(`/api/auth/account-setup?token=${encodeURIComponent(token)}`)
+
+  if (data.valido === true && data.usuario) return { valido: true, usuario: data.usuario }
+  // Un backend caído no es un enlace caducado: sin motivo, para el texto genérico.
+  if (status === 503) return { valido: false }
+  return { valido: false, motivo: data.motivo }
+}
+
+export interface ResultadoConfiguracion {
+  ok: boolean
+  status: number
+  user?: { id: string; name: string; role: string }
+  /** Errores por campo (nombres, apellidos, password, confirmacion, avatar). */
+  campos?: Record<string, string>
+  error?: string
+  motivo?: string
+  setCookie?: string
+}
+
+/**
+ * Manda al backend lo que capturó la persona en el panel de configuración. Va
+ * como formulario multipart porque puede llevar la foto; sin sesión (todavía no
+ * la tiene), pero con quién es el navegador, para la bitácora de sesiones.
+ */
+export async function configurarCuenta(
+  datos: FormData,
+  request?: Request,
+): Promise<ResultadoConfiguracion> {
+  try {
+    const headers = new Headers()
+    if (request) reenviarDatosCliente(request, headers)
+    const response = await fetch(`${BACKEND_URL}/api/auth/account-setup`, {
+      method: 'POST',
+      headers,
+      body: datos,
+    })
+    const data = (await response.json().catch(() => ({}))) as {
+      ok?: boolean
+      user?: { id: string; name: string; role: string }
+      campos?: Record<string, string>
+      error?: string
+      motivo?: string
+    }
+    return {
+      ok: response.ok && data.ok === true,
+      status: response.status,
+      user: data.user,
+      campos: data.campos,
+      error: data.error,
+      motivo: data.motivo,
+      setCookie: response.headers.get('set-cookie') ?? undefined,
+    }
+  } catch {
+    return { ok: false, status: 503, error: 'El servicio no está disponible. Intenta más tarde.' }
+  }
 }
 
 /** Consume el enlace que confirma la dirección de correo nueva. */

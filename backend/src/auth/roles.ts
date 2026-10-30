@@ -43,8 +43,20 @@ export function puedeGestionarCuentas(rol: unknown): boolean {
   return puedeEntrarAlPanel(rol)
 }
 
+/**
+ * ¿Puede ver la bitácora de sesiones de todas las cuentas: quién entró, cuándo,
+ * desde qué dirección y navegador, y cuánto tiempo estuvo? Solo el root. Es
+ * información de vigilancia sobre personas, no un dato operativo del panel: un
+ * administrador puede operar el portal sin saber cuándo entra cada compañero.
+ * (Cada cuenta ve las suyas en «Mi cuenta», que es otro endpoint.)
+ */
+export function puedeVerBitacoraDeSesiones(rol: unknown): boolean {
+  return esRoot(rol)
+}
+
 export type MotivoDenegado =
   | 'sin_permiso'
+  | 'solo_root_crea_cuentas'
   | 'solo_root_sobre_root'
   | 'solo_root_asigna_root'
   | 'ultimo_root'
@@ -81,11 +93,21 @@ export function puedeCambiarPassword(actor: Actor, objetivo: Objetivo): Veredict
   return OK
 }
 
-/** ¿Puede `actor` crear una cuenta con el rol `rolNuevo`? */
-export function puedeCrearConRol(actor: Actor, rolNuevo: Rol): Veredicto {
-  if (!puedeGestionarCuentas(actor.role)) return no('sin_permiso')
-  if (esRoot(rolNuevo) && !esRoot(actor.role)) return no('solo_root_asigna_root')
-  return OK
+/**
+ * ¿Puede dar de alta cuentas? Solo el root. Un alta entrega acceso al sistema
+ * (y, con el rango de administrador, a los datos personales de las
+ * participaciones), así que no se reparte con quien solo opera el panel.
+ */
+export function puedeCrearCuentas(rol: unknown): boolean {
+  return esRoot(rol)
+}
+
+/**
+ * Veredicto de crear una cuenta: solo un root, y con cualquier rango (los demás
+ * cambios de rango siguen las reglas de `puedeCambiarRol`).
+ */
+export function puedeCrearCuenta(actor: Actor): Veredicto {
+  return puedeCrearCuentas(actor.role) ? OK : no('solo_root_crea_cuentas')
 }
 
 /**

@@ -41,7 +41,11 @@ export interface DonutProps {
   datos?: Serie
   /** Lado del SVG en píxeles. */
   tamano?: number
-  /** Texto bajo el número central. */
+  /**
+   * Texto bajo el número central. El número es la SUMA de todas las porciones, así
+   * que la etiqueta debe nombrar eso («Participaciones»), no una sola de ellas: con
+   * «Dictaminadas» se leía como si las que están en proceso ya tuvieran dictamen.
+   */
   etiqueta?: string
 }
 
@@ -127,6 +131,16 @@ export function Donut(handle: Handle<DonutProps>) {
   }
 }
 
+/**
+ * Ancho de una barra, en %. Una categoría con muy pocas participaciones conserva
+ * un mínimo visible para que no desaparezca junto a una enorme; una con cero no
+ * lleva barra, porque un resto de color diría que hay algo.
+ */
+export function anchoDeBarra(n: number, max: number): number {
+  if (!(n > 0)) return 0
+  return Math.max(2, (n / max) * 100)
+}
+
 export interface BarrasProps {
   datos?: Serie
   /** Etiqueta accesible de la gráfica. */
@@ -155,7 +169,7 @@ export function Barras(handle: Handle<BarrasProps>) {
             <span class="barras__pista">
               <span
                 class="barras__valor"
-                style={`width: ${Math.max(2, (n / max) * 100)}%; background: ${colorDe(clave, i)}`}
+                style={`width: ${anchoDeBarra(n, max)}%; background: ${colorDe(clave, i)}`}
               />
             </span>
             <span class="barras__numero">
@@ -215,7 +229,7 @@ export function BarrasMensuales(handle: Handle<{ datos?: SerieMensual[] }>) {
             <span class="columnas__pista">
               <span
                 class="columnas__valor"
-                style={`height: ${Math.max(3, (d.total / max) * 100)}%`}
+                style={`height: ${d.total > 0 ? Math.max(3, (d.total / max) * 100) : 0}%`}
               />
             </span>
             <span class="columnas__mes">{rotuloMes(d.mes)}</span>

@@ -15,6 +15,7 @@ import { createController } from 'remix/router'
 import { loginBackend } from '../../backend.ts'
 import { puedeEntrarAlPanel } from '../../ui/admin/roles.ts'
 import { adminRoutes, routes } from '../../routes.ts'
+import { ConfigurarCuentaPage } from '../configurar-cuenta/page.tsx'
 import { LoginPage } from './page.tsx'
 import { PASSWORD_MAX, PASSWORD_MIN, type LoginErrors } from '../../ui/login/types.ts'
 
@@ -84,7 +85,7 @@ export default createController(routes.login, {
         // intentos, 409 conflicto). Aplanarlo todo a 401 hacía que "el backend
         // no responde" fuera indistinguible de "la contraseña está mal", que es
         // justo el caso en el que uno pierde media hora probando contraseñas.
-        const status = [401, 409, 429, 503].includes(result.status) ? result.status : 401
+        const status = [401, 403, 409, 429, 503].includes(result.status) ? result.status : 401
 
         // Mensaje descriptivo según el tipo de error
         let alertMessage = result.error ?? 'Credenciales inválidas'
@@ -96,6 +97,10 @@ export default createController(routes.login, {
         } else if (result.status === 503) {
           alertMessage = 'El servicio de autenticación no está disponible. Intenta más tarde.'
           alertType = 'warning'
+        } else if (result.motivo === 'invitacion_vencida') {
+          // La contraseña era la correcta, pero la provisional ya no sirve: el mensaje del
+          // backend dice qué hacer (pedir que reenvíen la invitación).
+          alertType = 'warning'
         } else if (result.status === 401) {
           alertMessage = 'Correo o contraseña incorrectos. Verifica tus credenciales.'
         }
@@ -106,6 +111,22 @@ export default createController(routes.login, {
             email={parsed.value.email}
           />,
           { status },
+        )
+      }
+
+      // La contraseña provisional de una cuenta recién dada de alta no abre sesión: lleva a
+      // configurar la cuenta. El enlace de un solo uso va en el formulario (no en la URL, para
+      // que no quede en el historial del navegador).
+      if (result.configurar) {
+        return context.render(
+          <ConfigurarCuentaPage
+            token={result.configurar.token}
+            alert={{
+              type: 'info',
+              message:
+                'Antes de entrar debes configurar tu cuenta: captura tu nombre y elige una contraseña propia.',
+            }}
+          />,
         )
       }
 

@@ -7,10 +7,11 @@ const detalleRaw = readFileSync(join(process.cwd(), 'app/actions/admin/detalle-p
 const detalle = detalleRaw.replace(/\r\n/g, '\n')
 
 describe('UI-1 · detalle-split 60/40 responsivo', () => {
-  it('define grid 3fr 2fr (≈60/40) con gap 18px y align-items:start', () => {
+  it('define grid 3fr 2fr (≈60/40) con la separación común del panel y align-items:start', () => {
     expect(css).toContain('.detalle-split')
     expect(css).toMatch(/grid-template-columns:\s*3fr\s+2fr/)
-    expect(css).toMatch(/gap:\s*18px/)
+    // La separación entre paneles es la misma en toda la aplicación (--a-gap).
+    expect(css).toMatch(/\.detalle-split\s*\{[^}]*gap:\s*var\(--a-gap\)/)
     expect(css).toMatch(/align-items:\s*start/)
   })
 
@@ -69,7 +70,10 @@ describe('UI-2 · contraste a11y borde y sombra', () => {
 describe('UI-3 · header tintado solo con .panel__head', () => {
   it('panel sin .panel__head no genera bloque tintado (solo .panel__head tiene background)', () => {
     expect(css).toMatch(/\.panel__head[\s\S]*?background:\s*#f7f9fc/)
-    expect(css).toMatch(/\.panel__head[\s\S]*?margin:\s*-18px -18px 12px/)
+    // La cabecera sangra hasta el borde: su margen negativo es el relleno del panel.
+    expect(css).toMatch(
+      /\.panel__head[\s\S]*?margin:\s*calc\(var\(--a-pad-panel\) \* -1\) calc\(var\(--a-pad-panel\) \* -1\) 12px/,
+    )
     // .panel solo no tiene background tintado
     const panelRule = css.match(/\.panel\s*\{[^}]+\}/g)?.[0] ?? ''
     expect(panelRule).not.toContain('#f7f9fc')

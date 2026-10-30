@@ -105,6 +105,12 @@ así que no hace falta migrar nada.
 
 ## Bitácora de sesiones: cómo se mide el tiempo
 
+La bitácora de **todas** las cuentas (`GET /api/sessions`, pantalla «Registro de sesiones») es
+solo para **root**: quién entra y desde dónde es información de vigilancia sobre personas, y un
+administrador puede operar el portal sin ella. Cada cuenta ve sus propias últimas sesiones en «Mi
+cuenta» (`GET /api/users/me/sessions`, acotado por la sesión: un `user_id` en la petición se
+ignora).
+
 El tiempo de una sesión **no** es lo que pasa entre que se inicia y se cierra. La
 cookie dura 7 días y casi nadie pulsa «Cerrar sesión» (se cierra la pestaña, se
 va a comer, se apaga la computadora): medir así dejaba «en curso» para siempre
@@ -211,8 +217,10 @@ Configura un valor real en un archivo `.env` local (no versionado).
 | Método            | Ruta                                                                | Descripción                                                                                |
 | ----------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | GET               | `/api/health`                                                       | Health check                                                                               |
-| POST              | `/api/auth/register`                                                | Crear usuario (body: email, name, password, role?)                                         |
-| POST              | `/api/auth/login`                                                   | Login → cookie HttpOnly                                                                    |
+| POST              | `/api/users`                                                        | Alta de cuenta, solo root: nombre, correo y contraseña provisional                         |
+| POST              | `/api/users/:id/invitation`                                         | Reenviar la invitación de una cuenta por configurar (solo root)                            |
+| GET/POST          | `/api/auth/account-setup`                                           | Primer acceso, con el enlace: comprobarlo / completar la configuración                     |
+| POST              | `/api/auth/login`                                                   | Login → cookie HttpOnly; una cuenta por configurar recibe un enlace, no sesión             |
 | POST              | `/api/auth/logout`                                                  | Cerrar sesión                                                                              |
 | GET               | `/api/auth/me`                                                      | Usuario actual                                                                             |
 | GET               | `/api/participations`                                               | Listado con filtros + paginación                                                           |
@@ -239,7 +247,8 @@ Configura un valor real en un archivo `.env` local (no versionado).
 | GET               | `/api/acuse/:folio?t=…`                                             | Acuse en PDF con el enlace firmado que recibe quien participa                              |
 | GET               | `/api/participations/:id/acuse`                                     | Acuse en PDF desde el panel (admin)                                                        |
 | POST              | `/api/sessions/ping`                                                | Aviso de presencia del panel (204): suma tiempo de uso y marca «en línea»                  |
-| GET               | `/api/sessions`                                                     | Bitácora de sesiones: estado, tiempo de uso medido y resumen (admin)                       |
+| GET               | `/api/sessions`                                                     | Bitácora de sesiones de todas las cuentas: estado, tiempo de uso y resumen (solo root)     |
+| GET               | `/api/users/me/sessions`                                            | Últimas sesiones de la propia cuenta (`?limit=`, tope 20); la usa «Mi cuenta»              |
 | GET/POST          | `/api/formatos`                                                     | Formatos para llenar a mano: listado (`?estado=pendiente`) / generar uno con su folio      |
 | GET               | `/api/formatos/:id/pdf`                                             | Formato en blanco con su folio, para imprimir (admin)                                      |
 | GET               | `/api/participations/:id/documentos[/:tipo]`                        | Documentos de la participación y correos enviados / el PDF (`?download=1`) (admin)         |
@@ -261,16 +270,65 @@ Configura un valor real en un archivo `.env` local (no versionado).
 > cableado a `app/actions/admin/personalizacion-controller.tsx` + `personalizacion-page.tsx`
 > (form `testMail`) de forma CSP-compliant.
 
+## Estadísticas: cómo se arman las cifras de las gráficas
+
+`GET /api/stats` (solo panel; `?origen=digital|fisica` filtra las distribuciones) devuelve lo que
+dibujan la vista general y Estadísticas. Las cifras de participaciones salen de
+`services/estadisticas.ts`, que fija tres reglas para que una gráfica no cambie entre consultas:
+
+- **Orden estable**: las categorías van de mayor a menor total y, si empatan, por nombre; el
+  resultado del dictamen siempre es Procedente, En proceso, No procedente. Las que no se clasificaron
+  (texto vacío) no entran.
+- **Meses en la hora de Tlaquepaque** (`America/Mexico_City`), no en la del servidor de base de
+  datos: una participación del 31 de octubre a las 8 de la noche es de octubre aunque en UTC ya sea
+  noviembre.
+- **Serie mensual sin huecos**: desde el primer mes con participaciones hasta el mes en curso, con 0
+  en los meses vacíos (si no, enero y abril se dibujan como meses seguidos); como máximo los últimos
+  24 meses.
+
+`digitales` y `fisicas` van siempre sin filtrar: la pestaña «Totales» los suma y cada pestaña
+muestra el suyo.
+
+## Cuentas nuevas: alta por root y primer acceso
+
+Solo una cuenta **root** da de alta cuentas (`POST /api/users`; `puedeCrearCuentas` en
+`auth/roles.ts`). El root escribe el nombre, el correo y una contraseña **provisional**; la cuenta
+nace «por configurar» (`users.setup_pending`) y la persona recibe un correo con un enlace a su panel
+de configuración (`/configurar-cuenta` en el portal), donde captura nombre(s) y apellidos, crea su
+contraseña (con confirmación) y, si quiere, su foto. Todo lo hace `auth/configuracion-cuenta.ts`:
+
+- **La contraseña provisional no viaja en el correo**: quien da de alta se la entrega por otro
+  medio. Una cuenta por configurar no abre sesión ni con ella: `POST /api/auth/login` devuelve
+  `{ configurar: true, token }` (un enlace de 60 minutos al mismo panel) y no pone cookie.
+- **El enlace del correo** vale 7 días (`INVITACION_TTL_DIAS`) y un solo uso; solo se guarda su
+  SHA-256 (`account_setups`). Abrirlo (`GET /api/auth/account-setup`) no lo gasta; lo gasta el
+  `POST` que completa la configuración, en una transacción condicionada a que la cuenta siga por
+  configurar (dos envíos simultáneos con el mismo enlace: gana uno y el otro recibe 410).
+- La contraseña provisional también vale 7 días (`users.setup_expires_at`). Pasado ese plazo ni
+  ella ni el enlace sirven y el root usa **Reenviar invitación** (`POST /api/users/:id/invitation`):
+  renueva el plazo y emite un enlace nuevo (el anterior deja de servir). Restablecer la contraseña de
+  una cuenta por configurar también renueva el plazo.
+- La contraseña nueva no puede ser la provisional. Al terminar se abre la sesión.
+- La foto (opcional) pasa por las mismas reglas que la de «Mi cuenta» (`services/avatar.ts`): imagen
+  de hasta 5 MB y que supere la revisión de archivos. Si no sirve, se avisa y no se gasta el enlace.
+- Si el correo de bienvenida no se puede enviar (SMTP sin configurar o caído) la cuenta queda creada
+  y la respuesta lo dice (`correo: { enviado: false, motivo }`); con la contraseña provisional la
+  persona ya puede entrar a configurarla.
+
 ## Env
 
-| Variable                                              | Default                                                                             | Uso                                                                            |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `DATABASE_URL`                                        | `postgres://postgres:postgres@localhost:5432/ordenamiento`                          | Conexión                                                                       |
-| `SESSION_SECRET`                                      | (cambiar en prod)                                                                   | Firma de cookie                                                                |
-| `PORT`                                                | `5920`                                                                              | Puerto                                                                         |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | (sin `SMTP_HOST` no se envía correo) / `25`                                         | Servidor de correo                                                             |
-| `MAIL_FROM`                                           | `"Bitácora Tlaquepaque" <SMTP_USER>`, o `<no-reply@tlaquepaque.gob.mx>` sin usuario | Remitente de avisos y recuperación de contraseña                               |
-| `MAIL_FROM_CONSULTA`                                  | `"Consulta pública POETDUM" <consulta.poetdum@tlaquepaque.gob.mx>`                  | Remitente de los acuses y de las respuestas; el servidor SMTP debe autorizarlo |
-| `APP_PUBLIC_URL`                                      | `http://localhost:44100`                                                            | Origen público del portal (enlaces de los correos)                             |
-| `TRUST_PROXY`                                         | (vacío)                                                                             | `true` si hay un proxy que pone la IP real del visitante                       |
-| `MAX_UPLOAD_MB` / `MAX_UPLOAD_FILES`                  | `100` / `5`                                                                         | Tamaño por archivo y archivos por participación                                |
+| Variable                                              | Default                                                    | Uso                                                      |
+| ----------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------- |
+| `DATABASE_URL`                                        | `postgres://postgres:postgres@localhost:5432/ordenamiento` | Conexión                                                 |
+| `SESSION_SECRET`                                      | (cambiar en prod)                                          | Firma de cookie                                          |
+| `PORT`                                                | `5920`                                                     | Puerto                                                   |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | (sin `SMTP_HOST` no se envía correo) / `25`                | Servidor de correo                                       |
+| `APP_PUBLIC_URL`                                      | `http://localhost:44100`                                   | Origen público del portal (enlaces de los correos)       |
+| `TRUST_PROXY`                                         | (vacío)                                                    | `true` si hay un proxy que pone la IP real del visitante |
+| `MAX_UPLOAD_MB` / `MAX_UPLOAD_FILES`                  | `100` / `5`                                                | Tamaño por archivo y archivos por participación          |
+
+El **remitente** de los correos no es una variable de entorno: es el correo de contacto del pie de
+página (`usuario.textos.footerEmail`, en Personalización → Textos del portal), el mismo que se
+publica en el portal. `services/remitente.ts` lo lee en cada envío; sin valor, usa
+`ordenamiento@tlaquepaque.gob.mx`. `MAIL_FROM` y `MAIL_FROM_CONSULTA` ya no se leen. El servidor
+SMTP debe tener autorizado enviar con esa dirección (ver `DEPLOY.md`).

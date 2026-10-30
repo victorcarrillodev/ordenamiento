@@ -1,10 +1,11 @@
 import type { Handle, RemixNode } from 'remix/ui'
 
 import { Document } from '../../actions/document.tsx'
+import { urlEstatica } from '../../utils/estaticos.ts'
 import { adminRoutes, routes } from '../../routes.ts'
 import { isSafeCssColor } from '../civic-horizon.ts'
 import { Icon } from './icon.tsx'
-import { etiquetaDeRol } from './roles.ts'
+import { esRoot, etiquetaDeRol } from './roles.ts'
 
 export type AdminSection =
   | 'general'
@@ -19,6 +20,8 @@ export type AdminSection =
   | 'sesiones'
   | 'exportar'
   | 'personalizacion'
+  /** Pantalla de «acceso restringido»: ninguna entrada del menú queda marcada. */
+  | 'restringido'
 
 export interface AdminLayoutProps {
   children?: RemixNode
@@ -27,6 +30,16 @@ export interface AdminLayoutProps {
   title: string
   /** Acciones de la propia página, alineadas a la derecha del encabezado. */
   actions?: RemixNode
+  /**
+   * La pantalla se acomoda al alto de la ventana: su contenido principal reparte el
+   * espacio que sobra entre sus bloques en vez de dejar un hueco al final, y no hay
+   * barra de desplazamiento mientras todo quepa. Si la ventana es más baja de lo que
+   * el contenido necesita, la página se desplaza como cualquier otra. Es lo que usan
+   * la vista general e Indicadores (un formulario y una lista que casi siempre es
+   * corta); las pantallas de listas largas no lo necesitan. El contenido que reparte el
+   * alto es el que declara `.content--ajustada > …` en admin.css.
+   */
+  ajustada?: boolean
   /** Frase corta bajo el título, para explicar de qué va la pantalla. */
   subtitle?: string
   /**
@@ -52,6 +65,8 @@ interface ItemMenu {
   href: string
   label: string
   icon: RemixNode
+  /** Solo se muestra a las cuentas root; al resto ni se le ofrece. */
+  soloRoot?: boolean
 }
 
 /**
@@ -133,6 +148,7 @@ const GRUPOS: Array<{ titulo: string; items: ItemMenu[] }> = [
         href: adminRoutes.sesiones.href(),
         label: 'Registro de sesiones',
         icon: <Icon name="mdi:account-clock-outline" />,
+        soloRoot: true,
       },
       {
         key: 'personalizacion',
@@ -166,7 +182,8 @@ function iniciales(nombre: string): string {
 
 export function AdminLayout(handle: Handle<AdminLayoutProps>) {
   return () => {
-    const { children, user, active, title, actions, subtitle, breadcrumb, theme } = handle.props
+    const { children, user, active, title, actions, subtitle, breadcrumb, theme, ajustada } =
+      handle.props
     const customLogo = theme?.adminLogo || LOGO_POR_DEFECTO
     const customTitle = theme?.adminTitulo || 'ADMINISTRADOR BITÁCORA'
     // Estos valores vienen del formulario de Personalización y se insertan
@@ -192,12 +209,18 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
         title={`${title} – Bitácora`}
         head={
           <>
-            <link rel="stylesheet" href={`${basePath}/admin.css`} />
-            <script src={`${basePath}/admin.js`} defer></script>
+            <link rel="stylesheet" href={urlEstatica('admin.css')} />
+            {/* El estudio de Personalización y marca. Va en TODAS las pantallas del panel y no
+                solo en la suya: Remix cambia el contenido sin recargar el documento y no
+                aplica los estilos ni ejecuta los scripts del `<head>` de la página que llega
+                (ver `public/personalizacion.js`, que se engancha a lo que aparezca). */}
+            <link rel="stylesheet" href={urlEstatica('personalizacion.css')} />
+            <script src={urlEstatica('admin.js')} defer></script>
+            <script src={urlEstatica('personalizacion.js')} defer></script>
             {/* Barra de formato de «Textos del portal»; no hace nada donde no hay editores. */}
-            <script src={`${basePath}/editor-texto.js`} defer></script>
+            <script src={urlEstatica('editor-texto.js')} defer></script>
             {/* Presencia: mide el tiempo de uso real del panel (ver `data-latido` en `.admin`). */}
-            <script src={`${basePath}/presencia.js`} defer></script>
+            <script src={urlEstatica('presencia.js')} defer></script>
             {dynamicStyles && <style>{dynamicStyles}</style>}
           </>
         }
@@ -238,17 +261,19 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
               {GRUPOS.map((grupo) => (
                 <div class="sidebar__group" key={grupo.titulo}>
                   <div class="sidebar__label">{grupo.titulo}</div>
-                  {grupo.items.map((item) => (
-                    <a
-                      key={item.key}
-                      href={item.href}
-                      class={'sidebar__item' + (item.key === active ? ' active' : '')}
-                      aria-current={item.key === active ? 'page' : undefined}
-                    >
-                      {item.icon}
-                      <span>{item.label}</span>
-                    </a>
-                  ))}
+                  {grupo.items
+                    .filter((item) => !item.soloRoot || esRoot(user.role))
+                    .map((item) => (
+                      <a
+                        key={item.key}
+                        href={item.href}
+                        class={'sidebar__item' + (item.key === active ? ' active' : '')}
+                        aria-current={item.key === active ? 'page' : undefined}
+                      >
+                        {item.icon}
+                        <span>{item.label}</span>
+                      </a>
+                    ))}
                 </div>
               ))}
 
@@ -292,7 +317,7 @@ export function AdminLayout(handle: Handle<AdminLayoutProps>) {
                 </span>
               </a>
             </header>
-            <main class="content">
+            <main class={'content' + (ajustada ? ' content--ajustada' : '')}>
               <div class="content__head">
                 <div class="content__heading">
                   {active === 'general' ? null : (

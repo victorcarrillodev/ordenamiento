@@ -22,7 +22,7 @@ import { EstadisticasPage, type DatosOrigen, type VistaEstadisticas } from './es
 import { cargarDetalle } from './detalle-datos.ts'
 import { DetallePage } from './detalle-page.tsx'
 import { AdjuntoVistaPage } from './adjunto-vista-page.tsx'
-import { ETAPAS } from './etapa.ts'
+import { DICTAMENES, ETAPAS, leerResumen } from './etapa.ts'
 import { formatoPdfAction, presencialAction } from './presencial-actions.tsx'
 import { sesionesAction } from './sesiones-controller.tsx'
 
@@ -85,7 +85,7 @@ export default createController(adminRoutes, {
 
       const stats = await fetchJsonOr<Stats>(context.request, '/api/stats', STATS_VACIAS)
 
-      // Obtener hora y fecha real de MÃ©xico (America/Mexico_City)
+      // Obtener hora y fecha real de México (America/Mexico_City)
       const parts = new Intl.DateTimeFormat('es-MX', {
         timeZone: 'America/Mexico_City',
         weekday: 'long',
@@ -105,7 +105,7 @@ export default createController(adminRoutes, {
       const displayHour12 = rawHour % 12 === 0 ? 12 : rawHour % 12
       const formattedHour = `${String(displayHour12).padStart(2, '0')}:${rawMin} ${ampm}`
 
-      let saludo = 'Buenos dÃ­as'
+      let saludo = 'Buenos días'
       if (rawHour >= 12 && rawHour < 19) {
         saludo = 'Buenas tardes'
       } else if (rawHour >= 19 || rawHour < 5) {
@@ -115,6 +115,9 @@ export default createController(adminRoutes, {
       const rawWeekday = getPart('weekday')
       const diaCapitalizado = rawWeekday.charAt(0).toUpperCase() + rawWeekday.slice(1)
       const fechaTexto = `${getPart('day')} de ${getPart('month')} de ${getPart('year')}`
+      // La tarjeta del reloj es angosta: lleva la fecha corta («10 oct 2026»). La larga
+      // ya está en el subtítulo de la página.
+      const fechaCorta = `${getPart('day')} ${getPart('month').slice(0, 3)} ${getPart('year')}`
 
       return context.render(
         <AdminPage
@@ -124,6 +127,7 @@ export default createController(adminRoutes, {
             dia: diaCapitalizado,
             saludo,
             fecha: fechaTexto,
+            fechaCorta,
             hora: formattedHour,
           }}
         />,
@@ -164,31 +168,45 @@ export default createController(adminRoutes, {
       const origen = params.get('origen') === 'fisica' ? 'fisica' : 'digital'
       const etapaParam = params.get('etapa')
       const etapa = ETAPAS.find((e) => e === etapaParam)
+      const estadoParam = params.get('estado')
+      const estado = DICTAMENES.find((d) => d === estadoParam)
+      // El backend ignora búsquedas de menos de 2 letras; aquí también, para que la
+      // pantalla no diga «buscando X» cuando en realidad no se filtró nada.
+      const q = (params.get('q') ?? '').trim().slice(0, 80)
+      const busqueda = q.length >= 2 ? q : ''
       const rawPage = params.get('page')
       const rawLimit = params.get('limit')
       const page = Number.isInteger(Number(rawPage)) && Number(rawPage) > 0 ? Number(rawPage) : 1
       const limit =
         Number.isInteger(Number(rawLimit)) && Number(rawLimit) > 0 ? Number(rawLimit) : 10
-      const data = await fetchJsonOr<{
-        items: Array<{
-          id: string
-          folio: string
-          origen: string
-          nombre: string
-          estado: string
-          fecha: string
-          notificado_en: string | null
-          adjuntos: Array<{ id: string; nombre_original: string; mime: string; size: number }>
-        }>
-        total: number
-        page: number
-        limit: number
-      }>(
-        context.request,
-        `/api/participations?origen=${origen}&limit=${limit}&page=${page}` +
-          (etapa ? `&etapa=${encodeURIComponent(etapa)}` : ''),
-        { items: [], total: 0, page, limit },
-      )
+      const filtros =
+        (etapa ? `&etapa=${encodeURIComponent(etapa)}` : '') +
+        (estado ? `&estado=${encodeURIComponent(estado)}` : '') +
+        (busqueda ? `&q=${encodeURIComponent(busqueda)}` : '')
+      // Las cifras de las etiquetas de filtro y la página salen de dos consultas
+      // independientes: si la de cifras falla, la lista se ve igual, sin números.
+      const [resumen, data] = await Promise.all([
+        fetchJsonOr<unknown>(context.request, `/api/participations/resumen?origen=${origen}`, null),
+        fetchJsonOr<{
+          items: Array<{
+            id: string
+            folio: string
+            origen: string
+            nombre: string
+            estado: string
+            fecha: string
+            notificado_en: string | null
+            adjuntos: Array<{ id: string; nombre_original: string; mime: string; size: number }>
+          }>
+          total: number
+          page: number
+          limit: number
+        }>(
+          context.request,
+          `/api/participations?origen=${origen}&limit=${limit}&page=${page}${filtros}`,
+          { items: [], total: 0, page, limit },
+        ),
+      ])
 
       return context.render(
         <ParticipacionesPage
@@ -196,6 +214,9 @@ export default createController(adminRoutes, {
           origen={origen}
           items={data.items ?? []}
           etapa={etapa}
+          estado={estado}
+          q={busqueda}
+          resumen={leerResumen(resumen)}
           page={data.page ?? page}
           limit={data.limit ?? limit}
           total={typeof data.total === 'number' ? data.total : (data.items?.length ?? 0)}

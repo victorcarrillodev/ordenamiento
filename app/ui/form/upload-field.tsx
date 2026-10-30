@@ -2,6 +2,7 @@ import type { Handle } from 'remix/ui'
 import { css } from 'remix/ui'
 import { ACCEPTED_UPLOADS, textoCantidadYPeso, textoLimites } from '../../utils/uploads.ts'
 import { colors, FONT_STACK } from '../civic-horizon.ts'
+import { Icon } from '../admin/icon.tsx'
 import type { FieldAppearance } from './field.tsx'
 
 export interface UploadFieldProps {
@@ -73,7 +74,7 @@ export function UploadField(handle: Handle<UploadFieldProps>) {
                 for="archivos"
                 style={`display: inline-flex; align-items: center; gap: 8px; background: ${fondoBoton}; color: #ffffff; font-family: Montserrat, sans-serif; font-size: 13px; font-weight: 700; padding: 9px 18px; border-radius: 6px; cursor: pointer; transition: background 150ms ease; box-shadow: 0 2px 6px rgba(15,23,42,0.2);`}
               >
-                <iconify-icon icon="mdi:paperclip" width="16" height="16" />
+                <Icon name="mdi:paperclip" size={16} />
                 <span>Seleccionar archivos</span>
               </label>
               <span

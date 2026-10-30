@@ -257,10 +257,14 @@ describe('Admin Routes Protection & Navigation', () => {
       })
     }
 
-    it('GET /ordena/admin/usuarios contiene "Crear usuario" y Vista General no', async () => {
+    it('GET /ordena/admin/usuarios: un administrador ve la lista pero no el formulario de alta, y Vista General no administra cuentas', async () => {
+      // Solo una cuenta root da de alta cuentas (ver usuarios.test.ts para el caso de root).
       const usuariosRes = await router.fetch(new Request('http://localhost/ordena/admin/usuarios'))
       expect(usuariosRes?.status).toBe(200)
-      expect(await usuariosRes?.text()).toContain('Crear cuenta')
+      const html = (await usuariosRes?.text()) ?? ''
+      expect(html).toContain('Cuentas registradas')
+      expect(html).not.toContain('＋ Crear cuenta')
+      expect(html).toContain('dar de alta cuentas nuevas')
 
       const indexRes = await router.fetch(new Request('http://localhost/ordena/admin'))
       expect(indexRes?.status).toBe(200)
@@ -304,7 +308,6 @@ describe('Admin Routes Protection & Navigation', () => {
       const rutas = [
         '/ordena/admin/estadisticas',
         '/ordena/admin/usuarios',
-        '/ordena/admin/sesiones',
         '/ordena/admin/cuenta',
         '/ordena/admin/exportar',
         '/ordena/admin/actividades',
@@ -328,12 +331,31 @@ describe('Admin Routes Protection & Navigation', () => {
       }
     })
 
-    it('GET /ordena/admin/sesiones muestra la bitácora de accesos', async () => {
+    it('GET /ordena/admin/sesiones muestra la bitácora de accesos a una cuenta root', async () => {
+      const base = globalThis.fetch
+      globalThis.fetch = vi
+        .fn()
+        .mockImplementation((url: string | URL | Request, init?: RequestInit) => {
+          const u =
+            typeof url === 'string' ? url : url instanceof Request ? url.url : url.toString()
+          if (u.includes('/api/auth/me')) {
+            return Promise.resolve(
+              new Response(JSON.stringify({ user: { id: 1, name: 'Dueña', role: 'root' } }), {
+                status: 200,
+                headers: { 'content-type': 'application/json' },
+              }),
+            )
+          }
+          return base(url, init)
+        })
       const res = await router.fetch(new Request('http://localhost/ordena/admin/sesiones'))
       expect(res?.status).toBe(200)
-      const html = await res?.text()
+      const html = (await res?.text()) ?? ''
       expect(html).toContain('Registro de sesiones')
       expect(html).toContain('Tiempo de uso')
+      // Un solo título y su subtítulo, como en el resto de las pantallas del panel.
+      expect(html.match(/class="page-title"/g)?.length ?? 0).toBe(1)
+      expect(html.includes('class="page-subtitle"')).toBe(true)
     })
 
     it('POST /ordena/admin/participaciones/nueva guarda participación física y redirige con folio', async () => {

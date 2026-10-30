@@ -66,6 +66,35 @@ CREATE TABLE IF NOT EXISTS email_changes (
 CREATE INDEX IF NOT EXISTS idx_email_changes_user ON email_changes (user_id);
 
 -- ---------------------------------------------------------------------------
+-- Primer acceso de las cuentas que da de alta un root
+-- ---------------------------------------------------------------------------
+-- Un root crea la cuenta con nombre, correo y una contraseña PROVISIONAL que
+-- escribe él, y la persona recibe un correo con un enlace a su panel de
+-- configuración, donde captura nombre(s) y apellidos, elige su contraseña y, si
+-- quiere, su foto de perfil.
+--  · `setup_pending`    la cuenta existe pero su titular aún no la configura: no
+--                       puede iniciar sesión hasta hacerlo (ni con la contraseña
+--                       provisional ni con la que elija por «olvidé mi
+--                       contraseña»). false en las cuentas de antes: no cambia nada.
+--  · `setup_expires_at` hasta cuándo sirve la contraseña provisional; pasada esa
+--                       fecha un root debe reenviar la invitación.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS setup_pending    BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS setup_expires_at TIMESTAMPTZ;
+
+-- Enlaces de un solo uso del correo de bienvenida. Igual que en password_resets,
+-- se guarda solo el hash del token: un volcado de la tabla no da ningún enlace.
+CREATE TABLE IF NOT EXISTS account_setups (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at    TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_account_setups_user    ON account_setups (user_id);
+CREATE INDEX IF NOT EXISTS idx_account_setups_expires ON account_setups (expires_at);
+
+-- ---------------------------------------------------------------------------
 -- Bitácora de sesiones (quién entró, cuándo y cuánto tiempo estuvo)
 -- ---------------------------------------------------------------------------
 -- Una fila por sesión iniciada. `issued_at` es la marca que lleva dentro la

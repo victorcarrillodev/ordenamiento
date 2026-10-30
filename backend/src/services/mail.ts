@@ -11,25 +11,16 @@ import {
   TEXTOS_ACUSE,
 } from './acuse.ts'
 import { textoDeOpcion } from './participacion-campos.ts'
+import { NOMBRE_REMITENTE, remitenteDelPortal } from './remitente.ts'
 
 const SMTP_HOST = process.env.SMTP_HOST || '127.0.0.1'
 const SMTP_PORT = Number(process.env.SMTP_PORT || 25)
 const SMTP_USER = process.env.SMTP_USER || ''
 const SMTP_PASS = process.env.SMTP_PASS || ''
-const MAIL_FROM =
-  process.env.MAIL_FROM ||
-  (SMTP_USER
-    ? `"Bitácora Tlaquepaque" <${SMTP_USER}>`
-    : '"Bitácora Tlaquepaque" <no-reply@tlaquepaque.gob.mx>')
-
-/**
- * Remitente de los acuses y de las notificaciones de la consulta pública, para
- * que las personas que participan vean ese origen en lo que reciben. Debe ser un
- * buzón que el servidor SMTP tenga autorizado para enviar (ver DEPLOY.md).
+/*
+ * El remitente no es una constante: es el correo de contacto del pie de página,
+ * que se edita en el panel (ver services/remitente.ts). Se lee al enviar.
  */
-export const REMITENTE_CONSULTA =
-  process.env.MAIL_FROM_CONSULTA ||
-  '"Consulta pública POETDUM" <consulta.poetdum@tlaquepaque.gob.mx>'
 
 /**
  * true si hay configuración SMTP suficiente para enviar.
@@ -358,7 +349,7 @@ const filaDeCorreo = (etiqueta: string, valor: string) =>
 /**
  * Envía al participante la confirmación de su participación: toda la
  * información registrada —incluidos los datos complementarios, que no van en el
- * acuse— y el acuse en PDF adjunto. Sale de `REMITENTE_CONSULTA`.
+ * acuse— y el acuse en PDF adjunto. Sale del correo de contacto del pie de página.
  */
 export async function enviarAcuseReciboParticipacion(
   participationId: string,
@@ -442,7 +433,7 @@ export async function enviarAcuseReciboParticipacion(
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: REMITENTE_CONSULTA,
+    from: await remitenteDelPortal(NOMBRE_REMITENTE.consulta),
     to: para,
     subject: asuntoAcuse(p.folio),
     html,
@@ -463,9 +454,9 @@ export const textoRespuesta = (folio: string) =>
 
 /**
  * Envía a quien participó la notificación de que su respuesta está lista para
- * recoger, con el oficio de respuesta íntegro en PDF adjunto. Sale de
- * `REMITENTE_CONSULTA`. El oficio es el documento íntegro y firmado, no la
- * versión pública que se muestra en el portal.
+ * recoger, con el oficio de respuesta íntegro en PDF adjunto. Sale del correo
+ * de contacto del pie de página. El oficio es el documento íntegro y firmado, no
+ * la versión pública que se muestra en el portal.
  */
 export async function enviarCorreoRespuesta(input: {
   para: string
@@ -498,7 +489,7 @@ export async function enviarCorreoRespuesta(input: {
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: REMITENTE_CONSULTA,
+    from: await remitenteDelPortal(NOMBRE_REMITENTE.consulta),
     to: input.para,
     subject: asunto,
     html,
@@ -618,7 +609,7 @@ export async function enviarResolucionParticipacion(
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: REMITENTE_CONSULTA,
+    from: await remitenteDelPortal(NOMBRE_REMITENTE.consulta),
     to: para,
     subject: `[Resolución POETDUM] Participación ${p.folio} — ${p.estado}`,
     html,
@@ -723,7 +714,7 @@ export async function enviarAviso(
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: MAIL_FROM,
+    from: await remitenteDelPortal(),
     to: para,
     subject: `[Aviso POETDUM Tlaquepaque] ${titulo}`,
     html,
@@ -740,6 +731,7 @@ export async function enviarCorreoPrueba(para: string): Promise<{ enviado: true 
     throw new Error('SMTP_NO_CONFIGURADO')
   }
 
+  const remitente = await remitenteDelPortal()
   const contenidoHtml = `
     <div class="section-heading">Verificación de Conectividad SMTP</div>
     <p style="font-size: 14px; line-height: 1.6; color: #334155;">
@@ -748,7 +740,7 @@ export async function enviarCorreoPrueba(para: string): Promise<{ enviado: true 
     <div class="observation-box">
       <strong>Servidor SMTP:</strong> ${escapeHtml(SMTP_HOST)}<br>
       <strong>Puerto:</strong> ${SMTP_PORT}<br>
-      <strong>Remitente configurado:</strong> ${escapeHtml(MAIL_FROM)}<br>
+      <strong>Remitente (correo del pie de página):</strong> ${escapeHtml(remitente)}<br>
       <strong>Fecha y hora:</strong> ${new Date().toLocaleString('es-MX', { timeStyle: 'medium', dateStyle: 'full' })}
     </div>
     <p style="font-size: 13px; color: #16A34A; font-weight: 600;">
@@ -766,7 +758,7 @@ export async function enviarCorreoPrueba(para: string): Promise<{ enviado: true 
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: MAIL_FROM,
+    from: remitente,
     to: para,
     subject: `[Bitácora] Verificación de Sistema de Correo`,
     html,
@@ -836,7 +828,7 @@ export async function enviarCorreoRecuperacion(input: {
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: MAIL_FROM,
+    from: await remitenteDelPortal(),
     to: input.para,
     subject: '[Bitácora] Restablecimiento de contraseña',
     html,
@@ -906,7 +898,7 @@ export async function enviarConfirmacionCorreoNuevo(input: {
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: MAIL_FROM,
+    from: await remitenteDelPortal(),
     to: input.para,
     subject: '[Bitácora] Confirme su nuevo correo de acceso',
     html,
@@ -956,9 +948,90 @@ export async function enviarAvisoCorreoCambiado(input: {
 
   const transporter = getTransporter()
   await transporter.sendMail({
-    from: MAIL_FROM,
+    from: await remitenteDelPortal(),
     to: input.para,
     subject: '[Bitácora] El correo de acceso de su cuenta cambió',
+    html,
+  })
+
+  return { enviado: true }
+}
+
+/**
+ * Da la bienvenida a una cuenta que acaba de dar de alta un root y le lleva a su
+ * panel de configuración (nombre, apellidos, contraseña propia y foto).
+ *
+ * La contraseña provisional NO va en el correo: quien dio de alta la cuenta se la
+ * entrega por otro medio. Por eso el mensaje solo trae el enlace, que es de un
+ * solo uso y vence. El enlace lo construye quien llama (ver `urlConfigurarCuenta`
+ * en app.ts); aquí solo se escribe el correo.
+ */
+export async function enviarCorreoBienvenida(input: {
+  para: string
+  nombre: string
+  /** Rango con el que se creó la cuenta, tal como lo muestra el panel. */
+  rango: string
+  /** Quién dio de alta la cuenta. */
+  creadoPor: string
+  url: string
+  expiraDias: number
+}): Promise<{ enviado: true }> {
+  if (!mailConfigurado()) {
+    throw new Error('SMTP_NO_CONFIGURADO')
+  }
+
+  const url = escapeHtml(input.url)
+  const dias = `${input.expiraDias} ${input.expiraDias === 1 ? 'día' : 'días'}`
+
+  const contenidoHtml = `
+    <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-top: 0;">
+      Estimado(a) <strong>${escapeHtml(input.nombre || 'usuario(a)')}</strong>:
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+      <strong>${escapeHtml(input.creadoPor)}</strong> le dio de alta en la <strong>Bitácora</strong>
+      del Municipio de San Pedro Tlaquepaque, con el rango de <strong>${escapeHtml(input.rango)}</strong>,
+      usando esta dirección de correo (<strong>${escapeHtml(input.para)}</strong>).
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+      Para empezar a usar su cuenta debe configurarla: capturar su nombre y apellidos, crear su
+      propia contraseña y, si lo desea, agregar su foto de perfil. Use el siguiente botón:
+    </p>
+
+    <div style="text-align:center; margin: 28px 0;">
+      <a href="${url}"
+         style="display:inline-block; padding:14px 28px; background:#7A1A37; color:#FFFFFF;
+                font-size:15px; font-weight:700; text-decoration:none; border-radius:10px;
+                letter-spacing:0.3px;">
+        Configurar mi cuenta
+      </a>
+    </div>
+
+    <p style="font-size: 12.5px; line-height: 1.6; color: #64748B; text-align:center;">
+      Si el botón no funciona, copie y pegue esta dirección en su navegador:<br>
+      <span style="word-break:break-all; color:#7A1A37;">${url}</span>
+    </p>
+
+    <div class="protocol-box" style="background-color:#FFFBEB; border-color:#FDE68A;">
+      <div class="protocol-title" style="color:#92400E;">Importante</div>
+      <div class="protocol-step" style="color:#78350F;">⏱ El enlace vence en <strong>${escapeHtml(dias)}</strong> y solo puede usarse una vez. Si vence, pida que le reenvíen la invitación.</div>
+      <div class="protocol-step" style="color:#78350F;">🔑 Este mensaje no incluye ninguna contraseña. La <strong>contraseña provisional</strong> se la entrega, por otro medio, quien le dio de alta; si prefiere entrar con ella, al iniciar sesión lo llevaremos a esta misma configuración.</div>
+      <div class="protocol-step" style="color:#78350F;">🔒 Si usted no esperaba este mensaje, ignórelo y avise a la Dirección de Medio Ambiente y Ecología. Nunca comparta este enlace.</div>
+    </div>
+  `
+
+  const html = renderPlantillaBase({
+    titulo: 'Configure su cuenta',
+    subtitulo: 'Alta de cuenta · Bitácora',
+    badge: 'Cuenta nueva',
+    badgeColor: '#16A34A',
+    contenidoHtml,
+  })
+
+  const transporter = getTransporter()
+  await transporter.sendMail({
+    from: await remitenteDelPortal(),
+    to: input.para,
+    subject: '[Bitácora] Configure su cuenta',
     html,
   })
 

@@ -1,7 +1,7 @@
 import { redirect } from 'remix/response/redirect'
 import { createController } from 'remix/router'
 
-import { backendFetch, requireAdminUser } from '../../backend.ts'
+import { backendFetch, olvidarTemaPublico, requireAdminUser } from '../../backend.ts'
 import { adminRoutes } from '../../routes.ts'
 import { PersonalizacionTextosPage } from './personalizacion-textos-page.tsx'
 import { textosDeFormData } from './personalizacion-textos-defs.ts'
@@ -20,12 +20,7 @@ export default createController(adminRoutes.personalizacionTextos, {
       const themeData = themeRes.ok ? await themeRes.json() : { theme: {} }
 
       return context.render(
-        <PersonalizacionTextosPage
-          user={user}
-          theme={themeData.theme}
-          mensaje={msg}
-          error={err}
-        />,
+        <PersonalizacionTextosPage user={user} theme={themeData.theme} mensaje={msg} error={err} />,
       )
     },
 
@@ -56,6 +51,9 @@ export default createController(adminRoutes.personalizacionTextos, {
         )
       }
 
+      // El portal guarda el tema unos segundos en memoria: se olvida para que quien acaba de
+      // guardar lo vea ya, en lugar de pensar que no se guardó.
+      olvidarTemaPublico()
       return redirect(
         `${adminRoutes.personalizacionTextos.index.href()}?msg=Textos+del+portal+guardados+correctamente`,
       )

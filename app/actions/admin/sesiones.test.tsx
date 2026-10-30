@@ -37,7 +37,7 @@ const RESUMEN: ResumenSesiones = {
 const pagina = (items: SesionRegistrada[], resumen: Partial<ResumenSesiones> = {}) =>
   renderToString(
     <SesionesPage
-      user={{ name: 'Admin', role: 'admin' }}
+      user={{ name: 'Dueña', role: 'root' }}
       items={items}
       resumen={{ ...RESUMEN, ...resumen }}
       total={items.length}
@@ -153,6 +153,12 @@ describe('explicaciones', () => {
     expect(html).toContain('solo mientras la persona tiene el panel a la vista')
     expect(html).toContain('pausas de más de 2 minutos')
     expect(html).toContain('no se da por activa')
+  })
+
+  it('dice que solo la consultan las cuentas root', async () => {
+    const html = await pagina([BASE])
+    expect(html).toContain('Solo la consultan las cuentas root')
+    expect(html).not.toContain('rol administrador')
   })
 
   it('conserva el aviso de que es control de acceso y no de productividad', async () => {

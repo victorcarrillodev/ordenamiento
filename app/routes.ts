@@ -15,6 +15,10 @@ export const routes = route({
   // Confirmación del correo nuevo. Pública porque el enlace llega por correo,
   // y con POST propio: el GET solo muestra el botón (ver el controller).
   confirmarCorreo: form(`${basePath}/confirmar-correo`),
+  // Primer acceso de una cuenta dada de alta por un root. Pública porque el
+  // enlace llega por correo (o la emite el inicio de sesión con la contraseña
+  // provisional): quien la usa todavía no tiene sesión.
+  configurarCuenta: form(`${basePath}/configurar-cuenta`),
   // Imágenes que sube el administrador en Personalización. Viven en el
   // backend, al que el navegador no llega: esta ruta las proxea bajo el
   // prefijo público, igual que los adjuntos del panel.

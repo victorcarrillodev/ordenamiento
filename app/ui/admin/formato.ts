@@ -72,3 +72,21 @@ export function formatearFecha(valor: string | null | undefined): string {
     year: 'numeric',
   })
 }
+
+/** Solo la hora, en 24 h: «18:24». Acompaña a la fecha cuando va en otro renglón. */
+export function formatearHora(valor: string | null | undefined): string {
+  if (!valor) return '—'
+  const fecha = new Date(valor)
+  if (Number.isNaN(fecha.getTime())) return '—'
+  return fecha.toLocaleTimeString('es-MX', {
+    timeZone: ZONA,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+}
+
+/** «1 archivo» / «3 archivos». */
+export function cuantosArchivos(n: number): string {
+  return n === 1 ? '1 archivo' : `${n} archivos`
+}

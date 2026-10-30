@@ -1,4 +1,7 @@
-import { describe, expect, it, beforeEach, afterEach, mock } from 'bun:test'
+import { describe, expect, it, beforeEach, afterEach, mock, spyOn } from 'bun:test'
+
+import * as actividades from './actividades.ts'
+import * as customizations from './customizations.ts'
 
 // Mockeamos nodemailer para no conectar a SMTP real.
 interface CorreoEnviado {
@@ -26,8 +29,39 @@ mock.module('nodemailer', () => nodemailerMock)
 let expediente: Record<string, unknown> | null = null
 const cargar = (() => Promise.resolve(expediente)) as never
 
-const { mailConfigurado, escapeHtml, enviarAcuseReciboParticipacion, REMITENTE_CONSULTA } =
-  await import('./mail.ts')
+const {
+  mailConfigurado,
+  escapeHtml,
+  enviarAcuseReciboParticipacion,
+  enviarAviso,
+  enviarAvisoCorreoCambiado,
+  enviarConfirmacionCorreoNuevo,
+  enviarCorreoBienvenida,
+  enviarCorreoPrueba,
+  enviarCorreoRecuperacion,
+  enviarCorreoRespuesta,
+} = await import('./mail.ts')
+
+// El remitente es el correo de contacto del pie de página, que vive en la
+// personalización guardada en la base: aquí lo fija cada caso en vez de leerla.
+let correoDelPie = 'ordenamiento@tlaquepaque.gob.mx'
+let restaurarPersonalizacion: Array<() => void> = []
+beforeEach(() => {
+  correoDelPie = 'ordenamiento@tlaquepaque.gob.mx'
+  const leer = spyOn(customizations, 'getCustomizations').mockImplementation((() =>
+    Promise.resolve({
+      ...customizations.DEFAULT_THEME_CONFIG,
+      usuario: {
+        ...customizations.DEFAULT_THEME_CONFIG.usuario,
+        textos: {
+          ...customizations.DEFAULT_THEME_CONFIG.usuario.textos,
+          footerEmail: correoDelPie,
+        },
+      },
+    })) as never)
+  restaurarPersonalizacion = [() => leer.mockRestore()]
+})
+afterEach(() => restaurarPersonalizacion.forEach((restaurar) => restaurar()))
 
 describe('mailConfigurado', () => {
   const orig = process.env.SMTP_HOST
@@ -54,6 +88,16 @@ describe('escapeHtml (anti-XSS en correos)', () => {
     expect(escapeHtml('Folio 12345 — Tlaquepaque')).toBe('Folio 12345 — Tlaquepaque')
   })
 })
+
+/** Una cuenta recién dada de alta por un root. */
+const BIENVENIDA = {
+  para: 'nueva@tlaquepaque.gob.mx',
+  nombre: 'Nueva Persona',
+  rango: 'Administrador',
+  creadoPor: 'Dueña del Sistema',
+  url: 'https://portal.test/ordena/configurar-cuenta?token=abc123',
+  expiraDias: 7,
+}
 
 /** Una participación completa, con los datos complementarios que el acuse no muestra. */
 const participacion = (cambios: Record<string, unknown> = {}) => ({
@@ -106,10 +150,11 @@ describe('enviarAcuseReciboParticipacion', () => {
     )
   })
 
-  it('sale del correo de la consulta pública, no del remitente general', async () => {
+  it('sale del correo de contacto del pie de página, firmado como la consulta pública', async () => {
     await enviarAcuseReciboParticipacion('id-1', 'juan@ejemplo.com', cargar)
-    expect(REMITENTE_CONSULTA).toContain('consulta.poetdum@tlaquepaque.gob.mx')
-    expect(sendMailCalls[0].from).toBe(REMITENTE_CONSULTA)
+    expect(sendMailCalls[0].from).toBe(
+      '"Consulta pública POETDUM" <ordenamiento@tlaquepaque.gob.mx>',
+    )
   })
 
   it('lleva el folio en el asunto y el acuse en PDF como adjunto', async () => {
@@ -191,5 +236,209 @@ describe('enviarAcuseReciboParticipacion', () => {
     expect(html).not.toContain('<img src=x onerror=alert(1)>')
     expect(html).not.toContain('<b>hack</b>')
     expect(html).not.toContain('<script>1</script>')
+  })
+})
+
+describe('remitente de los correos: el correo de contacto del pie de página', () => {
+  beforeEach(() => {
+    process.env.SMTP_HOST = 'smtp.example.com'
+    expediente = participacion()
+    sendMailCalls.length = 0
+  })
+  afterEach(() => {
+    delete process.env.SMTP_HOST
+  })
+
+  /** Cada correo que el portal envía sin intervención de otra base de datos. */
+  const ENVIOS: Array<[string, string, () => Promise<unknown>]> = [
+    [
+      'el acuse de la participación',
+      'Consulta pública POETDUM',
+      () => enviarAcuseReciboParticipacion('id-1', 'a@b.com', cargar),
+    ],
+    [
+      'la respuesta con el oficio',
+      'Consulta pública POETDUM',
+      () =>
+        enviarCorreoRespuesta({
+          para: 'a@b.com',
+          folio: 'POE-2026-0001',
+          oficio: Buffer.from('%PDF-1.4'),
+          nombreArchivo: 'oficio.pdf',
+        }),
+    ],
+    ['el correo de prueba', 'Bitácora Tlaquepaque', () => enviarCorreoPrueba('a@b.com')],
+    [
+      'el restablecimiento de contraseña',
+      'Bitácora Tlaquepaque',
+      () =>
+        enviarCorreoRecuperacion({
+          para: 'a@b.com',
+          nombre: 'Ana',
+          url: 'https://portal.test/restablecer?token=abc',
+          expiraMinutos: 30,
+        }),
+    ],
+    [
+      'la confirmación del correo nuevo',
+      'Bitácora Tlaquepaque',
+      () =>
+        enviarConfirmacionCorreoNuevo({
+          para: 'nuevo@b.com',
+          nombre: 'Ana',
+          url: 'https://portal.test/confirmar?token=abc',
+          expiraMinutos: 60,
+          emailAnterior: 'viejo@b.com',
+        }),
+    ],
+    [
+      'la bienvenida de una cuenta nueva',
+      'Bitácora Tlaquepaque',
+      () => enviarCorreoBienvenida(BIENVENIDA),
+    ],
+    [
+      'el aviso del correo cambiado',
+      'Bitácora Tlaquepaque',
+      () =>
+        enviarAvisoCorreoCambiado({
+          para: 'viejo@b.com',
+          nombre: 'Ana',
+          emailNuevo: 'nuevo@b.com',
+        }),
+    ],
+    [
+      'el aviso de una actividad',
+      'Bitácora Tlaquepaque',
+      () => {
+        const leer = spyOn(actividades, 'obtenerActividadGestion').mockResolvedValue({
+          id: 'act-1',
+          titulo: 'Taller',
+          descripcion: '',
+          aviso_titulo: '',
+          aviso_descripcion: '',
+          fecha: '2026-11-05',
+          hora_inicio: '10:00',
+          hora_fin: '12:00',
+          lugar: 'Sala 1',
+          publicacion: 'borrador',
+        } as never)
+        restaurarPersonalizacion.push(() => leer.mockRestore())
+        return enviarAviso('act-1', 'a@b.com', 'https://portal.test')
+      },
+    ],
+  ]
+
+  for (const [descripcion, nombre, enviar] of ENVIOS) {
+    it(`${descripcion} sale del correo del pie de página`, async () => {
+      await enviar()
+      expect(sendMailCalls).toHaveLength(1)
+      expect(sendMailCalls[0].from).toBe(`"${nombre}" <ordenamiento@tlaquepaque.gob.mx>`)
+    })
+
+    it(`${descripcion} sigue al correo del pie cuando se cambia en el panel`, async () => {
+      correoDelPie = 'contacto.poetdum@tlaquepaque.gob.mx'
+      await enviar()
+      expect(sendMailCalls[0].from).toBe(`"${nombre}" <contacto.poetdum@tlaquepaque.gob.mx>`)
+    })
+  }
+
+  it('con el correo del pie vacío usa el mismo que muestra el pie por defecto', async () => {
+    correoDelPie = '   '
+    await enviarCorreoPrueba('a@b.com')
+    expect(sendMailCalls[0].from).toBe('"Bitácora Tlaquepaque" <ordenamiento@tlaquepaque.gob.mx>')
+  })
+
+  it('con algo que no es una dirección no manda ese texto como remitente', async () => {
+    correoDelPie = 'ordenamiento@tlaquepaque.gob.mx, otro@x.mx'
+    await enviarCorreoPrueba('a@b.com')
+    expect(sendMailCalls[0].from).toBe('"Bitácora Tlaquepaque" <ordenamiento@tlaquepaque.gob.mx>')
+  })
+
+  it('las variables MAIL_FROM del entorno ya no deciden el remitente', async () => {
+    process.env.MAIL_FROM = '"Otro" <otro@dominio.mx>'
+    process.env.MAIL_FROM_CONSULTA = '"Consulta" <consulta@dominio.mx>'
+    try {
+      await enviarCorreoPrueba('a@b.com')
+      await enviarAcuseReciboParticipacion('id-1', 'a@b.com', cargar)
+    } finally {
+      delete process.env.MAIL_FROM
+      delete process.env.MAIL_FROM_CONSULTA
+    }
+    for (const correo of sendMailCalls)
+      expect(correo.from).toContain('<ordenamiento@tlaquepaque.gob.mx>')
+  })
+
+  it('el correo de prueba dice de qué dirección sale', async () => {
+    correoDelPie = 'contacto.poetdum@tlaquepaque.gob.mx'
+    await enviarCorreoPrueba('a@b.com')
+    expect(sendMailCalls[0].html).toContain('contacto.poetdum@tlaquepaque.gob.mx')
+  })
+})
+
+describe('enviarCorreoBienvenida', () => {
+  beforeEach(() => {
+    process.env.SMTP_HOST = 'smtp.example.com'
+    sendMailCalls.length = 0
+  })
+  afterEach(() => {
+    delete process.env.SMTP_HOST
+  })
+
+  it('lanza si no hay SMTP configurado', async () => {
+    delete process.env.SMTP_HOST
+    await expect(enviarCorreoBienvenida(BIENVENIDA)).rejects.toThrow('SMTP_NO_CONFIGURADO')
+  })
+
+  it('va a la persona, con el enlace de configuración como botón y como texto', async () => {
+    await enviarCorreoBienvenida(BIENVENIDA)
+    const { to, subject, html } = sendMailCalls[0]
+    expect(to).toBe('nueva@tlaquepaque.gob.mx')
+    expect(subject).toBe('[Bitácora] Configure su cuenta')
+    expect(html).toContain('Configurar mi cuenta')
+    // El enlace aparece en el botón y escrito, por si el botón no funciona.
+    expect(html.split('https://portal.test/ordena/configurar-cuenta?token=abc123').length - 1).toBe(
+      2,
+    )
+    expect(html).toContain('href="https://portal.test/ordena/configurar-cuenta?token=abc123"')
+  })
+
+  it('dice quién dio de alta, con qué rango y qué se hará en la configuración', async () => {
+    await enviarCorreoBienvenida(BIENVENIDA)
+    const { html } = sendMailCalls[0]
+    expect(html).toContain('Nueva Persona')
+    expect(html).toContain('Dueña del Sistema')
+    expect(html).toContain('Administrador')
+    expect(html).toContain('nueva@tlaquepaque.gob.mx')
+    expect(html).toContain('nombre y apellidos')
+    expect(html).toContain('foto de perfil')
+  })
+
+  it('no lleva ninguna contraseña: explica que la provisional se entrega por otro medio', async () => {
+    await enviarCorreoBienvenida(BIENVENIDA)
+    const { html } = sendMailCalls[0]
+    expect(html).toContain('no incluye ninguna contraseña')
+    expect(html).toContain('contraseña provisional')
+    expect(html).toContain('por otro medio')
+  })
+
+  it('dice cuánto dura el enlace, en singular y en plural', async () => {
+    await enviarCorreoBienvenida(BIENVENIDA)
+    expect(sendMailCalls[0].html).toContain('<strong>7 días</strong>')
+    await enviarCorreoBienvenida({ ...BIENVENIDA, expiraDias: 1 })
+    expect(sendMailCalls[1].html).toContain('<strong>1 día</strong>')
+  })
+
+  it('escapa el HTML del nombre, de quien dio de alta y de la dirección', async () => {
+    await enviarCorreoBienvenida({
+      ...BIENVENIDA,
+      nombre: '<img src=x onerror=alert(1)>',
+      creadoPor: '<script>alert(2)</script>',
+      url: 'https://portal.test/x?a=1&b="2"',
+    })
+    const { html } = sendMailCalls[0]
+    expect(html).not.toContain('<img src=x')
+    expect(html).not.toContain('<script>alert(2)')
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;')
+    expect(html).toContain('a=1&amp;b=&quot;2&quot;')
   })
 })

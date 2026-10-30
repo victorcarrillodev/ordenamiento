@@ -12,6 +12,21 @@
   --a-green: #16a34a;
   --a-red: #dc2626;
   --a-amber: #d97706;
+
+  /* Medidas comunes del panel. El margen exterior de la página y la separación
+     entre tarjetas, paneles y bloques son LAS MISMAS en horizontal y en vertical,
+     en todas las pantallas: lo que se mueve aquí se mueve en toda la aplicación. */
+  --a-topbar: 52px;
+  --a-pad: 20px;
+  --a-gap: 16px;
+  --a-pad-panel: 18px;
+}
+@media (max-width: 640px) {
+  :root {
+    --a-pad: 14px;
+    --a-gap: 12px;
+    --a-pad-panel: 14px;
+  }
 }
 * {
   box-sizing: border-box;
@@ -25,6 +40,14 @@ body {
 a {
   text-decoration: none;
   color: inherit;
+}
+
+/* Iconos en línea (ver app/ui/admin/icon.tsx): siguen el color del texto y se
+   alinean con la línea base como lo haría una letra. */
+.icono {
+  display: inline-block;
+  flex: none;
+  vertical-align: -0.15em;
 }
 
 /* Foco visible para navegación por teclado: sin esto, tabular por el panel
@@ -131,7 +154,7 @@ textarea:focus-visible,
   border-left-color: var(--a-blue);
   font-weight: 700;
 }
-.sidebar__item iconify-icon {
+.sidebar__item .icono {
   width: 16px;
   height: 16px;
   flex: none;
@@ -159,7 +182,7 @@ textarea:focus-visible,
   flex-direction: column;
 }
 .topbar {
-  height: 52px;
+  height: var(--a-topbar);
   background: var(--a-dark);
   color: #fff;
   display: flex;
@@ -236,7 +259,11 @@ textarea:focus-visible,
 }
 
 .content {
-  padding: 20px 26px 40px;
+  padding: var(--a-pad);
+}
+/* El último bloque no deja margen propio: el aire de abajo es el del contenido. */
+.content > :last-child {
+  margin-bottom: 0;
 }
 
 /* Encabezado de página */
@@ -246,7 +273,7 @@ textarea:focus-visible,
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: var(--a-gap);
 }
 .content__heading {
   min-width: 0;
@@ -297,14 +324,14 @@ span.breadcrumb {
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
+  gap: var(--a-gap);
+  margin-bottom: var(--a-gap);
 }
 .card {
   background: #fff;
   border: 1px solid var(--a-border-strong);
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 12px 16px;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -376,14 +403,25 @@ span.breadcrumb {
 .card--clock {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
 }
+/* La hora y la fecha comparten renglón: la tarjeta mide lo mismo que las demás cifras. */
+.card__linea {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.card__linea .card__label {
+  font-weight: 600;
+  color: var(--a-muted);
+}
 
 /* Paneles */
 .panel {
   background: #fff;
   border: 1px solid var(--a-border-strong);
   border-radius: 12px;
-  padding: 18px;
-  margin-bottom: 18px;
+  padding: var(--a-pad-panel);
+  margin-bottom: var(--a-gap);
   box-shadow: var(--a-shadow);
   min-width: 0;
   overflow-wrap: anywhere;
@@ -399,8 +437,8 @@ span.breadcrumb {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
-  margin: -18px -18px 12px;
-  padding: 12px 18px;
+  margin: calc(var(--a-pad-panel) * -1) calc(var(--a-pad-panel) * -1) 12px;
+  padding: 9px var(--a-pad-panel);
   background: #f7f9fc;
   border-bottom: 1px solid var(--a-border-strong);
   border-radius: 12px 12px 0 0;
@@ -411,7 +449,15 @@ span.breadcrumb {
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  gap: var(--a-gap);
+  margin-bottom: var(--a-gap);
+}
+/* En una rejilla la separación ya la pone el `gap`: sin esto cada panel sumaba su
+   margen inferior y entre filas había el doble que entre columnas. */
+.grid-2 > .panel,
+.charts-row > .panel,
+.export-grid > .panel {
+  margin-bottom: 0;
 }
 @media (max-width: 900px) {
   .grid-2 {
@@ -523,6 +569,17 @@ tr:hover td {
   color: var(--a-text);
   border-color: var(--a-border-strong);
 }
+/* Acción que no se deshace (eliminar, quitar): contorno y texto rojos, con su palabra.
+   No es un bloque rojo sólido para no ser lo más llamativo de cada fila. */
+.btn--peligro {
+  background: #fff;
+  color: #b91c1c;
+  border-color: #f0b4b4;
+}
+.btn--peligro:hover {
+  background: #fef2f2;
+  border-color: var(--a-red);
+}
 .btn--white:hover {
   background: var(--a-bg);
 }
@@ -628,7 +685,7 @@ tr:hover td {
 .export-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
-  gap: 14px;
+  gap: var(--a-gap);
 }
 .export-card {
   background: #fff;
@@ -650,7 +707,7 @@ tr:hover td {
 .charts-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
-  gap: 16px;
+  gap: var(--a-gap);
 }
 .chart-panel {
   display: flex;
@@ -670,7 +727,7 @@ tr:hover td {
 .detalle-split {
   display: grid;
   grid-template-columns: 3fr 2fr;
-  gap: 18px;
+  gap: var(--a-gap);
   align-items: start;
 }
 .detalle-split > .panel {
@@ -1010,18 +1067,11 @@ tr:hover td {
   padding: 0 4px;
 }
 
-/* Botones sin variante de color propia (paletas, pestañas, sugerencias):
-   ya traen su color en línea desde la página, así que aquí solo se añade
-   la interacción (elevación/foco) que un `style` inline no puede expresar. */
-.palette-btn:hover,
-.tab-btn:hover,
-.motivo-suggest:hover,
-.hero-remove:hover {
+/* Botones sin variante de color propia (pestañas): ya traen su color en línea desde la
+   página, así que aquí solo se añade la interacción que un `style` inline no puede
+   expresar. */
+.tab-btn:hover {
   filter: brightness(0.97);
-}
-.palette-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--a-shadow);
 }
 .tab-btn:hover {
   background: rgba(37, 99, 235, 0.06);
@@ -1050,23 +1100,45 @@ tr:hover td {
   --etapa-borde: #86efac;
 }
 
+/* Seguimiento en la tabla: el icono a la izquierda y, a su lado, el título con la
+   pista debajo. Dos renglones como máximo: antes el icono, el título y la pista se
+   apilaban en tres y cada fila crecía sin necesidad. */
 .etapa-badge {
   display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 5px 11px;
-  border-radius: 10px;
-  font-size: 11.5px;
-  font-weight: 700;
-  line-height: 1.3;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 4px 13px 4px 4px;
+  border-radius: 999px;
+  line-height: 1.25;
   background: var(--etapa-bg);
   color: var(--etapa-fg);
   border: 1px solid var(--etapa-borde);
 }
-.etapa-badge small {
-  font-weight: 500;
+.etapa-badge__icono {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--etapa-fg);
+  color: #fff;
+}
+.etapa-badge__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.etapa-badge__texto strong {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.etapa-badge__texto small {
   font-size: 10.5px;
-  opacity: 0.85;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .etapa-filtros {
@@ -1076,22 +1148,474 @@ tr:hover td {
   gap: 8px;
   padding: 0 0 14px;
 }
+.etapa-filtros__titulo {
+  margin-right: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--a-muted);
+}
 .etapa-filtro {
-  display: inline-block;
-  padding: 5px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 5px 4px 12px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
   text-decoration: none;
-  color: var(--etapa-fg, var(--a-muted));
+  color: var(--etapa-fg, var(--a-text));
   background: var(--etapa-bg, #fff);
-  border: 1px solid var(--etapa-borde, var(--a-border));
+  border: 1px solid var(--etapa-borde, var(--a-border-strong));
+  transition:
+    filter 120ms ease,
+    background 120ms ease;
 }
 .etapa-filtro:hover {
   filter: brightness(0.96);
 }
+/* La cifra de cada filtro: cuántas participaciones hay en esa etapa. */
+.etapa-filtro__n {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--etapa-fg, var(--a-muted));
+}
+.etapa-filtro--todas .etapa-filtro__n {
+  background: #eef1f6;
+}
+/* El filtro en uso se rellena: se distingue de un vistazo, sin depender del contorno. */
 .etapa-filtro--activo {
-  box-shadow: 0 0 0 2px var(--a-dark);
+  background: var(--etapa-fg, var(--a-dark));
+  border-color: var(--etapa-fg, var(--a-dark));
+  color: #fff;
+}
+.etapa-filtro--activo .etapa-filtro__n {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------------------
+   Listados (participaciones, actividades…)
+
+   Una misma pieza para todas las tablas del panel: barra de búsqueda y filtros,
+   tabla con celdas de dos renglones, acciones con nombre, estado vacío y, en
+   teléfono, una tarjeta por fila en lugar de una tabla que se desplaza de lado.
+   --------------------------------------------------------------------------- */
+
+/* Texto solo para lectores de pantalla (queda fuera de la vista pero se anuncia). */
+.solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.lista-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.lista-barra > .btn,
+.lista-barra > .lista-select,
+.lista-barra > .lista-busqueda {
+  min-height: 38px;
+}
+.lista-busqueda {
+  position: relative;
+  display: block;
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.lista-busqueda > .icono {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--a-muted);
+  pointer-events: none;
+}
+.lista-busqueda input {
+  width: 100%;
+  height: 100%;
+  min-height: 38px;
+  padding: 0 12px 0 36px;
+  border: 1px solid var(--a-border-strong);
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--a-text);
+}
+.lista-busqueda input::placeholder {
+  color: #8b95a9;
+}
+.lista-busqueda input:focus-visible,
+.lista-select:focus-within {
+  outline: none;
+  border-color: var(--a-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.lista-select {
+  display: inline-flex;
+  flex: 0 1 auto;
+  max-width: 260px;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px 0 12px;
+  border: 1px solid var(--a-border-strong);
+  border-radius: 8px;
+  background: #fff;
+}
+.lista-select > span {
+  flex: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--a-muted);
+  /* El `.panel` hereda `overflow-wrap: anywhere` y partía «Dictamen» a media palabra. */
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+.lista-select select {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 36px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--a-text);
+  cursor: pointer;
+}
+.lista-select select:focus-visible {
+  outline: none;
+}
+
+.tabla-lista {
+  font-size: 13px;
+}
+.tabla-lista th {
+  padding: 10px 12px;
+  background: #f7f9fc;
+  border-bottom: 1px solid var(--a-border-strong);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--a-muted);
+  white-space: nowrap;
+}
+.tabla-lista td {
+  padding: 11px 12px;
+  vertical-align: middle;
+}
+.tabla-lista tbody tr:last-child td {
+  border-bottom: 0;
+}
+.tabla-lista__principal {
+  min-width: 190px;
+}
+/* Columna que mide lo que su contenido: el ancho que sobra se lo queda la principal. */
+.tabla-lista .col-justa {
+  width: 1%;
+  white-space: nowrap;
+}
+.tabla-lista__acciones {
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* Celda de dos renglones: lo principal arriba y el dato de apoyo debajo. */
+.celda-doble {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.celda-doble__titulo {
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--a-text);
+  overflow-wrap: anywhere;
+}
+a.celda-doble__titulo:hover {
+  color: var(--a-blue);
+  text-decoration: underline;
+}
+.celda-doble__titulo--fecha {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.celda-doble__sub {
+  font-size: 11.5px;
+  color: var(--a-muted);
+  font-variant-numeric: tabular-nums;
+}
+.celda-doble__sub--folio {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.02em;
+}
+
+.archivos {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  background: #f1f4fa;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.archivos--ninguno {
+  padding: 0;
+  background: none;
+  color: var(--a-muted);
+}
+.archivos--mini {
+  gap: 3px;
+  padding: 1px 7px 1px 5px;
+  font-size: 11px;
+}
+
+/* Acciones de una fila: «Ver» siempre con nombre; las demás pierden la palabra
+   cuando la tabla no tiene ancho (su nombre queda en el tooltip y en aria-label). */
+.acciones-fila {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn--icono {
+  position: relative;
+}
+.table-wrap--lista {
+  container: lista / inline-size;
+}
+@container lista (max-width: 1080px) {
+  .btn--icono {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .btn--icono .btn__texto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}
+
+/* La tabla de actividades lleva más en cada fila: su acción secundaria pierde la
+   palabra antes (en 1440 px de pantalla la tabla mide ~1100). */
+@container lista (max-width: 1300px) {
+  .act-tabla .btn--icono {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .act-tabla .btn--icono .btn__texto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}
+
+/* Estado vacío: dice por qué no hay nada y qué hacer. */
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 36px 16px 30px;
+  text-align: center;
+}
+.vacio__icono {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: #eef2fb;
+  color: var(--a-blue);
+}
+.vacio__titulo {
+  font-size: 15px;
+}
+.vacio__texto {
+  max-width: 46ch;
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--a-muted);
+}
+
+/* Variante en fila para un bloque que ya trae su propio título (icono a la izquierda). */
+.vacio--compacto {
+  flex: 1 1 auto;
+  flex-direction: row;
+  justify-content: center;
+  gap: 14px;
+  padding: 14px 8px;
+  text-align: left;
+}
+.vacio--compacto .vacio__icono {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+}
+.vacio--compacto .vacio__texto {
+  margin: 2px 0 0;
+}
+
+.paginacion__tamano {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--a-muted);
+}
+.paginacion__tamano > span {
+  margin-right: 4px;
+}
+
+/* Cuando la tabla no tiene ancho para sus seis columnas (teléfono, tableta, o
+   escritorio con el menú abierto) cada fila pasa a ser una tarjeta con sus datos
+   rotulados. Se decide por el ancho que de verdad tiene la tabla, no por el de la
+   pantalla: una tabla que se desplaza de lado esconde columnas y hace perder de vista
+   de quién es cada dato. En tableta las tarjetas se reparten en dos columnas. */
+@container lista (max-width: 960px) {
+  .table-wrap .tabla-lista {
+    display: block;
+    min-width: 0;
+  }
+  .tabla-lista thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+  .tabla-lista tbody {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+    gap: 12px;
+  }
+  .tabla-lista tr {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--a-border);
+    border-radius: 12px;
+    background: #fff;
+  }
+  .tabla-lista tr:hover td {
+    background: none;
+  }
+  .tabla-lista .col-justa {
+    width: auto;
+  }
+  .tabla-lista td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0;
+    border: 0;
+    text-align: right;
+  }
+  .tabla-lista td::before {
+    content: attr(data-label);
+    flex: 0 0 92px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: left;
+    text-transform: uppercase;
+    color: var(--a-muted);
+  }
+  .tabla-lista td.tabla-lista__principal {
+    order: -1;
+    display: block;
+    min-width: 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--a-border);
+    text-align: left;
+  }
+  .tabla-lista td.tabla-lista__principal::before,
+  .tabla-lista td.tabla-lista__acciones::before {
+    content: none;
+  }
+  .tabla-lista td.tabla-lista__acciones {
+    display: block;
+    padding-top: 4px;
+  }
+  /* Las acciones se reparten el ancho de la tarjeta por igual, sean dos o tres. */
+  .tabla-lista .acciones-fila {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+  .tabla-lista .acciones-fila .form-en-linea {
+    display: flex;
+  }
+  .tabla-lista .acciones-fila .form-en-linea .btn {
+    flex: 1;
+  }
+  .tabla-lista .acciones-fila .btn--icono {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .tabla-lista .acciones-fila .btn--icono .btn__texto {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+  }
+}
+
+/* Teléfono: la barra de búsqueda se apila (búsqueda, dictamen y botones). */
+@media (max-width: 720px) {
+  .lista-barra > .lista-busqueda {
+    flex-basis: 100%;
+  }
+  .lista-barra > .lista-select {
+    flex-basis: 100%;
+    max-width: none;
+  }
+  .lista-barra > .btn {
+    flex: 1 1 0;
+  }
 }
 
 /* Línea de tiempo del detalle */
@@ -1100,7 +1624,7 @@ tr:hover td {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 12px;
-  margin: 0 0 18px;
+  margin: 0 0 var(--a-gap);
   padding: 0;
 }
 .etapas__paso {
@@ -1165,7 +1689,7 @@ tr:hover td {
   background: #f0fdf4;
   border-radius: 10px;
   padding: 14px 16px;
-  margin-bottom: 18px;
+  margin-bottom: var(--a-gap);
 }
 .dictamen-opciones {
   display: grid;
@@ -1613,243 +2137,6 @@ a.cal__mas:hover {
 }
 
 /* ---------------------------------------------------------------------------
-   Mini previsualizador del portal (Personalización) — maqueta en vivo, no un
-   iframe: el iframe solo mostraría lo ya guardado, no lo que se está editando.
-   --------------------------------------------------------------------------- */
-.mp-modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.75);
-  z-index: 9999;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-.mp-modal.mp-modal--abierto {
-  display: flex;
-}
-.mp-modal__box {
-  background: #fff;
-  width: 95%;
-  max-width: 900px;
-  height: 85vh;
-  border-radius: 16px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-}
-.mp-modal__head {
-  background: var(--a-dark);
-  color: #fff;
-  padding: 14px 20px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  column-gap: 14px;
-  row-gap: 2px;
-  align-items: center;
-}
-.mp-modal__title {
-  font-weight: 700;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.mp-modal__hint {
-  grid-column: 1;
-  margin: 0;
-  font-size: 11.5px;
-  color: #cbd5e1;
-}
-.mp-modal__close {
-  grid-row: 1 / span 2;
-  background: rgba(255, 255, 255, 0.12);
-  border: none;
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
-  color: #fff;
-  font-size: 16px;
-  cursor: pointer;
-}
-.mp-modal__close:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-.mp-modal__body {
-  flex: 1;
-  overflow-y: auto;
-  background: #eef1f6;
-  padding: 18px;
-}
-
-/* La maqueta en sí: cada bloque replica una sección real del portal y trae su
-   propia etiqueta ".mp__tag" para señalar que es editable. */
-.mp {
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: var(--a-shadow);
-  font-family: inherit;
-}
-.mp__tag {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(37, 99, 235, 0.12);
-  color: var(--a-blue);
-}
-.mp__tag--light {
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-}
-.mp__nav {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 18px 14px 100px;
-  min-height: 56px;
-}
-.mp__nav-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 800;
-}
-.mp__nav-brand img {
-  height: 28px;
-  width: 28px;
-  object-fit: contain;
-}
-.mp__logo-fallback {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.06);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-}
-.mp__nav-links {
-  display: flex;
-  gap: 16px;
-  font-size: 11.5px;
-  font-weight: 600;
-  opacity: 0.85;
-}
-.mp__hero {
-  position: relative;
-  padding: 60px 28px 32px;
-  background-size: cover;
-  background-position: center;
-  background-color: #1f2430;
-  color: #fff;
-  text-align: center;
-  background-image: linear-gradient(180deg, rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.65));
-}
-.mp__cintillo {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  opacity: 0.85;
-  margin-bottom: 8px;
-}
-.mp__titulo {
-  margin: 0 0 10px;
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1.3;
-}
-.mp__subtitulo {
-  max-width: 480px;
-  margin: 0 auto 18px;
-  font-size: 12.5px;
-  line-height: 1.5;
-  opacity: 0.92;
-}
-.mp__hero-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-.mp__btn {
-  display: inline-block;
-  padding: 9px 16px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  border: 1.5px solid transparent;
-}
-.mp__btn--fill {
-  color: #fff;
-}
-.mp__btn--outline {
-  background: #fff;
-}
-.mp__cards {
-  position: relative;
-  padding: 40px 18px 18px;
-  background: #fff;
-}
-.mp__cards-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
-  gap: 12px;
-}
-.mp__card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  text-align: center;
-  padding: 14px 10px;
-  border-radius: 10px;
-  background: var(--a-bg);
-}
-.mp__card-icon {
-  font-size: 22px;
-}
-.mp__card strong {
-  font-size: 11.5px;
-  line-height: 1.3;
-}
-.mp__footer {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 30px 18px 18px;
-}
-.mp__footer img,
-.mp__footer .mp__logo-fallback {
-  height: 32px;
-  width: 32px;
-  object-fit: contain;
-  flex: none;
-}
-.mp__footer strong {
-  display: block;
-  font-size: 12.5px;
-}
-.mp__footer div div {
-  font-size: 11px;
-  opacity: 0.8;
-}
-/* ---------------------------------------------------------------------------
    Actividades y avances del Programa
    Un solo módulo en lugar de avisos, reuniones, sesiones POEL y documentos.
    --------------------------------------------------------------------------- */
@@ -1858,8 +2145,8 @@ a.cal__mas:hover {
 .act-resumen {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
-  gap: 14px;
-  margin-bottom: 16px;
+  gap: var(--a-gap);
+  margin-bottom: var(--a-gap);
 }
 .act-resumen__tarjeta {
   display: grid;
@@ -1877,7 +2164,7 @@ a.cal__mas:hover {
 a.act-resumen__tarjeta:hover {
   border-color: var(--a-dark);
 }
-.act-resumen__tarjeta > iconify-icon {
+.act-resumen__tarjeta > .icono {
   grid-row: span 2;
   color: var(--a-dark);
 }
@@ -1926,56 +2213,50 @@ a.act-resumen__aviso:hover {
   line-height: 1.5;
 }
 
-/* Lista */
-.act-filtros {
+/* Lista: la tabla usa las piezas comunes de «Listados» (barra, celda doble,
+   acciones, vacío); aquí solo lo propio de las actividades. */
+.act-tabla__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-end;
-  margin-bottom: 14px;
-}
-.act-filtros .form-field {
-  margin: 0;
-  min-width: min(170px, 100%);
-}
-.act-tabla__fecha strong,
-.act-tabla__actividad strong,
-.act-tabla__fecha small,
-.act-tabla__actividad small {
-  display: block;
-}
-.act-tabla__fecha small,
-.act-tabla__actividad small {
-  font-size: 11.5px;
-  color: var(--a-muted);
-  margin-top: 2px;
-}
-.act-tabla__actividad a {
-  color: var(--a-text);
-  text-decoration: none;
-}
-.act-tabla__actividad a:hover strong {
-  text-decoration: underline;
-}
-.act-tabla__portal {
-  font-size: 12px;
-  color: var(--a-muted);
-}
-.act-tabla__acciones {
-  display: flex;
-  gap: 6px;
   align-items: center;
+  gap: 2px 8px;
 }
-.act-inline {
+.act-tabla__portal .celda-doble__sub,
+.act-aviso-chip {
+  white-space: nowrap;
+}
+.act-tabla__cuando {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+/* «Hoy», «Mañana», «En 3 días»: cuánto falta para lo que todavía va a pasar. */
+.act-pronto {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.act-pronto--ya {
+  background: #fef3c7;
+  color: #92400e;
+}
+.form-en-linea {
   margin: 0;
   display: inline-flex;
 }
-/* Sigue «programada» con la fecha ya pasada: hay que actualizar su estado. */
+/* Sigue «programada» con la fecha ya pasada: hay que actualizar su estado. Es un
+   enlace a la edición, que es donde se cambia. */
 .act-alerta {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   margin-top: 4px;
+  width: fit-content;
   font-size: 11px;
   font-weight: 700;
   color: #92400e;
@@ -1984,11 +2265,18 @@ a.act-resumen__aviso:hover {
   border-radius: 999px;
   padding: 2px 8px;
 }
+a.act-alerta:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
 
 /* Estado de la actividad y estado de publicación */
 .act-estado,
 .act-pub {
   display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
   padding: 3px 9px;
   border-radius: 999px;
   font-size: 11.5px;
@@ -2060,8 +2348,8 @@ a.act-resumen__aviso:hover {
 .act-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: var(--a-gap);
+  margin-bottom: var(--a-gap);
 }
 .act-seccion {
   margin: 0;
@@ -2225,7 +2513,7 @@ a.act-resumen__aviso:hover {
 
 /* Dónde aparece hoy la actividad */
 .act-visibilidad {
-  margin-bottom: 16px;
+  margin-bottom: var(--a-gap);
 }
 .act-visibilidad__nota {
   margin: 0 0 10px;
@@ -2386,6 +2674,191 @@ a.act-resumen__aviso:hover {
   line-height: 1.5;
 }
 
+/* ---------------------------------------------------------------------------
+   Indicadores
+
+   Tres bloques apilados con la separación común (`--a-gap`): el estado del Programa,
+   el formulario y la lista. La página se acomoda al alto de la ventana
+   (`AdminLayout ajustada`): si hay pocos indicadores NO aparece barra de desplazamiento
+   y la lista absorbe el alto que sobra; con muchos, la página crece y se desplaza como
+   cualquier otra. El formulario se reparte en una rejilla de 12 columnas que se
+   estrecha según el ancho del propio bloque, no el de la ventana.
+   --------------------------------------------------------------------------- */
+.indic {
+  container: indic / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--a-gap);
+}
+/* El hueco entre bloques lo pone el `gap`; sin esto cada panel sumaría su margen. */
+.indic > .panel {
+  margin-bottom: 0;
+}
+.indic__lista {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+.indic__lista > .panel__title {
+  flex: none;
+}
+
+.indic__programa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px var(--a-gap);
+}
+.indic__programa-texto {
+  flex: 1 1 420px;
+  min-width: 0;
+}
+.indic__programa .panel__title {
+  margin-bottom: 4px;
+}
+.indic__programa .form-hint {
+  margin: 0;
+}
+
+.indic__nuevo > .panel__title {
+  margin-bottom: 10px;
+}
+.indic-form {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 10px var(--a-gap);
+  align-items: start;
+}
+.indic-form > * {
+  grid-column: span 12;
+}
+.indic-form .form-field input,
+.indic-form .form-field select,
+.indic-form .form-field textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+.indic-form .form-field textarea {
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  resize: vertical;
+}
+.indic-form .form-field textarea:focus-visible {
+  outline: none;
+  border-color: var(--a-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.indic-form__mediciones {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px var(--a-gap);
+  min-width: 0;
+  margin: 0;
+  padding: 6px 12px 10px;
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+}
+.indic-form__mediciones > legend {
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--a-muted);
+}
+.indic-form__medicion {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+.indic-form__pie {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.vacio--compacto .vacio__texto {
+  max-width: 62ch;
+}
+/* Dos columnas cuando el bloque mide al menos 560 px. */
+@container indic (min-width: 560px) {
+  .indic-form__nombre,
+  .indic-form__descripcion,
+  .indic-form__resultado,
+  .indic-form__documento {
+    grid-column: span 6;
+  }
+  .indic-form__unidad,
+  .indic-form__meta {
+    grid-column: span 3;
+  }
+  .indic-form__fecha {
+    grid-column: span 6;
+  }
+}
+/* En dos columnas los campos cortos van juntos arriba y los de texto largo abajo,
+   para que un campo bajito no quede junto a un área de texto alta. */
+@container indic (min-width: 560px) and (max-width: 899px) {
+  .indic-form__fecha {
+    order: 1;
+  }
+  .indic-form__documento {
+    order: 1;
+  }
+  .indic-form__descripcion,
+  .indic-form__resultado {
+    order: 2;
+  }
+  .indic-form__mediciones {
+    order: 3;
+  }
+  .indic-form__pie {
+    order: 4;
+  }
+}
+/* Una sola fila de campos cortos y las mediciones junto al documento, desde 900 px. */
+@container indic (min-width: 900px) {
+  .indic-form__nombre {
+    grid-column: span 5;
+  }
+  .indic-form__unidad,
+  .indic-form__meta {
+    grid-column: span 2;
+  }
+  .indic-form__fecha {
+    grid-column: span 3;
+  }
+  .indic-form__documento {
+    grid-column: span 4;
+  }
+  .indic-form__mediciones {
+    grid-column: span 6;
+  }
+  /* El botón sube a la fila de las mediciones, alineado con sus campos. */
+  .indic-form__pie {
+    grid-column: span 2;
+    align-self: end;
+    justify-content: flex-end;
+  }
+}
+@container indic (max-width: 559px) {
+  .indic-form__mediciones {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.indic-tabla__descripcion {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .stats-section {
   margin-bottom: 22px;
 }
@@ -2415,7 +2888,7 @@ a.act-resumen__aviso:hover {
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  margin-bottom: 16px;
+  margin-bottom: var(--a-gap);
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
@@ -2618,7 +3091,7 @@ a.user-cell:hover .user-cell__name {
   gap: 6px;
   flex-wrap: wrap;
   padding: 5px;
-  margin-bottom: 18px;
+  margin-bottom: var(--a-gap);
   background: #fff;
   border: 1px solid var(--a-border-strong);
   border-radius: 12px;
@@ -2677,6 +3150,33 @@ a.user-cell:hover .user-cell__name {
 .chart__svg {
   flex: none;
 }
+/* En un panel que reparte su alto la dona crece o se encoge con el espacio (sin pasar
+   de 200px), y la leyenda va a su lado en vez de debajo. */
+.panel--llena > .chart {
+  flex-wrap: nowrap;
+  justify-content: center;
+}
+.panel--llena .chart__svg {
+  /* El lado sale del ancho del panel (no del alto): así la leyenda siempre conserva
+     espacio para «No procedente» sin cortarse, también en pantallas de 1366px. */
+  width: clamp(100px, 44%, 230px);
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 1;
+}
+.panel--llena > .chart {
+  gap: 14px;
+}
+.panel--llena .chart__legend {
+  min-width: 0;
+}
+.panel--llena .chart__legend li {
+  gap: 6px;
+  font-size: 11.5px;
+}
+.panel--llena .chart__legend-pct {
+  min-width: 32px;
+}
 .chart__legend {
   flex: 1;
   min-width: 180px;
@@ -2732,10 +3232,17 @@ a.user-cell:hover .user-cell__name {
 .barras__etiqueta {
   font-size: 12.5px;
   font-weight: 600;
+  line-height: 1.25;
   color: var(--a-text);
+  /* Hasta dos renglones: «Desarrollo urbano y gestión de suelo» cortada a medias
+     («Desarrollo urbano y g…») no dejaba distinguir un eje de otro. El texto
+     completo sigue en el `title` por si aun así no cabe. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .barras__pista {
   height: 20px;
@@ -2768,12 +3275,12 @@ a.user-cell:hover .user-cell__name {
 .columnas {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 0 4px;
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 10px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  min-height: 160px;
 }
 .columnas__item {
   display: flex;
@@ -2781,7 +3288,10 @@ a.user-cell:hover .user-cell__name {
   align-items: center;
   gap: 6px;
   min-width: 46px;
-  flex: 1;
+  /* Con tope de ancho: un solo mes (o dos) llenaba todo el panel con una columna
+     de ancho completo. */
+  max-width: 96px;
+  flex: 1 1 46px;
 }
 .columnas__numero {
   font-size: 11px;
@@ -2792,7 +3302,10 @@ a.user-cell:hover .user-cell__name {
   display: flex;
   align-items: flex-end;
   width: 100%;
-  height: 120px;
+  /* La pista se estira con el alto que le den (en la vista general, el del panel);
+     a falta de otro, `.columnas` le deja unos 120px. */
+  flex: 1 1 auto;
+  min-height: 80px;
   border-radius: 6px;
   background: #f1f5f9;
   overflow: hidden;
@@ -2994,38 +3507,112 @@ a.user-cell:hover .user-cell__name {
    se estiren a todo el ancho quedando medio vacíos.
    -------------------------------------------------------------------------- */
 .dash {
+  --a-side: 340px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 18px;
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) var(--a-side);
+  gap: var(--a-gap);
+  align-items: stretch;
 }
 .dash__main,
 .dash__side {
   min-width: 0;
 }
-.dash__main > .panel:last-child,
-.dash__side > .panel:last-child {
+/* Columna principal: la serie arriba y, debajo, dos paneles lado a lado. Cada fila
+   mide lo que necesita su contenido más una parte (4 : 5) del espacio que sobre.
+   Con `flex` y no con filas `fr`: una fila `fr` con mínimo `auto` agranda TODAS las
+   filas para no romper la proporción, y la vista dejaba de caber en una ventana
+   donde sí cabía. Si la ventana es muy baja, la página crece y se desplaza. */
+.dash__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--a-gap);
+}
+.dash__main > .panel {
+  flex: 4 1 auto;
+}
+.dash__fila {
+  flex: 5 1 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--a-gap);
+  min-height: 0;
+}
+/* Columna de agenda: tres tarjetas, cada una con su contenido más una parte igual
+   del espacio sobrante. */
+.dash__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--a-gap);
+}
+.dash__side > .panel {
+  flex: 1 1 auto;
+}
+
+/* Pantallas que se acomodan al alto de la ventana (AdminLayout `ajustada`): el
+   contenido ocupa, como mínimo, lo que queda debajo de la barra superior, y la
+   rejilla estira sus filas para repartirlo. Sin `ajustada` nada de esto aplica. */
+.content--ajustada {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--a-topbar));
+  min-height: calc(100dvh - var(--a-topbar));
+}
+.content--ajustada > .dash {
+  flex: 1 0 auto;
+  grid-template-rows: 1fr;
+}
+.content--ajustada > .indic {
+  flex: 1 0 auto;
+}
+
+/* Panel que reparte su alto: la cabecera conserva el suyo y el contenido se estira
+   a lo que quede. Sin margen inferior, porque la separación la pone el `gap`. */
+.panel--llena {
+  display: flex;
+  flex-direction: column;
   margin-bottom: 0;
+  min-height: 0;
+}
+.panel--llena > .panel__head + * {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 @media (max-width: 1100px) {
   .dash {
     grid-template-columns: minmax(0, 1fr);
   }
+  .content--ajustada > .dash {
+    grid-template-rows: none;
+  }
+}
+@media (max-width: 700px) {
+  .dash__fila {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Rejilla de contenido del portal */
+/* Seis mosaicos: siempre 3 × 2 (2 × 3 en pantallas muy estrechas). Con `auto-fit`
+   en una ventana ancha quedaban 5 en una fila y uno solo en la siguiente. */
 .atajos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
   gap: 10px;
+}
+@media (max-width: 480px) {
+  .atajos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .atajo {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
-  padding: 14px 10px;
+  padding: 10px;
   border: 1px solid var(--a-border);
   border-radius: 10px;
   background: #f8fafc;
@@ -3041,7 +3628,7 @@ a.user-cell:hover .user-cell__name {
   background: #eff6ff;
   transform: translateY(-2px);
 }
-.atajo iconify-icon {
+.atajo .icono {
   color: var(--a-blue);
 }
 .atajo__valor {
@@ -3058,9 +3645,43 @@ a.user-cell:hover .user-cell__name {
 /* Próxima reunión */
 .reunion {
   display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* Bloque de fecha: el mes arriba y el día grande, como la hoja de un calendario. */
+.reunion__bloque {
+  flex: none;
+  width: 52px;
+  display: flex;
   flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
+  align-items: center;
+  border: 1px solid var(--a-border-strong);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  text-align: center;
+}
+.reunion__mes {
+  width: 100%;
+  padding: 2px 0;
+  background: var(--a-blue);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.reunion__dia {
+  padding: 4px 0 5px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.reunion__datos {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 .reunion__titulo {
   font-size: 14px;
@@ -3080,13 +3701,9 @@ a.lista-avisos__titulo:hover {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--a-muted);
   margin: 0;
-  text-transform: capitalize;
-}
-.reunion .btn {
-  margin-top: 6px;
 }
 
 /* Últimos avisos */
@@ -3096,12 +3713,21 @@ a.lista-avisos__titulo:hover {
   padding: 0;
   display: flex;
   flex-direction: column;
+  justify-content: center;
+}
+.lista-avisos__mas {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--a-blue);
+}
+.lista-avisos__mas a:hover {
+  text-decoration: underline;
 }
 .lista-avisos li {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 10px 0;
+  padding: 8px 0;
   border-bottom: 1px solid #eef1f7;
 }
 .lista-avisos li:last-child {
@@ -3111,24 +3737,75 @@ a.lista-avisos__titulo:hover {
 .lista-avisos__titulo {
   font-size: 13px;
   font-weight: 700;
+  /* Un título largo no estira la tarjeta: se corta en dos renglones. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 .lista-avisos__meta {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   font-size: 11px;
   color: var(--a-muted);
 }
+.lista-avisos__meta .badge {
+  flex: none;
+  white-space: nowrap;
+}
 
 /* Accesos rápidos: botones a lo ancho de la columna */
 .acciones-rapidas {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(50px, 1fr);
+  gap: 10px;
 }
-.acciones-rapidas .btn {
-  justify-content: flex-start;
-  width: 100%;
+.acceso {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--a-border);
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--a-text);
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    transform 140ms ease;
+}
+.acceso span {
+  min-width: 0;
+  /* El panel hereda `overflow-wrap: anywhere` (para nombres largos) y partía
+     «Personalización» a media palabra; aquí solo se corta en sílabas. */
+  overflow-wrap: normal;
+  hyphens: auto;
+}
+.acceso .icono {
+  color: var(--a-blue);
+}
+.acceso:hover {
+  border-color: var(--a-blue);
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+.acceso--excel {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.acceso--excel .icono {
+  color: #1d6f42;
+}
+.acceso--excel:hover {
+  border-color: #1d6f42;
+  background: #dcfce7;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3138,57 +3815,13 @@ a.lista-avisos__titulo:hover {
   }
 }
 
-/* ---------------------------------------------------------------------------
-   Personalización y marca
-   -------------------------------------------------------------------------- */
-.personalizacion {
-  max-width: 1180px;
-}
-/* Los formularios de cada pestaña apilan paneles con aire entre ellos. */
-.personalizacion form {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.personalizacion .palette-btn {
-  cursor: pointer;
-  transition:
-    transform 140ms ease,
-    box-shadow 140ms ease,
-    border-color 140ms ease;
-}
-.personalizacion .palette-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
-}
-.personalizacion .motivo-suggest {
-  cursor: pointer;
-  transition: background 140ms ease;
-}
-.personalizacion .motivo-suggest:hover {
-  background: #cbd5e1 !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .personalizacion .palette-btn:hover {
-    transform: none;
-  }
-}
-
-/* Panel con realce: la acción que cierra el formulario (guardar cambios). */
-.panel--destacado {
-  background: #f8fafc;
-  border: 2px solid var(--a-blue);
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.1);
-}
-
 /* Cuarta variante del acuse: advertencia (ni error ni confirmación). */
 .admin-alert--warning {
   background: #fffbeb;
   border-color: #fde68a;
   color: #92400e;
 }
-.admin-alert iconify-icon {
+.admin-alert .icono {
   flex: none;
 }
 
@@ -3277,24 +3910,6 @@ a.lista-avisos__titulo:hover {
 
 /* En pantallas estrechas el panel no cabe anclado a la derecha de la celda:
    pasa a hoja inferior, más abajo en el bloque táctil. */
-
-/* `min(320px, 100%)`: en una pantalla más estrecha que 320px la pista pedía
-   320px igualmente y el bloque desbordaba. */
-.textos__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
-  gap: 16px;
-}
-/* Auto-grow de los textareas de la mini-página de textos: el JS ajusta la
-   altura al scrollHeight en cada input, así que el tirador manual sobra
-   (pelearía con el recálculo). overflow-y auto (no hidden) para que, si
-   admin.js no cargara, el contenido largo quede navegable con scroll.
-   El min-height conserva el alto inicial de las cajas más pequeñas (rows=2). */
-.textos textarea {
-  resize: none;
-  overflow-y: auto;
-  min-height: 60px;
-}
 
 /* Editor de texto con formato de los textos de párrafo (public/editor-texto.js).
    Sin JavaScript solo se ve el campo de texto de respaldo; el script muestra la
@@ -3497,23 +4112,6 @@ a.lista-avisos__titulo:hover {
     max-width: 100%;
     white-space: normal;
   }
-
-  .personalizacion button[type='submit'] {
-    width: 100%;
-    white-space: normal;
-  }
-}
-
-/* Personalización mezcla estilos en línea pensados para escritorio. Un
-   `<input>` sin `min-width: 0` no baja de su ancho intrínseco (unas 20
-   columnas de texto) por mucho `flex: 1` que lleve, así que la fila «color +
-   código hexadecimal» empujaba la página entera a lo ancho. */
-.personalizacion input,
-.personalizacion select,
-.personalizacion textarea,
-.personalizacion button {
-  max-width: 100%;
-  min-width: 0;
 }
 
 @media (max-width: 560px) {
