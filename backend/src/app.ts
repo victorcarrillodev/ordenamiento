@@ -1617,7 +1617,11 @@ export async function handleRequest(request: Request): Promise<Response> {
       if (!esRolValido(body.role)) return json({ error: 'Rol inválido' }, 422)
       const veredicto = denegado(puedeCambiarRol(user!, objetivo, body.role, await contarRoots()))
       if (veredicto) return veredicto
-      await cambiarRol(usuarioPatchMatch.id, body.role)
+      if (!(await cambiarRol(usuarioPatchMatch.id, body.role, user!.id)))
+        return json(
+          { error: 'La cuenta o sus permisos cambiaron. Actualiza la página e intenta de nuevo.' },
+          409,
+        )
     }
 
     if (body.name !== undefined || body.email !== undefined) {
@@ -1656,7 +1660,11 @@ export async function handleRequest(request: Request): Promise<Response> {
     const veredicto = denegado(puedeEliminar(user!, objetivo, await contarRoots()))
     if (veredicto) return veredicto
 
-    await eliminarUsuario(usuarioDeleteMatch.id)
+    if (!(await eliminarUsuario(usuarioDeleteMatch.id, user!.id)))
+      return json(
+        { error: 'La cuenta o sus permisos cambiaron. No se eliminó; actualiza la página.' },
+        409,
+      )
     logger.info('users.delete', `${user!.email} eliminó la cuenta ${objetivo.email}`)
     return json({ ok: true })
   }

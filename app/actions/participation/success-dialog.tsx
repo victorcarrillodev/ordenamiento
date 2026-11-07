@@ -58,8 +58,9 @@ export function SuccessDialog(handle: Handle<SuccessDialogProps>) {
         </h2>
 
         <p style="font-size: 14.5px; line-height: 1.6; color: #334155; margin: 0 0 20px;">
-          Tu participación quedó registrada. Puedes descargar tu acuse en PDF; también lo recibirás
-          en el correo electrónico que registraste.
+          Tu participación quedó registrada. Descarga y conserva tu acuse en PDF. El envío de una
+          copia por correo depende del servicio de correo; si no te llega, este acuse y tu folio
+          siguen siendo válidos para consultar el seguimiento.
         </p>
 
         {folio ? (

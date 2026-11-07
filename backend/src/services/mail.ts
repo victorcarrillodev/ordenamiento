@@ -1,3 +1,5 @@
+import { renderPlantillaBase } from './correo-plantilla.ts'
+import type { DatosParticipacion } from './acuse-datos.ts'
 import nodemailer from 'nodemailer'
 
 import { sql } from '../db/pool.ts'
@@ -76,268 +78,6 @@ interface ParticipacionCorreo {
   created_at: Date
 }
 
-/**
- * Renderiza la plantilla base institucional para correos (HTML responsivo, formal y estilizado).
- */
-function renderPlantillaBase({
-  titulo,
-  subtitulo,
-  badge,
-  badgeColor = '#8B1E3F',
-  contenidoHtml,
-  pieExtra,
-  pieEntidad = 'Dirección de Medio Ambiente y Ecología',
-  leyenda = 'Este acuse digital tiene validez oficial de confirmación de recepción ciudadana.',
-}: {
-  titulo: string
-  subtitulo?: string
-  badge?: string
-  badgeColor?: string
-  contenidoHtml: string
-  pieExtra?: string
-  /** Dependencia que firma el pie. Los mensajes de la consulta pública llevan la que recibe y responde. */
-  pieEntidad?: string
-  leyenda?: string
-}): string {
-  const anio = new Date().getFullYear()
-
-  return `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(titulo)}</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #F1F5F9;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      color: #1E293B;
-      -webkit-font-smoothing: antialiased;
-    }
-    .wrapper {
-      width: 100%;
-      table-layout: fixed;
-      background-color: #F1F5F9;
-      padding: 32px 12px;
-    }
-    .main-card {
-      max-width: 640px;
-      margin: 0 auto;
-      background-color: #FFFFFF;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-      border: 1px solid #E2E8F0;
-    }
-    .header-banner {
-      background: linear-gradient(135deg, #7A1A37 0%, #4D1022 100%);
-      padding: 32px;
-      text-align: left;
-      color: #FFFFFF;
-      border-bottom: 4px solid #C59B27;
-    }
-    .header-top {
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #F8D57E;
-      margin-bottom: 8px;
-    }
-    .header-title {
-      font-size: 22px;
-      font-weight: 800;
-      margin: 0;
-      line-height: 1.25;
-      color: #FFFFFF;
-    }
-    .header-subtitle {
-      font-size: 13px;
-      color: #FCE7EB;
-      margin-top: 6px;
-      margin-bottom: 0;
-      line-height: 1.4;
-    }
-    .content-body {
-      padding: 32px;
-      /* El contenedor es una celda centrada: sin esto, párrafos y tablas heredan el centrado. */
-      text-align: left;
-    }
-    .badge {
-      display: inline-block;
-      padding: 6px 14px;
-      border-radius: 9999px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      margin-bottom: 20px;
-    }
-    .folio-box {
-      background: linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%);
-      border: 2px dashed #9333EA;
-      border-radius: 12px;
-      padding: 16px 20px;
-      text-align: center;
-      margin-bottom: 24px;
-    }
-    .folio-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: #6B21A8;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-    }
-    .folio-value {
-      font-size: 22px;
-      font-weight: 900;
-      color: #581C87;
-      letter-spacing: 1px;
-      margin-top: 4px;
-      font-family: 'Courier New', Courier, monospace;
-    }
-    .info-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 16px 0 24px 0;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid #E2E8F0;
-    }
-    .info-table td {
-      padding: 11px 16px;
-      font-size: 13.5px;
-      border-bottom: 1px solid #EDF2F7;
-    }
-    .info-table tr:last-child td {
-      border-bottom: none;
-    }
-    .label-col {
-      width: 34%;
-      font-weight: 600;
-      color: #475569;
-      background-color: #F8FAFC;
-      border-right: 1px solid #EDF2F7;
-    }
-    .val-col {
-      color: #0F172A;
-    }
-    .section-heading {
-      font-size: 13px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #7A1A37;
-      margin: 24px 0 10px 0;
-      border-bottom: 2px solid #F1D5DC;
-      padding-bottom: 6px;
-    }
-    .observation-box {
-      background-color: #F8FAFC;
-      border-left: 4px solid #7A1A37;
-      padding: 16px;
-      border-radius: 0 8px 8px 0;
-      font-size: 13.5px;
-      line-height: 1.6;
-      color: #334155;
-      margin: 12px 0 20px 0;
-      white-space: pre-wrap;
-    }
-    .protocol-box {
-      background-color: #F0FDF4;
-      border: 1px solid #BBF7D0;
-      border-radius: 12px;
-      padding: 16px 20px;
-      margin: 20px 0;
-    }
-    .protocol-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: #166534;
-      margin-bottom: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .protocol-step {
-      font-size: 13px;
-      color: #14532D;
-      line-height: 1.5;
-      margin-bottom: 8px;
-    }
-    .protocol-step:last-child {
-      margin-bottom: 0;
-    }
-    .footer {
-      background-color: #F8FAFC;
-      border-top: 1px solid #E2E8F0;
-      padding: 24px 32px;
-      text-align: center;
-      font-size: 12px;
-      color: #64748B;
-      line-height: 1.6;
-    }
-    .footer-highlight {
-      color: #7A1A37;
-      font-weight: 700;
-      font-size: 13px;
-    }
-    .attachment-pill {
-      display: inline-block;
-      padding: 6px 12px;
-      background-color: #EFF6FF;
-      color: #1E40AF;
-      border: 1px solid #BFDBFE;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      margin-top: 6px;
-      margin-right: 6px;
-    }
-  </style>
-</head>
-<body>
-  <div class="wrapper">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-      <tr>
-        <td align="center">
-          <div class="main-card">
-            <!-- Header -->
-            <div class="header-banner">
-              <div class="header-top">Gobierno Municipal de San Pedro Tlaquepaque &bull; POETDUM</div>
-              <h1 class="header-title">${escapeHtml(titulo)}</h1>
-              ${subtitulo ? `<p class="header-subtitle">${escapeHtml(subtitulo)}</p>` : ''}
-            </div>
-
-            <!-- Body -->
-            <div class="content-body">
-              ${
-                badge
-                  ? `<div class="badge" style="background-color:${badgeColor}15;color:${badgeColor};border:1px solid ${badgeColor}40;">${escapeHtml(badge)}</div>`
-                  : ''
-              }
-              ${contenidoHtml}
-              ${pieExtra ? `<div style="margin-top:20px;">${escapeHtml(pieExtra)}</div>` : ''}
-            </div>
-
-            <!-- Footer -->
-            <div class="footer">
-              <div class="footer-highlight">${escapeHtml(pieEntidad)}</div>
-              <div>Bitácora · Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano de San Pedro Tlaquepaque</div>
-              <div style="margin-top: 10px; font-size: 11px; color: #94A3B8;">
-                ${leyenda ? escapeHtml(leyenda) : ''} &copy; ${anio} San Pedro Tlaquepaque, Jalisco.
-              </div>
-            </div>
-          </div>
-        </td>
-      </tr>
-    </table>
-  </div>
-</body>
-</html>`
-}
-
 const DIRECCION_RESPONSABLE = 'Secretaría de Planificación, Análisis y Gestión Urbana'
 const DIRECCION_OFICINAS =
   'calle Juárez 28, colonia Centro, C. P. 45500, San Pedro Tlaquepaque, Jalisco'
@@ -352,7 +92,7 @@ export const asuntoAcuse = (folio: string) =>
 
 /** Una fila de la tabla de información del correo. */
 const filaDeCorreo = (etiqueta: string, valor: string) =>
-  `<tr><td class="label-col">${escapeHtml(etiqueta)}</td><td class="val-col">${escapeHtml(valor || '—')}</td></tr>`
+  `<tr><th scope="row" class="label-col">${escapeHtml(etiqueta)}</th><td class="val-col">${escapeHtml(valor || '—')}</td></tr>`
 
 /**
  * Envía al participante la confirmación de su participación: toda la
@@ -374,78 +114,14 @@ export async function enviarAcuseReciboParticipacion(
 
   const { pdf } = await generarAcuse(p)
 
-  const filas = [
-    ...filasDelAcuse(p),
-    ['Tipo de participante', textoDeOpcion(p.fuente, p.fuente_otra)],
-    ['Género', p.genero],
-    ['Domicilio de quien participa', p.domicilio],
-    ['Municipio de residencia', p.municipio_participante],
-    ['Ocupación o puesto', p.ocupacion],
-  ] as Array<[string, string]>
-
-  const adjuntosHtml =
-    p.adjuntos.length > 0
-      ? p.adjuntos.map((n) => `<div class="attachment-pill">📎 ${escapeHtml(n)}</div>`).join(' ')
-      : `<p style="font-size:13.5px;color:#475569;margin:0;">${escapeHtml(SIN_ADJUNTOS)}</p>`
-
-  const contenidoHtml = `
-    <div class="folio-box">
-      <div class="folio-label">Tu folio</div>
-      <div class="folio-value">${escapeHtml(p.folio)}</div>
-      <div style="font-size:12px;color:#6B21A8;margin-top:6px;">${escapeHtml(TEXTOS_ACUSE.folioNota)}</div>
-    </div>
-
-    <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-top: 0;">
-      <strong>Hola, ${escapeHtml(p.nombre || 'participante')}:</strong>
-    </p>
-    <p style="font-size: 14px; line-height: 1.6; color: #334155;">
-      ${escapeHtml(TEXTOS_ACUSE.intro)} Adjuntamos tu acuse de recepción en formato PDF.
-    </p>
-    <p style="font-size: 12.5px; color: #64748B; line-height: 1.5;">${escapeHtml(TEXTOS_ACUSE.aviso)}</p>
-
-    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.informacion)}</div>
-    <table class="info-table">
-      ${filas.map(([etiqueta, valor]) => filaDeCorreo(etiqueta, valor)).join('\n      ')}
-    </table>
-
-    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.observacion)}</div>
-    <div class="observation-box">${escapeHtml(p.observacion)}</div>
-    <p style="font-size: 12.5px; color: #64748B; line-height: 1.5;">${escapeHtml(TEXTOS_ACUSE.publicas)}</p>
-
-    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.adjuntos)}</div>
-    <div style="margin-bottom: 20px;">${adjuntosHtml}</div>
-
-    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.queSigue)}</div>
-    <div class="protocol-box">
-      ${TEXTOS_ACUSE.pasos
-        .map(
-          ([cabeza, cuerpo]) =>
-            `<div class="protocol-step"><strong>${escapeHtml(cabeza)}:</strong> ${escapeHtml(cuerpo)}</div>`,
-        )
-        .join('\n      ')}
-    </div>
-
-    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.consulta)}</div>
-    <p style="font-size: 13.5px; line-height: 1.6; color: #334155;">${escapeHtml(TEXTOS_ACUSE.consulta1)}</p>
-    <p style="font-size: 13.5px; line-height: 1.6; color: #334155;">Las respuestas estarán disponibles para consulta en la Bitácora, mediante el folio asignado, y de forma presencial en las oficinas de la ${escapeHtml(DIRECCION_RESPONSABLE)}, ubicadas en ${ubicacionOficinas}. Asimismo, se enviará una notificación al correo electrónico registrado.</p>
-  `
-
-  const html = renderPlantillaBase({
-    titulo: TEXTOS_ACUSE.titulo,
-    subtitulo: TEXTOS_ACUSE.subtitulo,
-    badge: `Folio: ${p.folio}`,
-    badgeColor: '#7A1A37',
-    contenidoHtml,
-    pieEntidad: DIRECCION_RESPONSABLE,
-    leyenda:
-      'Este acuse acredita la recepción de su participación en la consulta pública del Proyecto del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano de San Pedro Tlaquepaque',
-  })
+  const html = renderCorreoAcuse(p)
 
   const transporter = getTransporter()
   await transporter.sendMail({
     from: await remitenteDelPortal(NOMBRE_REMITENTE.consulta),
     to: para,
     subject: asuntoAcuse(p.folio),
+    text: renderTextoAcuse(p),
     html,
     attachments: [
       { filename: nombreArchivoAcuse(p.folio), content: pdf, contentType: 'application/pdf' },
@@ -479,31 +155,14 @@ export async function enviarCorreoRespuesta(input: {
   }
 
   const asunto = asuntoRespuesta(input.folio)
-  const contenidoHtml = `
-    <div class="folio-box">
-      <div class="folio-label">Folio de tu participación</div>
-      <div class="folio-value">${escapeHtml(input.folio)}</div>
-    </div>
-    <p style="font-size: 15px; line-height: 1.7; color: #334155;">
-      ${escapeHtml(textoRespuesta(input.folio))}
-    </p>
-  `
-  const html = renderPlantillaBase({
-    titulo: 'Respuesta a tu participación',
-    subtitulo: 'Consulta pública del Proyecto del Programa',
-    badge: `Folio: ${input.folio}`,
-    badgeColor: '#7A1A37',
-    contenidoHtml,
-    pieEntidad: DIRECCION_RESPONSABLE,
-    leyenda:
-      'Este correo contiene la respuesta a su participación presentada durante la consulta pública del Proyecto del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano de San Pedro Tlaquepaque',
-  })
+  const html = renderCorreoRespuesta(input)
 
   const transporter = getTransporter()
   await transporter.sendMail({
     from: await remitenteDelPortal(NOMBRE_REMITENTE.consulta),
     to: input.para,
     subject: asunto,
+    text: `${textoRespuesta(input.folio)}\n\n${DIRECCION_RESPONSABLE}\n${DIRECCION_OFICINAS}\n${ENLACE_OFICINAS}`,
     html,
     attachments: [
       { filename: input.nombreArchivo, content: input.oficio, contentType: 'application/pdf' },
@@ -585,7 +244,7 @@ export async function enviarResolucionParticipacion(
     </p>
 
     <div class="section-heading">1. Resolución</div>
-    <table class="info-table">
+    <table class="info-table" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td class="label-col">Dictamen</td>
         <td class="val-col"><span style="color:${color};font-weight:800;">● ${escapeHtml(p.estado)}</span></td>
@@ -1062,4 +721,129 @@ export function escapeHtml(s: string): string {
         "'": '&#39;',
       })[c] ?? c,
   )
+}
+
+/** HTML que se envía y que usa la vista previa, sin conexión a SMTP. */
+function filasDeCorreoAcuse(p: DatosParticipacion): Array<[string, string]> {
+  return [
+    ...filasDelAcuse(p),
+    ['Tipo de participante', textoDeOpcion(p.fuente, p.fuente_otra)],
+    ['Género', p.genero],
+    ['Domicilio de quien participa', p.domicilio],
+    ['Municipio de residencia', p.municipio_participante],
+    ['Ocupación o puesto', p.ocupacion],
+  ]
+}
+
+/** Alternativa MIME de texto para lectores que no muestran HTML. */
+export function renderTextoAcuse(p: DatosParticipacion): string {
+  return [
+    TEXTOS_ACUSE.titulo,
+    TEXTOS_ACUSE.subtitulo,
+    `Folio: ${p.folio}`,
+    TEXTOS_ACUSE.folioNota,
+    `Hola, ${p.nombre || 'participante'}:`,
+    `${TEXTOS_ACUSE.intro} Adjuntamos tu acuse de recepción en formato PDF.`,
+    TEXTOS_ACUSE.aviso,
+    TEXTOS_ACUSE.informacion,
+    ...filasDeCorreoAcuse(p).map(([etiqueta, valor]) => `${etiqueta}: ${valor || '—'}`),
+    `${TEXTOS_ACUSE.observacion}\n${p.observacion}`,
+    TEXTOS_ACUSE.publicas,
+    `${TEXTOS_ACUSE.adjuntos}\n${p.adjuntos.length ? p.adjuntos.join('\n') : SIN_ADJUNTOS}`,
+    TEXTOS_ACUSE.queSigue,
+    ...TEXTOS_ACUSE.pasos.map(([titulo, texto]) => `${titulo}: ${texto}`),
+    TEXTOS_ACUSE.consulta1,
+    `Las respuestas estarán disponibles para consulta en la Bitácora, mediante el folio asignado, y de forma presencial en las oficinas de la ${DIRECCION_RESPONSABLE}, ubicadas en ${DIRECCION_OFICINAS}. Asimismo, se enviará una notificación al correo electrónico registrado.`,
+    ENLACE_OFICINAS,
+    DIRECCION_RESPONSABLE,
+    'Este acuse acredita la recepción de su participación en la consulta pública del Proyecto del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano de San Pedro Tlaquepaque',
+  ].join('\n\n')
+}
+
+export function renderCorreoAcuse(p: DatosParticipacion): string {
+  const filas = filasDeCorreoAcuse(p)
+
+  const adjuntosHtml =
+    p.adjuntos.length > 0
+      ? p.adjuntos.map((n) => `<div class="attachment-pill">📎 ${escapeHtml(n)}</div>`).join(' ')
+      : `<p style="font-size:13.5px;color:#475569;margin:0;">${escapeHtml(SIN_ADJUNTOS)}</p>`
+
+  const contenidoHtml = `
+    <div class="folio-box">
+      <div class="folio-label">Tu folio</div>
+      <div class="folio-value">${escapeHtml(p.folio)}</div>
+      <div style="font-size:12px;color:#765b2a;margin-top:6px;">${escapeHtml(TEXTOS_ACUSE.folioNota)}</div>
+    </div>
+
+    <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-top: 0;">
+      <strong>Hola, ${escapeHtml(p.nombre || 'participante')}:</strong>
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+      ${escapeHtml(TEXTOS_ACUSE.intro)} Adjuntamos tu acuse de recepción en formato PDF.
+    </p>
+    <p style="font-size: 12.5px; color: #64748B; line-height: 1.5;">${escapeHtml(TEXTOS_ACUSE.aviso)}</p>
+
+    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.informacion)}</div>
+    <table class="info-table">
+      ${filas.map(([etiqueta, valor]) => filaDeCorreo(etiqueta, valor)).join('\n      ')}
+    </table>
+
+    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.observacion)}</div>
+    <div class="observation-box">${escapeHtml(p.observacion)}</div>
+    <p style="font-size: 12.5px; color: #64748B; line-height: 1.5;">${escapeHtml(TEXTOS_ACUSE.publicas)}</p>
+
+    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.adjuntos)}</div>
+    <div style="margin-bottom: 20px;">${adjuntosHtml}</div>
+
+    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.queSigue)}</div>
+    <div class="protocol-box">
+      ${TEXTOS_ACUSE.pasos
+        .map(
+          ([cabeza, cuerpo]) =>
+            `<div class="protocol-step"><strong>${escapeHtml(cabeza)}:</strong> ${escapeHtml(cuerpo)}</div>`,
+        )
+        .join('\n      ')}
+    </div>
+
+    <div class="section-heading">${escapeHtml(TEXTOS_ACUSE.consulta)}</div>
+    <p style="font-size: 13.5px; line-height: 1.6; color: #334155;">${escapeHtml(TEXTOS_ACUSE.consulta1)}</p>
+    <p style="font-size: 13.5px; line-height: 1.6; color: #334155;">Las respuestas estarán disponibles para consulta en la Bitácora, mediante el folio asignado, y de forma presencial en las oficinas de la ${escapeHtml(DIRECCION_RESPONSABLE)}, ubicadas en ${ubicacionOficinas}. Asimismo, se enviará una notificación al correo electrónico registrado.</p>
+  `
+
+  const html = renderPlantillaBase({
+    titulo: TEXTOS_ACUSE.titulo,
+    subtitulo: TEXTOS_ACUSE.subtitulo,
+    badge: `Folio: ${p.folio}`,
+    badgeColor: '#7A1A37',
+    contenidoHtml,
+    pieEntidad: DIRECCION_RESPONSABLE,
+    leyenda:
+      'Este acuse acredita la recepción de su participación en la consulta pública del Proyecto del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano de San Pedro Tlaquepaque',
+  })
+
+  return html
+}
+
+export function renderCorreoRespuesta(input: { folio: string }): string {
+  const contenidoHtml = `
+    <div class="folio-box">
+      <div class="folio-label">Folio de tu participación</div>
+      <div class="folio-value">${escapeHtml(input.folio)}</div>
+    </div>
+    <p style="font-size: 15px; line-height: 1.7; color: #334155;">
+      ${escapeHtml(textoRespuesta(input.folio))}
+    </p>
+  `
+  const html = renderPlantillaBase({
+    titulo: 'Respuesta a tu participación',
+    subtitulo: 'Consulta pública del Proyecto del Programa',
+    badge: `Folio: ${input.folio}`,
+    badgeColor: '#7A1A37',
+    contenidoHtml,
+    pieEntidad: DIRECCION_RESPONSABLE,
+    leyenda:
+      'Este correo contiene la respuesta a su participación presentada durante la consulta pública del Proyecto del Programa de Ordenamiento Ecológico Territorial y de Desarrollo Urbano de San Pedro Tlaquepaque',
+  })
+
+  return html
 }

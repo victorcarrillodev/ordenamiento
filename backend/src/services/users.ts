@@ -1,5 +1,5 @@
-import { sql } from '../db/pool.ts'
-import type { Rol } from '../auth/roles.ts'
+import { sql, type Db } from '../db/pool.ts'
+import { puedeCambiarRol, puedeEliminar, type Rol } from '../auth/roles.ts'
 
 export const AVATAR_MAX_BYTES = 5 * 1024 * 1024
 
@@ -77,8 +77,9 @@ export async function listarUsuarios(): Promise<CuentaListada[]> {
 /** Datos mínimos para decidir permisos sobre una cuenta. */
 export async function obtenerCuenta(
   id: string,
+  db: Db = sql,
 ): Promise<{ id: string; role: string; email: string; name: string } | null> {
-  const filas = await sql<Array<{ id: string; role: string; email: string; name: string }>>`--sql
+  const filas = await db<Array<{ id: string; role: string; email: string; name: string }>>`--sql
     SELECT id::text AS id, role, email, name FROM users WHERE id = ${id}
   `
   return filas[0] ?? null
@@ -89,19 +90,31 @@ export async function obtenerCuenta(
  * ninguna: sin root, el sistema se queda sin dueño y sin forma de recuperarlo
  * desde el panel.
  */
-export async function contarRoots(): Promise<number> {
-  const filas = await sql<{ n: string }[]>`--sql
+export async function contarRoots(db: Db = sql): Promise<number> {
+  const filas = await db<{ n: string }[]>`--sql
     SELECT count(*)::text AS n FROM users WHERE role = 'root'
   `
   return Number(filas[0]?.n ?? 0)
 }
 
 /** Cambia el rango de una cuenta. Devuelve false si el id no existe. */
-export async function cambiarRol(id: string, rol: Rol): Promise<boolean> {
-  const filas = await sql<{ id: string }[]>`--sql
-    UPDATE users SET role = ${rol} WHERE id = ${id} RETURNING id::text AS id
-  `
-  return filas.length > 0
+export async function cambiarRol(id: string, rol: Rol, actorId: string): Promise<boolean> {
+  return sql.begin(async (tx) => {
+    // Bajas y cambios de rango se serializan: dos peticiones no pueden quitar al último root.
+    await tx`LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE`
+    const actor = await obtenerCuenta(actorId, tx)
+    const objetivo = await obtenerCuenta(id, tx)
+    if (
+      !actor ||
+      !objetivo ||
+      !puedeCambiarRol(actor, objetivo, rol, await contarRoots(tx)).permitido
+    )
+      return false
+    const filas = await tx<
+      { id: string }[]
+    >`UPDATE users SET role = ${rol} WHERE id = ${id} RETURNING id::text AS id`
+    return filas.length > 0
+  })
 }
 
 /** Renombra y/o cambia el correo. Solo toca los campos que se pasen. */
@@ -136,9 +149,16 @@ export async function actualizarCuenta(
  * NULL las referencias (ON DELETE SET NULL) salvo donde el dato solo tiene
  * sentido con su dueño (sesiones, avatar, tokens).
  */
-export async function eliminarUsuario(id: string): Promise<boolean> {
-  const filas = await sql<{ id: string }[]>`--sql
-    DELETE FROM users WHERE id = ${id} RETURNING id::text AS id
-  `
-  return filas.length > 0
+export async function eliminarUsuario(id: string, actorId: string): Promise<boolean> {
+  return sql.begin(async (tx) => {
+    await tx`LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE`
+    const actor = await obtenerCuenta(actorId, tx)
+    const objetivo = await obtenerCuenta(id, tx)
+    if (!actor || !objetivo || !puedeEliminar(actor, objetivo, await contarRoots(tx)).permitido)
+      return false
+    const filas = await tx<
+      { id: string }[]
+    >`DELETE FROM users WHERE id = ${id} RETURNING id::text AS id`
+    return filas.length > 0
+  })
 }

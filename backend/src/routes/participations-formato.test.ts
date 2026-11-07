@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test'
+import * as envios from '../services/envios.ts'
 
 import * as pool from '../db/pool.ts'
 import * as documentos from '../services/documentos-participacion.ts'
@@ -53,6 +54,8 @@ beforeEach(() => {
   restore = [() => begin.mockRestore()]
   folioNuevo = spyOn(folios, 'nextFolio').mockResolvedValue('NO-DEBE-USARSE')
   const correo = spyOn(mail, 'mailConfigurado').mockReturnValue(false)
+  const envio = spyOn(envios, 'registrarEnvio').mockResolvedValue({} as never)
+  restore.push(() => envio.mockRestore())
   const obtener = spyOn(formatos, 'obtenerFormato').mockImplementation(
     (async () => formatoDevuelto) as never,
   )

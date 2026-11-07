@@ -3,6 +3,7 @@ import * as pool from '../db/pool.ts'
 import * as folios from '../services/folio.ts'
 import * as consultaSvc from '../services/consulta.ts'
 import * as mail from '../services/mail.ts'
+import * as envios from '../services/envios.ts'
 import { acuseFirmaValida } from '../services/acuse-token.ts'
 import { GENEROS, TEMATICAS, TIPOS_PARTICIPANTE } from '../services/participacion-campos.ts'
 import { handleCreateParticipation } from './participations.ts'
@@ -29,6 +30,7 @@ beforeEach(() => {
   ) => work(tx)) as never)
   const folio = spyOn(folios, 'nextFolio').mockResolvedValue('PRUEBA-1')
   const correo = spyOn(mail, 'mailConfigurado').mockReturnValue(false)
+  const envio = spyOn(envios, 'registrarEnvio').mockResolvedValue({} as never)
   // Salvo que una prueba diga otra cosa, la consulta está abierta y recibe participaciones.
   const consulta = spyOn(consultaSvc, 'leerEstadoConsulta').mockResolvedValue({
     etapa: 'abierta',
@@ -36,6 +38,7 @@ beforeEach(() => {
     cierre: null,
   })
   restore = [
+    () => envio.mockRestore(),
     () => begin.mockRestore(),
     () => folio.mockRestore(),
     () => correo.mockRestore(),
@@ -62,6 +65,19 @@ async function enviar(data: FormData) {
 }
 
 describe('persistencia de complementarios por la API', () => {
+  it('conserva la participación y registra el motivo si falta configurar el correo', async () => {
+    const response = await enviar(form())
+    expect(response.status).toBe(201)
+    expect(envios.registrarEnvio).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tipo: 'acuse',
+        resultado: 'error',
+        para: 'prueba@example.com',
+        detalle: expect.stringContaining('SMTP_NO_CONFIGURADO'),
+      }),
+    )
+  })
+
   it('guarda los campos opcionales de la participación digital en sus columnas', async () => {
     const data = form()
     const fields = {

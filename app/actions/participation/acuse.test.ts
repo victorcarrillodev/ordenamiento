@@ -50,8 +50,9 @@ describe('confirmación: folio, mensaje y descarga del acuse', () => {
     const texto = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
     expect(texto).toContain('SPAGU-DGTPU-E-0018')
     expect(texto).toContain(
-      'Tu participación quedó registrada. Puedes descargar tu acuse en PDF; también lo recibirás en el correo electrónico que registraste.',
+      'Tu participación quedó registrada. Descarga y conserva tu acuse en PDF.',
     )
+    expect(texto).toContain('si no te llega, este acuse y tu folio')
     expect(html).toMatch(
       /<a[^>]*href="\/ordena\/participation\/acuse\/SPAGU-DGTPU-E-0018\?t=123\.firma"[^>]*download="Acuse SPAGU-DGTPU-E-0018\.pdf"/,
     )

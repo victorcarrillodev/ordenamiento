@@ -253,7 +253,7 @@ describe('Admin · registrar participación presencial', () => {
     it('la captura asistida muestra el aviso en lugar del formulario', async () => {
       backend({ etapa: 'pendiente' })
       const html = (await (await get('/nueva'))?.text()) ?? ''
-      expect(textoDe(html)).toContain('La consulta pública aún no inicia')
+      expect(textoDe(html)).toContain('La consulta pública aún no ha iniciado')
       expect(html).not.toContain('name="nombre"')
     })
   })

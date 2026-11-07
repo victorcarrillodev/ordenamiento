@@ -289,7 +289,7 @@ export async function handleCreateParticipation(
     // El acuse se envía DESPUÉS del commit exitoso (fire-and-forget con catch) y
     // deja constancia de cómo terminó el envío.
     const userEmail = camposFormulario.correo.trim()
-    if (userEmail && mailConfigurado()) {
+    if (userEmail) {
       const constancia = (resultado: 'enviado' | 'error', detalle = '') =>
         registrarEnvio({
           participationId: registro.participationId,
@@ -300,15 +300,21 @@ export async function handleCreateParticipation(
           detalle,
           enviadoPor: user?.id ?? null,
         })
-      void enviarAcuseReciboParticipacion(registro.participationId, userEmail)
-        .then(
-          () => constancia('enviado'),
-          (err) => {
-            logger.error('participations.acuse', err)
-            return constancia('error', detalleDeError(err))
-          },
-        )
-        .catch((err) => logger.error('participations.acuse.constancia', err))
+      if (!mailConfigurado()) {
+        void constancia(
+          'error',
+          'SMTP_NO_CONFIGURADO: participación guardada, acuse disponible para descargar; correo pendiente de configuración.',
+        ).catch((err) => logger.error('participations.acuse.constancia', err))
+      } else
+        void enviarAcuseReciboParticipacion(registro.participationId, userEmail)
+          .then(
+            () => constancia('enviado'),
+            (err) => {
+              logger.error('participations.acuse', err)
+              return constancia('error', detalleDeError(err))
+            },
+          )
+          .catch((err) => logger.error('participations.acuse.constancia', err))
     }
 
     // `acuse_token` es el enlace firmado para descargar el acuse (ver acuse-token.ts).

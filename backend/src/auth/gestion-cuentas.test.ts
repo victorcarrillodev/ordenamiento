@@ -198,6 +198,11 @@ describe('Cambiar el rango de una cuenta', () => {
 })
 
 describe('Eliminar cuentas', () => {
+  it('no confirma una baja si la cuenta o los permisos cambiaron durante la petición', async () => {
+    sesion(ROOT)
+    borrarSpy.mockResolvedValue(false)
+    expect((await handleRequest(req(`/api/users/${OBJETIVO_ADMIN.id}`, 'DELETE'))).status).toBe(409)
+  })
   it('admin no borra a un root', async () => {
     sesion(ADMIN)
     cuentaSpy.mockImplementation(async () => OBJETIVO_ROOT)

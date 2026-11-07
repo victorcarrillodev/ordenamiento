@@ -9,6 +9,7 @@ interface CorreoEnviado {
   to: string
   subject: string
   html: string
+  text?: string
   attachments: Array<{ filename: string; content: Buffer; contentType?: string }>
 }
 const sendMailCalls: CorreoEnviado[] = []
@@ -163,6 +164,9 @@ describe('enviarAcuseReciboParticipacion', () => {
     const enviado = sendMailCalls[0]
     expect(enviado.to).toBe('juan@ejemplo.com')
     expect(enviado.subject).toBe('Acuse de recepción de tu participación · Folio POE-2026-0001')
+    expect(enviado.text).toContain('Folio: POE-2026-0001')
+    expect(enviado.text).toContain('Adjuntamos tu acuse de recepción en formato PDF.')
+    expect(enviado.text).not.toContain('<table')
     expect(enviado.attachments).toHaveLength(1)
     const [acuse] = enviado.attachments
     expect(acuse.filename).toBe('Acuse POE-2026-0001.pdf')
@@ -265,6 +269,8 @@ describe('remitente de los correos: el correo de contacto del pie de página', (
     )
     expect(enviado.html).not.toContain('Este acuse digital tiene validez oficial')
     expect(enviado.attachments[0].filename).toBe('oficio.pdf')
+    expect(enviado.text).toContain('SPAGU-DGTPU-P-0001')
+    expect(enviado.text).toContain('Se adjunta el oficio de respuesta en formato PDF.')
     expect(enviado.from).toContain('ordenamiento@tlaquepaque.gob.mx')
   })
   beforeEach(() => {

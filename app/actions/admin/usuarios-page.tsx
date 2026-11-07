@@ -134,18 +134,6 @@ function AccionesDeCuenta(handle: Handle<{ cuenta: UsuarioRow; actorEsRoot: bool
               </Button>
             </div>
           </form>
-
-          {/* Baja */}
-          <form method="post" action={accion} class="acciones__form eliminar-cuenta">
-            <input type="hidden" name="intent" value="eliminar" />
-            <input type="hidden" name="id" value={cuenta.id} />
-            <Button buttonType="submit" variant="danger" size="sm" fullWidth>
-              <Icon name="mdi:trash-can-outline" size={15} /> Eliminar la cuenta
-            </Button>
-            <span class="form-hint">
-              Sus participaciones y contenido se conservan; solo se va la cuenta.
-            </span>
-          </form>
         </div>
       </details>
     )
@@ -364,7 +352,24 @@ export function UsuariosPage(handle: Handle<UsuariosPageProps>) {
                     <td>{formatearFecha(u.created_at)}</td>
                     <td>
                       {puedeActuarSobre(user.role, u.role) ? (
-                        <AccionesDeCuenta cuenta={u} actorEsRoot={actorEsRoot} />
+                        <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;">
+                          <AccionesDeCuenta cuenta={u} actorEsRoot={actorEsRoot} />
+                          {u.role === 'root' && roots <= 1 ? (
+                            <span class="form-hint">No se puede eliminar al último root.</span>
+                          ) : (
+                            <form
+                              method="post"
+                              action={adminRoutes.usuarios.action.href()}
+                              data-confirmar={`¿Eliminar la cuenta ${u.email}? Perderá el acceso. Sus participaciones y contenido se conservan.`}
+                            >
+                              <input type="hidden" name="intent" value="eliminar" />
+                              <input type="hidden" name="id" value={u.id} />
+                              <Button buttonType="submit" variant="danger" size="sm">
+                                <Icon name="mdi:trash-can-outline" size={15} /> Eliminar cuenta
+                              </Button>
+                            </form>
+                          )}
+                        </div>
                       ) : (
                         <span class="form-hint">Solo root</span>
                       )}

@@ -25,20 +25,26 @@
     "react-leaflet": "^5.0.0",
     "remix": "^3.0.0-beta.10"
   },
+  "overrides": {
+    "brace-expansion": "5.0.12",
+    "source-map-js": "1.2.2",
+    "undici": "8.12.4"
+  },
   "devDependencies": {
     "@eslint/js": "latest",
-    "@storybook/addon-docs": "^10.5.10",
-    "@storybook/html": "^10.5.10",
-    "@storybook/html-vite": "^10.5.10",
+    "@storybook/addon-docs": "^10.6.6",
+    "@storybook/html": "^10.6.6",
+    "@storybook/html-vite": "^10.6.6",
     "@types/leaflet": "^1.9.22",
     "@types/node": "latest",
     "eslint": "latest",
     "eslint-config-prettier": "latest",
     "jsdom": "^30.0.1",
     "prettier": "latest",
+    "storybook": "^10.6.6",
     "typescript": "latest",
     "typescript-eslint": "latest",
-    "vite": "^8.2.2",
-    "vitest": "latest"
+    "vite": "^8.3.6",
+    "vitest": "^4.1.12"
   }
 }

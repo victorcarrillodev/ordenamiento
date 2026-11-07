@@ -1,5 +1,6 @@
 import { createRouter, type MiddlewareContext } from 'remix/router'
 import { staticFiles } from 'remix/middleware/static'
+import { origenSeguro } from './middleware/origen.ts'
 
 import controller from './actions/controller.tsx'
 import loginController from './actions/login/controller.tsx'
@@ -97,7 +98,7 @@ function staticWithPrefix() {
 }
 
 export const router = createRouter<AppContext>({
-  middleware: [staticWithPrefix(), render()],
+  middleware: [origenSeguro, staticWithPrefix(), render()],
 })
 
 router.map(routes, controller)

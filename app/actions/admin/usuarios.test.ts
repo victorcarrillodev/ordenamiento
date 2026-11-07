@@ -274,6 +274,14 @@ describe('Datos hostiles del backend', () => {
 })
 
 describe('Solo el root da de alta cuentas', () => {
+  it('muestra la eliminación de cuentas con confirmación y explicación del contenido conservado', async () => {
+    backendConSesion(ROOT)
+    const html = await (await get('/ordena/admin/usuarios'))!.text()
+    expect(html).toContain('Eliminar cuenta')
+    expect(html).toContain('data-confirmar=')
+    expect(html).toContain('Sus participaciones y contenido se conservan.')
+  })
+
   it('a una cuenta root le muestra el formulario con la contraseña provisional', async () => {
     backendConSesion(ROOT)
 
